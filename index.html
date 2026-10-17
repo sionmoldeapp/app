@@ -209,7 +209,7 @@ function ago(p){
 const cnt=id=>counts[id]>0?`<div class="small">${counts[id]} kommer</div>`:'';
 const tm=e=>e.time?' kl. '+e.time:'';
 const state={tab:'home',filter:'Alle',member:false,admin:false,user:null,rsvp:{},rem:{},open:{},
-  prefs:{Møter:true,Happeninger:true,Ungdom:false,Viktig:true},unread:0,sv:'',svE:'',pwMsg:'',leder:false,memELd:'',memEA:'',memEL:'',memEM:'',memGL:[],memGM:[],snaps:null,snapMsg:'',view:'meg',rsList:{},q:'',edit:true,real:null,vl:['activ8'],af:'Alle',acc:{},sel:{},groups:[],leads:[],ulOpen:'',psMal:'alle',psGr:[],ugOpen:'',backupMsg:'',pushMsg:'',pushSendMsg:'',psT:'',psB:'',psTab:'news',psNews:true,psHide:false,pushOk:false,memMsg:'',memE:'',memR:'member',adm:{type:'events',edit:null},msg:'',err:''};
+  prefs:{Møter:true,Happeninger:true,Ungdom:false,Viktig:true},unread:0,sv:'',svE:'',pwMsg:'',leder:false,memELd:'',memEA:'',memEL:'',memEM:'',memGL:[],memGM:[],snaps:null,snapMsg:'',view:'meg',brQ:'',brG:'',memBulk:'',memGB:[],rsList:{},q:'',edit:true,real:null,vl:['activ8'],af:'Alle',acc:{},sel:{},groups:[],leads:[],ulOpen:'',psMal:'alle',psGr:[],ugOpen:'',backupMsg:'',pushMsg:'',pushSendMsg:'',psT:'',psB:'',psTab:'news',psNews:true,psHide:false,pushOk:false,memMsg:'',memE:'',memR:'member',adm:{type:'events',edit:null},msg:'',err:''};
 try{Object.assign(state,JSON.parse(localStorage.getItem('sm-proto')||'{}'))}catch(e){}
 state.member=false;state.admin=false;state.user=null;try{state.edit=localStorage.getItem('sm-edit')!=='0'}catch(e){state.edit=true}
 {const dt=new URLSearchParams(location.search).get('tab');if(['home','prog','news','me'].includes(dt)){state.tab=dt;try{history.replaceState(null,'',location.pathname)}catch(e){}}}
@@ -564,23 +564,30 @@ async function ltDel(id){
     await FB.delLtypeDoc(id);await refresh();push('Kategorien er slettet','«'+t[1]+'» er fjernet.')}
   catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}
 }
-function memberCard(){
+function memberCard(onlyBody){
   const me=state.user?state.user.email:'';
-  const adms=members.filter(x=>x.role==='admin'),lds=members.filter(x=>x.role!=='admin'&&x.leder),leds=members.filter(x=>x.role!=='admin'&&!x.leder&&(x.leads||[]).length),meds=members.filter(x=>x.role!=='admin'&&!x.leder&&!(x.leads||[]).length);
-  const sec=(key,tittel,n,body)=>`<details class="acc sub" data-acc="${key}" ${state.acc[key]?'open':''}><summary><h3 style="font-size:19px">${tittel} (${n})</h3></summary>${body}</details>`;
+  const q=norm(state.brQ).trim(),gf=state.brG,forced=!!(q||gf);
+  const rolleTxt=x=>x.role==='admin'?'administrator':x.leder?'leder '+ltName(x):(x.leads||[]).length?'gruppeleder':'medlem';
+  const ml=members.filter(x=>(!gf||(x.groups||[]).includes(gf)||(x.leads||[]).includes(gf))&&(!q||q.split(/\s+/).every(o=>norm(x.id+' '+(x.groups||[]).map(gName).join(' ')+' '+rolleTxt(x)).includes(o))));
+  const adms=ml.filter(x=>x.role==='admin'),lds=ml.filter(x=>x.role!=='admin'&&x.leder),leds=ml.filter(x=>x.role!=='admin'&&!x.leder&&(x.leads||[]).length),meds=ml.filter(x=>x.role!=='admin'&&!x.leder&&!(x.leads||[]).length);
+  const sec=(key,tittel,n,body)=>`<details class="acc sub" data-acc="${key}" ${(forced?n>0:state.acc[key])?'open':''}><summary><h3 style="font-size:19px">${tittel}${n===''?'':' ('+n+')'}</h3></summary>${body}</details>`;
   const grBoks=(sel,hjelp)=>`<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">${hjelp}</legend><div style="display:grid;gap:6px">${GROUPS.map(g=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:14px"><input type="checkbox" data-newg="${g[0]}" style="width:22px;height:22px;flex:none" ${sel.includes(g[0])?'checked':''}>${esc(gLabel(g[0]))}</label>`).join('')}</div></fieldset>`;
   const skjema=(id,tekst,ekstra,knapp)=>`<form class="form" id="${id}" style="margin:0 0 10px;padding:10px;background:var(--bg);border-radius:10px"><p class="small" style="margin:0">${tekst}</p><label class="f">E-post<input id="mE${id.slice(3)}" type="email" required value="${esc(state['memE'+id.slice(3)]||'')}"></label>${ekstra}<button class="btn primary" type="submit">${knapp}</button></form>`;
   const liste=l=>`<div class="reg">${l.map(x=>userRow(x,me)).join('')||'<p class="small">Ingen ennå.</p>'}</div>`;
-  return `<details class="card acc" data-acc="brukere" ${state.acc.brukere?'open':''}><summary><h3>Brukere (${members.length})</h3></summary>
-  <p class="small" style="margin:0 0 4px">Åpne riktig rolle for å legge til en ny bruker. Personen får en e-post og velger passord selv.</p>
-  <p class="small" role="status" style="margin:0 0 6px">${esc(state.memMsg)}</p>
+  const body=`
   ${sec('b_adm','Administratorer',adms.length,skjema('memA','<b>Ny administrator.</b> Kan endre alt innhold og alle brukere, og sende varsler til alle. Gi bare denne rollen til dem som trenger den.','','Legg til administrator')+liste(adms))}
   ${sec('b_ld','Ledere',lds.length+leds.length,
     LTYPES.map(t=>{const l=lds.filter(x=>ltOf(x)===t[0]);return sec('lt_'+t[0],t[1],l.length,skjema('memLd_'+t[0],'<b>Ny i «'+esc(t[1])+'».</b> Ser ledersamlinger og innhold for ledere. Kan ikke publisere.','','Legg til i '+esc(t[1]))+'<div class="btns" style="margin:0 0 8px"><button class="btn" data-ltedit="'+esc(t[0])+'">Endre navn</button><button class="btn" data-ltdel="'+esc(t[0])+'">Slett kategorien</button></div>'+liste(l))}).join('')
     +sec('b_led','Gruppeledere',leds.length,skjema('memL','<b>Ny gruppeleder.</b> Et medlem som kan publisere nyheter, arrangementer og varsler, men bare for gruppene hen leder.',grBoks(state.memGL,'Leder for (velg minst én)'),'Legg til gruppeleder')+liste(leds))
     +'<button class="btn primary" data-ltnew style="width:auto;margin-top:8px">+ Ny lederkategori</button>')}
   ${sec('b_med','Medlemmer',meds.length,skjema('memM','<b>Nytt medlem.</b> Ser medlemsinnhold og innhold for gruppene hen er med i.',grBoks(state.memGM,'Med i grupper (valgfritt)'),'Legg til medlem')+liste(meds))}
-  </details>`}
+  ${sec('b_bulk','Legg til flere samtidig','','<form class="form" id="memBulk" style="margin:0 0 10px;padding:10px;background:var(--bg);border-radius:10px"><p class="small" style="margin:0">Lim inn e-postadresser, én per linje eller adskilt med komma eller mellomrom (maks 50 om gangen). Alle legges til som <b>medlemmer</b>, ikke administratorer. Nye personer får e-post for å velge passord. De som allerede finnes, hoppes over, men legges i valgte grupper.</p><label class="f">E-postadresser<textarea id="mBulkT" rows="6" placeholder="kari@eksempel.no&#10;ola@eksempel.no">'+esc(state.memBulk)+'</textarea></label>'+grBoks(state.memGB,'Legg også i grupper (valgfritt)')+'<button class="btn primary" type="submit">Legg til alle</button></form>')}`;
+  if(onlyBody)return body;
+  return `<details class="card acc" data-acc="brukere" ${state.acc.brukere?'open':''}><summary><h3>Brukere (${forced?ml.length+' av '+members.length:members.length})</h3></summary>
+  <p class="small" style="margin:0 0 6px">Søk eller velg gruppe for å finne folk. Åpne riktig rolle for å legge til en ny bruker. Personen får en e-post og velger passord selv.</p>
+  <p class="small" role="status" style="margin:0 0 6px">${esc(state.memMsg)}</p>
+  <div style="display:grid;gap:8px;margin:0 0 10px"><input type="search" id="brQ" placeholder="Søk etter e-post, gruppe eller rolle …" aria-label="Søk i brukere" autocomplete="off" value="${esc(state.brQ)}"><select id="brG" aria-label="Filtrer på gruppe"><option value="">Alle grupper</option>${GROUPS.map(g=>`<option value="${esc(g[0])}" ${gf===g[0]?'selected':''}>${esc(g[1])}</option>`).join('')}</select></div>
+  <div id="brBody">${body}</div></details>`}
 
 function pushCard(){
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
@@ -692,7 +699,8 @@ function viewOpts(){
   if(adm)o.push(['leder','Gruppeleder','Du ser og får verktøyene en gruppeleder har, for gruppene du velger under.']);
   o.push(['medlem','Vanlig innlogget medlem','Bare det som er for innloggede medlemmer, ikke ledersamlinger eller innhold for bestemte grupper.'],['besok','Besøkende (ikke innlogget)','Bare det som er åpent for alle.']);
   $('#viewOpts').innerHTML=o.map(([v,l,t])=>'<label style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-weight:400"><input type="radio" name="viewmode" value="'+v+'" '+(viewVal()===v?'checked':'')+' style="width:22px;height:22px;flex:none;margin-top:2px"><span><b>'+esc(l)+'</b><br><span class="small">'+esc(t)+'</span>'+(v==='leder'&&state.real?'<span style="display:grid;gap:6px;margin:8px 0 0">'+GROUPS.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:14px"><input type="checkbox" data-vl="'+g[0]+'" style="width:22px;height:22px;flex:none" '+(state.vl.includes(g[0])?'checked':'')+'>'+esc(gLabel(g[0]))+'</label>').join('')+'</span>':'')+'</span></label>').join('')}
-document.addEventListener('input',e=>{if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
+document.addEventListener('input',e=>{if(e.target.id==='brQ'){state.brQ=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
+  if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
 document.addEventListener('click',async e=>{
   const c=e.target.closest('button');if(!c)return;
   if(c.dataset.t){state.tab=c.dataset.t;if(state.tab==='news')markSeen();render()}
@@ -874,6 +882,23 @@ document.addEventListener('submit',async e=>{
     catch(er){melding=(asNews?'Nyheten er lagt ut, men v':'V')+'arselet kunne ikke sendes (ingen kontakt med varseltjenesten). Prøv igjen om litt.'}
     if(asNews)await load().catch(()=>{});
     keep(()=>state.pushSendMsg=melding)}
+  else if(f.id==='memBulk'){e.preventDefault();
+    const rå=$('#mBulkT').value,alle=[...new Set(rå.split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(Boolean))],ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const gr=[...f.querySelectorAll('[data-newg]')].filter(x=>x.checked).map(x=>x.dataset.newg);
+    if(!alle.length){keep(()=>state.memMsg='Lim inn minst én e-postadresse.');return}
+    if(alle.length>50){keep(()=>{state.memBulk=rå;state.memMsg='Maks 50 adresser om gangen. Du limte inn '+alle.length+'.'});return}
+    const st=document.querySelector('details[data-acc=brukere] p[role=status]'),knapp=f.querySelector('button[type=submit]');knapp.disabled=true;
+    const nye=[],fantes=[],ugyldige=[],feil=[];
+    for(let i=0;i<alle.length;i++){const m=alle[i];if(st)st.textContent='Legger til '+(i+1)+' av '+alle.length+' …';
+      if(!ok.test(m)){ugyldige.push(m);continue}
+      try{const ex=members.find(u=>u.id===m);
+        if(ex){fantes.push(m);if(gr.length)await FB.setGroups(m,ex.role,[...new Set([...(ex.groups||[]),...gr])])}
+        else{await FB.addUser(m,'member');if(gr.length)await FB.setGroups(m,'member',gr);nye.push(m)}}
+      catch(er){feil.push(m)}}
+    const rest=[...ugyldige,...feil];
+    state.memBulk=rest.join('\n');state.memGB=[];state.acc.b_bulk=true;state.acc.b_med=true;
+    state.memMsg=[nye.length?nye.length+' lagt til som medlem'+(nye.length===1?'':'mer')+' (nye får e-post for å velge passord)':'',fantes.length?fantes.length+' fantes fra før':'',ugyldige.length?ugyldige.length+' ugyldig'+(ugyldige.length===1?'':'e')+' adresse'+(ugyldige.length===1?'':'r'):'',feil.length?feil.length+' feilet':''].filter(Boolean).join(', ')+'.'+(rest.length?' De som ikke gikk gjennom, står igjen i feltet.':'');
+    await refresh()}
   else if(f.id==='memA'||f.id.startsWith('memLd')||f.id==='memL'||f.id==='memM'){e.preventDefault();
     const suff=f.id.slice(3),m=$('#mE'+suff).value.trim().toLowerCase(),role=f.id==='memA'?'admin':'member';
     const gr=[...f.querySelectorAll('[data-newg]')].filter(x=>x.checked).map(x=>x.dataset.newg);
@@ -1157,11 +1182,12 @@ document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.tar
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
   if('ltsel' in d){try{await FB.setLtype(d.ltsel,e.target.value);const u=members.find(m=>m.id===d.ltsel);if(u)u.ltype=e.target.value;state.acc.b_ld=true;state.memMsg=d.ltsel+' er flyttet til «'+(LTYPES.find(t=>t[0]===e.target.value)||['',''])[1]+'».'}catch(er){state.memMsg=saveMsg(er.code)}keep(()=>{});return}
+  if(e.target.id==='brG'){state.brG=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
   if(e.target.name==='viewmode'){const v=e.target.value;setView(v);if(v==='leder'){viewOpts()}else $('#viewDlg').close();await refresh();return}
   if('vl' in d){const sg=new Set(state.vl);e.target.checked?sg.add(d.vl):sg.delete(d.vl);if(!sg.size){e.target.checked=true;return}state.vl=[...sg];setView('leder');await refresh();viewOpts();return}
   if(e.target.id==='psMal'){state.psMal=e.target.value;const bx=$('#psGrBox');if(bx)bx.hidden=state.psMal!=='grupper';return}
   if('psgr' in d){const s=new Set(state.psGr);e.target.checked?s.add(d.psgr):s.delete(d.psgr);state.psGr=[...s];return}
-  if('newg' in d){const fid=e.target.closest('form')&&e.target.closest('form').id,key=fid==='memL'?'memGL':'memGM',sg=new Set(state[key]);e.target.checked?sg.add(d.newg):sg.delete(d.newg);state[key]=[...sg];return}
+  if('newg' in d){const fid=e.target.closest('form')&&e.target.closest('form').id,key=fid==='memL'?'memGL':fid==='memBulk'?'memGB':'memGM',sg=new Set(state[key]);e.target.checked?sg.add(d.newg):sg.delete(d.newg);state[key]=[...sg];return}
   if('ul' in d){
     const u=members.find(m=>m.id===d.ul);if(!u)return;
     const sl=new Set(u.leads||[]);e.target.checked?sl.add(d.gid):sl.delete(d.gid);const lead=[...sl];
