@@ -322,6 +322,7 @@ function home(){
    <div class="btns" style="margin-top:12px"><button class="btn" style="color:var(--ink)" data-rsvp="${n.id}" data-stay="1">${state.rsvp[n.id]?'✓ Jeg kommer':'Jeg kommer'}</button></div>${counts[n.id]>0?`<div class="meta" style="margin-top:8px">${counts[n.id]} kommer</div>`:''}</div>`
   :`<div class="card next"><div class="eyebrow">Neste samling</div><h2>Ingen planlagt</h2><div class="meta">Se faste samlinger under Program.</div></div>`}
   ${welcomeCard()}
+  ${visitorCard()}
   ${post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b>${esc(post.t)}</b><span class="small">${esc(post.b)}</span></div></div>`:''}
   ${wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:''}
   ${svCard()}
@@ -632,6 +633,27 @@ function statCard(){
    +'<h3 style="margin:14px 0 6px;font-size:17px">Mest sette nyheter</h3>'
    +(topp.length?topp.map(p=>'<div style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(p.t)+'</span><b>'+(views[p.id]||0)+'</b></div>').join(''):'<p class="small">Tellingen starter nå. Hver telefon telles én gang per nyhet.</p>')
    +'</details>'}
+/* Besøkende: tydelig invitasjon til å logge inn. Alle: «Slik installerer du appen». Ledere: «Del appen» med lenke og QR-kode. */
+const APP_LINK='https://sionapp2026.github.io/app/';
+function visitorCard(){
+  if(state.user)return '';
+  return '<div class="card"><div class="eyebrow">Medlem?</div><h2 style="margin:4px 0 6px">Logg inn for å få mer</h2>'
+   +'<ul class="small" style="margin:0 0 10px;padding-left:18px;display:grid;gap:4px;color:var(--ink)"><li>Se medlemsinnhold og innhold for gruppene dine</li><li>Få varsler fra gruppene du er med i</li><li>Meld deg på arrangementer med navnet ditt</li></ul>'
+   +'<button class="btn primary" data-t="me" style="width:auto">Logg inn</button></div>'}
+function installCard(){
+  return '<details class="card acc" data-acc="installer" '+(state.acc.installer?'open':'')+'><summary><h2>Slik installerer du appen</h2></summary>'
+   +'<p class="small" style="margin:0 0 8px">Da ligger appen på telefonen som en vanlig app, og du kan få varsler.</p>'
+   +'<h3 style="font-size:17px;margin:8px 0 4px">Android (Chrome)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne <b>sionapp2026.github.io/app</b> i Chrome.</li><li>Trykk på menyen (tre prikker) øverst til høyre.</li><li>Velg <b>Installer app</b>, og bekreft.</li></ol>'
+   +'<h3 style="font-size:17px;margin:8px 0 4px">iPhone (Safari)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne siden i <b>Safari</b> (ikke Chrome).</li><li>Trykk på Del-ikonet (firkant med pil opp).</li><li>Velg <b>Legg til på Hjem-skjerm</b>.</li></ol>'
+   +'<h3 style="font-size:17px;margin:8px 0 4px">Varsler</h3><p class="small" style="margin:0">Åpne appen, gå til Meg → Varsler og trykk «Slå på varsler». På iPhone må appen ligge på Hjem-skjermen først.</p></details>'}
+function shareCard(){
+  if(!canStats())return '';
+  const qr='https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data='+encodeURIComponent(APP_LINK);
+  return '<details class="card acc" data-acc="del" '+(state.acc.del?'open':'')+'><summary><h3>Del appen</h3></summary>'
+   +'<p class="small" style="margin:0 0 8px">Send lenken, eller la folk skanne QR-koden (for eksempel på en plakat i kirken). QR-bildet hentes fra en åpen tjeneste og inneholder bare den offentlige lenken.</p>'
+   +'<p style="margin:0 0 8px;word-break:break-all"><b>'+APP_LINK+'</b></p>'
+   +'<div class="btns" style="margin-bottom:10px"><button class="btn" data-copylink>Kopier lenke</button>'+(navigator.share?'<button class="btn" data-sharelink>Del …</button>':'')+'</div>'
+   +'<a href="'+qr.replace('260x260','800x800')+'" target="_blank" rel="noopener"><img src="'+qr+'" width="260" height="260" alt="QR-kode til appen" style="display:block;background:#fff;border-radius:12px;max-width:100%;height:auto"></a><p class="small" style="margin:6px 0 0">Trykk på koden for å åpne en stor versjon du kan skrive ut.</p></details>'}
 function memberCard(onlyBody){
   const me=state.user?state.user.email:'';
   const q=norm(state.brQ).trim(),gf=state.brG,forced=!!(q||gf);
@@ -728,6 +750,8 @@ function me(){
   const sw=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${state.prefs[k]}" aria-label="${l}" data-pref="${k}"></button></div>`;
   return `<h1>Meg</h1>${loginCard()}
   ${pushCard()}
+  ${installCard()}
+  ${shareCard()}
   ${profileCard()}
   ${state.user?'<div class="card"><div class="row"><div class="grow"><b>Kom i gang</b><div class="small">Vis hjelpen for å installere appen og slå på varsler igjen.</div></div><button class="btn" data-komvis>Vis igjen</button></div></div>':''}
 
@@ -882,6 +906,8 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ltdel){ltDel(c.dataset.ltdel)}
   else if('prsave' in c.dataset){const n=($('#prN').value||'').trim();try{await FB.setProfile(state.user.email,{name:n});state.profile.name=n;if(n)lsSet('sm-navn',n);state.prMsg='Navnet er lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code)}keep(()=>{})}
   else if('prdel' in c.dataset){deleteSelfAsk()}
+  else if('copylink' in c.dataset){try{await navigator.clipboard.writeText(APP_LINK);push('Kopiert','Lenken til appen er kopiert.')}catch(x){prompt('Kopier lenken:',APP_LINK)}}
+  else if('sharelink' in c.dataset){try{await navigator.share({title:'Sion Molde',text:'Appen til Sion Molde',url:APP_LINK})}catch(x){}}
   else if('komvis' in c.dataset){try{localStorage.removeItem('sm-kom')}catch(x){}state.tab='home';render();push('Kom i gang','Vises øverst på Hjem.')}
   else if('komskjul' in c.dataset){lsSet('sm-kom','1');keep(()=>{})}
   else if('pubnew' in c.dataset){pubAsk()}
