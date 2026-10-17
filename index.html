@@ -189,6 +189,7 @@ async function fetchAll(){
 async function load(){
   if(FB)try{applyGroups(await FB.groupsList())}catch(e){}
   if(FB)try{applyCats(await FB.catsList())}catch(e){}
+  if(FB&&state.admin)try{applyLtypes(await FB.ltypesList())}catch(e){}
   const [e,p,g]=await fetchAll();
   rawEvents=e;
   events=e.filter(x=>canSee(x)&&canSeeCat(x.cat)).map(x=>({...x,t:esc(x.title),d:esc(x.text),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
@@ -455,7 +456,7 @@ const EYEOFF='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke
 const pwField=(id,label,ac,extra)=>`<label class="f">${label}<span class="pw"><input id="${id}" type="password" autocomplete="${ac}" ${extra||''} required><button type="button" class="eye" data-eye aria-label="Vis passord" aria-pressed="false">${EYE}</button></span></label>`;
 const userRow=(x,me)=>{
   const self=x.id===me,adm=x.role==='admin',leader=(x.leads||[]).length>0;
-  return `<div class="r" style="flex-wrap:wrap"><div class="grow" style="min-width:60%">${esc(x.id)}${self?' (deg)':''}<br><span class="tag ${adm?'':'m'}">${adm?'Administrator':x.leder?'Leder':leader?'Gruppeleder':'Medlem'}</span>${x.leder&&leader?' <span class="tag">Gruppeleder</span>':''}</div>
+  return `<div class="r" style="flex-wrap:wrap"><div class="grow" style="min-width:60%">${esc(x.id)}${self?' (deg)':''}<br><span class="tag ${adm?'':'m'}">${adm?'Administrator':x.leder?ltName(x):leader?'Gruppeleder':'Medlem'}</span>${x.leder&&leader?' <span class="tag">Gruppeleder</span>':''}${x.leder?ltSelect(x):''}</div>
    <details ${state.ugOpen===x.id?'open':''} style="flex-basis:100%"><summary class="small" style="cursor:pointer">Grupper (${(x.groups||[]).length})${(x.groups||[]).length?': '+esc((x.groups||[]).map(gName).join(', ')):''}</summary><div style="display:grid;gap:6px;margin:6px 0">${GROUPS.map(g=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:14px"><input type="checkbox" data-ug="${esc(x.id)}" data-gid="${g[0]}" style="width:22px;height:22px;flex:none" ${(x.groups||[]).includes(g[0])?'checked':''}>${esc(gLabel(g[0]))}</label>`).join('')}</div></details>
    ${adm?'':`<details ${state.ulOpen===x.id?'open':''} style="flex-basis:100%"><summary class="small" style="cursor:pointer">Leder for (${(x.leads||[]).length})${(x.leads||[]).length?': '+esc((x.leads||[]).map(gName).join(', ')):''}</summary><div class="small" style="margin:4px 0">Kan publisere nyheter, arrangementer og varsler, men bare til gruppene som er avkrysset. Personen legges også inn i gruppen.</div><div style="display:grid;gap:6px;margin:6px 0">${GROUPS.map(g=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:14px"><input type="checkbox" data-ul="${esc(x.id)}" data-gid="${g[0]}" style="width:22px;height:22px;flex:none" ${(x.leads||[]).includes(g[0])?'checked':''}>${esc(gLabel(g[0]))}</label>`).join('')}</div></details>`}
    <div class="btns"><button class="btn" data-memreset="${esc(x.id)}">Nytt passord</button>${adm||self?'':`<button class="btn" data-ledertoggle="${esc(x.id)}" data-on="${x.leder?'0':'1'}">${x.leder?'Fjern lederrolle':'Gjør til leder'}</button>`}${self?'':`<button class="btn" data-memrole="${esc(x.id)}" data-to="${adm?'member':'admin'}">${adm?'Gjør til medlem':'Gjør til admin'}</button><button class="btn" data-memdel="${esc(x.id)}">Fjern</button>`}</div></div>`};
@@ -519,6 +520,50 @@ function grpDel(id){
     catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}});
   dlg.showModal();
 }
+/* Lederkategorier (Hovedledere, Ungdomsledere, Forkynnere og egne): deler opp rollen «Leder» under Brukere. Lagres i samlingen leaderTypes første gang administrator endrer noe. */
+const LTYPES_DEFAULT=[['hoved','Hovedledere'],['ungdom','Ungdomsledere'],['forkynner','Forkynnere']];
+const LTYPES=LTYPES_DEFAULT.map(t=>t.slice());
+function applyLtypes(l){
+  const src=l&&l.length?l.slice().sort((a,b)=>((a.ord==null?999:a.ord)-(b.ord==null?999:b.ord))||String(a.name).localeCompare(String(b.name))).map(t=>[t.id,t.name]):LTYPES_DEFAULT.map(t=>t.slice());
+  LTYPES.length=0;src.forEach(t=>LTYPES.push(t));state.ltDb=!!(l&&l.length)}
+const ltOf=x=>LTYPES.some(t=>t[0]===x.ltype)?x.ltype:LTYPES[0][0];
+const ltName=x=>(LTYPES.find(t=>t[0]===ltOf(x))||['','Leder'])[1];
+const ltSelect=x=>'<label class="small" style="display:block;margin-top:4px">Lederkategori <select data-ltsel="'+esc(x.id)+'" style="width:auto;padding:4px 8px">'+LTYPES.map(t=>'<option value="'+esc(t[0])+'" '+(ltOf(x)===t[0]?'selected':'')+'>'+esc(t[1])+'</option>').join('')+'</select></label>';
+async function ltSeed(){
+  if(state.ltDb)return;
+  let i=0;for(const t of LTYPES_DEFAULT)await FB.setLtypeDoc(t[0],{name:t[1],ord:i++});
+  applyLtypes(await FB.ltypesList())}
+function ltAsk(id){
+  if(!FB)return;
+  const t=id?LTYPES.find(x=>x[0]===id):null,dlg=document.createElement('dialog');dlg.className='lp';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(t?'Endre lederkategori':'Ny lederkategori')+'</h3><label class="f">Navn (for eksempel «Forkynnere»)<input id="ltN" maxlength="40" value="'+esc(t?t[1]:'')+'"></label><p class="small" role="status" id="ltMsg" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(e.submitter&&e.submitter.value!=='lagre')return;
+    e.preventDefault();
+    const n=dlg.querySelector('#ltN').value.trim().replace(/\s+/g,' ');
+    if(!n){dlg.querySelector('#ltMsg').textContent='Skriv et navn.';return}
+    if(LTYPES.some(x=>x[0]!==id&&x[1].toLowerCase()===n.toLowerCase())){dlg.querySelector('#ltMsg').textContent='Det finnes allerede en kategori med dette navnet.';return}
+    try{
+      await ltSeed();
+      if(t)await FB.setLtypeDoc(id,{name:n});
+      else{let nid=slug(n),k=2;while(LTYPES.some(x=>x[0]===nid))nid=slug(n)+(k++);await FB.setLtypeDoc(nid,{name:n,ord:LTYPES.length});state.acc['lt_'+nid]=true}
+      state.acc.b_ld=true;dlg.close();await refresh();push(t?'Navnet er endret':'Kategorien er opprettet',n)}
+    catch(er){dlg.querySelector('#ltMsg').textContent=saveMsg(er&&er.code)+' (Er de nye reglene publisert i Firebase?)'}});
+  dlg.addEventListener('close',()=>dlg.remove());
+  dlg.showModal();
+}
+async function ltDel(id){
+  const t=LTYPES.find(x=>x[0]===id);if(!t)return;
+  if(LTYPES.length<2){push('Ikke mulig','Det må finnes minst én lederkategori.');return}
+  const hit=members.filter(x=>x.leder&&ltOf(x)===id),til=LTYPES.find(x=>x[0]!==id);
+  if(!confirm('Slette lederkategorien «'+t[1]+'»?'+(hit.length?'\n\n'+hit.length+' leder'+(hit.length===1?'':'e')+' flyttes til «'+til[1]+'». De er fortsatt ledere.':'')))return;
+  try{
+    await ltSeed();
+    for(const u of hit)await FB.setLtype(u.id,til[0]);
+    await FB.delLtypeDoc(id);await refresh();push('Kategorien er slettet','«'+t[1]+'» er fjernet.')}
+  catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}
+}
 function memberCard(){
   const me=state.user?state.user.email:'';
   const adms=members.filter(x=>x.role==='admin'),lds=members.filter(x=>x.role!=='admin'&&x.leder),leds=members.filter(x=>x.role!=='admin'&&!x.leder&&(x.leads||[]).length),meds=members.filter(x=>x.role!=='admin'&&!x.leder&&!(x.leads||[]).length);
@@ -530,8 +575,10 @@ function memberCard(){
   <p class="small" style="margin:0 0 4px">Åpne riktig rolle for å legge til en ny bruker. Personen får en e-post og velger passord selv.</p>
   <p class="small" role="status" style="margin:0 0 6px">${esc(state.memMsg)}</p>
   ${sec('b_adm','Administratorer',adms.length,skjema('memA','<b>Ny administrator.</b> Kan endre alt innhold og alle brukere, og sende varsler til alle. Gi bare denne rollen til dem som trenger den.','','Legg til administrator')+liste(adms))}
-  ${sec('b_ld','Ledere',lds.length,skjema('memLd','<b>Ny leder.</b> Ser ledersamlinger og innhold for ledere. Kan ikke publisere. Vil du la personen publisere for bestemte grupper, bruker du «Gruppeledere» under.','','Legg til leder')+liste(lds))}
-  ${sec('b_led','Gruppeledere',leds.length,skjema('memL','<b>Ny gruppeleder.</b> Et medlem som kan publisere nyheter, arrangementer og varsler, men bare for gruppene hen leder.',grBoks(state.memGL,'Leder for (velg minst én)'),'Legg til gruppeleder')+liste(leds))}
+  ${sec('b_ld','Ledere',lds.length+leds.length,
+    LTYPES.map(t=>{const l=lds.filter(x=>ltOf(x)===t[0]);return sec('lt_'+t[0],t[1],l.length,skjema('memLd_'+t[0],'<b>Ny i «'+esc(t[1])+'».</b> Ser ledersamlinger og innhold for ledere. Kan ikke publisere.','','Legg til i '+esc(t[1]))+'<div class="btns" style="margin:0 0 8px"><button class="btn" data-ltedit="'+esc(t[0])+'">Endre navn</button><button class="btn" data-ltdel="'+esc(t[0])+'">Slett kategorien</button></div>'+liste(l))}).join('')
+    +sec('b_led','Gruppeledere',leds.length,skjema('memL','<b>Ny gruppeleder.</b> Et medlem som kan publisere nyheter, arrangementer og varsler, men bare for gruppene hen leder.',grBoks(state.memGL,'Leder for (velg minst én)'),'Legg til gruppeleder')+liste(leds))
+    +'<button class="btn primary" data-ltnew style="width:auto;margin-top:8px">+ Ny lederkategori</button>')}
   ${sec('b_med','Medlemmer',meds.length,skjema('memM','<b>Nytt medlem.</b> Ser medlemsinnhold og innhold for gruppene hen er med i.',grBoks(state.memGM,'Med i grupper (valgfritt)'),'Legg til medlem')+liste(meds))}
   </details>`}
 
@@ -751,6 +798,9 @@ document.addEventListener('click',async e=>{
     try{await FB.leaderRemove(em,g);state.lgMsg=em+' er fjernet fra '+gName(g)+'.';state.acc['mg_'+g]=true;state.acc.mingr=true}catch(er){state.lgMsg=saveMsg(er.code)}
     await refresh()}
   else if(c.dataset.rscopy){const [i,t,d]=c.dataset.rscopy.split('|');try{await navigator.clipboard.writeText(rsText(i,t,d));push('Kopiert','Listen over påmeldte er kopiert.')}catch(x){push('Kunne ikke kopiere','Bruk «Send på e-post» i stedet.')}}
+  else if('ltnew' in c.dataset){ltAsk(null)}
+  else if(c.dataset.ltedit){ltAsk(c.dataset.ltedit)}
+  else if(c.dataset.ltdel){ltDel(c.dataset.ltdel)}
   else if('pubnew' in c.dataset){pubAsk()}
   else if('grpnew' in c.dataset){grpAsk(null)}
   else if(c.dataset.grpedit){grpAsk(c.dataset.grpedit)}
@@ -824,20 +874,20 @@ document.addEventListener('submit',async e=>{
     catch(er){melding=(asNews?'Nyheten er lagt ut, men v':'V')+'arselet kunne ikke sendes (ingen kontakt med varseltjenesten). Prøv igjen om litt.'}
     if(asNews)await load().catch(()=>{});
     keep(()=>state.pushSendMsg=melding)}
-  else if(f.id==='memA'||f.id==='memLd'||f.id==='memL'||f.id==='memM'){e.preventDefault();
+  else if(f.id==='memA'||f.id.startsWith('memLd')||f.id==='memL'||f.id==='memM'){e.preventDefault();
     const suff=f.id.slice(3),m=$('#mE'+suff).value.trim().toLowerCase(),role=f.id==='memA'?'admin':'member';
     const gr=[...f.querySelectorAll('[data-newg]')].filter(x=>x.checked).map(x=>x.dataset.newg);
     if(f.id==='memL'&&!gr.length){keep(()=>{state['memE'+suff]=m;state.memMsg='Velg minst én gruppe personen skal lede.'});return}
     if(role==='admin'&&!confirm('Gi '+m+' full tilgang som administrator?\n\nAdministratorer kan endre alt innhold, alle brukere og sende varsler til alle.'))return;
     try{
       const r=await FB.addUser(m,role);
-      if(f.id==='memLd')await FB.setLeder(m,true);
+      if(f.id.startsWith('memLd')){await FB.setLeder(m,true);await FB.setLtype(m,f.id.slice(6))}
       else if(f.id==='memL')await FB.setLeads(m,gr,gr);
       else if(f.id==='memM'&&gr.length)await FB.setGroups(m,'member',gr);
       state['memE'+suff]='';state.memGL=[];state.memGM=[];
-      const hva=role==='admin'?'administrator':f.id==='memLd'?'leder':f.id==='memL'?'gruppeleder for '+gr.map(gName).join(', '):'medlem';
+      const hva=role==='admin'?'administrator':f.id.startsWith('memLd')?'leder':f.id==='memL'?'gruppeleder for '+gr.map(gName).join(', '):'medlem';
       state.memMsg=(r.created?'Bruker opprettet som ':m+' hadde allerede en konto og er lagt inn som ')+hva+'.'+(r.created?' '+m+' har fått en e-post for å velge passord.':'');
-      state.acc[f.id==='memA'?'b_adm':f.id==='memLd'?'b_ld':f.id==='memL'?'b_led':'b_med']=true;
+      state.acc[f.id==='memA'?'b_adm':f.id.startsWith('memLd')?'b_ld':f.id==='memL'?'b_led':'b_med']=true;if(f.id.startsWith('memLd'))state.acc['lt_'+f.id.slice(6)]=true;
     }catch(er){state['memE'+suff]=m;state.memMsg=er.code==='auth/admin-restricted-operation'?'Registrering er slått av i Firebase (Authentication → Settings → User actions).':er.code==='auth/invalid-email'?'Ugyldig e-postadresse.':saveMsg(er.code)}
     await refresh()}
   else if(f.id==='pw'){e.preventDefault();
@@ -1106,6 +1156,7 @@ async function loadSnaps(){
 document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
+  if('ltsel' in d){try{await FB.setLtype(d.ltsel,e.target.value);const u=members.find(m=>m.id===d.ltsel);if(u)u.ltype=e.target.value;state.acc.b_ld=true;state.memMsg=d.ltsel+' er flyttet til «'+(LTYPES.find(t=>t[0]===e.target.value)||['',''])[1]+'».'}catch(er){state.memMsg=saveMsg(er.code)}keep(()=>{});return}
   if(e.target.name==='viewmode'){const v=e.target.value;setView(v);if(v==='leder'){viewOpts()}else $('#viewDlg').close();await refresh();return}
   if('vl' in d){const sg=new Set(state.vl);e.target.checked?sg.add(d.vl):sg.delete(d.vl);if(!sg.size){e.target.checked=true;return}state.vl=[...sg];setView('leder');await refresh();viewOpts();return}
   if(e.target.id==='psMal'){state.psMal=e.target.value;const bx=$('#psGrBox');if(bx)bx.hidden=state.psMal!=='grupper';return}

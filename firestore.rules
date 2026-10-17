@@ -57,6 +57,11 @@ service cloud.firestore {
       allow read: if isAdmin() || isLeader();
     }
 
+    // Lederkategorier (Hovedledere, Ungdomsledere, Forkynnere ...): bare administratorer.
+    match /leaderTypes/{id} {
+      allow read, write: if isAdmin();
+    }
+
     // Kategorier for arrangementer og faste samlinger: alle kan lese, bare administratorer endrer.
     match /categories/{id} {
       allow read: if true;

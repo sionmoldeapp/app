@@ -190,6 +190,11 @@ try{
     async myLeads(email){try{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()?(s.data().leads||[]):[]}catch(e){return []}},
     // Rollen «Leder»: feltet leder på oppføringen i members. Gir innsyn i ledersamlinger og innhold for ledere, men ikke rett til å publisere.
     async myLeder(email){try{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()&&s.data().leder===true}catch(e){return false}},
+    // Lederkategorier (samlingen leaderTypes) og hvilken kategori en leder tilhører (feltet ltype).
+    async ltypesList(){const s=await S.getDocs(S.collection(db,'leaderTypes'));return s.docs.map(d=>({id:d.id,...d.data()}))},
+    setLtypeDoc:(id,d)=>S.setDoc(S.doc(db,'leaderTypes',id),d,{merge:true}),
+    delLtypeDoc:id=>S.deleteDoc(S.doc(db,'leaderTypes',id)),
+    setLtype:(email,ltype)=>S.updateDoc(S.doc(db,'members',email),{ltype}),
     setLeder:(email,v)=>S.updateDoc(S.doc(db,'members',email),{leder:!!v}),
     setLeads:(email,leads,groups)=>S.updateDoc(S.doc(db,'members',email),{leads,groups}),
     setGroups:(email,role,groups)=>S.updateDoc(S.doc(db,role==='admin'?'admins':'members',email),{groups}),
@@ -199,7 +204,7 @@ try{
     // Brukere = administratorer (samlingen admins) og medlemmer (samlingen members). Adressen er dokument-ID.
     async listUsers(){
       const [m,a]=await Promise.all([S.getDocs(S.collection(db,'members')),S.getDocs(S.collection(db,'admins'))]);
-      return a.docs.map(d=>({id:d.id,role:'admin',groups:d.data().groups||[],leads:[]})).concat(m.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],leads:d.data().leads||[],leder:d.data().leder===true}))).sort((x,y)=>x.id<y.id?-1:1);
+      return a.docs.map(d=>({id:d.id,role:'admin',groups:d.data().groups||[],leads:[]})).concat(m.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],leads:d.data().leads||[],leder:d.data().leder===true,ltype:d.data().ltype||''}))).sort((x,y)=>x.id<y.id?-1:1);
     },
     // Gruppeleder: medlemmer i egne grupper, legge til (oppretter kontoen hvis personen er ny) og fjerne fra en gruppe.
     async leaderMembers(leads){const s=await S.getDocs(S.collection(db,'members'));return s.docs.map(d=>({id:d.id,groups:d.data().groups||[]})).filter(u=>u.groups.some(g=>leads.includes(g))).sort((a,b)=>a.id<b.id?-1:1)},
