@@ -59,6 +59,10 @@ try{
       await S.deleteDoc(S.doc(db,'members',email));
       await A.deleteUser(u);
     },
+    // Visninger av nyheter (postViews) og antall telefoner med varsler på (bare administrator).
+    async view(id){const ref=S.doc(db,'postViews',id),s=await S.getDoc(ref);if(s.exists())await S.updateDoc(ref,{n:S.increment(1)});else await S.setDoc(ref,{n:1})},
+    async viewCounts(){const s=await S.getDocs(S.collection(db,'postViews'));const o={};s.docs.forEach(d=>o[d.id]=d.data().n||0);return o},
+    async pushCount(){const s=await S.getDocs(S.collection(db,'pushTokens'));return s.size},
     // Planlagte varsler (samlingen scheduled): Apps Script sender dem når fireAt er passert.
     addScheduled:d=>S.addDoc(S.collection(db,'scheduled'),{...d,by:auth.currentUser.email,created:S.serverTimestamp()}),
     // Kategorier (samlingen categories): navn og rekkefølge.

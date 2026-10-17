@@ -170,7 +170,7 @@ $('#today').textContent=cap(DAYS[now.getDay()])+' '+now.getDate()+'. '+MON[now.g
 /* Innhold hentes fra Firebase (Firestore). Hvis databasen er tom eller utilgjengelig, brukes
    JSON-filene i data/ som reserve. Innlogging og adminskjema bruker Firebase Authentication. */
 let FB=null,usingFb=false;
-let events=[],posts=[],regular=[],rawEvents=[],members=[],leaderMem=[],counts={};
+let events=[],posts=[],regular=[],rawEvents=[],members=[],leaderMem=[],counts={},views={};
 const todayStart=new Date(now);todayStart.setHours(0,0,0,0);
 let seen=0;try{seen=+localStorage.getItem('sm-seen')||0}catch(e){}
 const markSeen=()=>{seen=Date.now();try{localStorage.setItem('sm-seen',String(seen))}catch(e){}posts.forEach(p=>p.read=true);state.unread=0};
@@ -198,6 +198,8 @@ async function load(){
   regular=g.filter(r=>canSeeCat(r.cat)&&visOK(r)).sort((a,b)=>((a.day+6)%7-(b.day+6)%7)||String(a.time).localeCompare(String(b.time)));
   counts=usingFb&&FB?await FB.counts().catch(()=>({})):{};
   members=state.admin&&FB?await FB.listUsers().catch(()=>[]):[];
+  views=canStats()&&FB&&usingFb?await FB.viewCounts().catch(()=>({})):{};
+  state.stat=state.admin&&FB&&usingFb?{push:await FB.pushCount().catch(()=>null)}:null;
   leaderMem=isLeader()&&FB?await FB.leaderMembers(state.leads).catch(()=>[]):[];
   state.unread=posts.filter(isNew).length;
 }
@@ -359,7 +361,7 @@ function regList(){
 function news(){
   const l=posts.map(p=>{
    if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
-   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}</span></div><h3>${esc(p.t)}</h3><div class="small" style="color:var(--ink)">${esc(p.b)}</div></div>`}).join('');
+   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3>${esc(p.t)}</h3><div class="small" style="color:var(--ink)">${esc(p.b)}</div></div>`}).join('');
   const kan=editOn();
   return `<h1>Nyheter</h1>${kan?'<button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>':''}<div class="list">${l||'<p class="small">Ingen nyheter ennå.</p>'}</div>${kan?'<div class="lpzone"></div>':''}`}
 
@@ -608,6 +610,28 @@ function deleteSelfAsk(){
   dlg.addEventListener('close',()=>dlg.remove());
   dlg.showModal();
 }
+/* Statistikk: hvor mange som har sett en nyhet (postViews, telles én gang per telefon) og en samlet oversikt for administrator. */
+const canStats=()=>state.view==='meg'&&(state.admin||isLeader());
+function countViews(){
+  if(!FB||!usingFb)return;
+  let sett={};try{sett=JSON.parse(localStorage.getItem('sm-viewed')||'{}')}catch(e){}
+  const nye=posts.filter(p=>!sett[p.id]&&!p.m||!sett[p.id]&&state.member);
+  nye.forEach(p=>{sett[p.id]=1;FB.view(p.id).catch(()=>{})});
+  if(nye.length)try{localStorage.setItem('sm-viewed',JSON.stringify(sett))}catch(e){}}
+function statCard(){
+  if(!state.admin||state.view!=='meg')return '';
+  const adm=members.filter(x=>x.role==='admin').length,led=members.filter(x=>x.role!=='admin'&&x.leder).length,gl=members.filter(x=>x.role!=='admin'&&!x.leder&&(x.leads||[]).length).length,med=members.length-adm-led-gl;
+  const kommende=events.slice(0,5),maks=Math.max(1,...kommende.map(e=>counts[e.id]||0));
+  const topp=posts.slice().sort((a,b)=>(views[b.id]||0)-(views[a.id]||0)).slice(0,3).filter(p=>views[p.id]);
+  const tall=(n,l)=>'<div style="text-align:center"><div style="font-size:26px;font-weight:700;line-height:1.1">'+n+'</div><div class="small">'+l+'</div></div>';
+  return '<details class="card acc" data-acc="oversikt" '+(state.acc.oversikt===false?'':'open')+'><summary><h2>Oversikt</h2></summary>'
+   +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:4px 0 12px">'+tall(members.length,'brukere')+tall(state.stat&&state.stat.push!=null?state.stat.push:'–','telefoner med varsler')+tall(events.length,'kommende arrangementer')+'</div>'
+   +'<p class="small" style="margin:0 0 10px">'+adm+' administratorer · '+led+' ledere · '+gl+' gruppeledere · '+med+' medlemmer · '+GROUPS.length+' grupper</p>'
+   +'<h3 style="margin:8px 0 6px;font-size:17px">Påmeldte på de neste arrangementene</h3>'
+   +(kommende.length?kommende.map(e=>{const n=counts[e.id]||0;return '<div style="margin:0 0 8px"><div style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(e.title)+' <span class="small">'+esc(e.start)+'</span></span><b>'+n+'</b></div><div style="height:8px;background:var(--line);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+Math.round(n/maks*100)+'%;background:var(--lamp)"></div></div></div>'}).join(''):'<p class="small">Ingen kommende arrangementer.</p>')
+   +'<h3 style="margin:14px 0 6px;font-size:17px">Mest sette nyheter</h3>'
+   +(topp.length?topp.map(p=>'<div style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(p.t)+'</span><b>'+(views[p.id]||0)+'</b></div>').join(''):'<p class="small">Tellingen starter nå. Hver telefon telles én gang per nyhet.</p>')
+   +'</details>'}
 function memberCard(onlyBody){
   const me=state.user?state.user.email:'';
   const q=norm(state.brQ).trim(),gf=state.brG,forced=!!(q||gf);
@@ -707,6 +731,7 @@ function me(){
   ${profileCard()}
   ${state.user?'<div class="card"><div class="row"><div class="grow"><b>Kom i gang</b><div class="small">Vis hjelpen for å installere appen og slå på varsler igjen.</div></div><button class="btn" data-komvis>Vis igjen</button></div></div>':''}
 
+  ${statCard()}
   ${state.view!=='meg'?'':state.admin?memberCard()+groupsCard()+snapCard():isLeader()?leaderGroups()+admin():''}`}
 
 const VIEWS={home,prog,news,me};
@@ -749,7 +774,7 @@ document.addEventListener('input',e=>{if(e.target.id==='brQ'){state.brQ=e.target
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
 document.addEventListener('click',async e=>{
   const c=e.target.closest('button');if(!c)return;
-  if(c.dataset.t){state.tab=c.dataset.t;if(state.tab==='news')markSeen();render()}
+  if(c.dataset.t){state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}render()}
   else if(c.id==='bellBtn'){state.tab='news';markSeen();render()}
   else if(c.dataset.ev){keep(()=>state.open[c.dataset.ev]=!state.open[c.dataset.ev])}
   else if(c.dataset.rsvp){

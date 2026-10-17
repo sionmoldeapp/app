@@ -53,6 +53,13 @@ service cloud.firestore {
       allow read: if isAdmin() || isLeader();
     }
 
+    // Antall som har sett en nyhet: alle kan telle opp med ett, bare administratorer og gruppeledere leser.
+    match /postViews/{id} {
+      allow read: if isAdmin() || isLeader();
+      allow create: if request.resource.data.keys().hasOnly(['n']) && request.resource.data.n == 1;
+      allow update: if request.resource.data.keys().hasOnly(['n']) && request.resource.data.n is int && request.resource.data.n - resource.data.n == 1;
+    }
+
     // Planlagte varsler: administratorer kan planlegge til alle, gruppeledere bare til egne grupper. Bare administratorer/scriptet leser og sletter.
     match /scheduled/{id} {
       allow create: if request.resource.data.keys().hasOnly(['title', 'body', 'tab', 'malType', 'groups', 'fireAt', 'by', 'created'])
