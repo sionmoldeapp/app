@@ -101,6 +101,12 @@ try{
       if(token)await S.deleteDoc(S.doc(db,'pushTokens',token));
     },
     // Sender varsel via Apps Script-tjenesten. Tjenesten sjekker innloggingsbeviset og at brukeren er administrator.
+    // Velkomst-e-post (Apps Script) til nylig opprettede brukere.
+    async sendWelcome(url,emails){
+      const idToken=await auth.currentUser.getIdToken(true);
+      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'velkomst',emails})});
+      return r.json();
+    },
     async sendPush(url,title,body,tab,mal){
       const idToken=await auth.currentUser.getIdToken(true);
       const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,title,body,tab,mal})});

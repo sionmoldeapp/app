@@ -319,6 +319,7 @@ function home(){
    <div class="meta">${when(n.w)}${tm(n)}${n.place?' · '+esc(n.place):''}</div>
    <div class="btns" style="margin-top:12px"><button class="btn" style="color:var(--ink)" data-rsvp="${n.id}" data-stay="1">${state.rsvp[n.id]?'✓ Jeg kommer':'Jeg kommer'}</button></div>${counts[n.id]>0?`<div class="meta" style="margin-top:8px">${counts[n.id]} kommer</div>`:''}</div>`
   :`<div class="card next"><div class="eyebrow">Neste samling</div><h2>Ingen planlagt</h2><div class="meta">Se faste samlinger under Program.</div></div>`}
+  ${welcomeCard()}
   ${post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b>${esc(post.t)}</b><span class="small">${esc(post.b)}</span></div></div>`:''}
   ${wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:''}
   ${svCard()}
@@ -564,6 +565,21 @@ async function ltDel(id){
     await FB.delLtypeDoc(id);await refresh();push('Kategorien er slettet','«'+t[1]+'» er fjernet.')}
   catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}
 }
+/* «Kom i gang» for innloggede (Hjem): installere, slå på varsler. Skjules for godt med «Skjul». */
+function welcomeCard(){
+  if(!state.user||lsGet('sm-kom'))return '';
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent),pushOn=!!lsGet('sm-push');
+  return `<div class="card"><div class="eyebrow">Kom i gang</div><h2 style="margin:4px 0 8px">Velkommen!</h2>
+  <ol class="small" style="margin:0 0 10px;padding-left:20px;display:grid;gap:6px;color:var(--ink)">
+   <li><b>Legg appen på telefonen.</b> ${ios?'Trykk på Del-ikonet i Safari og velg «Legg til på Hjem-skjerm».':'Trykk på menyen (tre prikker) i Chrome og velg «Installer app».'}</li>
+   <li><b>Slå på varsler</b> for å få beskjed om nyheter og endringer.${pushOn?' ✓ Er på.':''}</li>
+   <li><b>Bytt passord</b> hvis du vil, under Meg.</li></ol>
+  <div class="btns">${!pushOn&&state.pushOk?'<button class="btn primary" data-pushon style="width:auto">Slå på varsler</button>':''}<button class="btn" data-komskjul>Skjul</button></div></div>`}
+/* Sender velkomst-e-post til nylig opprettede brukere via varseltjenesten. Returnerer en kort tekst til meldingen. */
+async function velkomst(liste){
+  if(!PUSH_URL||!liste.length||!FB)return '';
+  try{const r=await FB.sendWelcome(PUSH_URL,liste);return r.ok?' Velkomst-e-post sendt.':' Velkomst-e-post ikke sendt: '+r.feil}
+  catch(er){return ' Velkomst-e-posten kunne ikke sendes.'}}
 function memberCard(onlyBody){
   const me=state.user?state.user.email:'';
   const q=norm(state.brQ).trim(),gf=state.brG,forced=!!(q||gf);
@@ -809,6 +825,7 @@ document.addEventListener('click',async e=>{
   else if('ltnew' in c.dataset){ltAsk(null)}
   else if(c.dataset.ltedit){ltAsk(c.dataset.ltedit)}
   else if(c.dataset.ltdel){ltDel(c.dataset.ltdel)}
+  else if('komskjul' in c.dataset){lsSet('sm-kom','1');keep(()=>{})}
   else if('pubnew' in c.dataset){pubAsk()}
   else if('grpnew' in c.dataset){grpAsk(null)}
   else if(c.dataset.grpedit){grpAsk(c.dataset.grpedit)}
@@ -855,7 +872,7 @@ document.addEventListener('submit',async e=>{
   if(f.dataset&&f.dataset.lgform){e.preventDefault();
     const g=f.dataset.lgform,m=f.querySelector('input').value.trim().toLowerCase();
     if(!(state.leads||[]).includes(g))return;
-    try{const r=await FB.leaderAdd(m,g);state.lgMsg=m+(r.created?' er lagt til som medlem i '+gName(g)+(r.account?' og har fått en e-post for å velge passord.':'.'):' er lagt til i '+gName(g)+'.');state.acc['mg_'+g]=true;state.acc.mingr=true}
+    try{const r=await FB.leaderAdd(m,g);state.lgMsg=m+(r.created?' er lagt til som medlem i '+gName(g)+(r.account?' og har fått en e-post for å velge passord.'+await velkomst([m]):'.'):' er lagt til i '+gName(g)+'.');state.acc['mg_'+g]=true;state.acc.mingr=true}
     catch(er){state.lgMsg=er.code==='auth/invalid-email'?'Ugyldig e-postadresse.':er.code==='auth/admin-restricted-operation'?'Registrering er slått av i Firebase.':saveMsg(er.code)}
     await refresh();return}
   if(f.id==='login'){e.preventDefault();
@@ -896,8 +913,9 @@ document.addEventListener('submit',async e=>{
         else{await FB.addUser(m,'member');if(gr.length)await FB.setGroups(m,'member',gr);nye.push(m)}}
       catch(er){feil.push(m)}}
     const rest=[...ugyldige,...feil];
+    const vk=await velkomst(nye);
     state.memBulk=rest.join('\n');state.memGB=[];state.acc.b_bulk=true;state.acc.b_med=true;
-    state.memMsg=[nye.length?nye.length+' lagt til som medlem'+(nye.length===1?'':'mer')+' (nye får e-post for å velge passord)':'',fantes.length?fantes.length+' fantes fra før':'',ugyldige.length?ugyldige.length+' ugyldig'+(ugyldige.length===1?'':'e')+' adresse'+(ugyldige.length===1?'':'r'):'',feil.length?feil.length+' feilet':''].filter(Boolean).join(', ')+'.'+(rest.length?' De som ikke gikk gjennom, står igjen i feltet.':'');
+    state.memMsg=[nye.length?nye.length+' lagt til som medlem'+(nye.length===1?'':'mer')+' (nye får e-post for å velge passord)':'',fantes.length?fantes.length+' fantes fra før':'',ugyldige.length?ugyldige.length+' ugyldig'+(ugyldige.length===1?'':'e')+' adresse'+(ugyldige.length===1?'':'r'):'',feil.length?feil.length+' feilet':''].filter(Boolean).join(', ')+'.'+vk+(rest.length?' De som ikke gikk gjennom, står igjen i feltet.':'');
     await refresh()}
   else if(f.id==='memA'||f.id.startsWith('memLd')||f.id==='memL'||f.id==='memM'){e.preventDefault();
     const suff=f.id.slice(3),m=$('#mE'+suff).value.trim().toLowerCase(),role=f.id==='memA'?'admin':'member';
@@ -911,7 +929,7 @@ document.addEventListener('submit',async e=>{
       else if(f.id==='memM'&&gr.length)await FB.setGroups(m,'member',gr);
       state['memE'+suff]='';state.memGL=[];state.memGM=[];
       const hva=role==='admin'?'administrator':f.id.startsWith('memLd')?'leder':f.id==='memL'?'gruppeleder for '+gr.map(gName).join(', '):'medlem';
-      state.memMsg=(r.created?'Bruker opprettet som ':m+' hadde allerede en konto og er lagt inn som ')+hva+'.'+(r.created?' '+m+' har fått en e-post for å velge passord.':'');
+      state.memMsg=(r.created?'Bruker opprettet som ':m+' hadde allerede en konto og er lagt inn som ')+hva+'.'+(r.created?' '+m+' har fått en e-post for å velge passord.'+await velkomst([m]):'');
       state.acc[f.id==='memA'?'b_adm':f.id.startsWith('memLd')?'b_ld':f.id==='memL'?'b_led':'b_med']=true;if(f.id.startsWith('memLd'))state.acc['lt_'+f.id.slice(6)]=true;
     }catch(er){state['memE'+suff]=m;state.memMsg=er.code==='auth/admin-restricted-operation'?'Registrering er slått av i Firebase (Authentication → Settings → User actions).':er.code==='auth/invalid-email'?'Ugyldig e-postadresse.':saveMsg(er.code)}
     await refresh()}
