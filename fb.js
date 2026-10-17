@@ -48,6 +48,17 @@ try{
     setRsvpDoc:(id,d)=>S.setDoc(S.doc(db,'rsvps',id),{...d,created:S.serverTimestamp()}),
     delRsvpDoc:id=>S.deleteDoc(S.doc(db,'rsvps',id)),
     async rsvpList(eventId){const s=await S.getDocs(S.query(S.collection(db,'rsvps'),S.where('eventId','==',eventId)));return s.docs.map(d=>{const x=d.data();return {id:d.id,name:x.name||'',contact:x.contact||'',ms:x.created&&x.created.toMillis?x.created.toMillis():0}}).sort((a,b)=>a.ms-b.ms)},
+    // Egen profil: navn og gruppevarsler en ikke vil ha (muted). Sletting av seg selv: konto, medlemskap og varselkode.
+    async myProfile(email){try{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()?{name:s.data().name||'',muted:s.data().muted||[]}:null}catch(e){return null}},
+    setProfile:(email,d)=>S.updateDoc(S.doc(db,'members',email),d),
+    async deleteSelf(password){
+      const u=auth.currentUser,email=u.email.toLowerCase();
+      await A.reauthenticateWithCredential(u,A.EmailAuthProvider.credential(u.email,password));
+      let tk='';try{tk=localStorage.getItem('sm-push')||''}catch(e){}
+      if(tk){try{await S.deleteDoc(S.doc(db,'pushTokens',tk))}catch(e){}}
+      await S.deleteDoc(S.doc(db,'members',email));
+      await A.deleteUser(u);
+    },
     // Planlagte varsler (samlingen scheduled): Apps Script sender dem når fireAt er passert.
     addScheduled:d=>S.addDoc(S.collection(db,'scheduled'),{...d,by:auth.currentUser.email,created:S.serverTimestamp()}),
     // Kategorier (samlingen categories): navn og rekkefølge.

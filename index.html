@@ -272,7 +272,7 @@ const remHint=id=>`<div class="small">${state.rem[id]?'Du får et varsel ett dø
 function openRsvp(id){
   const ev=rsEv(id);if(!ev)return;
   rsPending=id;$('#rsT').textContent='Jeg kommer: '+ev.title;
-  $('#rsN').value=lsGet('sm-navn');$('#rsK').value=lsGet('sm-kontakt')||(state.user?state.user.email:'');
+  $('#rsN').value=lsGet('sm-navn')||(state.profile&&state.profile.name)||'';$('#rsK').value=lsGet('sm-kontakt')||(state.user?state.user.email:'');
   $('#rsDlg').showModal();$('#rsN').focus();
 }
 const rsDocId=id=>{let d=lsGet('sm-dev');if(!d){d=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now()).replace(/[^A-Za-z0-9]/g,'').slice(0,24);lsSet('sm-dev',d)}return String(id).replace(/[^A-Za-z0-9_-]/g,'')+'_'+d};
@@ -585,6 +585,29 @@ async function velkomst(liste){
   if(!PUSH_URL||!liste.length||!FB)return '';
   try{const r=await FB.sendWelcome(PUSH_URL,liste);return r.ok?' Velkomst-e-post sendt.':' Velkomst-e-post ikke sendt: '+r.feil}
   catch(er){return ' Velkomst-e-posten kunne ikke sendes.'}}
+/* Min profil (innloggede medlemmer): navn, hvilke gruppevarsler en vil ha, og slette seg selv. */
+function profileCard(){
+  if(!state.user||!state.member||state.admin||!state.profile)return '';
+  const p=state.profile,gs=state.groups||[];
+  return '<details class="card acc" data-acc="profil" '+(state.acc.profil?'open':'')+'><summary><h2>Min profil</h2></summary>'
+   +'<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre navn</button>'
+   +'<h3 style="margin:16px 0 4px;font-size:18px">Varsler fra gruppene mine</h3>'
+   +(gs.length?'<p class="small" style="margin:0 0 8px">Fjern haken for å slippe varsler som sendes bare til en gruppe. Du blir stående i gruppen.</p><div style="display:grid;gap:6px">'+gs.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-prmute="'+esc(g)+'" style="width:22px;height:22px;flex:none" '+((p.muted||[]).includes(g)?'':'checked')+'>'+esc(gName(g))+'</label>').join('')+'</div>':'<p class="small" style="margin:0">Du er ikke med i noen grupper ennå.</p>')
+   +'<h3 style="margin:16px 0 4px;font-size:18px">Slett meg</h3><p class="small" style="margin:0 0 8px">Fjerner kontoen din, medlemskapet og varselkoden på denne telefonen. Dette kan ikke angres. Du kan alltid bli lagt til igjen av en leder.</p><button class="btn danger" data-prdel>Slett meg og dataene mine</button>'
+   +'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
+function deleteSelfAsk(){
+  const dlg=document.createElement('dialog');dlg.className='lp';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Slette deg selv?</h3><p class="small" style="margin:0">Kontoen, medlemskapet og varselkoden fjernes. Det kan ikke angres. Skriv passordet ditt for å bekrefte.</p><label class="f">Passord<input id="dsP" type="password" autocomplete="current-password"></label><p class="small" role="status" id="dsMsg" style="margin:0"></p><div class="btns"><button class="btn danger" value="slett">Slett meg</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='slett')return;
+    e.preventDefault();
+    const pw=dlg.querySelector('#dsP').value;if(!pw){dlg.querySelector('#dsMsg').textContent='Skriv passordet.';return}
+    try{await FB.deleteSelf(pw);lsSet('sm-push','');dlg.close();push('Du er slettet','Kontoen din er fjernet.')}
+    catch(er){dlg.querySelector('#dsMsg').textContent=er&&(er.code==='auth/invalid-credential'||er.code==='auth/wrong-password')?'Passordet er feil.':'Kunne ikke slette ('+((er&&er.code)||'feil')+').'}});
+  dlg.addEventListener('close',()=>dlg.remove());
+  dlg.showModal();
+}
 function memberCard(onlyBody){
   const me=state.user?state.user.email:'';
   const q=norm(state.brQ).trim(),gf=state.brG,forced=!!(q||gf);
@@ -681,6 +704,7 @@ function me(){
   const sw=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${state.prefs[k]}" aria-label="${l}" data-pref="${k}"></button></div>`;
   return `<h1>Meg</h1>${loginCard()}
   ${pushCard()}
+  ${profileCard()}
   ${state.user?'<div class="card"><div class="row"><div class="grow"><b>Kom i gang</b><div class="small">Vis hjelpen for å installere appen og slå på varsler igjen.</div></div><button class="btn" data-komvis>Vis igjen</button></div></div>':''}
 
   ${state.view!=='meg'?'':state.admin?memberCard()+groupsCard()+snapCard():isLeader()?leaderGroups()+admin():''}`}
@@ -831,6 +855,8 @@ document.addEventListener('click',async e=>{
   else if('ltnew' in c.dataset){ltAsk(null)}
   else if(c.dataset.ltedit){ltAsk(c.dataset.ltedit)}
   else if(c.dataset.ltdel){ltDel(c.dataset.ltdel)}
+  else if('prsave' in c.dataset){const n=($('#prN').value||'').trim();try{await FB.setProfile(state.user.email,{name:n});state.profile.name=n;if(n)lsSet('sm-navn',n);state.prMsg='Navnet er lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code)}keep(()=>{})}
+  else if('prdel' in c.dataset){deleteSelfAsk()}
   else if('komvis' in c.dataset){try{localStorage.removeItem('sm-kom')}catch(x){}state.tab='home';render();push('Kom i gang','Vises øverst på Hjem.')}
   else if('komskjul' in c.dataset){lsSet('sm-kom','1');keep(()=>{})}
   else if('pubnew' in c.dataset){pubAsk()}
@@ -1210,6 +1236,7 @@ async function loadSnaps(){
 document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
+  if('prmute' in d){const m=new Set(state.profile.muted||[]);e.target.checked?m.delete(d.prmute):m.add(d.prmute);try{await FB.setProfile(state.user.email,{muted:[...m]});state.profile.muted=[...m];state.prMsg='Lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code);e.target.checked=!e.target.checked}keep(()=>{});return}
   if('ltsel' in d){try{await FB.setLtype(d.ltsel,e.target.value);const u=members.find(m=>m.id===d.ltsel);if(u)u.ltype=e.target.value;state.acc.b_ld=true;state.memMsg=d.ltsel+' er flyttet til «'+(LTYPES.find(t=>t[0]===e.target.value)||['',''])[1]+'».'}catch(er){state.memMsg=saveMsg(er.code)}keep(()=>{});return}
   if(e.target.id==='brG'){state.brG=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
   if(e.target.name==='viewmode'){const v=e.target.value;setView(v);if(v==='leder'){viewOpts()}else $('#viewDlg').close();await refresh();return}
@@ -1246,6 +1273,7 @@ async function start(){
     state.groups=u&&state.member?await FB.myGroups(u.email):[];
     state.leads=u&&state.member&&!state.admin?await FB.myLeads(u.email):[];
     state.leder=u&&state.member&&!state.admin?await FB.myLeder(u.email):false;
+    state.profile=u&&state.member&&!state.admin?await FB.myProfile(u.email):null;
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
     await load();
     if(first){first=false;if(state.tab==='news')markSeen();render()}else keep(()=>{});

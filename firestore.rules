@@ -112,6 +112,12 @@ service cloud.firestore {
       allow get: if signedIn() && request.auth.token.email == email || isAdmin() || isLeader();
       allow list: if isAdmin() || isLeader();
       allow write: if isAdmin();
+      // Hver bruker kan endre eget navn og hvilke gruppevarsler hen vil ha (name, muted), og slette seg selv (ikke administratorer).
+      allow update: if signedIn() && request.auth.token.email == email
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'muted'])
+        && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() <= 60))
+        && (!('muted' in request.resource.data) || (request.resource.data.muted is list && request.resource.data.muted.size() <= 30));
+      allow delete: if signedIn() && request.auth.token.email == email && !isAdmin();
       allow create: if isLeader()
         && request.resource.data.keys().hasOnly(['email', 'rolle', 'created', 'by', 'groups'])
         && request.resource.data.email == email
