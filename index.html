@@ -208,7 +208,7 @@ function ago(p){
 const cnt=id=>counts[id]>0?`<div class="small">${counts[id]} kommer</div>`:'';
 const tm=e=>e.time?' kl. '+e.time:'';
 const state={tab:'home',filter:'Alle',member:false,admin:false,user:null,rsvp:{},rem:{},open:{},
-  prefs:{Møter:true,Happeninger:true,Ungdom:false,Viktig:true},unread:0,sv:'',svE:'',pwMsg:'',leder:false,memELd:'',memEA:'',memEL:'',memEM:'',memGL:[],memGM:[],snaps:null,snapMsg:'',view:'meg',q:'',edit:true,real:null,vl:['activ8'],af:'Alle',acc:{},sel:{},groups:[],leads:[],ulOpen:'',psMal:'alle',psGr:[],ugOpen:'',backupMsg:'',pushMsg:'',pushSendMsg:'',psT:'',psB:'',psTab:'news',psNews:true,psHide:false,pushOk:false,memMsg:'',memE:'',memR:'member',adm:{type:'events',edit:null},msg:'',err:''};
+  prefs:{Møter:true,Happeninger:true,Ungdom:false,Viktig:true},unread:0,sv:'',svE:'',pwMsg:'',leder:false,memELd:'',memEA:'',memEL:'',memEM:'',memGL:[],memGM:[],snaps:null,snapMsg:'',view:'meg',rsList:{},q:'',edit:true,real:null,vl:['activ8'],af:'Alle',acc:{},sel:{},groups:[],leads:[],ulOpen:'',psMal:'alle',psGr:[],ugOpen:'',backupMsg:'',pushMsg:'',pushSendMsg:'',psT:'',psB:'',psTab:'news',psNews:true,psHide:false,pushOk:false,memMsg:'',memE:'',memR:'member',adm:{type:'events',edit:null},msg:'',err:''};
 try{Object.assign(state,JSON.parse(localStorage.getItem('sm-proto')||'{}'))}catch(e){}
 state.member=false;state.admin=false;state.user=null;try{state.edit=localStorage.getItem('sm-edit')!=='0'}catch(e){state.edit=true}
 {const dt=new URLSearchParams(location.search).get('tab');if(['home','prog','news','me'].includes(dt)){state.tab=dt;try{history.replaceState(null,'',location.pathname)}catch(e){}}}
@@ -239,7 +239,7 @@ function nextFast(){const out=[];
 const fastId=(r,w)=>'f_'+r.id+'_'+dkey(w);
 function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',note=ex&&ex.k==='endret'&&ex.note?ex.note:r.note;
   return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(r.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'?'<span class="tag avl" style="background:var(--lamp);color:#fff">Endret</span>':'<span class="tag">Fast</span>'}</button>
-   <div class="detail"><div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>${remHint(id)}${cnt(id)}`}</div></div>`}
+   <div class="detail"><div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>${remHint(id)}${cnt(id)}`}${rsPanel(id,r.title,dkey(w),[])}</div></div>`}
 function evItem(e){
   if(e.m&&!state.member)return `<div class="item"><div class="locked" style="padding:12px">${dateBox(e)}<div class="grow"><b>${e.t}</b><span class="small">Kun for medlemmer. Logg inn under «Meg».</span></div></div></div>`;
   const open=state.open[e.id],r=state.rsvp[e.id];
@@ -248,7 +248,7 @@ function evItem(e){
    ${e.m?'<span class="tag m">Medlem</span>':`<span class="tag">${esc(normCat(e.cat))}</span>`}</button>
    <div class="detail"><div>${e.d}</div><div class="small">${esc(e.who)}</div>
    <div class="btns"><button class="btn ${r?'on':''}" data-rsvp="${e.id}">${r?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(e.id)}
-   </div>${remHint(e.id)}${cnt(e.id)}</div></div>`}
+   </div>${remHint(e.id)}${cnt(e.id)}${rsPanel(e.id,e.title,e.start,e.groups)}</div></div>`}
 
 /* Påmeldingen går til Google Skjema «Sommerstevne påmeldinger nyhetsbrev». Svarene havner i et regneark i Drive,
    og scriptet i regnearket sender e-postvarsel. Google svarer ikke tilbake til nettsider, så vi kan ikke se om det lyktes. */
@@ -274,11 +274,30 @@ function openRsvp(id){
   $('#rsN').value=lsGet('sm-navn');$('#rsK').value=lsGet('sm-kontakt')||(state.user?state.user.email:'');
   $('#rsDlg').showModal();$('#rsN').focus();
 }
+const rsDocId=id=>{let d=lsGet('sm-dev');if(!d){d=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now()).replace(/[^A-Za-z0-9]/g,'').slice(0,24);lsSet('sm-dev',d)}return String(id).replace(/[^A-Za-z0-9_-]/g,'')+'_'+d};
+/* Oversikt over påmeldte (administrator, og gruppeleder for arrangementer i egne grupper): antall i overskriften, navnene i en rullegardin. */
+function rsText(id,titel,dato){const l=state.rsList[id]||[];return 'Påmeldte: '+titel+' ('+dato+')\n'+l.length+' navn\n\n'+l.map((u,i)=>(i+1)+'. '+u.name+(u.contact?' – '+u.contact:'')).join('\n')}
+function rsPanel(id,titel,dato,groups){
+  if(state.view!=='meg')return '';
+  const adm=state.admin,led=!adm&&(state.leads||[]).some(g=>(groups||[]).includes(g));
+  if(!adm&&!led)return '';
+  const l=state.rsList[id],n=counts[id]||0;
+  let inn;
+  if(l===undefined)inn='<p class="small">Henter listen …</p>';
+  else if(!l.length)inn='<p class="small">Ingen navn ennå.</p>';
+  else{
+    const mail='mailto:?subject='+encodeURIComponent('Påmeldte: '+titel+' ('+dato+')')+'&body='+encodeURIComponent(rsText(id,titel,dato));
+    inn='<div class="reg">'+l.map(u=>'<div class="r"><div class="grow">'+esc(u.name)+(u.contact?'<span class="small">'+esc(u.contact)+'</span>':'')+'</div></div>').join('')+'</div>'
+      +(l.length<n?'<p class="small">Navn finnes for påmeldinger som er gjort etter at oversikten kom. Tallet over er den samlede summen.</p>':'')
+      +'<div class="btns"><a class="btn" href="'+mail+'" style="display:inline-block;text-decoration:none;color:var(--ink)">Send på e-post</a><button class="btn" data-rscopy="'+esc(id)+'|'+esc(titel)+'|'+esc(dato)+'">Kopier listen</button></div>'}
+  return '<details class="acc sub" data-acc="rs_'+id+'" '+(state.acc['rs_'+id]?'open':'')+'><summary><b>Påmeldte: '+n+'</b></summary>'+inn+'</details>'}
+async function loadRs(id){try{state.rsList[id]=await FB.rsvpList(id)}catch(e){state.rsList[id]=[]}keep(()=>{})}
 async function setRsvp(id,on,navn,kontakt){
   const ev=rsEv(id);
   keep(()=>{state.rsvp[id]=on;save();if(usingFb)counts[id]=Math.max(0,(counts[id]||0)+(on?1:-1))});
   const nm=navn||lsGet('sm-navn');
   if(nm)fetch(RS_URL,{method:'POST',mode:'no-cors',body:new URLSearchParams({[RS.arr]:ev.title||'',[RS.dato]:(ev.start||'')+(ev.end?' – '+ev.end:''),[RS.navn]:nm,[RS.kontakt]:kontakt||lsGet('sm-kontakt'),[RS.svar]:on?'Kommer':'Kommer ikke'})}).catch(()=>{});
+  if(usingFb&&FB){try{if(on&&nm)await FB.setRsvpDoc(rsDocId(id),{eventId:String(id),title:ev.title||'',start:ev.start||'',name:nm,contact:kontakt||lsGet('sm-kontakt')||'',groups:ev.groups||[]});else if(!on)await FB.delRsvpDoc(rsDocId(id))}catch(x){}}
   if(usingFb&&FB)try{await FB.rsvp(id,on?1:-1)}catch(er){keep(()=>{state.rsvp[id]=!on;save();counts[id]=Math.max(0,(counts[id]||0)+(on?-1:1))});push('Kunne ikke lagre svaret','Prøv igjen om litt.')}
 }
 
@@ -731,6 +750,7 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.lgdel){const [em,g]=c.dataset.lgdel.split('|');if(!confirm('Fjerne '+em+' fra '+gName(g)+'?'))return;
     try{await FB.leaderRemove(em,g);state.lgMsg=em+' er fjernet fra '+gName(g)+'.';state.acc['mg_'+g]=true;state.acc.mingr=true}catch(er){state.lgMsg=saveMsg(er.code)}
     await refresh()}
+  else if(c.dataset.rscopy){const [i,t,d]=c.dataset.rscopy.split('|');try{await navigator.clipboard.writeText(rsText(i,t,d));push('Kopiert','Listen over påmeldte er kopiert.')}catch(x){push('Kunne ikke kopiere','Bruk «Send på e-post» i stedet.')}}
   else if('pubnew' in c.dataset){pubAsk()}
   else if('grpnew' in c.dataset){grpAsk(null)}
   else if(c.dataset.grpedit){grpAsk(c.dataset.grpedit)}
@@ -1083,7 +1103,7 @@ async function loadSnaps(){
   catch(e){state.snaps=[];state.snapMsg='Kunne ikke hente sikkerhetspunkter ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{});
 }
-document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps()}},true);
+document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
   if(e.target.name==='viewmode'){const v=e.target.value;setView(v);if(v==='leder'){viewOpts()}else $('#viewDlg').close();await refresh();return}

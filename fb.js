@@ -44,6 +44,10 @@ try{
     setFastEx:(id,ex)=>S.updateDoc(S.doc(db,'regular',id),{ex}),
     // Grupper (samlingen groups): navn og beskrivelse. Appen bruker innebygde standardgrupper til administrator redigerer første gang.
     async groupsList(){const s=await S.getDocs(S.collection(db,'groups'));return s.docs.map(d=>({id:d.id,...d.data()}))},
+    // Påmeldinger («Jeg kommer») med navn, lest av administratorer og gruppeledere. Dokument-ID = arrangement + enhet.
+    setRsvpDoc:(id,d)=>S.setDoc(S.doc(db,'rsvps',id),{...d,created:S.serverTimestamp()}),
+    delRsvpDoc:id=>S.deleteDoc(S.doc(db,'rsvps',id)),
+    async rsvpList(eventId){const s=await S.getDocs(S.query(S.collection(db,'rsvps'),S.where('eventId','==',eventId)));return s.docs.map(d=>{const x=d.data();return {id:d.id,name:x.name||'',contact:x.contact||'',ms:x.created&&x.created.toMillis?x.created.toMillis():0}}).sort((a,b)=>a.ms-b.ms)},
     // Kategorier (samlingen categories): navn og rekkefølge.
     async catsList(){const s=await S.getDocs(S.collection(db,'categories'));return s.docs.map(d=>({id:d.id,...d.data()}))},
     setCatDoc:(id,d)=>S.setDoc(S.doc(db,'categories',id),d,{merge:true}),

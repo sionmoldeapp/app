@@ -43,6 +43,20 @@ service cloud.firestore {
     // kan koble koden til sin egen e-post (email), og bare sin egen. Gruppene hentes fra brukerens oppføring i members/admins, aldri herfra. Koden er
     // dokument-ID og må ha lengde som en ekte FCM-kode. Å slette krever at man kjenner koden (den er hemmelig for enheten).
     // Bare administratorer kan lese listen eller sette grupper. Dette hindrer ikke at fremmede legger inn søppelkoder.
+    // Påmeldinger med navn («Jeg kommer»): alle kan melde seg på (og trekke seg), bare administratorer og gruppeledere leser listen.
+    match /rsvps/{id} {
+      allow create, update: if request.resource.data.keys().hasOnly(['eventId', 'title', 'start', 'name', 'contact', 'groups', 'created'])
+        && request.resource.data.eventId is string && request.resource.data.eventId.size() <= 80
+        && request.resource.data.name is string && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 80
+        && request.resource.data.contact is string && request.resource.data.contact.size() <= 120
+        && request.resource.data.title is string && request.resource.data.title.size() <= 200
+        && request.resource.data.start is string && request.resource.data.start.size() <= 20
+        && request.resource.data.groups is list && request.resource.data.groups.size() <= 20
+        && request.resource.data.created == request.time;
+      allow delete: if true;
+      allow read: if isAdmin() || isLeader();
+    }
+
     // Kategorier for arrangementer og faste samlinger: alle kan lese, bare administratorer endrer.
     match /categories/{id} {
       allow read: if true;
