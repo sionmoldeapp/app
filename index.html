@@ -676,6 +676,7 @@ function me(){
   const sw=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${state.prefs[k]}" aria-label="${l}" data-pref="${k}"></button></div>`;
   return `<h1>Meg</h1>${loginCard()}
   ${pushCard()}
+  ${state.user?'<div class="card"><div class="row"><div class="grow"><b>Kom i gang</b><div class="small">Vis hjelpen for å installere appen og slå på varsler igjen.</div></div><button class="btn" data-komvis>Vis igjen</button></div></div>':''}
 
   ${state.view!=='meg'?'':state.admin?memberCard()+groupsCard()+snapCard():isLeader()?leaderGroups()+admin():''}`}
 
@@ -825,6 +826,7 @@ document.addEventListener('click',async e=>{
   else if('ltnew' in c.dataset){ltAsk(null)}
   else if(c.dataset.ltedit){ltAsk(c.dataset.ltedit)}
   else if(c.dataset.ltdel){ltDel(c.dataset.ltdel)}
+  else if('komvis' in c.dataset){try{localStorage.removeItem('sm-kom')}catch(x){}state.tab='home';render();push('Kom i gang','Vises øverst på Hjem.')}
   else if('komskjul' in c.dataset){lsSet('sm-kom','1');keep(()=>{})}
   else if('pubnew' in c.dataset){pubAsk()}
   else if('grpnew' in c.dataset){grpAsk(null)}
