@@ -634,7 +634,7 @@ function statCard(){
    +(topp.length?topp.map(p=>'<div style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(p.t)+'</span><b>'+(views[p.id]||0)+'</b></div>').join(''):'<p class="small">Tellingen starter nå. Hver telefon telles én gang per nyhet.</p>')
    +'</details>'}
 /* Besøkende: tydelig invitasjon til å logge inn. Alle: «Slik installerer du appen». Ledere: «Del appen» med lenke og QR-kode. */
-const APP_LINK='https://sionapp2026.github.io/app/';
+const APP_LINK='https://sionmoldeapp.github.io/app/';
 function visitorCard(){
   if(state.user)return '';
   return '<div class="card"><div class="eyebrow">Medlem?</div><h2 style="margin:4px 0 6px">Logg inn for å få mer</h2>'
@@ -643,7 +643,7 @@ function visitorCard(){
 function installCard(){
   return '<details class="card acc" data-acc="installer" '+(state.acc.installer?'open':'')+'><summary><h2>Slik installerer du appen</h2></summary>'
    +'<p class="small" style="margin:0 0 8px">Da ligger appen på telefonen som en vanlig app, og du kan få varsler.</p>'
-   +'<h3 style="font-size:17px;margin:8px 0 4px">Android (Chrome)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne <b>sionapp2026.github.io/app</b> i Chrome.</li><li>Trykk på menyen (tre prikker) øverst til høyre.</li><li>Velg <b>Installer app</b>, og bekreft.</li></ol>'
+   +'<h3 style="font-size:17px;margin:8px 0 4px">Android (Chrome)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne <b>sionmoldeapp.github.io/app</b> i Chrome.</li><li>Trykk på menyen (tre prikker) øverst til høyre.</li><li>Velg <b>Installer app</b>, og bekreft.</li></ol>'
    +'<h3 style="font-size:17px;margin:8px 0 4px">iPhone (Safari)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne siden i <b>Safari</b> (ikke Chrome).</li><li>Trykk på Del-ikonet (firkant med pil opp).</li><li>Velg <b>Legg til på Hjem-skjerm</b>.</li></ol>'
    +'<h3 style="font-size:17px;margin:8px 0 4px">Varsler</h3><p class="small" style="margin:0">Åpne appen, gå til Meg → Varsler og trykk «Slå på varsler». På iPhone må appen ligge på Hjem-skjermen først.</p></details>'}
 function shareCard(){
