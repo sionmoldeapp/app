@@ -53,6 +53,16 @@ service cloud.firestore {
       allow read: if isAdmin() || isLeader();
     }
 
+    // Planlagte varsler: administratorer kan planlegge til alle, gruppeledere bare til egne grupper. Bare administratorer/scriptet leser og sletter.
+    match /scheduled/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['title', 'body', 'tab', 'malType', 'groups', 'fireAt', 'by', 'created'])
+        && request.resource.data.title is string && request.resource.data.title.size() <= 100
+        && request.resource.data.fireAt is int
+        && (isAdmin() || (isLeader() && request.resource.data.malType == 'grupper'
+             && request.resource.data.groups is list && request.resource.data.groups.size() > 0 && request.resource.data.groups.hasOnly(myLeads())));
+      allow read, delete: if isAdmin();
+    }
+
     // Lederkategorier (Hovedledere, Ungdomsledere, Forkynnere ...): bare administratorer.
     match /leaderTypes/{id} {
       allow read, write: if isAdmin();
