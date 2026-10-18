@@ -99,8 +99,6 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 .nbars i:nth-child(1){height:8px}.nbars i:nth-child(2){height:13px}.nbars i:nth-child(3){height:19px}.nbars i:nth-child(4){height:26px}
 .nbars i.on{background:var(--lamp);opacity:1}
 [data-noteopen]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-.emorad{display:flex;flex-wrap:wrap;gap:4px}
-.emo{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:40px;height:40px;font-size:22px;line-height:1;padding:0;cursor:pointer}
 .nwrap{position:relative}
 .ngrip{position:absolute;right:4px;bottom:4px;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:nwse-resize;touch-action:none;border-radius:8px;background:var(--bg);opacity:.9}
 .ned{min-height:140px;height:260px;max-height:80vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
@@ -944,7 +942,7 @@ function hilsenAsk(){
   dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">Pastorens hilsen</h3>'
    +'<label class="f">Tittel<input id="hT" maxlength="80" value="Pastorens hilsen"></label>'
    +'<label class="f">Melding<textarea id="hB" rows="7" maxlength="3000" placeholder="Skriv hilsenen her …"></textarea></label>'
-   +'<div class="emorad" role="group" aria-label="Emojier">'+['🙏','❤️','✝️','🕊️','🙌','😊','🌟','☀️','🔥','🎶','📖','⛪','🌈','👋','✨','💛','🕯️','🎉','💪','🌿','🤗','🙂','📣','🎁'].map(e=>'<button type="button" class="emo" data-emo="'+e+'" aria-label="Sett inn '+e+'">'+e+'</button>').join('')+'</div>'
+   +'<p class="small" style="margin:-4px 0 0">Tips: bruk emoji-tasten på telefonens tastatur 😊 for å legge inn emojier.</p>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Hvem skal få den?</legend><div style="display:grid;gap:6px">'
    +maal.map((m,i)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="hMaal" value="'+esc(m.v)+'" '+(i===0?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(m.l)+' <span class="small">('+hilsenAntall(m.v)+')</span></label>').join('')+'</div></fieldset>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Slik sendes den</legend><div style="display:grid;gap:6px">'
@@ -953,10 +951,6 @@ function hilsenAsk(){
    +'</div></fieldset><p class="small" id="hMsg" role="status" style="margin:0"></p>'
    +'<div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
-  let sistFelt=dlg.querySelector('#hB');
-  dlg.querySelectorAll('#hT,#hB').forEach(f=>['focus','input','pointerdown','click'].forEach(ev=>f.addEventListener(ev,()=>{sistFelt=f})));
-  dlg.querySelector('.emorad').addEventListener('mousedown',e=>{if(e.target.closest('.emo'))e.preventDefault()});
-  dlg.querySelector('.emorad').addEventListener('click',e=>{const b=e.target.closest('.emo');if(!b)return;const f=sistFelt,a=f.selectionStart==null?f.value.length:f.selectionStart,z=f.selectionEnd==null?a:f.selectionEnd;if(f.maxLength>0&&f.value.length-(z-a)+b.dataset.emo.length>f.maxLength)return;f.value=f.value.slice(0,a)+b.dataset.emo+f.value.slice(z);const p=a+b.dataset.emo.length;f.focus();try{f.setSelectionRange(p,p)}catch(x){}});
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;
     e.preventDefault();
