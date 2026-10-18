@@ -1010,6 +1010,7 @@ function memberCard(onlyBody){
   <div id="brBody">${body}</div></details>`}
 
 function pushCard(){
+  if(!state.user)return '';   // varsler er bare for innloggede
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
   const on=!!lsGet('sm-push');
   const body=ios&&!standalone?'På iPhone må du først legge appen på hjemskjermen (Del → Legg til på Hjem-skjerm), og så slå på varsler derfra.'
