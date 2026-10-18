@@ -946,7 +946,7 @@ function hilsenAsk(){
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Hvem skal få den?</legend><div style="display:grid;gap:6px">'
    +maal.map((m,i)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="hMaal" value="'+esc(m.v)+'" '+(i===0?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(m.l)+' <span class="small">('+hilsenAntall(m.v)+')</span></label>').join('')+'</div></fieldset>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Slik sendes den</legend><div style="display:grid;gap:6px">'
-   +'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hNy" checked style="width:22px;height:22px;flex:none">Legg ut i Nyheter <span class="small">(vises i 2 uker, så skjules den)</span></label>'
+   +'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hNy" checked style="width:22px;height:22px;flex:none">Legg ut i Nyheter</label>'
    +(PUSH_URL?'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hPu" checked style="width:22px;height:22px;flex:none">Send som varsel til telefonene</label>':'')
    +'</div></fieldset><p class="small" id="hMsg" role="status" style="margin:0"></p>'
    +'<div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
@@ -966,8 +966,8 @@ function hilsenAsk(){
     try{
       if(ny){
         const lt=v.startsWith('lt:'),gr=v.startsWith('gr:');
-        await FB.add('posts',{t:tittel,b:tekst,audience:gr?[v.slice(3)]:['Medlem'],groups:gr?[v.slice(3)]:[],ltypes:lt?[v.slice(3)]:[],tag:lt?m.l.replace('Bare ','').replace(/^./,c=>c.toUpperCase()):gr?gName(v.slice(3)):'Medlem',m:true,hideHome:false,expireAt:Date.now()+14*864e5});
-        res.push('Lagt ut i Nyheter (vises i 2 uker).')}
+        await FB.add('posts',{t:tittel,b:tekst,audience:gr?[v.slice(3)]:['Medlem'],groups:gr?[v.slice(3)]:[],ltypes:lt?[v.slice(3)]:[],tag:lt?m.l.replace('Bare ','').replace(/^./,c=>c.toUpperCase()):gr?gName(v.slice(3)):'Medlem',m:true,hideHome:false,expireAt:Date.now()+5*864e5});
+        res.push('Lagt ut i Nyheter.')}
       if(pu){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'news',mal);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter.':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
       dlg.close();await refresh();push('Pastorens hilsen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
     catch(er){knapp.disabled=false;msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+').'+(res.length?' '+res.join(' '):''))}});
