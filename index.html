@@ -99,6 +99,8 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 .nbars i:nth-child(1){height:8px}.nbars i:nth-child(2){height:13px}.nbars i:nth-child(3){height:19px}.nbars i:nth-child(4){height:26px}
 .nbars i.on{background:var(--lamp);opacity:1}
 [data-noteopen]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.emorad{display:flex;flex-wrap:wrap;gap:4px}
+.emo{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:40px;height:40px;font-size:22px;line-height:1;padding:0;cursor:pointer}
 .nwrap{position:relative}
 .ngrip{position:absolute;right:4px;bottom:4px;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:nwse-resize;touch-action:none;border-radius:8px;background:var(--bg);opacity:.9}
 .ned{min-height:140px;height:260px;max-height:80vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
@@ -384,7 +386,7 @@ function news(){
    if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
    return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3>${esc(p.t)}</h3><div class="small" style="color:var(--ink)">${esc(p.b)}</div></div>`}).join('');
   const kan=editOn();
-  return `<h1>Nyheter</h1>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Ukens hilsen</button>':'')+'</div>':''}<div class="list">${l||'<p class="small">Ingen nyheter ennå.</p>'}</div>${kan?'<div class="lpzone"></div>':''}`}
+  return `<h1>Nyheter</h1>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Pastorens hilsen</button>':'')+'</div>':''}<div class="list">${l||'<p class="small">Ingen nyheter ennå.</p>'}</div>${kan?'<div class="lpzone"></div>':''}`}
 
 /* ---------- Innlogging og administrasjon ---------- */
 const CATS_DEFAULT=['Møte','Samling','Ledersamling','Menighetsmøte','Happeninger','Ungdom'];
@@ -928,7 +930,7 @@ function vaktSwap(g,id){
   dlg.addEventListener('close',()=>dlg.remove());
   dlg.showModal();
 }
-/* Ukens hilsen: enkelt skjema for å sende en melding til medlemmene (for eksempel fra Pastor Albert), til alle medlemmer, bare forkynnere (eller en annen lederkategori) eller bare Lederrådet.
+/* Pastorens hilsen: enkelt skjema for å sende en melding til medlemmene (for eksempel fra Pastor Albert), til alle medlemmer, bare forkynnere (eller en annen lederkategori) eller bare Lederrådet.
    Legges ut i Nyheter og sendes som varsel (pushmelding) til telefonene. */
 function hilsenMaal(){
   return [{v:'alle',l:'Alle medlemmer'}].concat(LTYPES.map(t=>({v:'lt:'+t[0],l:'Bare '+t[1].toLowerCase()})),[{v:'gr:lederradet',l:'Bare '+gName('lederradet')}])}
@@ -939,9 +941,10 @@ function hilsenAntall(v){
 function hilsenAsk(){
   if(document.querySelector('dialog.pub')||!state.admin)return;
   const maal=hilsenMaal(),dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">Ukens hilsen</h3>'
-   +'<label class="f">Tittel<input id="hT" maxlength="80" value="Ukens hilsen"></label>'
+  dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">Pastorens hilsen</h3>'
+   +'<label class="f">Tittel<input id="hT" maxlength="80" value="Pastorens hilsen"></label>'
    +'<label class="f">Melding<textarea id="hB" rows="7" maxlength="3000" placeholder="Skriv hilsenen her …"></textarea></label>'
+   +'<div class="emorad" role="group" aria-label="Emojier">'+['🙏','❤️','✝️','🕊️','🙌','😊','🌟','☀️','🔥','🎶','📖','⛪','🌈','👋','✨','💛','🕯️','🎉','💪','🌿','🤗','🙂','📣','🎁'].map(e=>'<button type="button" class="emo" data-emo="'+e+'" aria-label="Sett inn '+e+'">'+e+'</button>').join('')+'</div>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Hvem skal få den?</legend><div style="display:grid;gap:6px">'
    +maal.map((m,i)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="hMaal" value="'+esc(m.v)+'" '+(i===0?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(m.l)+' <span class="small">('+hilsenAntall(m.v)+')</span></label>').join('')+'</div></fieldset>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Slik sendes den</legend><div style="display:grid;gap:6px">'
@@ -950,6 +953,10 @@ function hilsenAsk(){
    +'</div></fieldset><p class="small" id="hMsg" role="status" style="margin:0"></p>'
    +'<div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
+  let sistFelt=dlg.querySelector('#hB');
+  dlg.querySelectorAll('#hT,#hB').forEach(f=>['focus','input','pointerdown','click'].forEach(ev=>f.addEventListener(ev,()=>{sistFelt=f})));
+  dlg.querySelector('.emorad').addEventListener('mousedown',e=>{if(e.target.closest('.emo'))e.preventDefault()});
+  dlg.querySelector('.emorad').addEventListener('click',e=>{const b=e.target.closest('.emo');if(!b)return;const f=sistFelt,a=f.selectionStart==null?f.value.length:f.selectionStart,z=f.selectionEnd==null?a:f.selectionEnd;if(f.maxLength>0&&f.value.length-(z-a)+b.dataset.emo.length>f.maxLength)return;f.value=f.value.slice(0,a)+b.dataset.emo+f.value.slice(z);const p=a+b.dataset.emo.length;f.focus();try{f.setSelectionRange(p,p)}catch(x){}});
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;
     e.preventDefault();
@@ -968,7 +975,7 @@ function hilsenAsk(){
         await FB.add('posts',{t:tittel,b:tekst,audience:gr?[v.slice(3)]:['Medlem'],groups:gr?[v.slice(3)]:[],ltypes:lt?[v.slice(3)]:[],tag:lt?m.l.replace('Bare ','').replace(/^./,c=>c.toUpperCase()):gr?gName(v.slice(3)):'Medlem',m:true,hideHome:false});
         res.push('Lagt ut i Nyheter.')}
       if(pu){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'news',mal);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter.':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
-      dlg.close();await refresh();push('Hilsenen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
+      dlg.close();await refresh();push('Pastorens hilsen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
     catch(er){knapp.disabled=false;msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+').'+(res.length?' '+res.join(' '):''))}});
   dlg.addEventListener('close',()=>dlg.remove());
   dlg.showModal();
