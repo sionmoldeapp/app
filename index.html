@@ -90,6 +90,12 @@ dialog.note{width:min(96vw,680px);max-height:94vh;overflow:auto}
 .ntools{display:flex;gap:8px;align-items:center;margin:10px 0 6px}
 .ntools .btn{min-width:42px}
 .ntools select{width:auto}
+.ntools .btn.on{background:var(--lamp);color:#fff;border-color:var(--lamp)}
+.nsep{width:1px;height:26px;background:var(--line);margin:0 2px}
+.nbars{display:inline-flex;align-items:flex-end;gap:3px;height:26px;padding:0 2px}
+.nbars i{display:block;width:7px;border-radius:2px;background:var(--line);opacity:.8}
+.nbars i:nth-child(1){height:8px}.nbars i:nth-child(2){height:13px}.nbars i:nth-child(3){height:19px}.nbars i:nth-child(4){height:26px}
+.nbars i.on{background:var(--lamp);opacity:1}
 .ned{min-height:260px;max-height:50vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
 .ned:focus{border-color:var(--lamp)}
 .ned font[size="2"]{font-size:.85em}.ned font[size="3"]{font-size:1em}.ned font[size="4"]{font-size:1.2em}.ned font[size="5"]{font-size:1.4em}.ned font[size="6"]{font-size:1.8em}
@@ -704,7 +710,7 @@ function noteAsk(id){
   dlg.innerHTML='<h3 style="margin:0 0 8px">'+(ex?'Notat':'Nytt notat')+'</h3>'
    +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px"><label class="f">Tittel eller tema<input id="nT" maxlength="120" placeholder="For eksempel tema" value="'+esc(ex?ex.title:'')+'"></label><label class="f">Dato<input id="nD" type="date" value="'+esc(ex?ex.date:idag)+'"></label></div><label class="f">Forkynner<input id="nP" maxlength="80" placeholder="Hvem talte?" value="'+esc(ex?(ex.speaker||''):'')+'"></label>'
    +'<div class="ntools" role="toolbar" aria-label="Tekstverktøy"><button type="button" class="btn" data-ncmd="bold" aria-label="Fet"><b>B</b></button><button type="button" class="btn" data-ncmd="italic" aria-label="Kursiv"><i>I</i></button>'
-   +'<button type="button" class="btn" data-nsize="-1" aria-label="Mindre tekst" style="font-size:13px;font-weight:700">A</button><button type="button" class="btn" data-nsize="1" aria-label="Større tekst" style="font-size:22px;font-weight:700;line-height:1">A</button></div>'
+   +'<span class="nsep"></span><button type="button" class="btn" data-nsize="-1" aria-label="Mindre tekst" style="font-size:13px;font-weight:700">A</button><span class="nbars" id="nBars" role="img" aria-label="Tekststørrelse"><i></i><i></i><i></i><i></i></span><button type="button" class="btn" data-nsize="1" aria-label="Større tekst" style="font-size:22px;font-weight:700;line-height:1">A</button></div>'
    +'<div id="nEd" class="ned" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notat">'+(ex?sanitizeNote(ex.html):'')+'</div>'
    +'<p class="small" role="status" id="nMsg" style="margin:6px 0 0"></p>'
    +'<div class="btns" style="margin-top:8px"><button type="button" class="btn primary" id="nSave" style="width:auto">Lagre</button>'+(ex?'<button type="button" class="btn danger" id="nDel">Slett</button>':'')+'<button type="button" class="btn" id="nClose">Lukk</button></div>';
@@ -713,8 +719,17 @@ function noteAsk(id){
   const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,dlg.querySelector('#nP').value,sanitizeNote(ed.innerHTML)]);let start;
   try{document.execCommand('styleWithCSS',false,false)}catch(e){}
   dlg.querySelector('.ntools').addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
-  dlg.addEventListener('click',e=>{const b=e.target.closest('[data-ncmd]');if(b){ed.focus();document.execCommand(b.dataset.ncmd,false,null)}});
-  dlg.addEventListener('click',e=>{const b=e.target.closest('[data-nsize]');if(!b)return;ed.focus();let v=parseInt(document.queryCommandValue('fontSize'),10);if(!(v>=1&&v<=7))v=3;const n=Math.max(2,Math.min(6,v+parseInt(b.dataset.nsize,10)));document.execCommand('fontSize',false,String(n))});
+  dlg.addEventListener('click',e=>{const b=e.target.closest('[data-ncmd]');if(b){ed.focus();document.execCommand(b.dataset.ncmd,false,null);sync()}});
+  const TRINN=[2,3,5,6];
+  const trinnNå=()=>{let v=parseInt(document.queryCommandValue('fontSize'),10);if(!(v>=1&&v<=7))v=3;const i=TRINN.findIndex(x=>x>=v);return i<0?3:i};
+  let sistTrinn=1;
+  const sync=()=>{
+    const sl=getSelection();if(!sl.rangeCount||!ed.contains(sl.anchorNode))return;
+    ['bold','italic'].forEach(c=>{let on=false;try{on=document.queryCommandState(c)}catch(x){}const b=dlg.querySelector('[data-ncmd='+c+']');b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
+    sistTrinn=trinnNå();dlg.querySelectorAll('#nBars i').forEach((el,i)=>el.classList.toggle('on',i<=sistTrinn))};
+  document.addEventListener('selectionchange',sync);ed.addEventListener('keyup',sync);ed.addEventListener('input',sync);
+  dlg.addEventListener('click',e=>{const b=e.target.closest('[data-nsize]');if(!b)return;ed.focus();const n=Math.max(0,Math.min(3,trinnNå()+parseInt(b.dataset.nsize,10)));document.execCommand('fontSize',false,String(TRINN[n]));sync()});
+  dlg.querySelectorAll('#nBars i').forEach((el,i)=>el.classList.toggle('on',i<=1));
   ed.addEventListener('paste',e=>{e.preventDefault();const t=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,t)});
   ed.addEventListener('drop',e=>e.preventDefault());
   const lukk=()=>{if(snap()!==start&&!confirm('Lukke uten å lagre endringene?'))return;dlg.close()};
@@ -732,7 +747,7 @@ function noteAsk(id){
     if(!confirm('Slette dette notatet? Det kan ikke angres.'))return;
     try{await FB.delNote(noteEmail(),slot);state.notes=(state.notes||[]).filter(x=>x.id!==slot);state.noteMsg='Notatet er slettet.';start=snap();dlg.close();keep(()=>{});push('Slettet','Notatet er fjernet.')}
     catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}});
-  dlg.addEventListener('close',()=>dlg.remove());
+  dlg.addEventListener('close',()=>{document.removeEventListener('selectionchange',sync);dlg.remove()});
   dlg.showModal();start=snap();
 }
 function memberCard(onlyBody){
