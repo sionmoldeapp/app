@@ -715,7 +715,7 @@ function notesCard(){
   if(l===undefined)inn='<p class="small">Henter notatene dine …</p>';
   else{
     const q=norm(state.nq||'').trim(),vis=q?l.filter(x=>norm(x.title+' '+(x.speaker||'')+' '+noteText(x.html)).includes(q)):l;
-    inn='<p class="small" style="margin:0 0 8px">Notatene er private. Bare du kan se dem, ingen andre, heller ikke administratorer. Du kan ha opptil '+NOTE_MAX+'. Hold inne på et notat for å slette det.</p>'
+    inn='<p class="small" style="margin:0 0 8px">Du kan ha opptil '+NOTE_MAX+' notater. Hold inne på et notat for å slette det.</p>'
      +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-notenew style="width:auto" '+(n>=NOTE_MAX?'disabled':'')+'>+ Nytt notat</button></div>'
      +(n>=NOTE_MAX?'<p class="small">Du har '+NOTE_MAX+' notater. Slett et gammelt for å lage et nytt.</p>':'')
      +(n>4?'<input type="search" id="noteQ" placeholder="Søk i notatene …" aria-label="Søk i notater" autocomplete="off" value="'+esc(state.nq||'')+'" style="margin:0 0 8px">':'')
