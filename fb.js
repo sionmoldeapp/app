@@ -230,6 +230,14 @@ try{
     // Gruppene innlogget bruker er leder for (kan publisere til). Settes bare av administratorer, i feltet leads på oppføringen i members.
     async myLeads(email){try{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()?(s.data().leads||[]):[]}catch(e){return []}},
     // Rollen «Leder»: feltet leder på oppføringen i members. Gir innsyn i ledersamlinger og innhold for ledere, men ikke rett til å publisere.
+    // Lederkategorien til innlogget leder (tom hvis ikke leder).
+    async myLtype(email){try{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()&&s.data().leder===true?(s.data().ltype||''):null}catch(e){return null}},
+    // Hilsen på e-post via Apps Script (bare administrator). Mottakerne finnes og avgjøres i tjenesten.
+    async sendMail(url,d){
+      const idToken=await auth.currentUser.getIdToken(true);
+      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'epost',title:d.title,body:d.body,mal:d.mal})});
+      return r.json();
+    },
     async myLeder(email){try{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()&&s.data().leder===true}catch(e){return false}},
     // Lederkategorier (samlingen leaderTypes) og hvilken kategori en leder tilhører (feltet ltype).
     async ltypesList(){const s=await S.getDocs(S.collection(db,'leaderTypes'));return s.docs.map(d=>({id:d.id,...d.data()}))},

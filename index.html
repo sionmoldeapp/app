@@ -384,7 +384,7 @@ function news(){
    if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
    return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3>${esc(p.t)}</h3><div class="small" style="color:var(--ink)">${esc(p.b)}</div></div>`}).join('');
   const kan=editOn();
-  return `<h1>Nyheter</h1>${kan?'<button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>':''}<div class="list">${l||'<p class="small">Ingen nyheter ennå.</p>'}</div>${kan?'<div class="lpzone"></div>':''}`}
+  return `<h1>Nyheter</h1>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Ukens hilsen</button>':'')+'</div>':''}<div class="list">${l||'<p class="small">Ingen nyheter ennå.</p>'}</div>${kan?'<div class="lpzone"></div>':''}`}
 
 /* ---------- Innlogging og administrasjon ---------- */
 const CATS_DEFAULT=['Møte','Samling','Ledersamling','Menighetsmøte','Happeninger','Ungdom'];
@@ -440,12 +440,13 @@ function applyGroups(l){
 const gName=id=>{const g=GROUPS.find(x=>x[0]===id);return g?g[1]:id};
 const gLabel=id=>{const g=GROUPS.find(x=>x[0]===id);return g?g[1]+(g[2]?' ('+g[2]+')':''):id};
 /* Innhold med grupper vises bare for administratorer og medlemmer i minst én av gruppene. Dette er en visning i appen; sikkerheten for «bare medlemmer» ligger i databasen. */
-const canSee=x=>visOK(x)&&(!(x.groups&&x.groups.length)||effAdmin()||effGroups().concat(effLeads()).some(g=>x.groups.includes(g)));
+const ltypeSyn=x=>!(x.ltypes&&x.ltypes.length)||effAdmin()||(state.view==='meg'&&state.leder===true&&x.ltypes.includes(state.ltype||'hoved'));
+const canSee=x=>visOK(x)&&ltypeSyn(x)&&(!(x.groups&&x.groups.length)||effAdmin()||effGroups().concat(effLeads()).some(g=>x.groups.includes(g)));
 /* Gruppeledere (leads på oppføringen i members) kan bare publisere til gruppene de leder. Det håndheves i databasen (firestore.rules) og i varselscriptet. */
 const isLeader=()=>!state.admin&&(state.leads||[]).length>0;
 const myGroupOptions=()=>state.admin?GR_IDS:(state.leads||[]);
 const ledItem=x=>(x.groups||[]).length>0&&(x.groups||[]).every(g=>(state.leads||[]).includes(g));
-const malTekst=m=>m.type==='grupper'?'gruppene '+m.groups.map(gName).join(', '):m.type==='medlem'?'medlemmer':'alle';
+const malTekst=m=>m.type==='ltype'?'valgte ledere':m.type==='grupper'?'gruppene '+m.groups.map(gName).join(', '):m.type==='medlem'?'medlemmer':'alle';
 const postTags=p=>(p.groups&&p.groups.length?p.groups.map(gName):(p.audience&&p.audience.length?p.audience:[p.tag||'Alle'])).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ');
 const PLACES=['Kometvegen 7','Åndalsnes','Eidsvåg','Eide','Tingvoll'],TIMES=['11:00','12:00','19:00'];
 /* [felt, etikett, type, valg, type på feltet for «Annet»]. Stjerne etter typen betyr obligatorisk. */
@@ -927,6 +928,52 @@ function vaktSwap(g,id){
   dlg.addEventListener('close',()=>dlg.remove());
   dlg.showModal();
 }
+/* Ukens hilsen: enkelt skjema for å sende en melding til medlemmene (for eksempel fra Pastor Albert), til alle medlemmer, bare forkynnere (eller en annen lederkategori) eller bare Lederrådet.
+   Kan legges ut i Nyheter, sendes som varsel og som e-post. */
+function hilsenMaal(){
+  return [{v:'alle',l:'Alle medlemmer'}].concat(LTYPES.map(t=>({v:'lt:'+t[0],l:'Bare '+t[1].toLowerCase()})),[{v:'gr:lederradet',l:'Bare '+gName('lederradet')}])}
+function hilsenAntall(v){
+  if(v==='alle')return members.filter(x=>x.role!=='admin').length;
+  if(v.startsWith('lt:'))return members.filter(x=>x.role!=='admin'&&x.leder&&ltOf(x)===v.slice(3)).length;
+  return members.filter(x=>(x.groups||[]).includes(v.slice(3))||(x.leads||[]).includes(v.slice(3))).length}
+function hilsenAsk(){
+  if(document.querySelector('dialog.pub')||!state.admin)return;
+  const maal=hilsenMaal(),dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">Ukens hilsen</h3>'
+   +'<label class="f">Tittel<input id="hT" maxlength="80" value="Ukens hilsen"></label>'
+   +'<label class="f">Melding<textarea id="hB" rows="7" maxlength="3000" placeholder="Skriv hilsenen her …"></textarea></label>'
+   +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Hvem skal få den?</legend><div style="display:grid;gap:6px">'
+   +maal.map((m,i)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="hMaal" value="'+esc(m.v)+'" '+(i===0?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(m.l)+' <span class="small">('+hilsenAntall(m.v)+')</span></label>').join('')+'</div></fieldset>'
+   +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Slik sendes den</legend><div style="display:grid;gap:6px">'
+   +'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hNy" checked style="width:22px;height:22px;flex:none">Legg ut i Nyheter</label>'
+   +(PUSH_URL?'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hPu" checked style="width:22px;height:22px;flex:none">Send som varsel til telefonene</label><label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hEp" style="width:22px;height:22px;flex:none">Send på e-post</label>':'')
+   +'</div></fieldset><p class="small" id="hMsg" role="status" style="margin:0"></p>'
+   +'<div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='send')return;
+    e.preventDefault();
+    const msg=t=>{dlg.querySelector('#hMsg').textContent=t};
+    const tittel=dlg.querySelector('#hT').value.trim(),tekst=dlg.querySelector('#hB').value.trim(),v=dlg.querySelector('[name=hMaal]:checked').value,m=maal.find(x=>x.v===v);
+    const ny=dlg.querySelector('#hNy').checked,pu=!!dlg.querySelector('#hPu')&&dlg.querySelector('#hPu').checked,ep=!!dlg.querySelector('#hEp')&&dlg.querySelector('#hEp').checked;
+    if(!tittel||!tekst){msg('Skriv både tittel og melding.');return}
+    if(!ny&&!pu&&!ep){msg('Velg minst én måte å sende på.');return}
+    const n=hilsenAntall(v);
+    if(!confirm('Sende «'+tittel+'» til '+m.l.toLowerCase()+' ('+n+' person'+(n===1?'':'er')+')'+(ep?', også på e-post':'')+'?'))return;
+    const mal=v==='alle'?{type:'medlem'}:v.startsWith('lt:')?{type:'ltype',ltypes:[v.slice(3)]}:{type:'grupper',groups:[v.slice(3)]};
+    const knapp=e.submitter;knapp.disabled=true;const res=[];
+    try{
+      if(ny){
+        const lt=v.startsWith('lt:'),gr=v.startsWith('gr:');
+        await FB.add('posts',{t:tittel,b:tekst,audience:gr?[v.slice(3)]:['Medlem'],groups:gr?[v.slice(3)]:[],ltypes:lt?[v.slice(3)]:[],tag:lt?m.l.replace('Bare ','').replace(/^./,c=>c.toUpperCase()):gr?gName(v.slice(3)):'Medlem',m:true,hideHome:false});
+        res.push('Lagt ut i Nyheter.')}
+      if(pu){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'news',mal);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter.':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
+      if(ep){try{const r=await FB.sendMail(PUSH_URL,{title:tittel,body:tekst,mal});res.push(r.ok?'E-post sendt til '+r.antall+' mottakere.':'E-post ikke sendt: '+r.feil)}catch(x){res.push('E-posten kunne ikke sendes.')}}
+      dlg.close();await refresh();push('Hilsenen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
+    catch(er){knapp.disabled=false;msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+').'+(res.length?' '+res.join(' '):''))}});
+  dlg.addEventListener('close',()=>dlg.remove());
+  dlg.showModal();
+}
 function memberCard(onlyBody){
   const me=state.user?state.user.email:'';
   const q=norm(state.brQ).trim(),gf=state.brG,forced=!!(q||gf);
@@ -1190,6 +1237,7 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.vkedit){const [g,i]=c.dataset.vkedit.split('|');vaktEdit(g,i)}
   else if(c.dataset.vkswap){const [g,i]=c.dataset.vkswap.split('|');vaktSwap(g,i)}
   else if(c.dataset.vkreqdel){const [g,i]=c.dataset.vkreqdel.split('|');try{await FB.delRequest(g,i);state.reqs[g]=(state.reqs[g]||[]).filter(r=>r.id!==i);keep(()=>{})}catch(er){push('Kunne ikke fjerne',saveMsg(er.code))}}
+  else if('hilsen' in c.dataset){hilsenAsk()}
   else if('pubnew' in c.dataset){pubAsk()}
   else if('grpnew' in c.dataset){grpAsk(null)}
   else if(c.dataset.grpedit){grpAsk(c.dataset.grpedit)}
@@ -1606,6 +1654,7 @@ async function start(){
     state.groups=u&&state.member?await FB.myGroups(u.email):[];
     state.leads=u&&state.member&&!state.admin?await FB.myLeads(u.email):[];
     state.leder=u&&state.member&&!state.admin?await FB.myLeder(u.email):false;
+    state.ltype=state.leder?((await FB.myLtype(u.email))||''):'';
     state.profile=u&&state.member&&!state.admin?await FB.myProfile(u.email):null;
     state.notes=undefined;state.shifts=undefined;state.reqs=undefined;state.myShifts=[];
     if(u&&state.member)loadMyShifts().then(()=>keep(()=>{}));
