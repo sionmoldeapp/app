@@ -342,6 +342,7 @@ function home(){
   :`<div class="card next"><div class="eyebrow">Neste samling</div><h2>Ingen planlagt</h2><div class="meta">Se faste samlinger under Program.</div></div>`}
   ${welcomeCard()}
   ${visitorCard()}
+  ${myShiftsCard()}
   ${post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b>${esc(post.t)}</b><span class="small">${esc(post.b)}</span></div></div>`:''}
   ${wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:''}
   ${svCard()}
@@ -783,6 +784,136 @@ function noteAsk(id){
   dlg.addEventListener('close',()=>{document.removeEventListener('selectionchange',sync);dlg.remove()});
   dlg.showModal();start=snap();
 }
+/* Vakter: én liste per gruppe (Kjøkken, Lovsangsteamet, Elevate ...), bare synlig for gruppens medlemmer. Lagres i shifts/{gruppe}/items/{dato_vakt}.
+   Leder av gruppen (eller administrator) lager og endrer vakter. Medlemmer ser listen, ser sine egne vakter og kan sende byttebeskjed til lederen (shifts/{gruppe}/requests). */
+const VAKT_MAX_DAGER=183;
+const isoDato=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const kortDato=s=>{const d=new Date(s+'T12:00');return cap(DAYS[d.getDay()]).slice(0,3)+'. '+d.getDate()+'. '+MON[d.getMonth()]};
+const meEmail=()=>state.user?state.user.email.toLowerCase():'';
+const navnAv=u=>(u.name||String(u.id||u.e||'').split('@')[0]);
+const minNavn=()=>(state.profile&&state.profile.name)||meEmail().split('@')[0];
+const gruppeFolk=g=>(state.admin?members:leaderMem).filter(u=>(u.groups||[]).includes(g)||(u.leads||[]).includes(g));
+const kanStyre=g=>state.view==='meg'&&(state.admin||(state.leads||[]).includes(g));
+const vaktGrupper=()=>state.admin?GR_IDS.slice():(state.groups||[]).slice();
+async function loadShifts(){
+  const idag=isoDato(new Date()),gs=vaktGrupper();state.shifts=state.shifts||{};state.reqs=state.reqs||{};
+  for(const g of gs){
+    try{state.shifts[g]=await FB.shiftsList(g,idag)}catch(e){state.shifts[g]=[]}
+    if(kanStyre(g)){try{state.reqs[g]=await FB.requestsList(g)}catch(e){state.reqs[g]=[]}}
+  }
+  state.myShifts=gs.flatMap(g=>(state.shifts[g]||[]).filter(x=>(x.emails||[]).includes(meEmail())).map(x=>({...x,group:g}))).sort((a,b)=>a.date<b.date?-1:1);
+  keep(()=>{})}
+async function loadMyShifts(){
+  if(!FB||!usingFb||!state.user||!state.member){state.myShifts=[];return}
+  const idag=isoDato(new Date());let alle=[];
+  for(const g of (state.groups||[])){try{const l=await FB.shiftsList(g,idag);alle=alle.concat(l.filter(x=>(x.emails||[]).includes(meEmail())).map(x=>({...x,group:g})))}catch(e){}}
+  state.myShifts=alle.sort((a,b)=>a.date<b.date?-1:1)}
+function myShiftsCard(){
+  const l=(state.myShifts||[]).filter(x=>x.date>=isoDato(new Date()));
+  if(!state.user||!l.length)return '';
+  return '<div class="card"><div class="eyebrow">Dine vakter</div>'+l.slice(0,3).map(x=>'<div style="margin:6px 0"><b>'+esc(kortDato(x.date))+'</b> · '+esc(gName(x.group))+(x.role?' · '+esc(x.role):'')+'</div>').join('')+'<button class="btn" data-t="me" data-openvakter style="margin-top:6px">Se vaktlistene</button></div>'}
+function vakterCard(){
+  if(!state.user||!state.member)return '';
+  const gs=vaktGrupper();if(!gs.length)return '';
+  const idag=isoDato(new Date());
+  const inn=state.shifts===undefined?'<p class="small">Henter vaktlistene …</p>':(gs.map(g=>gruppeVakter(g,idag)).join('')||'<p class="small">Det er ingen vaktlister for gruppene dine ennå.</p>');
+  return '<details class="card acc" data-acc="vakter" '+(state.acc.vakter?'open':'')+'><summary><h2>Vakter</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.vaktMsg||'')+'</p></details>'}
+function gruppeVakter(g,idag){
+  const l=((state.shifts||{})[g]||[]).filter(x=>x.date>=idag),styr=kanStyre(g),rq=(state.reqs||{})[g]||[];
+  if(!l.length&&!styr)return '';
+  const me=meEmail();
+  const rad=x=>{const mine=(x.emails||[]).includes(me);
+    return '<div class="r" style="flex-wrap:wrap"><div class="d" style="min-width:84px">'+esc(kortDato(x.date))+(x.role?'<span>'+esc(x.role)+'</span>':'')+'</div><div class="grow">'+((x.names||[]).map((n,i)=>(x.emails||[])[i]===me?'<b style="color:var(--lamp)">'+esc(n)+'</b>':esc(n)).join(', ')||'<span class="small">Ingen satt opp</span>')+'</div>'
+      +(mine?'<button class="btn" data-vkswap="'+esc(g)+'|'+esc(x.id)+'">Bytte</button>':'')+(styr?'<button class="btn" data-vkedit="'+esc(g)+'|'+esc(x.id)+'">Endre</button>':'')+'</div>'};
+  return '<details class="acc sub" data-acc="vk_'+g+'" '+(state.acc['vk_'+g]?'open':'')+'><summary><h3 style="font-size:19px">'+esc(gName(g))+' ('+l.length+')</h3></summary>'
+   +(styr?'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-vknew="'+esc(g)+'" style="width:auto">+ Legg til vakter</button></div>':'')
+   +(styr&&rq.length?'<h4 style="margin:6px 0">Byttebeskjeder ('+rq.length+')</h4><div class="reg">'+rq.map(r=>'<div class="r"><div class="grow"><b>'+esc(r.fromName||r.from)+'</b> vil bytte '+esc(kortDato(r.date))+(r.role?' ('+esc(r.role)+')':'')+(r.text?'<span class="small">'+esc(r.text)+'</span>':'')+'<a class="small" href="mailto:'+esc(r.from)+'">'+esc(r.from)+'</a></div><button class="btn" data-vkreqdel="'+esc(g)+'|'+esc(r.id)+'">Ferdig</button></div>').join('')+'</div>':'')
+   +'<div class="reg">'+(l.map(rad).join('')||'<p class="small">Ingen kommende vakter.</p>')+'</div></details>'}
+const vaktId=(date,role)=>date+'_'+(slug(role||'')||'vakt');
+function vaktPersoner(g,valgt){
+  const folk=gruppeFolk(g).slice().sort((a,b)=>navnAv(a).localeCompare(navnAv(b)));
+  const kjent=new Set(folk.map(u=>u.id));
+  const ekstra=(valgt||[]).filter(e=>!kjent.has(e)).map(e=>({id:e,name:''}));
+  return folk.concat(ekstra)}
+function vaktGen(g){
+  if(document.querySelector('dialog.lp'))return;
+  const folk=vaktPersoner(g,[]),idag=new Date(),til=new Date(idag.getTime()+90*864e5),dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">Legg til vakter – '+esc(gName(g))+'</h3>'
+   +'<label class="f">Vakt (valgfritt)<input id="vgR" maxlength="40" placeholder="for eksempel Kaffe eller Middag"></label>'
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end"><label class="f">Fra dato<input id="vgF" type="date" value="'+isoDato(idag)+'"></label><label class="f">Til dato<input id="vgT" type="date" value="'+isoDato(til)+'"></label></div>'
+   +'<label class="f">Gjentakelse<select id="vgG"><option value="uke">Hver uke</option><option value="2uke">Annenhver uke</option><option value="mnd">Hver måned</option><option value="en">Bare én gang</option></select></label>'
+   +'<label class="f">Personer per vakt<select id="vgN"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>'
+   +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Hvem skal ha vakt? Vaktene fordeles i rotasjon.</legend><div style="display:grid;gap:6px">'
+   +(folk.length?folk.map(u=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-vgp="'+esc(u.id)+'" style="width:22px;height:22px;flex:none">'+esc(navnAv(u))+' <span class="small">'+esc(u.id)+'</span></label>').join(''):'<span class="small">Ingen medlemmer i gruppen ennå. Legg dem til under Brukere først.</span>')+'</div></fieldset>'
+   +'<p class="small" id="vgInfo" role="status" style="margin:0"></p>'
+   +'<div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lag vaktene</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  const dato=()=>{
+    const f=dlg.querySelector('#vgF').value,t=dlg.querySelector('#vgT').value,gj=dlg.querySelector('#vgG').value;if(!f)return [];
+    const start=new Date(f+'T12:00'),slutt=new Date(Math.min(new Date((t||f)+'T12:00').getTime(),start.getTime()+VAKT_MAX_DAGER*864e5)),ut=[];
+    if(gj==='en')return [f];
+    for(let d=new Date(start),i=1;d<=slutt&&ut.length<60;i++){ut.push(isoDato(d));if(gj==='uke')d.setDate(d.getDate()+7);else if(gj==='2uke')d.setDate(d.getDate()+14);else{d=new Date(start.getFullYear(),start.getMonth()+i,start.getDate(),12)}}
+    return ut};
+  const valgte=()=>[...dlg.querySelectorAll('[data-vgp]')].filter(x=>x.checked).map(x=>x.dataset.vgp);
+  const info=()=>{const n=dato().length,t=dlg.querySelector('#vgT').value,f=dlg.querySelector('#vgF').value;dlg.querySelector('#vgInfo').textContent='Lager '+n+' vakt'+(n===1?'':'er')+'.'+(t&&f&&new Date(t)-new Date(f)>VAKT_MAX_DAGER*864e5?' (Maks 6 måneder om gangen. Resten kan du lage etterpå.)':'')};
+  dlg.addEventListener('input',info);dlg.addEventListener('change',info);info();
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='lagre')return;
+    e.preventDefault();
+    const datoer=dato(),p=valgte(),per=+dlg.querySelector('#vgN').value,rolle=dlg.querySelector('#vgR').value.trim();
+    if(!datoer.length){dlg.querySelector('#vgInfo').textContent='Velg en gyldig fradato.';return}
+    if(!p.length){dlg.querySelector('#vgInfo').textContent='Velg minst én person.';return}
+    const navnMap={};folk.forEach(u=>navnMap[u.id]=navnAv(u));
+    const finnes=new Set(((state.shifts||{})[g]||[]).map(x=>x.id));let idx=0,laget=0,hoppet=0;
+    e.submitter.disabled=true;
+    try{
+      for(const dt of datoer){
+        const id=vaktId(dt,rolle),em=[];for(let k=0;k<Math.min(per,p.length);k++){em.push(p[(idx+k)%p.length])}idx=(idx+per)%p.length;
+        if(finnes.has(id)){hoppet++;continue}
+        await FB.setShift(g,id,{date:dt,role:rolle,emails:em,names:em.map(x=>navnMap[x]||x.split('@')[0])});laget++}
+      state.vaktMsg=laget+' vakt'+(laget===1?'':'er')+' laget'+(hoppet?' ('+hoppet+' fantes fra før og ble hoppet over)':'')+'.';state.acc.vakter=true;state.acc['vk_'+g]=true;
+      dlg.close();await loadShifts();push('Vakter laget',laget+' vakt'+(laget===1?'':'er')+' i '+gName(g)+'.')}
+    catch(er){e.submitter.disabled=false;dlg.querySelector('#vgInfo').textContent='Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
+  dlg.addEventListener('close',()=>dlg.remove());
+  dlg.showModal();
+}
+function vaktEdit(g,id){
+  const x=((state.shifts||{})[g]||[]).find(v=>v.id===id);if(!x||document.querySelector('dialog.lp'))return;
+  const folk=vaktPersoner(g,x.emails||[]),dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">'+esc(gName(g))+' – '+esc(kortDato(x.date))+'</h3>'
+   +'<label class="f">Vakt<input id="veR" maxlength="40" value="'+esc(x.role||'')+'"></label>'
+   +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Hvem har vakt?</legend><div style="display:grid;gap:6px">'+folk.map(u=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-vep="'+esc(u.id)+'" style="width:22px;height:22px;flex:none" '+((x.emails||[]).includes(u.id)?'checked':'')+'>'+esc(navnAv(u))+' <span class="small">'+esc(u.id)+'</span></label>').join('')+'</div></fieldset>'
+   +'<p class="small" id="veMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button><button class="btn danger" value="slett">Slett vakten</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='slett')return;
+    e.preventDefault();
+    try{
+      if(v==='slett'){if(!confirm('Slette denne vakten?'))return;await FB.delShift(g,id)}
+      else{
+        const rolle=dlg.querySelector('#veR').value.trim(),em=[...dlg.querySelectorAll('[data-vep]')].filter(c=>c.checked).map(c=>c.dataset.vep),navn={};folk.forEach(u=>navn[u.id]=navnAv(u));
+        const nyId=vaktId(x.date,rolle);
+        if(nyId!==id)await FB.delShift(g,id);
+        await FB.setShift(g,nyId,{date:x.date,role:rolle,emails:em,names:em.map(a=>navn[a]||a.split('@')[0])})}
+      state.acc.vakter=true;state.acc['vk_'+g]=true;dlg.close();await loadShifts();push(v==='slett'?'Vakten er slettet':'Vakten er lagret','')}
+    catch(er){dlg.querySelector('#veMsg').textContent='Kunne ikke lagre ('+((er&&er.code)||'feil')+').'}});
+  dlg.addEventListener('close',()=>dlg.remove());
+  dlg.showModal();
+}
+function vaktSwap(g,id){
+  const x=((state.shifts||{})[g]||[]).find(v=>v.id===id);if(!x||document.querySelector('dialog.lp'))return;
+  const dlg=document.createElement('dialog');dlg.className='lp';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Be om bytte</h3><p class="small" style="margin:0">'+esc(gName(g))+' · '+esc(kortDato(x.date))+(x.role?' · '+esc(x.role):'')+'<br>Lederen for gruppen får beskjeden og tar kontakt.</p><label class="f">Melding (valgfritt)<textarea id="vsT" rows="3" maxlength="300" placeholder="For eksempel: Jeg kan ikke denne dagen. Kan noen ta den?"></textarea></label><p class="small" id="vsMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send beskjed</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='send')return;
+    e.preventDefault();
+    try{await FB.addRequest(g,{shiftId:id,date:x.date,role:x.role||'',from:meEmail(),fromName:minNavn(),text:dlg.querySelector('#vsT').value.trim().slice(0,300)});
+      state.vaktMsg='Byttebeskjeden er sendt til lederen.';dlg.close();keep(()=>{});push('Sendt','Lederen har fått beskjeden din.')}
+    catch(er){dlg.querySelector('#vsMsg').textContent='Kunne ikke sende ('+((er&&er.code)||'feil')+').'}});
+  dlg.addEventListener('close',()=>dlg.remove());
+  dlg.showModal();
+}
 function memberCard(onlyBody){
   const me=state.user?state.user.email:'';
   const q=norm(state.brQ).trim(),gf=state.brG,forced=!!(q||gf);
@@ -881,6 +1012,7 @@ function me(){
   ${pushCard()}
   ${installCard()}
   ${shareCard()}
+  ${vakterCard()}
   ${notesCard()}
   ${profileCard()}
 
@@ -928,7 +1060,7 @@ document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.targe
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
 document.addEventListener('click',async e=>{
   const c=e.target.closest('button');if(!c)return;
-  if(c.dataset.t){state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}render()}
+  if(c.dataset.t){if('openvakter' in c.dataset){state.acc.vakter=true;if(state.shifts===undefined)loadShifts()}state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}render()}
   else if(c.id==='bellBtn'){state.tab='news';markSeen();render()}
   else if(c.dataset.ev){keep(()=>state.open[c.dataset.ev]=!state.open[c.dataset.ev])}
   else if(c.dataset.rsvp){
@@ -1041,6 +1173,10 @@ document.addEventListener('click',async e=>{
   else if('notenew' in c.dataset){noteAsk(null)}
   else if(c.dataset.noteopen){noteAsk(c.dataset.noteopen)}
   else if('komskjul' in c.dataset){lsSet('sm-kom','1');keep(()=>{state.komShown=false})}
+  else if(c.dataset.vknew){vaktGen(c.dataset.vknew)}
+  else if(c.dataset.vkedit){const [g,i]=c.dataset.vkedit.split('|');vaktEdit(g,i)}
+  else if(c.dataset.vkswap){const [g,i]=c.dataset.vkswap.split('|');vaktSwap(g,i)}
+  else if(c.dataset.vkreqdel){const [g,i]=c.dataset.vkreqdel.split('|');try{await FB.delRequest(g,i);state.reqs[g]=(state.reqs[g]||[]).filter(r=>r.id!==i);keep(()=>{})}catch(er){push('Kunne ikke fjerne',saveMsg(er.code))}}
   else if('pubnew' in c.dataset){pubAsk()}
   else if('grpnew' in c.dataset){grpAsk(null)}
   else if(c.dataset.grpedit){grpAsk(c.dataset.grpedit)}
@@ -1417,7 +1553,7 @@ async function loadSnaps(){
   catch(e){state.snaps=[];state.snapMsg='Kunne ikke hente sikkerhetspunkter ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{});
 }
-document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
+document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
   if('prmute' in d){const m=new Set(state.profile.muted||[]);e.target.checked?m.delete(d.prmute):m.add(d.prmute);try{await FB.setProfile(state.user.email,{muted:[...m]});state.profile.muted=[...m];state.prMsg='Lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code);e.target.checked=!e.target.checked}keep(()=>{});return}
@@ -1458,7 +1594,8 @@ async function start(){
     state.leads=u&&state.member&&!state.admin?await FB.myLeads(u.email):[];
     state.leder=u&&state.member&&!state.admin?await FB.myLeder(u.email):false;
     state.profile=u&&state.member&&!state.admin?await FB.myProfile(u.email):null;
-    state.notes=undefined;
+    state.notes=undefined;state.shifts=undefined;state.reqs=undefined;state.myShifts=[];
+    if(u&&state.member)loadMyShifts().then(()=>keep(()=>{}));
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
     await load();
     if(first){first=false;if(state.tab==='news')markSeen();render()}else keep(()=>{});

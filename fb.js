@@ -68,6 +68,13 @@ try{
     async notesList(email){const s=await S.getDocs(S.collection(db,'members',email,'notes'));return s.docs.map(d=>{const x=d.data();return {id:d.id,title:x.title||'',date:x.date||'',speaker:x.speaker||'',html:x.html||'',ms:x.updated&&x.updated.toMillis?x.updated.toMillis():0}}).sort((a,b)=>b.ms-a.ms)},
     saveNote:(email,id,d)=>S.setDoc(S.doc(db,'members',email,'notes',id),{title:d.title,date:d.date,speaker:d.speaker||'',html:d.html,updated:S.serverTimestamp()}),
     delNote:(email,id)=>S.deleteDoc(S.doc(db,'members',email,'notes',id)),
+    // Vakter: shifts/{gruppe}/items (vaktene) og shifts/{gruppe}/requests (byttebeskjeder til lederen).
+    async shiftsList(group,fromIso){const s=await S.getDocs(S.collection(db,'shifts',group,'items'));return s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>!fromIso||x.date>=fromIso).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.role).localeCompare(String(b.role)))},
+    setShift:(group,id,d)=>S.setDoc(S.doc(db,'shifts',group,'items',id),d),
+    delShift:(group,id)=>S.deleteDoc(S.doc(db,'shifts',group,'items',id)),
+    async requestsList(group){const s=await S.getDocs(S.collection(db,'shifts',group,'requests'));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.date).localeCompare(String(b.date)))},
+    addRequest:(group,d)=>S.addDoc(S.collection(db,'shifts',group,'requests'),{...d,created:S.serverTimestamp()}),
+    delRequest:(group,id)=>S.deleteDoc(S.doc(db,'shifts',group,'requests',id)),
     // Planlagte varsler (samlingen scheduled): Apps Script sender dem når fireAt er passert.
     addScheduled:d=>S.addDoc(S.collection(db,'scheduled'),{...d,by:auth.currentUser.email,created:S.serverTimestamp()}),
     // Kategorier (samlingen categories): navn og rekkefølge.
@@ -238,10 +245,10 @@ try{
     // Brukere = administratorer (samlingen admins) og medlemmer (samlingen members). Adressen er dokument-ID.
     async listUsers(){
       const [m,a]=await Promise.all([S.getDocs(S.collection(db,'members')),S.getDocs(S.collection(db,'admins'))]);
-      return a.docs.map(d=>({id:d.id,role:'admin',groups:d.data().groups||[],leads:[]})).concat(m.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],leads:d.data().leads||[],leder:d.data().leder===true,ltype:d.data().ltype||''}))).sort((x,y)=>x.id<y.id?-1:1);
+      return a.docs.map(d=>({id:d.id,role:'admin',groups:d.data().groups||[],leads:[]})).concat(m.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],leads:d.data().leads||[],leder:d.data().leder===true,ltype:d.data().ltype||'',name:d.data().name||''}))).sort((x,y)=>x.id<y.id?-1:1);
     },
     // Gruppeleder: medlemmer i egne grupper, legge til (oppretter kontoen hvis personen er ny) og fjerne fra en gruppe.
-    async leaderMembers(leads){const s=await S.getDocs(S.collection(db,'members'));return s.docs.map(d=>({id:d.id,groups:d.data().groups||[]})).filter(u=>u.groups.some(g=>leads.includes(g))).sort((a,b)=>a.id<b.id?-1:1)},
+    async leaderMembers(leads){const s=await S.getDocs(S.collection(db,'members'));return s.docs.map(d=>({id:d.id,groups:d.data().groups||[],leads:d.data().leads||[],name:d.data().name||''})).filter(u=>u.groups.some(g=>leads.includes(g))).sort((a,b)=>a.id<b.id?-1:1)},
     async leaderAdd(email,group){
       const ref=S.doc(db,'members',email),s=await S.getDoc(ref);
       if(s.exists()){const g=new Set(s.data().groups||[]);g.add(group);await S.updateDoc(ref,{groups:[...g]});return {created:false}}

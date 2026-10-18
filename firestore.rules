@@ -136,6 +136,28 @@ service cloud.firestore {
         && request.resource.data.groups.toSet().difference(resource.data.get('groups', []).toSet()).hasOnly(myLeads())
         && resource.data.get('groups', []).toSet().difference(request.resource.data.groups.toSet()).hasOnly(myLeads());
     }
+    // Vakter per gruppe: bare gruppens medlemmer (og administratorer) leser. Leder av gruppen (eller administrator) endrer vaktene.
+    // Medlemmer i gruppen kan sende en byttebeskjed (requests) som bare avsenderen, gruppens leder og administratorer ser.
+    function inGroup(g) {
+      return signedIn() && (isAdmin() || (exists(/databases/$(database)/documents/members/$(request.auth.token.email))
+        && g in get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', [])));
+    }
+    function leadsGroup(g) {
+      return isLeader() && g in myLeads();
+    }
+    match /shifts/{group}/items/{id} {
+      allow read: if inGroup(group) || leadsGroup(group);
+      allow write: if isAdmin() || leadsGroup(group);
+    }
+    match /shifts/{group}/requests/{id} {
+      allow create: if (inGroup(group) || leadsGroup(group))
+        && request.resource.data.keys().hasOnly(['shiftId', 'date', 'role', 'from', 'fromName', 'text', 'created'])
+        && request.resource.data.from == request.auth.token.email
+        && request.resource.data.text is string && request.resource.data.text.size() <= 300
+        && request.resource.data.created == request.time;
+      allow read, delete: if isAdmin() || leadsGroup(group) || (signedIn() && resource.data.from == request.auth.token.email);
+    }
+
     // Private møtenotater: bare eieren (ikke engang administratorer). Maks 100 notater (plassene n1 til n100), hvert opptil 20 000 tegn.
     match /members/{email}/notes/{noteId} {
       allow read, delete: if signedIn() && request.auth.token.email == email && isMember();
