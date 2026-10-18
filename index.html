@@ -841,7 +841,7 @@ function vaktGen(g){
   dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">Legg til vakter – '+esc(gName(g))+'</h3>'
    +'<label class="f">Vakt (valgfritt)<input id="vgR" maxlength="40" placeholder="for eksempel Kaffe eller Middag"></label>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end"><label class="f">Fra dato<input id="vgF" type="date" value="'+isoDato(idag)+'"></label><label class="f">Til dato<input id="vgT" type="date" value="'+isoDato(til)+'"></label></div>'
-   +'<label class="f">Gjentakelse<select id="vgG"><option value="uke">Hver uke</option><option value="2uke">Annenhver uke</option><option value="mnd">Hver måned</option><option value="en">Bare én gang</option></select></label>'
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end"><label class="f">Gjentakelse<select id="vgG"><option value="uke">Hver uke</option><option value="2uke">Annenhver uke</option><option value="4uke">Hver 4. uke</option><option value="dag">Hver dag (for eksempel en møtekampanje)</option><option value="en">Bare én dato</option></select></label><label class="f" id="vgDL">Ukedag<select id="vgD">'+[1,2,3,4,5,6,0].map(n=>'<option value="'+n+'" '+(n===0?'selected':'')+'>'+cap(DAYS[n])+'</option>').join('')+'</select></label></div>'
    +'<label class="f">Personer per vakt<select id="vgN"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Hvem skal ha vakt? Vaktene fordeles i rotasjon.</legend><div style="display:grid;gap:6px">'
    +(folk.length?folk.map(u=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-vgp="'+esc(u.id)+'" style="width:22px;height:22px;flex:none">'+esc(navnAv(u))+' <span class="small">'+esc(u.id)+'</span></label>').join(''):'<span class="small">Ingen medlemmer i gruppen ennå. Legg dem til under Brukere først.</span>')+'</div></fieldset>'
@@ -849,13 +849,16 @@ function vaktGen(g){
    +'<div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lag vaktene</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   const dato=()=>{
-    const f=dlg.querySelector('#vgF').value,t=dlg.querySelector('#vgT').value,gj=dlg.querySelector('#vgG').value;if(!f)return [];
+    const f=dlg.querySelector('#vgF').value,t=dlg.querySelector('#vgT').value,gj=dlg.querySelector('#vgG').value,ukedag=+dlg.querySelector('#vgD').value;if(!f)return [];
     const start=new Date(f+'T12:00'),slutt=new Date(Math.min(new Date((t||f)+'T12:00').getTime(),start.getTime()+VAKT_MAX_DAGER*864e5)),ut=[];
     if(gj==='en')return [f];
-    for(let d=new Date(start),i=1;d<=slutt&&ut.length<60;i++){ut.push(isoDato(d));if(gj==='uke')d.setDate(d.getDate()+7);else if(gj==='2uke')d.setDate(d.getDate()+14);else{d=new Date(start.getFullYear(),start.getMonth()+i,start.getDate(),12)}}
+    const d=new Date(start);
+    if(gj!=='dag'){while(d.getDay()!==ukedag)d.setDate(d.getDate()+1)}   // første valgte ukedag på eller etter fradato
+    const steg=gj==='dag'?1:gj==='uke'?7:gj==='2uke'?14:28;
+    while(d<=slutt&&ut.length<60){ut.push(isoDato(d));d.setDate(d.getDate()+steg)}
     return ut};
   const valgte=()=>[...dlg.querySelectorAll('[data-vgp]')].filter(x=>x.checked).map(x=>x.dataset.vgp);
-  const info=()=>{const n=dato().length,t=dlg.querySelector('#vgT').value,f=dlg.querySelector('#vgF').value;dlg.querySelector('#vgInfo').textContent='Lager '+n+' vakt'+(n===1?'':'er')+'.'+(t&&f&&new Date(t)-new Date(f)>VAKT_MAX_DAGER*864e5?' (Maks 6 måneder om gangen. Resten kan du lage etterpå.)':'')};
+  const info=()=>{const ds=dato(),n=ds.length,t=dlg.querySelector('#vgT').value,f=dlg.querySelector('#vgF').value;const gj=dlg.querySelector('#vgG').value;dlg.querySelector('#vgDL').style.display=(gj==='dag'||gj==='en')?'none':'';dlg.querySelector('#vgInfo').textContent='Lager '+n+' vakt'+(n===1?'':'er')+(n?': '+ds.slice(0,3).map(kortDato).join(', ')+(n>3?' …':''):'')+'.'+(t&&f&&new Date(t)-new Date(f)>VAKT_MAX_DAGER*864e5?' (Maks 6 måneder om gangen. Resten kan du lage etterpå.)':'')};
   dlg.addEventListener('input',info);dlg.addEventListener('change',info);info();
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='lagre')return;
