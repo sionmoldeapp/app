@@ -98,6 +98,7 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 .nbars i{display:block;width:7px;border-radius:2px;background:var(--line);opacity:.8}
 .nbars i:nth-child(1){height:8px}.nbars i:nth-child(2){height:13px}.nbars i:nth-child(3){height:19px}.nbars i:nth-child(4){height:26px}
 .nbars i.on{background:var(--lamp);opacity:1}
+[data-noteopen]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .nwrap{position:relative}
 .ngrip{position:absolute;right:4px;bottom:4px;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:nwse-resize;touch-action:none;border-radius:8px;background:var(--bg);opacity:.9}
 .ned{min-height:140px;height:260px;max-height:80vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
@@ -699,7 +700,7 @@ function notesCard(){
   if(l===undefined)inn='<p class="small">Henter notatene dine …</p>';
   else{
     const q=norm(state.nq||'').trim(),vis=q?l.filter(x=>norm(x.title+' '+(x.speaker||'')+' '+noteText(x.html)).includes(q)):l;
-    inn='<p class="small" style="margin:0 0 8px">Notatene er private. Bare du kan se dem, ingen andre, heller ikke administratorer. Du kan ha opptil '+NOTE_MAX+'.</p>'
+    inn='<p class="small" style="margin:0 0 8px">Notatene er private. Bare du kan se dem, ingen andre, heller ikke administratorer. Du kan ha opptil '+NOTE_MAX+'. Hold inne på et notat for å slette det.</p>'
      +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-notenew style="width:auto" '+(n>=NOTE_MAX?'disabled':'')+'>+ Nytt notat</button></div>'
      +(n>=NOTE_MAX?'<p class="small">Du har '+NOTE_MAX+' notater. Slett et gammelt for å lage et nytt.</p>':'')
      +(n>4?'<input type="search" id="noteQ" placeholder="Søk i notatene …" aria-label="Søk i notater" autocomplete="off" value="'+esc(state.nq||'')+'" style="margin:0 0 8px">':'')
@@ -707,6 +708,16 @@ function notesCard(){
   return '<details class="card acc" data-acc="notater" '+(state.acc.notater?'open':'')+'><summary><h2>Møtenotater'+(l?' ('+n+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.noteMsg||'')+'</p></details>'}
 function noteRows(l){
   return l.map(x=>'<div class="r"><button type="button" data-noteopen="'+esc(x.id)+'" style="display:flex;width:100%;gap:8px;align-items:center;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><span class="grow"><b>'+esc(x.title||'Uten tittel')+'</b><span class="small" style="display:block">'+esc(noDato(x.date))+(x.speaker?' · '+esc(x.speaker):'')+'</span></span><span class="small">Åpne</span></button></div>').join('')||'<p class="small">Ingen notater ennå.</p>'}
+function noteDelAsk(id){
+  const x=(state.notes||[]).find(n=>n.id===id);if(!x||document.querySelector('dialog.lp'))return;
+  const dlg=document.createElement('dialog');dlg.className='lp';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Slette «'+esc(x.title||'Uten tittel')+'»?</h3><p class="small" style="margin:0">Notatet fjernes for godt og kan ikke angres.</p><div class="btns"><button class="btn danger" value="slett">Slett</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.addEventListener('close',async()=>{const ok=dlg.returnValue==='slett';dlg.remove();if(!ok)return;
+    try{await FB.delNote(noteEmail(),id);state.notes=(state.notes||[]).filter(n=>n.id!==id);state.noteMsg='Notatet er slettet.';keep(()=>{});push('Slettet','Notatet er fjernet.')}
+    catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}});
+  dlg.showModal();
+}
 async function loadNotes(){
   try{state.notes=await FB.notesList(noteEmail())}catch(e){state.notes=[];state.noteMsg='Kunne ikke hente notatene ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{})}
@@ -1191,11 +1202,13 @@ document.addEventListener('submit',async e=>{
 /* Administrator: hold inne på en nyhet eller et arrangement for å få opp «Slett». */
 let lpT=null,lpX=0,lpY=0,lpFired=false;
 document.addEventListener('pointerdown',e=>{lpFired=false;clearTimeout(lpT);
+  const nb=e.target.closest('[data-noteopen]');if(nb){lpX=e.clientX;lpY=e.clientY;lpT=setTimeout(()=>{lpT=null;lpFired=true;noteDelAsk(nb.dataset.noteopen)},650);return}
   if(state.tab==='news'&&editOn()&&e.target.closest('#view')&&!e.target.closest('[data-lp],button,a,input,select,textarea,label,summary')){lpX=e.clientX;lpY=e.clientY;lpT=setTimeout(()=>{lpT=null;lpFired=true;pubAsk()},650);return}
   if(!state.admin||!editOn())return;const t=e.target.closest('[data-lp]');if(!t)return;lpX=e.clientX;lpY=e.clientY;lpT=setTimeout(()=>{lpT=null;lpFired=true;lpAsk(t.dataset.lp)},650)});
 ['pointerup','pointercancel'].forEach(n=>document.addEventListener(n,()=>{clearTimeout(lpT);setTimeout(()=>{lpFired=false},150)}));
 document.addEventListener('pointermove',e=>{if(lpT&&Math.hypot(e.clientX-lpX,e.clientY-lpY)>10)clearTimeout(lpT)});
-document.addEventListener('contextmenu',e=>{if((state.admin&&e.target.closest('[data-lp]'))||(state.tab==='news'&&e.target.closest('#view .lpzone, #view h1')))e.preventDefault()});
+document.addEventListener('contextmenu',e=>{if(e.target.closest('[data-noteopen]')){e.preventDefault();return}
+  if((state.admin&&e.target.closest('[data-lp]'))||(state.tab==='news'&&e.target.closest('#view .lpzone, #view h1')))e.preventDefault()});
 document.addEventListener('click',e=>{if(lpFired){lpFired=false;e.stopPropagation();e.preventDefault()}},true);
 /* Veiviser for nytt arrangement / fast samling: ett steg om gangen, store linjer først. Bruker det vanlige skjemaet (#adm), så lagring og regler er de samme. */
 const WIZ={
