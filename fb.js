@@ -123,6 +123,12 @@ try{
       if(token)await S.deleteDoc(S.doc(db,'pushTokens',token));
     },
     // Sender varsel via Apps Script-tjenesten. Tjenesten sjekker innloggingsbeviset og at brukeren er administrator.
+    // Møtenotat på e-post til brukerens egen adresse (adressen tas fra innloggingsbeviset i Apps Script).
+    async sendNote(url,d){
+      const idToken=await auth.currentUser.getIdToken(true);
+      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'notat',title:d.title,date:d.date,speaker:d.speaker,html:d.html})});
+      return r.json();
+    },
     // Velkomst-e-post (Apps Script) til nylig opprettede brukere.
     async sendWelcome(url,emails){
       const idToken=await auth.currentUser.getIdToken(true);

@@ -718,7 +718,7 @@ function noteAsk(id){
    +'<span class="nsep"></span><button type="button" class="btn" data-nsize="-1" aria-label="Mindre tekst" style="font-size:13px;font-weight:700">A</button><span class="nbars" id="nBars" role="img" aria-label="Tekststørrelse"><i></i><i></i><i></i><i></i></span><button type="button" class="btn" data-nsize="1" aria-label="Større tekst" style="font-size:22px;font-weight:700;line-height:1">A</button></div>'
    +'<div id="nEd" class="ned" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notat">'+(ex?sanitizeNote(ex.html):'')+'</div>'
    +'<p class="small" role="status" id="nMsg" style="margin:6px 0 0"></p>'
-   +'<div class="btns" style="margin-top:8px"><button type="button" class="btn primary" id="nSave" style="width:auto">Lagre</button>'+(ex?'<button type="button" class="btn danger" id="nDel">Slett</button>':'')+'<button type="button" class="btn" id="nClose">Lukk</button></div>';
+   +'<div class="btns" style="margin-top:8px"><button type="button" class="btn primary" id="nSave" style="width:auto">Lagre</button>'+(PUSH_URL?'<button type="button" class="btn" id="nMail">Send til e-post</button>':'')+(ex?'<button type="button" class="btn danger" id="nDel">Slett</button>':'')+'<button type="button" class="btn" id="nClose">Lukk</button></div>';
   document.body.appendChild(dlg);
   const ed=dlg.querySelector('#nEd'),msg=t=>{dlg.querySelector('#nMsg').textContent=t};
   const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,dlg.querySelector('#nP').value,sanitizeNote(ed.innerHTML)]);let start;
@@ -748,6 +748,14 @@ function noteAsk(id){
     try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();
       state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.notater=true;start=snap();dlg.close();keep(()=>{});push('Lagret','Notatet er lagret.')}
     catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
+  const mailKnapp=dlg.querySelector('#nMail');
+  if(mailKnapp)mailKnapp.addEventListener('click',async()=>{
+    const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML)};
+    if(!d.title&&!noteText(d.html)){msg('Skriv en tittel eller litt tekst først.');return}
+    mailKnapp.disabled=true;msg('Sender …');
+    try{const r=await FB.sendNote(PUSH_URL,d);msg(r.ok?'Sendt til '+r.til+'.':'Ikke sendt: '+r.feil);if(r.ok)push('Sendt','Notatet er sendt til '+r.til+'.')}
+    catch(er){msg('Kunne ikke sende (ingen kontakt med tjenesten).')}
+    mailKnapp.disabled=false});
   const del=dlg.querySelector('#nDel');
   if(del)del.addEventListener('click',async()=>{
     if(!confirm('Slette dette notatet? Det kan ikke angres.'))return;
