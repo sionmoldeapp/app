@@ -96,8 +96,14 @@ dialog.note{width:min(96vw,680px);max-height:94vh;overflow:auto}
 .nbars i{display:block;width:7px;border-radius:2px;background:var(--line);opacity:.8}
 .nbars i:nth-child(1){height:8px}.nbars i:nth-child(2){height:13px}.nbars i:nth-child(3){height:19px}.nbars i:nth-child(4){height:26px}
 .nbars i.on{background:var(--lamp);opacity:1}
-.ned{min-height:260px;max-height:50vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
+.nwrap{position:relative}
+.ngrip{position:absolute;right:4px;bottom:4px;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:nwse-resize;touch-action:none;border-radius:8px;background:var(--bg);opacity:.9}
+.btns.nbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.btns.nbtns .btn{width:100%;padding:12px 10px;font-size:15px;text-align:center;border-radius:99px}
+.btns.nbtns .btn.danger{background:transparent;color:#e5534b;border-color:#e5534b}
+.ned{min-height:140px;height:260px;max-height:80vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
 .ned:focus{border-color:var(--lamp)}
+.ned{padding-bottom:36px}
 .ned font[size="2"]{font-size:.85em}.ned font[size="3"]{font-size:1em}.ned font[size="4"]{font-size:1.2em}.ned font[size="5"]{font-size:1.4em}.ned font[size="6"]{font-size:1.8em}
 dialog.lp::backdrop{background:rgba(5,20,40,.55)}
 dialog.pub{max-height:88vh;overflow:auto;width:min(94vw,440px)}
@@ -716,12 +722,16 @@ function noteAsk(id){
    +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px"><label class="f">Tittel eller tema<input id="nT" maxlength="120" placeholder="For eksempel tema" value="'+esc(ex?ex.title:'')+'"></label><label class="f">Dato <span class="small" id="nDn" style="font-weight:400"></span><input id="nD" type="date" value="'+esc(ex?ex.date:idag)+'"></label></div><label class="f">Forkynner<input id="nP" maxlength="80" placeholder="Hvem talte?" value="'+esc(ex?(ex.speaker||''):'')+'"></label>'
    +'<div class="ntools" role="toolbar" aria-label="Tekstverktøy"><button type="button" class="btn" data-ncmd="bold" aria-label="Fet"><b>B</b></button><button type="button" class="btn" data-ncmd="italic" aria-label="Kursiv"><i>I</i></button>'
    +'<span class="nsep"></span><button type="button" class="btn" data-nsize="-1" aria-label="Mindre tekst" style="font-size:13px;font-weight:700">A</button><span class="nbars" id="nBars" role="img" aria-label="Tekststørrelse"><i></i><i></i><i></i><i></i></span><button type="button" class="btn" data-nsize="1" aria-label="Større tekst" style="font-size:22px;font-weight:700;line-height:1">A</button></div>'
-   +'<div id="nEd" class="ned" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notat">'+(ex?sanitizeNote(ex.html):'')+'</div>'
+   +'<div class="nwrap"><div id="nEd" class="ned" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notat">'+(ex?sanitizeNote(ex.html):'')+'</div><div class="ngrip" id="nGrip" role="separator" aria-label="Dra for å endre størrelsen på tekstfeltet" title="Dra for å endre størrelse"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M14 5L5 14M14 10l-4 4"/></svg></div></div>'
    +'<p class="small" role="status" id="nMsg" style="margin:6px 0 0"></p>'
-   +'<div class="btns" style="margin-top:8px"><button type="button" class="btn primary" id="nSave" style="width:auto">Lagre</button>'+(PUSH_URL?'<button type="button" class="btn" id="nMail">Send til e-post</button>':'')+(ex?'<button type="button" class="btn danger" id="nDel">Slett</button>':'')+'<button type="button" class="btn" id="nClose">Lukk</button></div>';
+   +'<div class="btns nbtns"><button type="button" class="btn primary" id="nSave">Lagre</button>'+(PUSH_URL?'<button type="button" class="btn" id="nMail">Send til e-post</button>':'')+(ex?'<button type="button" class="btn danger" id="nDel">Slett</button>':'')+'<button type="button" class="btn" id="nClose">Lukk</button></div>';
   document.body.appendChild(dlg);
   const ed=dlg.querySelector('#nEd'),msg=t=>{dlg.querySelector('#nMsg').textContent=t};
   const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,dlg.querySelector('#nP').value,sanitizeNote(ed.innerHTML)]);let start;
+  { const g=dlg.querySelector('#nGrip');let y0=0,h0=0,on=false;
+    g.addEventListener('pointerdown',e=>{on=true;y0=e.clientY;h0=ed.getBoundingClientRect().height;try{g.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault()});
+    g.addEventListener('pointermove',e=>{if(!on)return;ed.style.height=Math.max(140,Math.min(innerHeight*0.8,h0+(e.clientY-y0)))+'px'});
+    ['pointerup','pointercancel'].forEach(n=>g.addEventListener(n,()=>{on=false})) }
   const dn=()=>{dlg.querySelector('#nDn').textContent=noDato(dlg.querySelector('#nD').value)};dn();dlg.querySelector('#nD').addEventListener('input',dn);dlg.querySelector('#nD').addEventListener('change',dn);
   try{document.execCommand('styleWithCSS',false,false)}catch(e){}
   dlg.querySelector('.ntools').addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
