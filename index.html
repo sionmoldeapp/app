@@ -588,13 +588,16 @@ async function ltDel(id){
 }
 /* «Kom i gang» for innloggede (Hjem): installere, slå på varsler. Skjules for godt med «Skjul». */
 function welcomeCard(){
-  if(!state.user||lsGet('sm-kom'))return '';
+  if(!state.user)return '';
+  if(lsGet('sm-kom')&&!state.komShown)return '';
+  if(!lsGet('sm-kom')){lsSet('sm-kom','1');state.komShown=true}   // vises første gang, og ikke igjen etter at siden er lastet på nytt
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent),pushOn=!!lsGet('sm-push');
   return `<div class="card"><div class="eyebrow">Kom i gang</div><h2 style="margin:4px 0 8px">Velkommen!</h2>
   <ol class="small" style="margin:0 0 10px;padding-left:20px;display:grid;gap:6px;color:var(--ink)">
    <li><b>Legg appen på telefonen.</b> ${ios?'Trykk på Del-ikonet i Safari og velg «Legg til på Hjem-skjerm».':'Trykk på menyen (tre prikker) i Chrome og velg «Installer app».'}</li>
    <li><b>Slå på varsler</b> for å få beskjed om nyheter og endringer.${pushOn?' ✓ Er på.':''}</li>
    <li><b>Bytt passord</b> hvis du vil, under Meg.</li></ol>
+  <p class="small" style="margin:0 0 10px">Du finner veiledningen igjen under Meg → «Slik installerer du appen».</p>
   <div class="btns">${!pushOn&&state.pushOk?'<button class="btn primary" data-pushon style="width:auto">Slå på varsler</button>':''}<button class="btn" data-komskjul>Skjul</button></div></div>`}
 /* Sender velkomst-e-post til nylig opprettede brukere via varseltjenesten. Returnerer en kort tekst til meldingen. */
 async function velkomst(liste){
@@ -1007,7 +1010,7 @@ document.addEventListener('click',async e=>{
   else if('sharelink' in c.dataset){try{await navigator.share({title:'Sion Molde',text:'Appen til Sion Molde',url:APP_LINK})}catch(x){}}
   else if('notenew' in c.dataset){noteAsk(null)}
   else if(c.dataset.noteopen){noteAsk(c.dataset.noteopen)}
-  else if('komskjul' in c.dataset){lsSet('sm-kom','1');keep(()=>{})}
+  else if('komskjul' in c.dataset){lsSet('sm-kom','1');keep(()=>{state.komShown=false})}
   else if('pubnew' in c.dataset){pubAsk()}
   else if('grpnew' in c.dataset){grpAsk(null)}
   else if(c.dataset.grpedit){grpAsk(c.dataset.grpedit)}
