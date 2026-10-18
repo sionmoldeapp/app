@@ -426,7 +426,14 @@ const GROUPS_DEFAULT=[['sondagsskole','Søndagsskole','barnearbeid'],['activ8','
 /* Grupper: standardgruppene (over) til administrator redigerer første gang. Da lagres alle i databasen (samlingen groups) og listen leses derfra. GROUPS og GR_IDS endres på stedet, så alle som bruker dem får den nye listen. */
 const GROUPS=GROUPS_DEFAULT.map(g=>g.slice());
 const GR_IDS=GROUPS.map(g=>g[0]);
+/* Gruppeinnstillinger: vakt = gruppen har vaktliste, remind = medlemmene får automatisk påminnelse dagen før samlinger for gruppen. */
+const GR_REMIND_DEFAULT=['lederradet','ungdomsledere','torsdagsgruppa','vertskap','elevate','lovsang'];
+const GR_FLAGS={};
+const grVakt=id=>GR_FLAGS[id]?GR_FLAGS[id].vakt:!GR_REMIND_DEFAULT.includes(id);
+const grRemind=id=>GR_FLAGS[id]?GR_FLAGS[id].remind:GR_REMIND_DEFAULT.includes(id);
 function applyGroups(l){
+  Object.keys(GR_FLAGS).forEach(k=>delete GR_FLAGS[k]);
+  (l||[]).forEach(g=>{GR_FLAGS[g.id]={vakt:g.vakt===undefined?!GR_REMIND_DEFAULT.includes(g.id):!!g.vakt,remind:g.remind===undefined?GR_REMIND_DEFAULT.includes(g.id):!!g.remind}});
   const src=l&&l.length?l.slice().sort((a,b)=>((a.ord==null?999:a.ord)-(b.ord==null?999:b.ord))||String(a.name).localeCompare(String(b.name))).map(g=>[g.id,g.name,g.desc||'']):GROUPS_DEFAULT.map(g=>g.slice());
   GROUPS.length=0;src.forEach(g=>GROUPS.push(g));GR_IDS.length=0;GROUPS.forEach(g=>GR_IDS.push(g[0]));state.grDb=!!(l&&l.length)}
 
@@ -504,15 +511,17 @@ function groupsCard(){
   return `<details class="card acc" data-acc="grupper" ${state.acc.grupper?'open':''}><summary><h3>Grupper (${GROUPS.length})</h3></summary>
   <p class="small" style="margin:0 0 8px">Grupper brukes til å velge hvem som ser et arrangement eller en nyhet, og hvem en gruppeleder leder. Endrer du navnet, gjelder det overalt. Sletter du en gruppe, tas den ut av alle brukere, og innhold som bare var for gruppen blir «Bare medlemmer».</p>
   <button class="btn primary" data-grpnew style="width:auto">+ Ny gruppe</button>
-  <div class="reg" style="margin-top:10px">${GROUPS.map(g=>`<div class="r"><div class="grow">${esc(g[1])}${g[2]?' <span class="small">('+esc(g[2])+')</span>':''}</div><button class="btn" data-grpedit="${esc(g[0])}">Endre</button><button class="btn" data-grpdel="${esc(g[0])}">Slett</button></div>`).join('')}</div></details>`}
+  <div class="reg" style="margin-top:10px">${GROUPS.map(g=>`<div class="r"><div class="grow">${esc(g[1])}${g[2]?' <span class="small">('+esc(g[2])+')</span>':''}${grVakt(g[0])?' <span class="tag">Vaktliste</span>':''}${grRemind(g[0])?' <span class="tag m">Påminnelse</span>':''}</div><button class="btn" data-grpedit="${esc(g[0])}">Endre</button><button class="btn" data-grpdel="${esc(g[0])}">Slett</button></div>`).join('')}</div></details>`}
 async function grpSeed(){
   if(state.grDb)return;
-  let i=0;for(const g of GROUPS_DEFAULT){await FB.setGroupDoc(g[0],{name:g[1],desc:g[2]||'',ord:i++})}
+  let i=0;for(const g of GROUPS_DEFAULT){await FB.setGroupDoc(g[0],{name:g[1],desc:g[2]||'',ord:i++,vakt:grVakt(g[0]),remind:grRemind(g[0])})}
   applyGroups(await FB.groupsList())}
 function grpAsk(id){
   if(!FB)return;
   const g=id?GROUPS.find(x=>x[0]===id):null,dlg=document.createElement('dialog');dlg.className='lp';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(g?'Endre gruppe':'Ny gruppe')+'</h3><label class="f">Navn<input id="gN" maxlength="40" value="'+esc(g?g[1]:'')+'"></label><label class="f">Beskrivelse (valgfritt)<input id="gD" maxlength="40" placeholder="for eksempel ungdom" value="'+esc(g?g[2]:'')+'"></label><p class="small" role="status" id="gMsg" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(g?'Endre gruppe':'Ny gruppe')+'</h3><label class="f">Navn<input id="gN" maxlength="40" value="'+esc(g?g[1]:'')+'"></label><label class="f">Beskrivelse (valgfritt)<input id="gD" maxlength="40" placeholder="for eksempel ungdom" value="'+esc(g?g[2]:'')+'"></label>'
+   +'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="gV" style="width:22px;height:22px;flex:none" '+((g?grVakt(g[0]):true)?'checked':'')+'>Gruppen har vaktliste (under Meg → Vakter)</label>'
+   +'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="gP" style="width:22px;height:22px;flex:none" '+((g?grRemind(g[0]):false)?'checked':'')+'>Automatisk påminnelse dagen før samlinger for gruppen</label><p class="small" role="status" id="gMsg" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   const f=dlg.querySelector('form');
   f.addEventListener('submit',async e=>{
@@ -523,8 +532,9 @@ function grpAsk(id){
     if(GROUPS.some(x=>x[0]!==id&&x[1].toLowerCase()===n.toLowerCase())){dlg.querySelector('#gMsg').textContent='Det finnes allerede en gruppe med dette navnet.';return}
     try{
       await grpSeed();
-      if(g)await FB.setGroupDoc(id,{name:n,desc:d});
-      else{let nid=slug(n),k=2;while(GR_IDS.includes(nid))nid=slug(n)+(k++);await FB.setGroupDoc(nid,{name:n,desc:d,ord:GROUPS.length})}
+      const vakt=dlg.querySelector('#gV').checked,remind=dlg.querySelector('#gP').checked;
+      if(g)await FB.setGroupDoc(id,{name:n,desc:d,vakt,remind});
+      else{let nid=slug(n),k=2;while(GR_IDS.includes(nid))nid=slug(n)+(k++);await FB.setGroupDoc(nid,{name:n,desc:d,ord:GROUPS.length,vakt,remind})}
       dlg.close();await refresh();push(g?'Gruppen er endret':'Gruppen er opprettet',n)}
     catch(er){dlg.querySelector('#gMsg').textContent=saveMsg(er&&er.code)+' (Er de nye reglene publisert i Firebase?)'}});
   dlg.addEventListener('close',()=>dlg.remove());
@@ -794,7 +804,7 @@ const navnAv=u=>(u.name||String(u.id||u.e||'').split('@')[0]);
 const minNavn=()=>(state.profile&&state.profile.name)||meEmail().split('@')[0];
 const gruppeFolk=g=>(state.admin?members:leaderMem).filter(u=>(u.groups||[]).includes(g)||(u.leads||[]).includes(g));
 const kanStyre=g=>state.view==='meg'&&(state.admin||(state.leads||[]).includes(g));
-const vaktGrupper=()=>state.admin?GR_IDS.slice():(state.groups||[]).slice();
+const vaktGrupper=()=>(state.admin?GR_IDS.slice():(state.groups||[]).slice()).filter(grVakt);
 async function loadShifts(){
   const idag=isoDato(new Date()),gs=vaktGrupper();state.shifts=state.shifts||{};state.reqs=state.reqs||{};
   for(const g of gs){
@@ -806,7 +816,7 @@ async function loadShifts(){
 async function loadMyShifts(){
   if(!FB||!usingFb||!state.user||!state.member){state.myShifts=[];return}
   const idag=isoDato(new Date());let alle=[];
-  for(const g of (state.groups||[])){try{const l=await FB.shiftsList(g,idag);alle=alle.concat(l.filter(x=>(x.emails||[]).includes(meEmail())).map(x=>({...x,group:g})))}catch(e){}}
+  for(const g of (state.groups||[]).filter(grVakt)){try{const l=await FB.shiftsList(g,idag);alle=alle.concat(l.filter(x=>(x.emails||[]).includes(meEmail())).map(x=>({...x,group:g})))}catch(e){}}
   state.myShifts=alle.sort((a,b)=>a.date<b.date?-1:1)}
 function myShiftsCard(){
   const l=(state.myShifts||[]).filter(x=>x.date>=isoDato(new Date()));
