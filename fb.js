@@ -56,6 +56,7 @@ try{
       await A.reauthenticateWithCredential(u,A.EmailAuthProvider.credential(u.email,password));
       let tk='';try{tk=localStorage.getItem('sm-push')||''}catch(e){}
       if(tk){try{await S.deleteDoc(S.doc(db,'pushTokens',tk))}catch(e){}}
+      try{const ns=await S.getDocs(S.collection(db,'members',email,'notes'));for(const d of ns.docs)await S.deleteDoc(d.ref)}catch(e){}
       await S.deleteDoc(S.doc(db,'members',email));
       await A.deleteUser(u);
     },
@@ -63,6 +64,10 @@ try{
     async view(id){const ref=S.doc(db,'postViews',id),s=await S.getDoc(ref);if(s.exists())await S.updateDoc(ref,{n:S.increment(1)});else await S.setDoc(ref,{n:1})},
     async viewCounts(){const s=await S.getDocs(S.collection(db,'postViews'));const o={};s.docs.forEach(d=>o[d.id]=d.data().n||0);return o},
     async pushCount(){const s=await S.getDocs(S.collection(db,'pushTokens'));return s.size},
+    // Private møtenotater: members/{e-post}/notes/n1..n100. Bare eieren har tilgang.
+    async notesList(email){const s=await S.getDocs(S.collection(db,'members',email,'notes'));return s.docs.map(d=>{const x=d.data();return {id:d.id,title:x.title||'',date:x.date||'',html:x.html||'',ms:x.updated&&x.updated.toMillis?x.updated.toMillis():0}}).sort((a,b)=>b.ms-a.ms)},
+    saveNote:(email,id,d)=>S.setDoc(S.doc(db,'members',email,'notes',id),{title:d.title,date:d.date,html:d.html,updated:S.serverTimestamp()}),
+    delNote:(email,id)=>S.deleteDoc(S.doc(db,'members',email,'notes',id)),
     // Planlagte varsler (samlingen scheduled): Apps Script sender dem når fireAt er passert.
     addScheduled:d=>S.addDoc(S.collection(db,'scheduled'),{...d,by:auth.currentUser.email,created:S.serverTimestamp()}),
     // Kategorier (samlingen categories): navn og rekkefølge.

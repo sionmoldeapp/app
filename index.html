@@ -86,6 +86,13 @@ h3{font-size:22px;line-height:1.1}
 .item>button:focus-visible{outline:3px solid var(--lamp);outline-offset:-3px}
 [data-lp]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 dialog.lp{border:0;border-radius:18px;padding:20px;max-width:380px;width:calc(100% - 32px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+dialog.note{width:min(96vw,680px);max-height:94vh;overflow:auto}
+.ntools{display:flex;gap:8px;align-items:center;margin:10px 0 6px}
+.ntools .btn{min-width:42px}
+.ntools select{width:auto}
+.ned{min-height:260px;max-height:50vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
+.ned:focus{border-color:var(--lamp)}
+.ned font[size="2"]{font-size:.85em}.ned font[size="3"]{font-size:1em}.ned font[size="5"]{font-size:1.4em}.ned font[size="6"]{font-size:1.8em}
 dialog.lp::backdrop{background:rgba(5,20,40,.55)}
 dialog.pub{max-height:88vh;overflow:auto;width:min(94vw,440px)}
 .lpzone{min-height:38vh;display:flex;align-items:flex-end;justify-content:center;padding:16px;text-align:center}
@@ -654,6 +661,80 @@ function shareCard(){
    +'<p style="margin:0 0 8px;word-break:break-all"><b>'+APP_LINK+'</b></p>'
    +'<div class="btns" style="margin-bottom:10px"><button class="btn" data-copylink>Kopier lenke</button>'+(navigator.share?'<button class="btn" data-sharelink>Del …</button>':'')+'</div>'
    +'<a href="'+qr.replace('260x260','800x800')+'" target="_blank" rel="noopener"><img src="'+qr+'" width="260" height="260" alt="QR-kode til appen" style="display:block;background:#fff;border-radius:12px;max-width:100%;height:auto"></a><p class="small" style="margin:6px 0 0">Trykk på koden for å åpne en stor versjon du kan skrive ut.</p></details>'}
+/* Møtenotater: private notater per medlem (opptil 100), lagres i members/{e-post}/notes/n1..n100. Bare eieren kan lese dem (heller ikke administratorer).
+   Enkel teksteditor: fet, kursiv og tekststørrelse. Skrifttypen er alltid standard; innlimt tekst blir ren tekst. */
+const NOTE_MAX=100;
+const noteEmail=()=>state.user?state.user.email.toLowerCase():'';
+function sanitizeNote(html){
+  const t=document.createElement('template');t.innerHTML=String(html||'');
+  const ok={B:1,STRONG:1,I:1,EM:1,DIV:1,P:1,BR:1,FONT:1};
+  const walk=(n)=>{[...n.childNodes].forEach(c=>{
+    if(c.nodeType===3)return;
+    if(c.nodeType!==1||!ok[c.tagName]){const tx=document.createTextNode(c.nodeType===1&&/^(DIV|P|LI|UL|OL|H[1-6])$/.test(c.tagName)?c.textContent+'\n':(c.textContent||''));c.replaceWith(tx);return}
+    [...c.attributes].forEach(a=>{if(!(c.tagName==='FONT'&&a.name==='size'&&/^[1-7]$/.test(a.value)))c.removeAttribute(a.name)});
+    walk(c)})};
+  walk(t.content);
+  return t.innerHTML.slice(0,19000)}
+const noteText=h=>{const d=document.createElement('div');d.innerHTML=sanitizeNote(h);return (d.innerText||d.textContent||'').replace(/\s+/g,' ').trim()};
+function notesCard(){
+  if(!state.user||!state.member)return '';
+  const l=state.notes,n=l?l.length:0;
+  let inn;
+  if(l===undefined)inn='<p class="small">Henter notatene dine …</p>';
+  else{
+    const q=norm(state.nq||'').trim(),vis=q?l.filter(x=>norm(x.title+' '+noteText(x.html)).includes(q)):l;
+    inn='<p class="small" style="margin:0 0 8px">Notatene er private. Bare du kan se dem, ingen andre, heller ikke administratorer. Du kan ha opptil '+NOTE_MAX+'.</p>'
+     +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-notenew style="width:auto" '+(n>=NOTE_MAX?'disabled':'')+'>+ Nytt notat</button></div>'
+     +(n>=NOTE_MAX?'<p class="small">Du har '+NOTE_MAX+' notater. Slett et gammelt for å lage et nytt.</p>':'')
+     +(n>4?'<input type="search" id="noteQ" placeholder="Søk i notatene …" aria-label="Søk i notater" autocomplete="off" value="'+esc(state.nq||'')+'" style="margin:0 0 8px">':'')
+     +'<div class="reg" id="noteList">'+noteRows(vis)+'</div>'}
+  return '<details class="card acc" data-acc="notater" '+(state.acc.notater?'open':'')+'><summary><h2>Møtenotater'+(l?' ('+n+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.noteMsg||'')+'</p></details>'}
+function noteRows(l){
+  return l.map(x=>'<div class="r"><button type="button" data-noteopen="'+esc(x.id)+'" style="display:flex;width:100%;gap:8px;align-items:center;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><span class="grow"><b>'+esc(x.title||'Uten tittel')+'</b><span class="small" style="display:block">'+esc(x.date||'')+(noteText(x.html)?' · '+esc(noteText(x.html).slice(0,60)):'')+'</span></span><span class="small">Åpne</span></button></div>').join('')||'<p class="small">Ingen notater ennå.</p>'}
+async function loadNotes(){
+  try{state.notes=await FB.notesList(noteEmail())}catch(e){state.notes=[];state.noteMsg='Kunne ikke hente notatene ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
+  keep(()=>{})}
+function noteAsk(id){
+  if(document.querySelector('dialog.note'))return;
+  const ex=id?(state.notes||[]).find(x=>x.id===id):null;
+  let slot=id;
+  if(!ex){for(let k=1;k<=NOTE_MAX;k++){if(!(state.notes||[]).some(x=>x.id==='n'+k)){slot='n'+k;break}}
+    if(!slot){push('Fullt','Du har '+NOTE_MAX+' notater.');return}}
+  const idag=toDT(Date.now()).slice(0,10),dlg=document.createElement('dialog');dlg.className='lp note';
+  dlg.innerHTML='<h3 style="margin:0 0 8px">'+(ex?'Notat':'Nytt notat')+'</h3>'
+   +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px"><label class="f">Tittel<input id="nT" maxlength="120" placeholder="For eksempel Ledermøte" value="'+esc(ex?ex.title:'')+'"></label><label class="f">Dato<input id="nD" type="date" value="'+esc(ex?ex.date:idag)+'"></label></div>'
+   +'<div class="ntools" role="toolbar" aria-label="Tekstverktøy"><button type="button" class="btn" data-ncmd="bold" aria-label="Fet"><b>B</b></button><button type="button" class="btn" data-ncmd="italic" aria-label="Kursiv"><i>I</i></button>'
+   +'<select id="nS" aria-label="Tekststørrelse"><option value="2">Liten</option><option value="3" selected>Normal</option><option value="5">Stor</option><option value="6">Størst</option></select></div>'
+   +'<div id="nEd" class="ned" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notat">'+(ex?sanitizeNote(ex.html):'')+'</div>'
+   +'<p class="small" role="status" id="nMsg" style="margin:6px 0 0"></p>'
+   +'<div class="btns" style="margin-top:8px"><button type="button" class="btn primary" id="nSave" style="width:auto">Lagre</button>'+(ex?'<button type="button" class="btn danger" id="nDel">Slett</button>':'')+'<button type="button" class="btn" id="nClose">Lukk</button></div>';
+  document.body.appendChild(dlg);
+  const ed=dlg.querySelector('#nEd'),msg=t=>{dlg.querySelector('#nMsg').textContent=t};
+  const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,sanitizeNote(ed.innerHTML)]);let start;
+  try{document.execCommand('styleWithCSS',false,false)}catch(e){}
+  dlg.querySelector('.ntools').addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
+  dlg.addEventListener('click',e=>{const b=e.target.closest('[data-ncmd]');if(b){ed.focus();document.execCommand(b.dataset.ncmd,false,null)}});
+  dlg.querySelector('#nS').addEventListener('change',e=>{ed.focus();document.execCommand('fontSize',false,e.target.value)});
+  ed.addEventListener('paste',e=>{e.preventDefault();const t=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,t)});
+  ed.addEventListener('drop',e=>e.preventDefault());
+  const lukk=()=>{if(snap()!==start&&!confirm('Lukke uten å lagre endringene?'))return;dlg.close()};
+  dlg.querySelector('#nClose').addEventListener('click',lukk);
+  dlg.addEventListener('cancel',e=>{if(snap()!==start){e.preventDefault();lukk()}});
+  dlg.querySelector('#nSave').addEventListener('click',async()=>{
+    const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,html:sanitizeNote(ed.innerHTML)};
+    if(!d.title&&!noteText(d.html)){msg('Skriv en tittel eller litt tekst.');return}
+    if(!d.title)d.title=noteText(d.html).slice(0,40);
+    try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();
+      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.notater=true;start=snap();dlg.close();keep(()=>{});push('Lagret','Notatet er lagret.')}
+    catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
+  const del=dlg.querySelector('#nDel');
+  if(del)del.addEventListener('click',async()=>{
+    if(!confirm('Slette dette notatet? Det kan ikke angres.'))return;
+    try{await FB.delNote(noteEmail(),slot);state.notes=(state.notes||[]).filter(x=>x.id!==slot);state.noteMsg='Notatet er slettet.';start=snap();dlg.close();keep(()=>{});push('Slettet','Notatet er fjernet.')}
+    catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}});
+  dlg.addEventListener('close',()=>dlg.remove());
+  dlg.showModal();start=snap();
+}
 function memberCard(onlyBody){
   const me=state.user?state.user.email:'';
   const q=norm(state.brQ).trim(),gf=state.brG,forced=!!(q||gf);
@@ -752,6 +833,7 @@ function me(){
   ${pushCard()}
   ${installCard()}
   ${shareCard()}
+  ${notesCard()}
   ${profileCard()}
   ${state.user?'<div class="card"><div class="row"><div class="grow"><b>Kom i gang</b><div class="small">Vis hjelpen for å installere appen og slå på varsler igjen.</div></div><button class="btn" data-komvis>Vis igjen</button></div></div>':''}
 
@@ -794,7 +876,8 @@ function viewOpts(){
   if(adm)o.push(['leder','Gruppeleder','Du ser og får verktøyene en gruppeleder har, for gruppene du velger under.']);
   o.push(['medlem','Vanlig innlogget medlem','Bare det som er for innloggede medlemmer, ikke ledersamlinger eller innhold for bestemte grupper.'],['besok','Besøkende (ikke innlogget)','Bare det som er åpent for alle.']);
   $('#viewOpts').innerHTML=o.map(([v,l,t])=>'<label style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-weight:400"><input type="radio" name="viewmode" value="'+v+'" '+(viewVal()===v?'checked':'')+' style="width:22px;height:22px;flex:none;margin-top:2px"><span><b>'+esc(l)+'</b><br><span class="small">'+esc(t)+'</span>'+(v==='leder'&&state.real?'<span style="display:grid;gap:6px;margin:8px 0 0">'+GROUPS.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:14px"><input type="checkbox" data-vl="'+g[0]+'" style="width:22px;height:22px;flex:none" '+(state.vl.includes(g[0])?'checked':'')+'>'+esc(gLabel(g[0]))+'</label>').join('')+'</span>':'')+'</span></label>').join('')}
-document.addEventListener('input',e=>{if(e.target.id==='brQ'){state.brQ=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
+document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.target.value;const l=$('#noteList');if(l)l.innerHTML=noteRows(state.nq.trim()?(state.notes||[]).filter(x=>norm(x.title+' '+noteText(x.html)).includes(norm(state.nq).trim())):(state.notes||[]));return}
+  if(e.target.id==='brQ'){state.brQ=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
 document.addEventListener('click',async e=>{
   const c=e.target.closest('button');if(!c)return;
@@ -908,6 +991,8 @@ document.addEventListener('click',async e=>{
   else if('prdel' in c.dataset){deleteSelfAsk()}
   else if('copylink' in c.dataset){try{await navigator.clipboard.writeText(APP_LINK);push('Kopiert','Lenken til appen er kopiert.')}catch(x){prompt('Kopier lenken:',APP_LINK)}}
   else if('sharelink' in c.dataset){try{await navigator.share({title:'Sion Molde',text:'Appen til Sion Molde',url:APP_LINK})}catch(x){}}
+  else if('notenew' in c.dataset){noteAsk(null)}
+  else if(c.dataset.noteopen){noteAsk(c.dataset.noteopen)}
   else if('komvis' in c.dataset){try{localStorage.removeItem('sm-kom')}catch(x){}state.tab='home';render();push('Kom i gang','Vises øverst på Hjem.')}
   else if('komskjul' in c.dataset){lsSet('sm-kom','1');keep(()=>{})}
   else if('pubnew' in c.dataset){pubAsk()}
@@ -1284,7 +1369,7 @@ async function loadSnaps(){
   catch(e){state.snaps=[];state.snapMsg='Kunne ikke hente sikkerhetspunkter ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{});
 }
-document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
+document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
   if('prmute' in d){const m=new Set(state.profile.muted||[]);e.target.checked?m.delete(d.prmute):m.add(d.prmute);try{await FB.setProfile(state.user.email,{muted:[...m]});state.profile.muted=[...m];state.prMsg='Lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code);e.target.checked=!e.target.checked}keep(()=>{});return}
@@ -1325,6 +1410,7 @@ async function start(){
     state.leads=u&&state.member&&!state.admin?await FB.myLeads(u.email):[];
     state.leder=u&&state.member&&!state.admin?await FB.myLeder(u.email):false;
     state.profile=u&&state.member&&!state.admin?await FB.myProfile(u.email):null;
+    state.notes=undefined;
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
     await load();
     if(first){first=false;if(state.tab==='news')markSeen();render()}else keep(()=>{});
