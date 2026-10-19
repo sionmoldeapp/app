@@ -401,16 +401,18 @@ function contactAsk(){
 
 /* Bønneemner: bare innloggede medlemmer. Navn er valgfritt. «Jeg ber» teller per person, og emner skjules etter 60 dager. */
 const prUid=()=>(FB&&FB.user&&FB.user.uid)||'';
+/* Alle medlemmer kan sende inn et bønneemne, men bare administrator, pastor (lederkategorien Forkynnere) og ledere av gruppen Bønnemøte kan lese dem. */
+const prayLes=()=>effAdmin()||effLeads().includes('bonnemote')||(effLeder()&&state.ltype==='forkynner');
 function prayerCard(){
   if(!state.user||!state.member)return '';
-  const l=state.prayers,uid=prUid(),vis=l?l.filter(x=>(x.ms||0)>Date.now()-60*864e5):[];
+  const les=prayLes(),l=state.prayers,uid=prUid(),vis=l?l.filter(x=>(x.ms||0)>Date.now()-60*864e5):[];
   let inn;
-  if(l===undefined)inn='<p class="small">Henter bønneemner …</p>';
-  else inn='<p class="small" style="margin:0 0 8px">Legg inn bønneemner her. De samles opp til bønnemøtene i menigheten. Alle innloggede medlemmer kan se emnene, og de skjules etter 60 dager.</p>'
-   +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><button class="btn" data-prrefresh>Oppdater</button>'+((state.admin||isLeader())&&vis.length?'<button class="btn" data-prcopy>Kopier listen</button>':'')+'</div>'
-   +'<div class="reg">'+(vis.map(x=>{
-      return '<div class="r" style="display:block"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'Anonym')+' · '+esc(ago({ms:x.ms}))+'</div>'+((x.by===uid||state.admin||isLeader())?'<div class="btns"><button class="btn" data-prdel="'+esc(x.id)+'">Slett</button></div>':'')+'</div>'}).join('')||'<p class="small">Ingen bønneemner ennå.</p>')+'</div>';
-  return '<details class="card acc" data-acc="bonn" '+(state.acc.bonn?'open':'')+'><summary><h2>Bønneemner'+(l?' ('+vis.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
+  if(!les)inn='<p class="small" style="margin:0 0 8px">Send inn et bønneemne. Det samles opp til bønnemøtene i menigheten og leses bare av pastor og de som leder bønnemøtene.</p><div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button></div>';
+  else if(l===undefined)inn='<p class="small">Henter bønneemner …</p>';
+  else inn='<p class="small" style="margin:0 0 8px">Bønneemner samles opp til bønnemøtene i menigheten. Bare administrator, pastor og ledere av bønnemøtene ser listen. Emner skjules etter 60 dager.</p>'
+   +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><button class="btn" data-prrefresh>Oppdater</button>'+(vis.length?'<button class="btn" data-prcopy>Kopier listen</button>':'')+'</div>'
+   +'<div class="reg">'+(vis.map(x=>'<div class="r" style="display:block"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'Anonym')+' · '+esc(ago({ms:x.ms}))+'</div><div class="btns"><button class="btn" data-prdel="'+esc(x.id)+'">Slett</button></div></div>').join('')||'<p class="small">Ingen bønneemner ennå.</p>')+'</div>';
+  return '<details class="card acc" data-acc="bonn" '+(state.acc.bonn?'open':'')+'><summary><h2>Bønneemner'+(les&&l?' ('+vis.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
 async function loadPrayers(){
   try{state.prayers=await FB.prayersList();state.prMsg=''}catch(e){state.prayers=[];state.prMsg='Kunne ikke hente bønneemner ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{})}
@@ -420,7 +422,7 @@ function prayAsk(){
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Nytt bønneemne</h3>'
    +'<label class="f">Bønneemne<textarea id="pT" rows="4" maxlength="400" placeholder="Skriv kort hva du ønsker forbønn for …"></textarea></label>'
    +'<label class="f" id="pNL">Navn (valgfritt)<input id="pN" maxlength="60" value="'+esc(lsGet('sm-navn')||(state.profile&&state.profile.name)||'')+'"></label>'
-   +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Legg ut</button><button type="button" class="btn" id="pAnon" aria-pressed="false">Anonymt: Av</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+   +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send inn</button><button type="button" class="btn" id="pAnon" aria-pressed="false">Anonymt: Av</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   let anon=false;const anonKnapp=dlg.querySelector('#pAnon');
   anonKnapp.addEventListener('click',()=>{anon=!anon;anonKnapp.textContent='Anonymt: '+(anon?'På':'Av');anonKnapp.setAttribute('aria-pressed',String(anon));anonKnapp.classList.toggle('on',anon);dlg.querySelector('#pN').disabled=anon;dlg.querySelector('#pNL').style.opacity=anon?'.5':''});
@@ -428,7 +430,7 @@ function prayAsk(){
     if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
     const t=dlg.querySelector('#pT').value.trim(),name=anon?'':dlg.querySelector('#pN').value.trim();
     if(!t){dlg.querySelector('#pMsg').textContent='Skriv et bønneemne.';return}
-    try{await FB.addPrayer({t,name});dlg.close();state.acc.bonn=true;await loadPrayers();push('Lagt ut','Bønneemnet er lagt ut.')}
+    try{await FB.addPrayer({t,name});dlg.close();state.acc.bonn=true;if(prayLes())await loadPrayers();else{state.prMsg='Takk! Bønneemnet er sendt inn.';keep(()=>{})}push('Sendt inn','Bønneemnet er sendt inn.')}
     catch(er){dlg.querySelector('#pMsg').textContent='Kunne ikke legge ut ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 async function prayCopy(){
@@ -1814,7 +1816,7 @@ async function loadSnaps(){
   catch(e){state.snaps=[];state.snapMsg='Kunne ikke hente sikkerhetspunkter ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{});
 }
-document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB)loadPrayers();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
+document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB&&prayLes())loadPrayers();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
   if('prmute' in d){const m=new Set(state.profile.muted||[]);e.target.checked?m.delete(d.prmute):m.add(d.prmute);try{await FB.setProfile(state.user.email,{muted:[...m]});state.profile.muted=[...m];state.prMsg='Lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code);e.target.checked=!e.target.checked}keep(()=>{});return}

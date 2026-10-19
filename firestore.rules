@@ -28,19 +28,21 @@ service cloud.firestore {
       allow update: if col in ['events', 'posts'] && isLeader() && ledGroups(resource.data.get('groups', [])) && ledGroups(request.resource.data.get('groups', [])) && request.resource.data.get('m', false) == true;
       allow delete: if col in ['events', 'posts'] && isLeader() && ledGroups(resource.data.get('groups', []));
     }
-    // Bønneemner: bare medlemmer leser og skriver. by og ber bruker uid (ikke e-post). Medlemmer kan bare legge til eller fjerne seg selv i ber.
-    // Forfatteren, administrator og gruppeledere kan slette.
+    // Bønneemner: alle medlemmer kan sende inn, men bare administrator, pastor (leder i lederkategorien forkynner) og ledere av gruppen bonnemote
+    // kan lese dem. by bruker uid (ikke e-post). Forfatteren kan slette sitt eget emne, og leserne kan slette alle.
+    function prayReader() {
+      return isAdmin() || (signedIn() && exists(/databases/$(database)/documents/members/$(request.auth.token.email))
+        && ('bonnemote' in myLeads()
+          || (get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('leder', false) == true
+              && get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('ltype', '') == 'forkynner')));
+    }
     match /prayers/{id} {
-      allow read: if isMember();
+      allow read: if prayReader();
       allow create: if isMember() && request.resource.data.keys().hasOnly(['t', 'name', 'by', 'ms', 'ber'])
         && request.resource.data.t is string && request.resource.data.t.size() > 0 && request.resource.data.t.size() <= 400
         && request.resource.data.name is string && request.resource.data.name.size() <= 60
         && request.resource.data.by == request.auth.uid && request.resource.data.ms is number && request.resource.data.ber == [];
-      allow update: if isMember() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ber'])
-        && request.resource.data.ber is list && request.resource.data.ber.size() <= 500
-        && request.resource.data.ber.toSet().difference(resource.data.ber.toSet()).hasOnly([request.auth.uid])
-        && resource.data.ber.toSet().difference(request.resource.data.ber.toSet()).hasOnly([request.auth.uid]);
-      allow delete: if isMember() && (resource.data.by == request.auth.uid || isAdmin() || isLeader());
+      allow delete: if isMember() && (resource.data.by == request.auth.uid || prayReader());
     }
     // Kontaktinfo som vises på Hjem: alle kan lese, bare administrator endrer.
     match /settings/{id} {

@@ -87,7 +87,6 @@ const FB={
     async prayersList(){const s=await S.getDocs(S.query(S.collection(db,'prayers'),S.orderBy('ms','desc'),S.limit(40)));return s.docs.map(d=>({id:d.id,...d.data()}))},
     addPrayer:d=>S.addDoc(S.collection(db,'prayers'),{t:String(d.t).slice(0,400),name:String(d.name||'').slice(0,60),by:auth.currentUser.uid,ms:Date.now(),ber:[]}),
     delPrayer:id=>sl(S.deleteDoc(S.doc(db,'prayers',id))),
-    prayToggle:(id,on)=>S.updateDoc(S.doc(db,'prayers',id),{ber:on?S.arrayUnion(auth.currentUser.uid):S.arrayRemove(auth.currentUser.uid)}),
     // Kontaktinfo («Finn frem» på Hjem): alle kan lese, administrator endrer.
     async getContact(){const s=await S.getDoc(S.doc(db,'settings','contact'));return s.exists()?s.data():null},
     setContact:d=>S.setDoc(S.doc(db,'settings','contact'),{address:String(d.address||'').slice(0,120),hours:String(d.hours||'').slice(0,120),phone:String(d.phone||'').slice(0,30),email:String(d.email||'').slice(0,100)}),
