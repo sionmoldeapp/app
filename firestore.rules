@@ -62,7 +62,7 @@ service cloud.firestore {
 
     // Planlagte varsler: administratorer kan planlegge til alle, gruppeledere bare til egne grupper. Bare administratorer/scriptet leser og sletter.
     match /scheduled/{id} {
-      allow create: if request.resource.data.keys().hasOnly(['title', 'body', 'tab', 'malType', 'groups', 'fireAt', 'by', 'created'])
+      allow create: if request.resource.data.keys().hasOnly(['title', 'body', 'tab', 'malType', 'groups', 'ltypes', 'kopi', 'fireAt', 'by', 'created'])
         && request.resource.data.title is string && request.resource.data.title.size() <= 100
         && request.resource.data.fireAt is int
         && (isAdmin() || (isLeader() && request.resource.data.malType == 'grupper'

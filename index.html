@@ -938,6 +938,7 @@ function hilsenAntall(v){
   if(v==='alle')return members.filter(x=>x.role!=='admin').length;
   if(v.startsWith('lt:'))return members.filter(x=>x.role!=='admin'&&x.leder&&ltOf(x)===v.slice(3)).length;
   return members.filter(x=>(x.groups||[]).includes(v.slice(3))||(x.leads||[]).includes(v.slice(3))).length}
+const nesteDag=(dow,h,mi)=>{const d=new Date();d.setHours(h,mi,0,0);let add=(dow-d.getDay()+7)%7;if(add===0&&d<=new Date())add=7;d.setDate(d.getDate()+add);return d};
 function hilsenAsk(){
   if(document.querySelector('dialog.pub')||!state.admin)return;
   const maal=hilsenMaal(),dlg=document.createElement('dialog');dlg.className='lp pub';
@@ -948,6 +949,9 @@ function hilsenAsk(){
    +'<div class="emorad" id="hEmoPanel" role="group" aria-label="Emojier" hidden>'+['🙏','❤️','✝️','🕊️','🙌','😊','🌟','☀️','🔥','🎶','📖','⛪','🌈','👋','✨','💛','🕯️','🎉','💪','🌿','🤗','🙂','📣','🎁'].map(e=>'<button type="button" class="emo" data-emo="'+e+'" aria-label="Sett inn '+e+'">'+e+'</button>').join('')+'</div>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Hvem skal få den?</legend><div style="display:grid;gap:6px">'
    +maal.map((m,i)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="hMaal" value="'+esc(m.v)+'" '+(i===0?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(m.l)+' <span class="small">('+hilsenAntall(m.v)+')</span></label>').join('')+'</div></fieldset>'
+   +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Når skal den sendes?</legend><div style="display:grid;gap:6px">'
+   +[['na','Send med en gang',null],['lor','Lørdag kl. 12:00',nesteDag(6,12,0)],['son','Søndag kl. 08:00',nesteDag(0,8,0)],['egen','Velg selv',null]].map(([v,l,d],i)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="hNaar" value="'+v+'" '+(i===0?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(l)+(d?' <span class="small">('+esc(kortDato(isoDato(d)))+')</span>':'')+'</label>').join('')
+   +'<div id="hEgen" style="display:none;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Dato<input id="hD" type="date" value="'+isoDato(nesteDag(6,12,0))+'"></label><label class="f">Klokkeslett<input id="hK" type="time" value="12:00"></label></div></div></fieldset>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Slik sendes den</legend><div style="display:grid;gap:6px">'
    +'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hNy" checked style="width:22px;height:22px;flex:none">Legg ut i Nyheter</label>'
    +(PUSH_URL?'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hPu" checked style="width:22px;height:22px;flex:none">Send som varsel til telefonene</label>':'')
@@ -960,6 +964,7 @@ function hilsenAsk(){
   knapp0.addEventListener('click',()=>{panel.hidden=!panel.hidden;knapp0.setAttribute('aria-expanded',String(!panel.hidden))});
   panel.addEventListener('mousedown',e=>{if(e.target.closest('.emo'))e.preventDefault()});
   panel.addEventListener('click',e=>{const b=e.target.closest('.emo');if(!b)return;const f=sistFelt,a=f.selectionStart==null?f.value.length:f.selectionStart,z=f.selectionEnd==null?a:f.selectionEnd;if(f.maxLength>0&&f.value.length-(z-a)+b.dataset.emo.length>f.maxLength)return;f.value=f.value.slice(0,a)+b.dataset.emo+f.value.slice(z);const p=a+b.dataset.emo.length;f.focus();try{f.setSelectionRange(p,p)}catch(x){}});
+  dlg.addEventListener('change',e=>{if(e.target.name==='hNaar')dlg.querySelector('#hEgen').style.display=e.target.value==='egen'?'grid':'none'});
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;
     e.preventDefault();
@@ -968,17 +973,22 @@ function hilsenAsk(){
     const ny=dlg.querySelector('#hNy').checked,pu=!!dlg.querySelector('#hPu')&&dlg.querySelector('#hPu').checked;
     if(!tittel||!tekst){msg('Skriv både tittel og melding.');return}
     if(!ny&&!pu){msg('Velg minst én måte å sende på.');return}
-    const n=hilsenAntall(v);
-    if(!confirm('Sende «'+tittel+'» til '+m.l.toLowerCase()+' ('+n+' person'+(n===1?'':'er')+')'+(pu?' og sende varsel':'')+'?'))return;
+    const n=hilsenAntall(v),naar=dlg.querySelector('[name=hNaar]:checked').value;
+    let fire=0;
+    if(naar==='lor')fire=nesteDag(6,12,0).getTime();else if(naar==='son')fire=nesteDag(0,8,0).getTime();
+    else if(naar==='egen'){const dd=dlg.querySelector('#hD').value,kk=dlg.querySelector('#hK').value;fire=dd&&kk?new Date(dd+'T'+kk).getTime():0;if(!fire){msg('Velg dato og klokkeslett.');return}}
+    if(fire&&fire<Date.now()+120000){msg('Tidspunktet må være frem i tid.');return}
+    if(!confirm((fire?'Planlegge «':'Sende «')+tittel+'» til '+m.l.toLowerCase()+' ('+n+' person'+(n===1?'':'er')+')'+(fire?' '+fmtDT(fire):'')+(pu?' og sende varsel':'')+'? Du får selv en kopi av varselet.'))return;
     const mal=v==='alle'?{type:'medlem'}:v.startsWith('lt:')?{type:'ltype',ltypes:[v.slice(3)]}:{type:'grupper',groups:[v.slice(3)]};
     const knapp=e.submitter;knapp.disabled=true;const res=[];
     try{
       if(ny){
         const lt=v.startsWith('lt:'),gr=v.startsWith('gr:');
-        await FB.add('posts',{t:tittel,b:tekst,audience:gr?[v.slice(3)]:['Medlem'],groups:gr?[v.slice(3)]:[],ltypes:lt?[v.slice(3)]:[],tag:lt?m.l.replace('Bare ','').replace(/^./,c=>c.toUpperCase()):gr?gName(v.slice(3)):'Medlem',m:true,hideHome:false,expireAt:Date.now()+5*864e5});
-        res.push('Lagt ut i Nyheter.')}
-      if(pu){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'news',mal);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter.':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
-      dlg.close();await refresh();push('Pastorens hilsen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
+        await FB.add('posts',{t:tittel,b:tekst,audience:gr?[v.slice(3)]:['Medlem'],groups:gr?[v.slice(3)]:[],ltypes:lt?[v.slice(3)]:[],tag:lt?m.l.replace('Bare ','').replace(/^./,c=>c.toUpperCase()):gr?gName(v.slice(3)):'Medlem',m:true,hideHome:false,...(fire?{pubAt:fire}:{}),expireAt:(fire||Date.now())+5*864e5});
+        res.push(fire?'Legges ut i Nyheter '+fmtDT(fire)+'.':'Lagt ut i Nyheter.')}
+      if(pu&&fire){try{await FB.addScheduled({title:tittel.slice(0,100),body:tekst.slice(0,140),tab:'news',malType:mal.type,groups:mal.groups||[],ltypes:mal.ltypes||[],kopi:true,fireAt:fire});res.push('Varselet sendes '+fmtDT(fire)+', og du får en kopi.')}catch(x){res.push('Varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er reglene publisert?')}}
+      else if(pu){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'news',mal,true);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter (inkludert din kopi).':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
+      dlg.close();await refresh();push(fire?'Pastorens hilsen er planlagt':'Pastorens hilsen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
     catch(er){knapp.disabled=false;msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+').'+(res.length?' '+res.join(' '):''))}});
   dlg.addEventListener('close',()=>dlg.remove());
   dlg.showModal();

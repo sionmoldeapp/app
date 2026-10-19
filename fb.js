@@ -148,9 +148,9 @@ try{
       const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'velkomst',emails})});
       return r.json();
     },
-    async sendPush(url,title,body,tab,mal){
+    async sendPush(url,title,body,tab,mal,kopi){
       const idToken=await auth.currentUser.getIdToken(true);
-      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,title,body,tab,mal})});
+      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,title,body,tab,mal,kopi:kopi===true})});
       return r.json();
     },
     // Sikkerhetskopi: henter alt innhold (også medlemsinnhold og brukerlister) som ren tekst. Bare administratorer får lov.
