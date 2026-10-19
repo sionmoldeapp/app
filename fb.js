@@ -77,6 +77,8 @@ try{
     delRequest:(group,id)=>S.deleteDoc(S.doc(db,'shifts',group,'requests',id)),
     // Planlagte varsler (samlingen scheduled): Apps Script sender dem når fireAt er passert.
     addScheduled:d=>S.addDoc(S.collection(db,'scheduled'),{...d,by:auth.currentUser.email,created:S.serverTimestamp()}),
+    // Avlyser et planlagt varsel. Returnerer false hvis det allerede er sendt (dokumentet finnes ikke lenger).
+    async delScheduled(id){const ref=S.doc(db,'scheduled',id),s=await S.getDoc(ref);if(!s.exists())return false;await S.deleteDoc(ref);return true},
     // Kategorier (samlingen categories): navn og rekkefølge.
     async catsList(){const s=await S.getDocs(S.collection(db,'categories'));return s.docs.map(d=>({id:d.id,...d.data()}))},
     setCatDoc:(id,d)=>S.setDoc(S.doc(db,'categories',id),d,{merge:true}),

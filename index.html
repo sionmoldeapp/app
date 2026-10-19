@@ -389,7 +389,7 @@ function regList(){
 function news(){
   const kortFor=p=>{
    if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
-   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3><button type="button" class="ptitle" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}">${esc(p.t)}</button></h3><div class="pbody ${state.open['p_'+p.id]?'open':''}"><span class="pt">${linkify(esc(p.b))}</span></div>${(String(p.b).length>130||(String(p.b).match(/\n/g)||[]).length>=2)?`<button type="button" class="pmore" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}">${state.open['p_'+p.id]?'Vis mindre':'Les mer'}</button>`:''}</div>`};
+   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3><button type="button" class="ptitle" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}">${esc(p.t)}</button></h3><div class="pbody ${state.open['p_'+p.id]?'open':''}"><span class="pt">${linkify(esc(p.b))}</span></div>${state.admin&&p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}" style="margin-top:8px">Avlys utsendelsen</button>`:''}${(String(p.b).length>130||(String(p.b).match(/\n/g)||[]).length>=2)?`<button type="button" class="pmore" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}">${state.open['p_'+p.id]?'Vis mindre':'Les mer'}</button>`:''}</div>`};
   const sk=state.admin&&state.view==='meg'?posts.filter(postSkjult):[];
   const l=posts.filter(p=>!sk.includes(p)).map(kortFor).join('');
   const kan=editOn();
@@ -995,14 +995,14 @@ function hilsenAsk(){
     if(fire&&fire<Date.now()+120000){msg('Tidspunktet må være frem i tid.');return}
     if(!confirm((fire?'Planlegge «':'Sende «')+tittel+'» til '+m.l.toLowerCase()+' ('+n+' person'+(n===1?'':'er')+')'+(fire?' '+fmtDT(fire):'')+(pu?' og sende varsel':'')+'? Du får selv en kopi av varselet.'))return;
     const mal=v==='alle'?{type:'medlem'}:v.startsWith('lt:')?{type:'ltype',ltypes:[v.slice(3)]}:{type:'grupper',groups:[v.slice(3)]};
-    const knapp=e.submitter;knapp.disabled=true;const res=[];
+    const knapp=e.submitter;knapp.disabled=true;const res=[];let schedId='';
     try{
+      if(pu&&fire){try{const ref=await FB.addScheduled({title:tittel.slice(0,100),body:tekst.slice(0,140),tab:'news',malType:mal.type,groups:mal.groups||[],ltypes:mal.ltypes||[],kopi:true,fireAt:fire});schedId=ref.id;res.push('Varselet sendes '+fmtDT(fire)+', og du får en kopi.')}catch(x){res.push('Varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er reglene publisert?')}}
       if(ny){
         const lt=v.startsWith('lt:'),gr=v.startsWith('gr:');
-        await FB.add('posts',{t:tittel,b:tekst,audience:gr?[v.slice(3)]:['Medlem'],groups:gr?[v.slice(3)]:[],ltypes:lt?[v.slice(3)]:[],tag:lt?m.l.replace('Bare ','').replace(/^./,c=>c.toUpperCase()):gr?gName(v.slice(3)):'Medlem',m:true,hideHome:false,...(fire?{pubAt:fire}:{}),expireAt:(fire||Date.now())+5*864e5});
+        await FB.add('posts',{t:tittel,b:tekst,audience:gr?[v.slice(3)]:['Medlem'],groups:gr?[v.slice(3)]:[],ltypes:lt?[v.slice(3)]:[],tag:lt?m.l.replace('Bare ','').replace(/^./,c=>c.toUpperCase()):gr?gName(v.slice(3)):'Medlem',m:true,hideHome:false,...(fire?{pubAt:fire}:{}),...(schedId?{schedId}:{}),expireAt:(fire||Date.now())+5*864e5});
         res.push(fire?'Legges ut i Nyheter '+fmtDT(fire)+'.':'Lagt ut i Nyheter.')}
-      if(pu&&fire){try{await FB.addScheduled({title:tittel.slice(0,100),body:tekst.slice(0,140),tab:'news',malType:mal.type,groups:mal.groups||[],ltypes:mal.ltypes||[],kopi:true,fireAt:fire});res.push('Varselet sendes '+fmtDT(fire)+', og du får en kopi.')}catch(x){res.push('Varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er reglene publisert?')}}
-      else if(pu){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'news',mal,true);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter (inkludert din kopi).':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
+      if(pu&&!fire){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'news',mal,true);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter (inkludert din kopi).':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
       dlg.close();await refresh();push(fire?'Pastorens hilsen er planlagt':'Pastorens hilsen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
     catch(er){knapp.disabled=false;msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+').'+(res.length?' '+res.join(' '):''))}});
   dlg.addEventListener('close',()=>dlg.remove());
@@ -1275,6 +1275,12 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.vkswap){const [g,i]=c.dataset.vkswap.split('|');vaktSwap(g,i)}
   else if(c.dataset.vkreqdel){const [g,i]=c.dataset.vkreqdel.split('|');try{await FB.delRequest(g,i);state.reqs[g]=(state.reqs[g]||[]).filter(r=>r.id!==i);keep(()=>{})}catch(er){push('Kunne ikke fjerne',saveMsg(er.code))}}
   else if('hilsen' in c.dataset){hilsenAsk()}
+  else if(c.dataset.avlyshilsen){const id=c.dataset.avlyshilsen,p=posts.find(x=>String(x.id)===id);if(!p)return;
+    if(!confirm('Avlyse «'+p.t+'»?\n\nMeldingen slettes, og varselet sendes ikke.'))return;
+    c.disabled=true;
+    try{let sendt=false;if(p.schedId)sendt=!(await FB.delScheduled(p.schedId));
+      await FB.del('posts',p.id);await refresh();push(sendt?'Meldingen er slettet':'Utsendelsen er avlyst',sendt?'Varselet var allerede sendt, så det kan ikke trekkes tilbake.':'Varselet blir ikke sendt.')}
+    catch(er){c.disabled=false;push('Kunne ikke avlyse',saveMsg(er&&er.code))}}
   else if(c.dataset.postopen){keep(()=>{state.open['p_'+c.dataset.postopen]=!state.open['p_'+c.dataset.postopen]})}
   else if('pubnew' in c.dataset){pubAsk()}
   else if('grpnew' in c.dataset){grpAsk(null)}
@@ -1642,7 +1648,7 @@ function lpAsk(key){
       return}
     if(!ok)return;
     try{try{await FB.ensureSnapshot('Før sletting',5*60e3)}catch(er){if(!confirm('Kunne ikke lage et sikkerhetspunkt før sletting ('+((er&&er.code)||'feil')+'). Slette likevel?'))return}
-      await FB.del(col,id);if(col==='events')await FB.del('rsvpCounts',id).catch(()=>{});await refresh();push('Slettet','«'+tittel+'» er fjernet.')}
+      await FB.del(col,id);if(col==='events')await FB.del('rsvpCounts',id).catch(()=>{});if(col==='posts'&&x.schedId)await FB.delScheduled(x.schedId).catch(()=>{});await refresh();push('Slettet','«'+tittel+'» er fjernet.')}
     catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}});
   dlg.showModal();
 }
