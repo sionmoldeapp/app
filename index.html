@@ -136,6 +136,9 @@ dialog.lp .btns.col .btn{width:100%}
 .btn.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
 .btn.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);padding:12px 18px;font-size:16px;border-radius:12px;width:100%}
 .chips{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:4px}
+.chips.scroll{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.chips.scroll::-webkit-scrollbar{display:none}
+.chips.scroll .chip{padding:6px 13px;font-size:13px;white-space:nowrap}
 .chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 14px;font-weight:600;font-size:14px}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .reg{display:flex;flex-direction:column;gap:2px}
@@ -383,7 +386,7 @@ function prog(){
   const kanNy=editOn();
   return `<div class="hd"><h1>Kommende arrangementer</h1><span class="script">sett av datoene!</span></div>${kanNy?'<button class="btn primary" data-wiz style="width:auto">+ Nytt arrangement</button>':''}
   <input type="search" id="progQ" placeholder="Søk i program …" aria-label="Søk i program" autocomplete="off" value="${esc(state.q||'')}">
-  <div class="chips">${cats.map(c=>`<button class="chip" data-f="${esc(c)}"${kanLp&&c!=='Alle'&&c!==CAT_LOCKED?` data-lp="cat:${encodeURIComponent(c)}"`:''} aria-pressed="${state.filter===c}">${esc(c)}</button>`).join('')}</div>
+  <div class="chips scroll" aria-label="Kategorier">${cats.map(c=>`<button class="chip" data-f="${esc(c)}"${kanLp&&c!=='Alle'&&c!==CAT_LOCKED?` data-lp="cat:${encodeURIComponent(c)}"`:''} aria-pressed="${state.filter===c}">${esc(c)}</button>`).join('')}</div>
   ${kanLp?'<p class="small" style="margin:0 0 8px">Hold inne på et arrangement eller en fast samling for å endre eller slette. Hold inne på en kategori for å endre navnet eller slette den.</p>':''}
   <div class="list" id="progList">${progList()}</div>`}
 
@@ -1132,7 +1135,8 @@ function badge(){
   const vb=$('#viewBtn');if(vb){if(!vb.innerHTML)vb.innerHTML=EYE;vb.hidden=!canPreview();vb.classList.toggle('on',state.view!=='meg'||!!state.real);vb.setAttribute('aria-label',state.view==='meg'?'Vis appen som en annen':'Du ser appen som '+(state.view==='medlem'?'vanlig medlem':'besøkende')+'. Trykk for å endre.')}
 }
 const viewBanner=()=>'';
-function render(){drawTabs();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();badge();window.scrollTo(0,0)}
+function chipScroll(){const a=document.querySelector('.chips.scroll [aria-pressed="true"]'),r=document.querySelector('.chips.scroll');if(a&&r)r.scrollTo({left:a.offsetLeft-(r.clientWidth-a.offsetWidth)/2,behavior:'auto'})}
+function render(){drawTabs();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();badge();window.scrollTo(0,0);chipScroll()}
 /* «Sletter …»: en sirkel som snurrer til databasen har bekreftet slettingen. Vises i åpen dialog hvis det finnes en, ellers over hele siden. */
 let busyN=0,busyT=null,busyIv=null,busyRm=null,busyTekst='Sletter …',busyVist=0;
 function busyVis(){
@@ -1162,7 +1166,7 @@ function push(t,b){$('#pushT').textContent=t;$('#pushB').textContent=b;$('#push'
     if(Math.abs(dx)>70||dy<-35){pb.classList.remove('drag');pb.style.transition='transform .2s,opacity .2s';pb.style.transform='translate(calc(-50% + '+(Math.abs(dx)>70?(dx>0?400:-400):0)+'px),'+(Math.abs(dx)>70?0:-160)+'px)';pb.style.opacity='0';setTimeout(()=>{pb.style.transition='';hide()},220)}
     else{pb.classList.remove('drag');pb.style.transform='';pb.style.opacity='';if(!moved)hide();else pt=setTimeout(hide,2500)}};
   pb.addEventListener('pointerup',end);pb.addEventListener('pointercancel',end)}
-function keep(fn){const y=scrollY;fn();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();drawTabs();badge();window.scrollTo(0,y)}
+function keep(fn){const y=scrollY;fn();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
 async function refresh(){
   const aktiv=busyN>0||busyRm;   // rett etter lagring/sletting: hold sirkelen til listene er oppdatert
   if(aktiv&&window.smBusy)window.smBusy(1);
