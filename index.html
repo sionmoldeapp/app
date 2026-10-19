@@ -571,7 +571,7 @@ function grpDel(id){
   document.body.appendChild(dlg);
   dlg.addEventListener('close',async()=>{const ok=dlg.returnValue==='slett';dlg.remove();if(!ok)return;
     try{
-      try{await FB.ensureSnapshot('Før sletting av gruppe',5*60e3)}catch(er){if(!confirm('Kunne ikke lage et sikkerhetspunkt ('+((er&&er.code)||'feil')+'). Fortsette likevel?'))return}
+      try{await FB.ensureSnapshot('Før sletting av gruppe',5*60e3)}catch(er){if(!await bekreft('Kunne ikke lage et sikkerhetspunkt ('+((er&&er.code)||'feil')+'). Fortsette likevel?'))return}
       await grpSeed();
       const rest=GROUPS.filter(x=>x[0]!==id);
       for(const e of ev)await FB.set('events',e.id,{groups:(e.groups||[]).filter(x=>x!==id)});
@@ -619,7 +619,7 @@ async function ltDel(id){
   const t=LTYPES.find(x=>x[0]===id);if(!t)return;
   if(LTYPES.length<2){push('Ikke mulig','Det må finnes minst én lederkategori.');return}
   const hit=members.filter(x=>x.leder&&ltOf(x)===id),til=LTYPES.find(x=>x[0]!==id);
-  if(!confirm('Slette lederkategorien «'+t[1]+'»?'+(hit.length?'\n\n'+hit.length+' leder'+(hit.length===1?'':'e')+' flyttes til «'+til[1]+'». De er fortsatt ledere.':'')))return;
+  if(!await bekreft('Slette lederkategorien «'+t[1]+'»?'+(hit.length?'\n\n'+hit.length+' leder'+(hit.length===1?'':'e')+' flyttes til «'+til[1]+'». De er fortsatt ledere.':'')))return;
   try{
     await ltSeed();
     for(const u of hit)await FB.setLtype(u.id,til[0]);
@@ -649,7 +649,7 @@ function profileCard(){
   if(!state.user||!state.member||state.admin||!state.profile)return '';
   const p=state.profile,gs=state.groups||[];
   return '<details class="card acc" data-acc="profil" '+(state.acc.profil?'open':'')+'><summary><h2>Min profil</h2></summary>'
-   +'<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre navn</button>'
+   +'<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre</button>'
    +'<h3 style="margin:16px 0 4px;font-size:18px">Varsler fra gruppene mine</h3>'
    +(gs.length?'<p class="small" style="margin:0 0 8px">Fjern haken for å slippe varsler som sendes bare til en gruppe. Du blir stående i gruppen.</p><div style="display:grid;gap:6px">'+gs.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-prmute="'+esc(g)+'" style="width:22px;height:22px;flex:none" '+((p.muted||[]).includes(g)?'':'checked')+'>'+esc(gName(g))+'</label>').join('')+'</div>':'<p class="small" style="margin:0">Du er ikke med i noen grupper ennå.</p>')
    +'<h3 style="margin:16px 0 4px;font-size:18px">Slett meg</h3><p class="small" style="margin:0 0 8px">Fjerner kontoen din, medlemskapet og varselkoden på denne telefonen. Dette kan ikke angres. Du kan alltid bli lagt til igjen av en leder.</p><button class="btn danger" data-prdel>Slett meg og dataene mine</button>'
@@ -797,7 +797,7 @@ function noteAsk(id){
   dlg.querySelectorAll('#nBars i').forEach((el,i)=>el.classList.toggle('on',i<=1));
   ed.addEventListener('paste',e=>{e.preventDefault();const t=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,t)});
   ed.addEventListener('drop',e=>e.preventDefault());
-  const lukk=()=>{if(snap()!==start&&!confirm('Lukke uten å lagre endringene?'))return;dlg.close()};
+  const lukk=async()=>{if(snap()!==start&&!await bekreft('Lukke uten å lagre endringene?'))return;dlg.close()};
   dlg.querySelector('#nClose').addEventListener('click',lukk);
   dlg.addEventListener('cancel',e=>{if(snap()!==start){e.preventDefault();lukk()}});
   dlg.querySelector('#nSave').addEventListener('click',async()=>{
@@ -817,7 +817,7 @@ function noteAsk(id){
     mailKnapp.disabled=false});
   const del=dlg.querySelector('#nDel');
   if(del)del.addEventListener('click',async()=>{
-    if(!confirm('Slette dette notatet? Det kan ikke angres.'))return;
+    if(!await bekreft('Slette dette notatet? Det kan ikke angres.'))return;
     try{await FB.delNote(noteEmail(),slot);state.notes=(state.notes||[]).filter(x=>x.id!==slot);state.noteMsg='Notatet er slettet.';start=snap();dlg.close();keep(()=>{});push('Slettet','Notatet er fjernet.')}
     catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}});
   dlg.addEventListener('close',()=>{document.removeEventListener('selectionchange',sync);dlg.remove()});
@@ -931,7 +931,7 @@ function vaktEdit(g,id){
     const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='slett')return;
     e.preventDefault();
     try{
-      if(v==='slett'){if(!confirm('Slette denne vakten?'))return;await FB.delShift(g,id)}
+      if(v==='slett'){if(!await bekreft('Slette denne vakten?'))return;await FB.delShift(g,id)}
       else{
         const rolle=dlg.querySelector('#veR').value.trim(),em=[...dlg.querySelectorAll('[data-vep]')].filter(c=>c.checked).map(c=>c.dataset.vep),navn={};folk.forEach(u=>navn[u.id]=navnAv(u));
         const nyId=vaktId(x.date,rolle);
@@ -945,7 +945,7 @@ function vaktEdit(g,id){
 function vaktSwap(g,id){
   const x=((state.shifts||{})[g]||[]).find(v=>v.id===id);if(!x||document.querySelector('dialog.lp'))return;
   const dlg=document.createElement('dialog');dlg.className='lp';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Be om bytte</h3><p class="small" style="margin:0">'+esc(gName(g))+' · '+esc(kortDato(x.date))+(x.role?' · '+esc(x.role):'')+'<br>Lederen for gruppen får beskjeden og tar kontakt.</p><label class="f">Melding (valgfritt)<textarea id="vsT" rows="3" maxlength="300" placeholder="For eksempel: Jeg kan ikke denne dagen. Kan noen ta den?"></textarea></label><p class="small" id="vsMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send beskjed</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Be om bytte</h3><p class="small" style="margin:0">'+esc(gName(g))+' · '+esc(kortDato(x.date))+(x.role?' · '+esc(x.role):'')+'<br>Lederen for gruppen får beskjeden og tar kontakt.</p><label class="f">Melding (valgfritt)<textarea id="vsT" rows="3" maxlength="300" placeholder="For eksempel: Jeg kan ikke denne dagen. Kan noen ta den?"></textarea></label><p class="small" id="vsMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;
@@ -996,7 +996,7 @@ function hilsenAsk(){
     if(naar==='lor')fire=nesteDag(6,12,0).getTime();else if(naar==='son')fire=nesteDag(0,8,0).getTime();
     else if(naar==='egen'){const dd=dlg.querySelector('#hD').value,kk=dlg.querySelector('#hK').value;fire=dd&&kk?new Date(dd+'T'+kk).getTime():0;if(!fire){msg('Velg dato og klokkeslett.');return}}
     if(fire&&fire<Date.now()+120000){msg('Tidspunktet må være frem i tid.');return}
-    if(!confirm((fire?'Planlegge «':'Sende «')+tittel+'» til '+m.l.toLowerCase()+' ('+n+' person'+(n===1?'':'er')+')'+(fire?' '+fmtDT(fire):'')+(pu?' og sende varsel':'')+'? Du får selv en kopi av varselet.'))return;
+    if(!await bekreft((fire?'Planlegge «':'Sende «')+tittel+'» til '+m.l.toLowerCase()+' ('+n+' person'+(n===1?'':'er')+')'+(fire?' '+fmtDT(fire):'')+(pu?' og sende varsel':'')+'? Du får selv en kopi av varselet.'))return;
     const mal=v==='alle'?{type:'medlem'}:v.startsWith('lt:')?{type:'ltype',ltypes:[v.slice(3)]}:{type:'grupper',groups:[v.slice(3)]};
     const knapp=e.submitter;knapp.disabled=true;const res=[];let schedId='';
     try{
@@ -1149,6 +1149,26 @@ window.smBusy=(d,tekst)=>{
   if(busyN===0){clearTimeout(busyT);busyT=null;clearTimeout(busyRm);
     const igjen=busyVist?Math.max(150,700-(Date.now()-busyVist)):150;
     busyRm=setTimeout(()=>{busyRm=null;if(busyN>0)return;clearInterval(busyIv);busyIv=null;const el=document.getElementById('busy');if(el)el.remove();busyTekst='Sletter …';busyVist=0},igjen)}};
+/* Felles bekreftelsesdialog (erstatter nettleserens confirm/prompt). Gir true/false. Knappeteksten velges ut fra meldingen, så samme handling alltid heter det samme. */
+const bekreftKnapp=m=>/^Planlegge/.test(m)?'Planlegg':/^Sende/.test(m)?'Send':/^Slett/.test(m)?'Slett':/^Fjern/.test(m)?'Fjern':/^Avlys/.test(m)?'Avlys utsendelsen':/^Lukke/.test(m)?'Lukk uten å lagre':/likevel\?$/.test(m)?'Fortsett likevel':/^(RULL|GJENOPPRETT)/.test(m)?'Fortsett':/^Gi /.test(m)?'Gi tilgang':'Bekreft';
+const bekreftFare=m=>/^(Slett|Fjern|Avlys|RULL|GJENOPPRETT|Lukke)/.test(m);
+function bekreft(msg,o){
+  o=o||{};msg=String(msg);
+  return new Promise(res=>{
+    const fare=o.fare!=null?o.fare:bekreftFare(msg),dlg=document.createElement('dialog');dlg.className='lp';dlg.setAttribute('role','alertdialog');
+    dlg.innerHTML='<form class="form" method="dialog"><p class="bmsg" style="margin:0;white-space:pre-line"></p>'+(o.skriv?'<label class="f">Skriv «'+esc(o.skriv)+'» for å bekrefte<input class="bskriv" autocomplete="off" autocapitalize="characters"></label>':'')+'<div class="btns"><button class="btn bok'+(fare?' danger':' primary')+'" value="ok" style="width:auto"></button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+    dlg.querySelector('.bmsg').textContent=msg;
+    const ok=dlg.querySelector('.bok');ok.textContent=o.ok||bekreftKnapp(msg);
+    if(o.skriv){ok.disabled=true;dlg.querySelector('.bskriv').addEventListener('input',e=>{ok.disabled=e.target.value.trim()!==o.skriv})}
+    dlg.addEventListener('close',()=>{const v=dlg.returnValue==='ok';dlg.remove();res(v)});
+    document.body.appendChild(dlg);dlg.showModal();
+    (o.skriv?dlg.querySelector('.bskriv'):fare?dlg.querySelector('[value=avbryt]'):ok).focus()})}
+/* Viser en tekst brukeren kan kopiere når utklippstavlen ikke er tilgjengelig. */
+function visTekst(tittel,tekst){
+  return new Promise(res=>{const dlg=document.createElement('dialog');dlg.className='lp';
+    dlg.innerHTML='<form class="form" method="dialog"><p class="bmsg" style="margin:0"></p><input class="btekst" readonly><div class="btns"><button class="btn primary" value="ok" style="width:auto">Lukk</button></div></form>';
+    dlg.querySelector('.bmsg').textContent=tittel;const i=dlg.querySelector('.btekst');i.value=tekst;i.addEventListener('focus',()=>i.select());
+    dlg.addEventListener('close',()=>{dlg.remove();res()});document.body.appendChild(dlg);dlg.showModal();i.focus();i.select()})}
 let pt;
 function push(t,b){$('#pushT').textContent=t;$('#pushB').textContent=b;$('#push').classList.add('show');clearTimeout(pt);pt=setTimeout(()=>$('#push').classList.remove('show'),5000)}
 /* Meldingsboksen kan sveipes bort (opp eller til siden) eller trykkes bort. */
@@ -1204,17 +1224,17 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.pref){keep(()=>{state.prefs[c.dataset.pref]=!state.prefs[c.dataset.pref];save()})}
   else if(c.dataset.ledertoggle){
     const on=c.dataset.on==='1',id=c.dataset.ledertoggle;
-    if(!confirm((on?'Gjøre ':'Fjerne lederrollen fra ')+id+(on?' til leder?':'?')))return;
+    if(!await bekreft((on?'Gjøre ':'Fjerne lederrollen fra ')+id+(on?' til leder?':'?')))return;
     try{await FB.setLeder(id,on);const u=members.find(m=>m.id===id);if(u)u.leder=on;state.memMsg=on?id+' er nå leder.':'Lederrollen er fjernet fra '+id+'.';state.acc.b_ld=true}
     catch(er){state.memMsg=saveMsg(er.code)}
     keep(()=>{})}
   else if(c.dataset.memdel){
-    if(!confirm('Fjerne '+c.dataset.memdel+' fra brukerlisten? Kontoen blir stående, men personen mister tilgang til medlemsinnhold og administrasjon.'))return;
+    if(!await bekreft('Fjerne '+c.dataset.memdel+' fra brukerlisten? Kontoen blir stående, men personen mister tilgang til medlemsinnhold og administrasjon.'))return;
     try{await FB.removeUser(c.dataset.memdel);state.memMsg='Fjernet fra brukerlisten.'}catch(er){state.memMsg=saveMsg(er.code)}
     await refresh()}
   else if(c.dataset.memrole){
     const to=c.dataset.to;
-    if(!confirm((to==='admin'?'Gjøre ':'Gjøre ')+c.dataset.memrole+' til '+(to==='admin'?'administrator':'medlem')+'?'))return;
+    if(!await bekreft((to==='admin'?'Gjøre ':'Gjøre ')+c.dataset.memrole+' til '+(to==='admin'?'administrator':'medlem')+'?'))return;
     try{await FB.setRole(c.dataset.memrole,to);state.memMsg='Rollen er endret.'}catch(er){state.memMsg=saveMsg(er.code)}
     await refresh()}
   else if(c.dataset.memreset){
@@ -1239,8 +1259,8 @@ document.addEventListener('click',async e=>{
     keep(()=>{})}
   else if(c.dataset.snaprestore){
     const sn=(state.snaps||[]).find(x=>x.id===c.dataset.snaprestore);if(!sn)return;
-    if(!confirm('RULL TILBAKE til '+fmtTid(sn.ms)+' ('+(sn.label||'')+')?\n\nArrangementer, nyheter og faste samlinger blir slik de var da: alt som er lagt til etter dette forsvinner, og alt som er slettet kommer tilbake. Brukerlistene fylles på med brukere fra den gangen, men ingen brukere fjernes.\n\nFør tilbakerullingen lages et nytt sikkerhetspunkt, så du kan rulle tilbake igjen.'))return;
-    if(prompt('Skriv RULL TILBAKE (med store bokstaver) for å bekrefte:')!=='RULL TILBAKE')return;
+    if(!await bekreft('RULL TILBAKE til '+fmtTid(sn.ms)+' ('+(sn.label||'')+')?\n\nArrangementer, nyheter og faste samlinger blir slik de var da: alt som er lagt til etter dette forsvinner, og alt som er slettet kommer tilbake. Brukerlistene fylles på med brukere fra den gangen, men ingen brukere fjernes.\n\nFør tilbakerullingen lages et nytt sikkerhetspunkt, så du kan rulle tilbake igjen.'))return;
+    if(!await bekreft('Siste sjekk før det gjøres.',{skriv:'RULL TILBAKE',fare:true,ok:'Rull tilbake'}))return;
     c.disabled=true;keep(()=>state.snapMsg='Ruller tilbake ...');
     try{
       await FB.makeSnapshot('Før tilbakerulling');
@@ -1256,8 +1276,8 @@ document.addEventListener('click',async e=>{
     try{const j=JSON.parse(await f.text());data=j.samlinger||j;if(!data||typeof data!=='object'||!['events','posts','regular','members','admins'].some(k=>Array.isArray(data[k])))throw 0}
     catch(e){keep(()=>state.snapMsg='Filen ser ikke ut som en sikkerhetskopi fra appen.');return}
     const tell=Object.fromEntries(['events','posts','regular','members','admins'].map(k=>[k,Array.isArray(data[k])?data[k].length:0]));
-    if(!confirm('GJENOPPRETT fra filen «'+f.name+'»?\n\nFilen inneholder: '+tellTxt(tell)+'.\n\nArrangementer, nyheter og faste samlinger erstattes med innholdet i filen. Brukerlistene fylles på, men ingen brukere fjernes. Før dette lages et sikkerhetspunkt.'))return;
-    if(prompt('Skriv RULL TILBAKE (med store bokstaver) for å bekrefte:')!=='RULL TILBAKE')return;
+    if(!await bekreft('GJENOPPRETT fra filen «'+f.name+'»?\n\nFilen inneholder: '+tellTxt(tell)+'.\n\nArrangementer, nyheter og faste samlinger erstattes med innholdet i filen. Brukerlistene fylles på, men ingen brukere fjernes. Før dette lages et sikkerhetspunkt.'))return;
+    if(!await bekreft('Siste sjekk før det gjøres.',{skriv:'RULL TILBAKE',fare:true,ok:'Rull tilbake'}))return;
     c.disabled=true;keep(()=>state.snapMsg='Gjenoppretter ...');
     try{await FB.makeSnapshot('Før gjenoppretting fra fil');const r=await FB.restore(data);state.snaps=await FB.listSnapshots();state.snapMsg='Gjenopprettet fra filen: '+r.skrevet+' oppføringer skrevet, '+r.slettet+' fjernet.'}
     catch(er){state.snapMsg='Gjenopprettingen feilet ('+((er&&(er.code||er.message))||'feil')+').'}
@@ -1268,7 +1288,7 @@ document.addEventListener('click',async e=>{
   else if('pushcopy' in c.dataset){
     const t=lsGet('sm-push');
     try{await navigator.clipboard.writeText(t);keep(()=>state.pushMsg='Varselkoden er kopiert ('+t.length+' tegn). Lim den inn i testen. Del den ikke med andre.')}
-    catch(er){keep(()=>state.pushMsg='Kunne ikke kopiere automatisk.');prompt('Kopier varselkoden:',t)}}
+    catch(er){keep(()=>state.pushMsg='Kunne ikke kopiere automatisk.');visTekst('Kopier varselkoden:',t)}}
   else if('pushoff' in c.dataset){
     try{const reg=await navigator.serviceWorker.getRegistration();await FB.disablePush(lsGet('sm-push'),reg);lsSet('sm-push','');keep(()=>state.pushMsg='Varsler er slått av for denne enheten.')}
     catch(er){keep(()=>state.pushMsg='Kunne ikke slå av varsler ('+((er&&(er.code||er.name))||'ukjent feil')+'). Prøv igjen, og send meg koden i parentesen hvis det fortsetter.')}}
@@ -1279,7 +1299,7 @@ document.addEventListener('click',async e=>{
     try{await FB.reset(m);keep(()=>state.err='Hvis adressen er registrert, er en lenke for nytt passord sendt.')}catch(er){keep(()=>state.err=authMsg(er.code))}}
   else if(c.dataset.at){keep(()=>{state.adm={type:c.dataset.at,edit:null,form:false};state.msg='';state.sel={}})}
   else if(c.dataset.aedit){editAsk(state.adm.type,c.dataset.aedit)}
-  else if(c.dataset.lgdel){const [em,g]=c.dataset.lgdel.split('|');if(!confirm('Fjerne '+em+' fra '+gName(g)+'?'))return;
+  else if(c.dataset.lgdel){const [em,g]=c.dataset.lgdel.split('|');if(!await bekreft('Fjerne '+em+' fra '+gName(g)+'?'))return;
     try{await FB.leaderRemove(em,g);state.lgMsg=em+' er fjernet fra '+gName(g)+'.';state.acc['mg_'+g]=true;state.acc.mingr=true}catch(er){state.lgMsg=saveMsg(er.code)}
     await refresh()}
   else if(c.dataset.rsmail){const [i,t,d]=c.dataset.rsmail.split('|'),navn=(state.rsList[i]||[]).map(u=>u.name);if(!PUSH_URL){push('Ikke tilgjengelig','Utsending er ikke satt opp.');return}
@@ -1290,7 +1310,7 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ltdel){ltDel(c.dataset.ltdel)}
   else if('prsave' in c.dataset){const n=($('#prN').value||'').trim();try{await FB.setProfile(state.user.email,{name:n});state.profile.name=n;if(n)lsSet('sm-navn',n);state.prMsg='Navnet er lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code)}keep(()=>{})}
   else if('prdel' in c.dataset){deleteSelfAsk()}
-  else if('copylink' in c.dataset){try{await navigator.clipboard.writeText(APP_LINK);push('Kopiert','Lenken til appen er kopiert.')}catch(x){prompt('Kopier lenken:',APP_LINK)}}
+  else if('copylink' in c.dataset){try{await navigator.clipboard.writeText(APP_LINK);push('Kopiert','Lenken til appen er kopiert.')}catch(x){visTekst('Kopier lenken:',APP_LINK)}}
   else if('sharelink' in c.dataset){try{await navigator.share({title:'Sion Molde',text:'Appen til Sion Molde',url:APP_LINK})}catch(x){}}
   else if('notenew' in c.dataset){noteAsk(null)}
   else if(c.dataset.noteopen){noteAsk(c.dataset.noteopen)}
@@ -1302,7 +1322,7 @@ document.addEventListener('click',async e=>{
   else if('hilsen' in c.dataset){hilsenAsk()}
   else if(c.dataset.postedit){editAsk('posts',c.dataset.postedit)}
   else if(c.dataset.avlyshilsen){const id=c.dataset.avlyshilsen,p=posts.find(x=>String(x.id)===id);if(!p)return;
-    if(!confirm('Avlyse «'+p.t+'»?\n\nMeldingen slettes, og varselet sendes ikke.'))return;
+    if(!await bekreft('Avlyse «'+p.t+'»?\n\nMeldingen slettes, og varselet sendes ikke.'))return;
     c.disabled=true;
     try{let sendt=false;if(p.schedId)sendt=!(await FB.delScheduled(p.schedId));
       await FB.del('posts',p.id);await refresh();push(sendt?'Meldingen er slettet':'Utsendelsen er avlyst',sendt?'Varselet var allerede sendt, så det kan ikke trekkes tilbake.':'Varselet blir ikke sendt.')}
@@ -1319,8 +1339,8 @@ document.addEventListener('click',async e=>{
     const t=state.adm.type,ids=admItems(t).filter(x=>state.sel[x.id]).map(x=>String(x.id));
     if(!ids.length)return;
     const navn={events:'arrangementer',posts:'nyheter',regular:'faste samlinger'}[t];
-    if(!confirm('Slette '+ids.length+' valgte '+navn+'? Du kan rulle tilbake under «Rull tilbake» hvis det går galt.'))return;
-    if(state.admin){try{await FB.ensureSnapshot('Før sletting',5*60e3)}catch(er){if(!confirm('Kunne ikke lage et sikkerhetspunkt før sletting ('+((er&&er.code)||'feil')+'). Slette likevel?'))return}}
+    if(!await bekreft('Slette '+ids.length+' valgte '+navn+'? Du kan rulle tilbake under «Rull tilbake» hvis det går galt.'))return;
+    if(state.admin){try{await FB.ensureSnapshot('Før sletting',5*60e3)}catch(er){if(!await bekreft('Kunne ikke lage et sikkerhetspunkt før sletting ('+((er&&er.code)||'feil')+'). Slette likevel?'))return}}
     c.disabled=true;let ok=0,feil=0;
     for(const id of ids){
       try{await FB.del(COL[t],id);if(t==='events')await FB.del('rsvpCounts',id).catch(()=>{});ok++}catch(er){feil++}
@@ -1328,8 +1348,8 @@ document.addEventListener('click',async e=>{
     state.sel={};state.adm.edit=null;state.msg='Slettet '+ok+(feil?', '+feil+' feilet (sjekk at du er administrator)':'')+'.';
     await refresh()}
   else if(c.dataset.adel){
-    if(!confirm('Slette denne oppføringen? Du kan rulle tilbake under «Rull tilbake» hvis det går galt.'))return;
-    if(state.admin){try{await FB.ensureSnapshot('Før sletting',5*60e3)}catch(er){if(!confirm('Kunne ikke lage et sikkerhetspunkt før sletting ('+((er&&er.code)||'feil')+'). Slette likevel?'))return}}
+    if(!await bekreft('Slette denne oppføringen? Du kan rulle tilbake under «Rull tilbake» hvis det går galt.'))return;
+    if(state.admin){try{await FB.ensureSnapshot('Før sletting',5*60e3)}catch(er){if(!await bekreft('Kunne ikke lage et sikkerhetspunkt før sletting ('+((er&&er.code)||'feil')+'). Slette likevel?'))return}}
     try{await FB.del(COL[state.adm.type],c.dataset.adel);if(state.adm.type==='events')await FB.del('rsvpCounts',c.dataset.adel).catch(()=>{});state.msg='Slettet.';state.adm.edit=null}catch(er){state.msg=saveMsg(er.code)}
     await refresh()}
   else if('aimport' in c.dataset){
@@ -1366,7 +1386,7 @@ document.addEventListener('submit',async e=>{
     const malType=$('#psMal')?$('#psMal').value:'grupper',gr=[...document.querySelectorAll('[data-psgr]')].filter(x=>x.checked).map(x=>x.dataset.psgr);
     if(malType==='grupper'&&!gr.length){keep(()=>state.pushSendMsg='Velg minst én gruppe.');return}
     const mal=malType==='grupper'?{type:'grupper',groups:gr}:malType==='medlem'?{type:'medlem'}:{type:'alle'};
-    if(!confirm('Sende «'+t+'» til '+(mal.type==='grupper'?'gruppene '+gr.map(gName).join(', '):mal.type==='medlem'?'medlemmene (de som har slått på varsler)':'alle som har slått på varsler')+(asNews?' og legge den ut som nyhet':'')+'?'))return;
+    if(!await bekreft('Sende «'+t+'» til '+(mal.type==='grupper'?'gruppene '+gr.map(gName).join(', '):mal.type==='medlem'?'medlemmene (de som har slått på varsler)':'alle som har slått på varsler')+(asNews?' og legge den ut som nyhet':'')+'?'))return;
     state.psT=t;state.psB=b;state.psTab=tab;state.psNews=asNews;state.psHide=hide;state.psMal=malType;state.psGr=gr;keep(()=>state.pushSendMsg='Sender ...');
     // Nyheten legges ut først, så varselet aldri peker til noe som ikke finnes.
     if(asNews){
@@ -1403,7 +1423,7 @@ document.addEventListener('submit',async e=>{
     const suff=f.id.slice(3),m=$('#mE'+suff).value.trim().toLowerCase(),role=f.id==='memA'?'admin':'member';
     const gr=[...f.querySelectorAll('[data-newg]')].filter(x=>x.checked).map(x=>x.dataset.newg);
     if(f.id==='memL'&&!gr.length){keep(()=>{state['memE'+suff]=m;state.memMsg='Velg minst én gruppe personen skal lede.'});return}
-    if(role==='admin'&&!confirm('Gi '+m+' full tilgang som administrator?\n\nAdministratorer kan endre alt innhold, alle brukere og sende varsler til alle.'))return;
+    if(role==='admin'&&!await bekreft('Gi '+m+' full tilgang som administrator?\n\nAdministratorer kan endre alt innhold, alle brukere og sende varsler til alle.'))return;
     try{
       const r=await FB.addUser(m,role);
       if(f.id.startsWith('memLd')){await FB.setLeder(m,true);await FB.setLtype(m,f.id.slice(6))}
@@ -1560,7 +1580,7 @@ function editAsk(t,id){
   const ed=admItems(t).find(x=>String(x.id)===String(id));if(!ed)return;
   state.adm={type:t,edit:ed.id,form:true};state.msg='';
   const dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<h3 style="margin:0 0 10px">Rediger</h3><form class="form" id="adm" data-type="'+t+'">'+fields(t,ed)+'<div class="btns"><button class="btn primary" type="submit" style="width:auto">Lagre endring</button><button class="btn" type="button" data-pubclose>Avbryt</button></div></form><p class="small" role="status" id="pubMsg" style="margin:8px 0 0"></p>';
+  dlg.innerHTML='<h3 style="margin:0 0 10px">Rediger</h3><form class="form" id="adm" data-type="'+t+'">'+fields(t,ed)+'<div class="btns"><button class="btn primary" type="submit" style="width:auto">Lagre</button><button class="btn" type="button" data-pubclose>Avbryt</button></div></form><p class="small" role="status" id="pubMsg" style="margin:8px 0 0"></p>';
   document.body.appendChild(dlg);
   const iv=setInterval(()=>{const m=$('#pubMsg');if(m)m.textContent=state.msg},300);
   dlg.addEventListener('click',e=>{if(e.target.closest('[data-pubclose]'))dlg.close()});
@@ -1571,7 +1591,7 @@ function pubAsk(){
   if(document.querySelector('dialog.pub'))return;
   state.adm={type:'posts',edit:null,form:false};state.msg='';
   const dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<h3 style="margin:0 0 4px">Ny melding</h3><p class="small" style="margin:0 0 10px">'+(state.admin?'Velg hvem som skal få den under Målgruppe.':'Meldingen går bare til gruppen du leder.')+'</p><form class="form" id="adm" data-type="posts">'+fields('posts',null)+'<div class="btns"><button class="btn primary" type="submit" style="width:auto">Send melding</button><button class="btn" type="button" data-pubclose>Avbryt</button></div></form><p class="small" role="status" id="pubMsg" style="margin:8px 0 0"></p>';
+  dlg.innerHTML='<h3 style="margin:0 0 4px">Ny melding</h3><p class="small" style="margin:0 0 10px">'+(state.admin?'Velg hvem som skal få den under Målgruppe.':'Meldingen går bare til gruppen du leder.')+'</p><form class="form" id="adm" data-type="posts">'+fields('posts',null)+'<div class="btns"><button class="btn primary" type="submit" style="width:auto">Send</button><button class="btn" type="button" data-pubclose>Avbryt</button></div></form><p class="small" role="status" id="pubMsg" style="margin:8px 0 0"></p>';
   document.body.appendChild(dlg);
   const pc=dlg.querySelector('[name=push]');if(pc)pc.checked=true;
   const iv=setInterval(()=>{const m=$('#pubMsg');if(m)m.textContent=state.msg},300);
@@ -1589,7 +1609,7 @@ function catAsk(navn){
   const ev=rawEvents.filter(e=>normCat(e.cat)===navn),rg=regular.filter(r=>normCat(r.cat)===navn),n=ev.length+rg.length;
   const mål=allCats().filter(c=>c!==CAT_LOCKED&&c!==navn),dlg=document.createElement('dialog');dlg.className='lp';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Kategorien «'+esc(navn)+'»</h3><p class="small" style="margin:0">Brukes av '+ev.length+' arrangement'+(ev.length===1?'':'er')+' og '+rg.length+' fast'+(rg.length===1?'':'e')+' samling'+(rg.length===1?'':'er')+'.</p>'
-   +'<label class="f">Nytt navn<input id="cN" maxlength="30" value="'+esc(navn)+'"></label><button class="btn primary" value="navn" style="width:auto">Lagre nytt navn</button>'
+   +'<label class="f">Nytt navn<input id="cN" maxlength="30" value="'+esc(navn)+'"></label><button class="btn primary" value="navn" style="width:auto">Lagre</button>'
    +'<hr style="border:0;border-top:1px solid var(--line);width:100%">'
    +'<b>Slette kategorien?</b>'+(n?'<label class="f">Flytt de '+n+' oppføringene til<select id="catTo">'+mål.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select></label>':'<span class="small">Ingen bruker den.</span>')
    +'<div class="btns col"><button class="btn danger" value="slett">Slett kategorien</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
@@ -1602,7 +1622,7 @@ function catAsk(navn){
         if(!nytt||nytt===navn)return;
         if(allCats().some(c=>c.toLowerCase()===nytt.toLowerCase()&&c!==navn)){push('Finnes allerede','Det finnes en kategori som heter «'+nytt+'».');return}
         if(nytt.toLowerCase()===CAT_LOCKED.toLowerCase()){push('Ikke mulig','«'+CAT_LOCKED+'» er en spesiell kategori.');return}
-        try{await FB.ensureSnapshot('Før endring av kategori',5*60e3)}catch(er){if(!confirm('Kunne ikke lage et sikkerhetspunkt ('+((er&&er.code)||'feil')+'). Fortsette likevel?'))return}
+        try{await FB.ensureSnapshot('Før endring av kategori',5*60e3)}catch(er){if(!await bekreft('Kunne ikke lage et sikkerhetspunkt ('+((er&&er.code)||'feil')+'). Fortsette likevel?'))return}
         await catSeed();
         const ord=(await FB.catsList()).find(c=>c.name===navn);
         for(const e of ev)await FB.set('events',e.id,{cat:nytt});
@@ -1611,7 +1631,7 @@ function catAsk(navn){
         if(ord&&ord.id!==slug(nytt))await FB.delCatDoc(ord.id);
         if(state.filter===navn)state.filter=nytt;
         await refresh();push('Navnet er endret','«'+navn+'» heter nå «'+nytt+'».');return}
-      try{await FB.ensureSnapshot('Før sletting av kategori',5*60e3)}catch(er){if(!confirm('Kunne ikke lage et sikkerhetspunkt ('+((er&&er.code)||'feil')+'). Fortsette likevel?'))return}
+      try{await FB.ensureSnapshot('Før sletting av kategori',5*60e3)}catch(er){if(!await bekreft('Kunne ikke lage et sikkerhetspunkt ('+((er&&er.code)||'feil')+'). Fortsette likevel?'))return}
       await catSeed();
       for(const e of ev)await FB.set('events',e.id,{cat:til});
       for(const r of rg)await FB.set('regular',r.id,{cat:til});
@@ -1628,7 +1648,7 @@ function fastAsk(id,dato){
   dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">'+esc(r.title)+'</h3><p class="small" style="margin:0">'+esc(dn)+' kl. '+esc(r.time)+(stat?'<br><b>'+esc(stat)+'</b>':'')+'</p>'
    +(PUSH_URL?'<label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="lpPush" style="width:22px;height:22px;flex:none">Send varsel til alle (gjelder avlys og endre)</label><div id="lpMsg" style="display:none;gap:8px"><label class="f">Varseltittel<input id="lpPT" maxlength="60"></label><label class="f">Varseltekst<textarea id="lpPB" rows="3" maxlength="140"></textarea></label><span class="small">Standardteksten settes inn automatisk. Skriv over den hvis du vil si noe annet.</span></div>':'')
    +'<div class="btns col">'+(ex&&ex.k!=='fjernet'?'<button class="btn" value="angre">Angre ('+(ex.k==='avlyst'?'avlysning':'endring')+')</button>':'')+(ex&&ex.k==='avlyst'?'':'<button class="btn" value="avlys">Merk denne gangen som avlyst</button>')+'<button class="btn" value="fjern">Fjern bare denne gangen</button></div>'
-   +'<details><summary style="cursor:pointer;font-weight:600">Endre denne gangen</summary><div style="display:grid;gap:8px;margin-top:8px"><label class="f">Nytt klokkeslett<input id="lpTime" type="time"></label><label class="f">Ny merknad<input id="lpNote" type="text" maxlength="100"></label><button class="btn" value="endre">Lagre endringen</button></div></details>'
+   +'<details><summary style="cursor:pointer;font-weight:600">Endre denne gangen</summary><div style="display:grid;gap:8px;margin-top:8px"><label class="f">Nytt klokkeslett<input id="lpTime" type="time"></label><label class="f">Ny merknad<input id="lpNote" type="text" maxlength="100"></label><button class="btn" value="endre">Lagre</button></div></details>'
    +'<div class="btns col"><button class="btn" value="rediger">Endre hele den faste samlingen</button><button class="btn danger" value="slettalle">Slett hele den faste samlingen</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   const defs=(rv,tid,nt)=>rv==='endre'?['Endret: '+r.title,dn+(TIDOK(tid)?', nå kl. '+tid:'')+(nt?'. '+nt:'')]:['Avlyst: '+r.title,dn+' kl. '+r.time+' er avlyst.'];
@@ -1639,8 +1659,8 @@ function fastAsk(id,dato){
     try{
       if(rv==='rediger'){state.adm={type:'regular',edit:id,form:true};state.tab='me';state.acc.adm=true;state.msg='';render();setTimeout(()=>{const f=$('#adm');if(f)f.scrollIntoView({block:'start'})},80);return}
       if(rv==='slettalle'){
-        if(!confirm('Slette hele den faste samlingen «'+r.title+'»? Alle kommende ganger forsvinner.'))return;
-        try{await FB.ensureSnapshot('Før sletting',5*60e3)}catch(er){if(!confirm('Kunne ikke lage et sikkerhetspunkt før sletting ('+((er&&er.code)||'feil')+'). Slette likevel?'))return}
+        if(!await bekreft('Slette hele den faste samlingen «'+r.title+'»? Alle kommende ganger forsvinner.'))return;
+        try{await FB.ensureSnapshot('Før sletting',5*60e3)}catch(er){if(!await bekreft('Kunne ikke lage et sikkerhetspunkt før sletting ('+((er&&er.code)||'feil')+'). Slette likevel?'))return}
         await FB.del('regular',id);await refresh();push('Slettet','«'+r.title+'» er fjernet.');return}
       const nx={...(r.ex||{})};
       if(rv==='avlys')nx[dato]={k:'avlyst'};
@@ -1674,7 +1694,7 @@ function lpAsk(key){
       catch(er){push('Kunne ikke sende','Ingen kontakt med varseltjenesten.')}
       return}
     if(!ok)return;
-    try{try{await FB.ensureSnapshot('Før sletting',5*60e3)}catch(er){if(!confirm('Kunne ikke lage et sikkerhetspunkt før sletting ('+((er&&er.code)||'feil')+'). Slette likevel?'))return}
+    try{try{await FB.ensureSnapshot('Før sletting',5*60e3)}catch(er){if(!await bekreft('Kunne ikke lage et sikkerhetspunkt før sletting ('+((er&&er.code)||'feil')+'). Slette likevel?'))return}
       await FB.del(col,id);if(col==='events')await FB.del('rsvpCounts',id).catch(()=>{});if(col==='posts'&&x.schedId)await FB.delScheduled(x.schedId).catch(()=>{});await refresh();push('Slettet','«'+tittel+'» er fjernet.')}
     catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}});
   dlg.showModal();
