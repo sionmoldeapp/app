@@ -125,6 +125,7 @@ dialog.pub{max-height:88vh;overflow:auto;width:min(94vw,440px)}
 .item.avl>button b{text-decoration:line-through;opacity:.75}
 dialog.lp .btns.col{flex-direction:column;align-items:stretch}
 dialog.lp .btns.col .btn{width:100%}
+a.btn{text-decoration:none;color:inherit;display:inline-block}
 .btn.danger{background:#b3261e;color:#fff;border-color:#b3261e}
 .detail{padding:0 14px 14px 116px;display:none;flex-direction:column;gap:10px}
 @media (max-width:480px){.detail{padding-left:14px}}
@@ -224,6 +225,7 @@ async function fetchAll(){
 async function load(){
   if(FB)try{applyGroups(await FB.groupsList())}catch(e){}
   if(FB)try{applyCats(await FB.catsList())}catch(e){}
+  if(FB)try{const k=await FB.getContact();if(k)state.contact=k}catch(e){}
   if(FB&&state.admin)try{applyLtypes(await FB.ltypesList())}catch(e){}
   const [e,p,g]=await fetchAll();
   rawEvents=e;
@@ -277,7 +279,7 @@ function nextFast(){const out=[];
 const fastId=(r,w)=>'f_'+r.id+'_'+dkey(w);
 function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',note=ex&&ex.k==='endret'&&ex.note?ex.note:r.note;
   return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(r.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'?'<span class="tag avl" style="background:var(--lamp);color:#fff">Endret</span>':'<span class="tag">Fast</span>'}</button>
-   <div class="detail"><div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>${remHint(id)}${cnt(id)}`}${rsPanel(id,r.title,dkey(w),[])}</div></div>`}
+   <div class="detail"><div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}${calBtn(id)}</div>${remHint(id)}${cnt(id)}`}${rsPanel(id,r.title,dkey(w),[])}</div></div>`}
 function evItem(e){
   if(e.m&&!state.member)return `<div class="item"><div class="locked" style="padding:12px">${dateBox(e)}<div class="grow"><b>${e.t}</b><span class="small">Kun for medlemmer. Logg inn under «Meg».</span></div></div></div>`;
   const open=state.open[e.id],r=state.rsvp[e.id];
@@ -285,7 +287,7 @@ function evItem(e){
    <div class="grow"><b>${e.t}</b><span class="small">${when(e.w)} ${tm(e)}${statusTag(e)}${e.place?' · '+esc(e.place):''}${e.groups&&e.groups.length?' · '+esc(e.groups.map(gName).join(', ')):''}</span></div>
    ${e.m?'<span class="tag m">Medlem</span>':`<span class="tag">${esc(normCat(e.cat))}</span>`}</button>
    <div class="detail"><div>${e.d}</div><div class="small">${esc(e.who)}</div>
-   <div class="btns"><button class="btn ${r?'on':''}" data-rsvp="${e.id}">${r?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(e.id)}
+   <div class="btns"><button class="btn ${r?'on':''}" data-rsvp="${e.id}">${r?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(e.id)}${calBtn(e.id)}${kartBtn(e.place)}
    </div>${remHint(e.id)}${cnt(e.id)}${rsPanel(e.id,e.title,e.start,e.groups)}</div></div>`}
 
 /* Påmeldingen går til Google Skjema «Sommerstevne påmeldinger nyhetsbrev». Svarene havner i et regneark i Drive,
@@ -344,6 +346,99 @@ function svCard(){
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.sv)}</p><p class="small" style="margin:6px 0 0">E-posten brukes bare til informasjon om sommerstevnet.</p>`;
   return done?`<details class="card acc" data-acc="sv" ${state.acc.sv?'open':''}><summary><h2>Sommerstevne nyhetsbrev</h2></summary>${body}</details>`:`<div class="card"><h2>Sommerstevne</h2>${body}</div>`}
 
+/* Små hjelpere for medlemmene: legg i kalenderen (.ics), kart, bønneemner og redigerbar kontaktinfo. */
+const kartUrl=p=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p+', Møre og Romsdal');
+function calInfo(id){
+  const f=String(id).match(/^f_(.+)_([0-9]{4}-[0-9]{2}-[0-9]{2})$/);
+  if(f){const r=regular.find(x=>x.id==f[1]);return r?{title:r.title,start:f[2],end:'',time:r.time,place:'',desc:r.note||''}:null}
+  const e=events.find(x=>x.id==id);return e?{title:e.title,start:e.start,end:e.end||'',time:e.time||'',place:e.place||'',desc:e.text||''}:null}
+const icsEsc=s=>String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+function icsFil(id){
+  const c=calInfo(id);if(!c)return;
+  const p=n=>String(n).padStart(2,'0'),dd=s=>s.replace(/-/g,''),lok=d=>d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'T'+p(d.getHours())+p(d.getMinutes())+'00';
+  const nå=new Date(),stamp=nå.getUTCFullYear()+p(nå.getUTCMonth()+1)+p(nå.getUTCDate())+'T'+p(nå.getUTCHours())+p(nå.getUTCMinutes())+p(nå.getUTCSeconds())+'Z';
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Sion Molde//App//NO','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+String(id).replace(/[^A-Za-z0-9_-]/g,'')+'@sionmoldeapp.github.io','DTSTAMP:'+stamp];
+  if(TIDOK(c.time)){
+    const s0=new Date(c.start+'T'+p(c.time.split(':')[0])+':'+c.time.split(':')[1]);
+    const e0=c.end&&c.end>c.start?new Date(c.end+'T23:59'):new Date(s0.getTime()+36e5);
+    L.push('DTSTART:'+lok(s0),'DTEND:'+lok(e0))}
+  else{const e1=new Date((c.end||c.start)+'T12:00');e1.setDate(e1.getDate()+1);
+    L.push('DTSTART;VALUE=DATE:'+dd(c.start),'DTEND;VALUE=DATE:'+e1.getFullYear()+p(e1.getMonth()+1)+p(e1.getDate()))}
+  L.push('SUMMARY:'+icsEsc(c.title));
+  if(c.place)L.push('LOCATION:'+icsEsc(c.place));
+  if(c.desc)L.push('DESCRIPTION:'+icsEsc(c.desc));
+  L.push('END:VEVENT','END:VCALENDAR');
+  const blob=new Blob([L.join('\r\n')+'\r\n'],{type:'text/calendar;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='sion-molde.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+  push('Kalender','Åpne filen som lastes ned for å legge arrangementet i kalenderen din.')}
+const calBtn=id=>`<button class="btn" data-ics="${esc(id)}">Legg i kalender</button>`;
+const kartBtn=p=>p?`<a class="btn" href="${esc(kartUrl(p))}" target="_blank" rel="noopener">Vis i kart</a>`:'';
+
+const CONTACT_DEF={address:'Kometvegen 7, 6419 Molde',hours:'tirsdag–torsdag kl. 10–16',phone:'71 25 10 29',email:'post@sionmolde.no'};
+function contactCard(){
+  const c={...CONTACT_DEF,...(state.contact||{})},tel=String(c.phone||'').replace(/[^0-9+]/g,''),R=[];
+  if(c.address)R.push('Adresse: <a href="'+esc(kartUrl(c.address))+'" target="_blank" rel="noopener">'+esc(c.address)+'</a>');
+  if(c.hours)R.push('Kontortid: '+esc(c.hours));
+  if(c.phone)R.push('Telefon: <a href="tel:'+esc(tel.startsWith('+')?tel:'+47'+tel)+'">'+esc(c.phone)+'</a>');
+  if(c.email)R.push('E-post: <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>');
+  return '<div class="card"><h2>Finn frem</h2><p class="small" style="margin:6px 0 0">'+R.join('<br>')+'</p>'+(state.admin?'<div class="btns" style="margin-top:10px"><button class="btn" data-contactedit>Endre</button></div>':'')+'</div>'}
+function contactAsk(){
+  if(!state.admin||document.querySelector('dialog.pub'))return;
+  const c={...CONTACT_DEF,...(state.contact||{})},dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Finn frem</h3><p class="small" style="margin:0">Dette vises for alle på Hjem. Tomt felt skjules.</p>'
+   +'<label class="f">Adresse<input id="kA" maxlength="120" value="'+esc(c.address||'')+'"></label>'
+   +'<label class="f">Kontortid<input id="kH" maxlength="120" value="'+esc(c.hours||'')+'"></label>'
+   +'<label class="f">Telefon<input id="kT" type="tel" maxlength="30" value="'+esc(c.phone||'')+'"></label>'
+   +'<label class="f">E-post<input id="kE" type="email" maxlength="100" value="'+esc(c.email||'')+'"></label>'
+   +'<p class="small" id="kMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='lagre')return;e.preventDefault();
+    const d={address:dlg.querySelector('#kA').value.trim(),hours:dlg.querySelector('#kH').value.trim(),phone:dlg.querySelector('#kT').value.trim(),email:dlg.querySelector('#kE').value.trim()};
+    try{await FB.setContact(d);state.contact=d;dlg.close();keep(()=>{});push('Lagret','Kontaktinfoen er oppdatert.')}
+    catch(er){dlg.querySelector('#kMsg').textContent='Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
+  dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+
+/* Bønneemner: bare innloggede medlemmer. Navn er valgfritt. «Jeg ber» teller per person, og emner skjules etter 60 dager. */
+const prUid=()=>(FB&&FB.user&&FB.user.uid)||'';
+function prayerCard(){
+  if(!state.user||!state.member)return '';
+  const l=state.prayers,uid=prUid(),vis=l?l.filter(x=>(x.ms||0)>Date.now()-60*864e5):[];
+  let inn;
+  if(l===undefined)inn='<p class="small">Henter bønneemner …</p>';
+  else inn='<p class="small" style="margin:0 0 8px">Del noe du ønsker at andre skal be for. Alle innloggede medlemmer kan se emnene, og de skjules etter 60 dager.</p>'
+   +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><button class="btn" data-prrefresh>Oppdater</button></div>'
+   +'<div class="reg">'+(vis.map(x=>{const ber=(x.ber||[]).includes(uid),n=(x.ber||[]).length;
+      return '<div class="r" style="display:block"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'Anonym')+' · '+esc(ago({ms:x.ms}))+'</div><div class="btns"><button class="btn '+(ber?'on':'')+'" data-prpray="'+esc(x.id)+'">'+(ber?'✓ Du ber':'Jeg ber')+(n?' ('+n+')':'')+'</button>'+((x.by===uid||state.admin||isLeader())?'<button class="btn" data-prdel="'+esc(x.id)+'">Slett</button>':'')+'</div></div>'}).join('')||'<p class="small">Ingen bønneemner ennå.</p>')+'</div>';
+  return '<details class="card acc" data-acc="bonn" '+(state.acc.bonn?'open':'')+'><summary><h2>Bønneemner'+(l?' ('+vis.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
+async function loadPrayers(){
+  try{state.prayers=await FB.prayersList();state.prMsg=''}catch(e){state.prayers=[];state.prMsg='Kunne ikke hente bønneemner ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
+  keep(()=>{})}
+function prayAsk(){
+  if(document.querySelector('dialog.pub'))return;
+  const dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Nytt bønneemne</h3>'
+   +'<label class="f">Bønneemne<textarea id="pT" rows="4" maxlength="400" placeholder="Skriv kort hva du ønsker forbønn for …"></textarea></label>'
+   +'<label class="f">Navn (valgfritt, tomt vises som anonym)<input id="pN" maxlength="60" value="'+esc(lsGet('sm-navn')||(state.profile&&state.profile.name)||'')+'"></label>'
+   +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Legg ut</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
+    const t=dlg.querySelector('#pT').value.trim(),name=dlg.querySelector('#pN').value.trim();
+    if(!t){dlg.querySelector('#pMsg').textContent='Skriv et bønneemne.';return}
+    try{await FB.addPrayer({t,name});dlg.close();state.acc.bonn=true;await loadPrayers();push('Lagt ut','Bønneemnet er lagt ut.')}
+    catch(er){dlg.querySelector('#pMsg').textContent='Kunne ikke legge ut ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
+  dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+async function prayToggle(id){
+  const x=(state.prayers||[]).find(p=>p.id===id);if(!x||!FB)return;
+  const uid=prUid(),på=!(x.ber||[]).includes(uid),før=x.ber||[];
+  x.ber=på?[...før,uid]:før.filter(u=>u!==uid);keep(()=>{});
+  try{await FB.prayToggle(id,på)}catch(er){x.ber=før;keep(()=>{});push('Kunne ikke lagre',saveMsg(er&&er.code))}}
+async function prayDel(id){
+  if(!await bekreft('Slette dette bønneemnet?'))return;
+  try{await FB.delPrayer(id);state.prayers=(state.prayers||[]).filter(p=>p.id!==id);keep(()=>{})}
+  catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}}
+
 function home(){
   const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome), n=vis[0];
   const fast=nextFast();
@@ -352,15 +447,16 @@ function home(){
   return `<div><h1>Velkommen</h1><span class="script">dette skjer i Sion Molde</span></div>
   ${n?`<div class="card next"><div class="eyebrow">Neste samling</div><h2>${n.t}</h2>
    <div class="meta">${when(n.w)}${tm(n)}${n.place?' · '+esc(n.place):''}</div>
-   <div class="btns" style="margin-top:12px"><button class="btn" style="color:var(--ink)" data-rsvp="${n.id}" data-stay="1">${state.rsvp[n.id]?'✓ Jeg kommer':'Jeg kommer'}</button></div>${counts[n.id]>0?`<div class="meta" style="margin-top:8px">${counts[n.id]} kommer</div>`:''}</div>`
+   <div class="btns" style="margin-top:12px"><button class="btn" style="color:var(--ink)" data-rsvp="${n.id}" data-stay="1">${state.rsvp[n.id]?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(n.id).replace('<button class="btn','<button style="color:var(--ink)" class="btn')}</div>${counts[n.id]>0?`<div class="meta" style="margin-top:8px">${counts[n.id]} kommer</div>`:''}</div>`
   :`<div class="card next"><div class="eyebrow">Neste samling</div><h2>Ingen planlagt</h2><div class="meta">Se faste samlinger under Program.</div></div>`}
   ${welcomeCard()}
   ${visitorCard()}
   ${myShiftsCard()}
+  ${prayerCard()}
   ${post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b><button type="button" class="ptitle" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${esc(post.t)}</button></b><div class="pbody ${state.open['p_'+post.id]?'open':''}"><span class="pt">${linkify(esc(post.b))}</span></div>${(String(post.b).length>130||(String(post.b).match(/\n/g)||[]).length>=2)?`<button type="button" class="pmore" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${state.open['p_'+post.id]?'Vis mindre':'Les mer'}</button>`:''}</div></div>`:''}
   ${wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:''}
   ${svCard()}
-  <div class="card"><h2>Finn frem</h2><p class="small" style="margin:6px 0 0">Adresse: Kometvegen 7, 6419 Molde<br>Kontortid: tirsdag–torsdag kl. 10–16<br>Telefon: <a href="tel:+4771251029">71 25 10 29</a><br>E-post: <a href="mailto:post@sionmolde.no">post@sionmolde.no</a></p></div>`}
+  ${contactCard()}`}
 
 /* Søk i Program: tittel, sted, taler, beskrivelse, merknad, kategori og ukedag/dato. Låste arrangementer søkes bare på tittel. */
 const norm=t=>String(t||'').toLowerCase();
@@ -733,6 +829,7 @@ function sanitizeNote(html){
     walk(c)})};
   walk(t.content);
   return t.innerHTML.slice(0,19000)}
+const noteLinjer=h=>{const d=document.createElement('div');d.innerHTML=sanitizeNote(h).replace(/<br\s*\/?>/gi,'\n').replace(/<(div|p)(\s[^>]*)?>/gi,'\n$&').replace(/<\/(div|p)>/gi,'\n');return (d.textContent||'').split('\n').map(x=>x.replace(/\s+/g,' ').trim()).join('\n').replace(/\n{3,}/g,'\n\n').trim()};
 const noteText=h=>{const d=document.createElement('div');d.innerHTML=sanitizeNote(h);return (d.innerText||d.textContent||'').replace(/\s+/g,' ').trim()};
 function notesCard(){
   if(!state.user||!state.member)return '';
@@ -744,7 +841,7 @@ function notesCard(){
     inn='<p class="small" style="margin:0 0 8px">Du kan ha opptil '+NOTE_MAX+' notater. Hold inne på et notat for å slette det.</p>'
      +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-notenew style="width:auto" '+(n>=NOTE_MAX?'disabled':'')+'>+ Nytt notat</button></div>'
      +(n>=NOTE_MAX?'<p class="small">Du har '+NOTE_MAX+' notater. Slett et gammelt for å lage et nytt.</p>':'')
-     +(n>4?'<input type="search" id="noteQ" placeholder="Søk i notatene …" aria-label="Søk i notater" autocomplete="off" value="'+esc(state.nq||'')+'" style="margin:0 0 8px">':'')
+     +(n>2?'<input type="search" id="noteQ" placeholder="Søk i notatene …" aria-label="Søk i notater" autocomplete="off" value="'+esc(state.nq||'')+'" style="margin:0 0 8px">':'')
      +'<div class="reg" id="noteList">'+noteRows(vis)+'</div>'}
   return '<details class="card acc" data-acc="notater" '+(state.acc.notater?'open':'')+'><summary><h2>Møtenotater'+(l?' ('+n+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.noteMsg||'')+'</p></details>'}
 function noteRows(l){
@@ -775,7 +872,7 @@ function noteAsk(id){
    +'<span class="nsep"></span><button type="button" class="btn" data-nsize="-1" aria-label="Mindre tekst" style="font-size:13px;font-weight:700">A</button><span class="nbars" id="nBars" role="img" aria-label="Tekststørrelse"><i></i><i></i><i></i><i></i></span><button type="button" class="btn" data-nsize="1" aria-label="Større tekst" style="font-size:22px;font-weight:700;line-height:1">A</button></div>'
    +'<div class="nwrap"><div id="nEd" class="ned" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notat">'+(ex?sanitizeNote(ex.html):'')+'</div><div class="ngrip" id="nGrip" role="separator" aria-label="Dra for å endre størrelsen på tekstfeltet" title="Dra for å endre størrelse"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M14 5L5 14M14 10l-4 4"/></svg></div></div>'
    +'<p class="small" role="status" id="nMsg" style="margin:6px 0 0"></p>'
-   +'<div class="btns nbtns"><button type="button" class="btn primary" id="nSave">Lagre</button>'+(PUSH_URL?'<button type="button" class="btn" id="nMail">Send til e-post</button>':'')+(ex?'<button type="button" class="btn danger" id="nDel">Slett</button>':'')+'<button type="button" class="btn" id="nClose">Lukk</button></div>';
+   +'<div class="btns nbtns"><button type="button" class="btn primary" id="nSave">Lagre</button>'+(PUSH_URL?'<button type="button" class="btn" id="nMail">Send til e-post</button>':'')+'<button type="button" class="btn" id="nShare">Del</button>'+(ex?'<button type="button" class="btn danger" id="nDel">Slett</button>':'')+'<button type="button" class="btn" id="nClose">Lukk</button></div>';
   document.body.appendChild(dlg);
   const ed=dlg.querySelector('#nEd'),msg=t=>{dlg.querySelector('#nMsg').textContent=t};
   const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,dlg.querySelector('#nP').value,sanitizeNote(ed.innerHTML)]);let start;
@@ -808,6 +905,11 @@ function noteAsk(id){
     try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();
       state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.notater=true;start=snap();dlg.close();keep(()=>{});push('Lagret','Notatet er lagret.')}
     catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
+  dlg.querySelector('#nShare').addEventListener('click',async()=>{
+    const t=dlg.querySelector('#nT').value.trim(),tekst=[t,[noDato(dlg.querySelector('#nD').value),dlg.querySelector('#nP').value.trim()].filter(Boolean).join(' · '),'',noteLinjer(ed.innerHTML)].join('\n').trim();
+    if(!t&&!noteText(sanitizeNote(ed.innerHTML))){msg('Skriv en tittel eller litt tekst først.');return}
+    try{if(navigator.share){await navigator.share({title:t||'Notat',text:tekst})}else{await navigator.clipboard.writeText(tekst);msg('Notatet er kopiert som tekst.')}}
+    catch(er){if(er&&er.name!=='AbortError')msg('Kunne ikke dele.')}});
   const mailKnapp=dlg.querySelector('#nMail');
   if(mailKnapp)mailKnapp.addEventListener('click',async()=>{
     const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML)};
@@ -1206,6 +1308,12 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ev){keep(()=>state.open[c.dataset.ev]=!state.open[c.dataset.ev])}
   else if(c.dataset.rsvp){
     if(state.rsvp[c.dataset.rsvp])await setRsvp(c.dataset.rsvp,false);else openRsvp(c.dataset.rsvp)}
+  else if(c.dataset.ics){icsFil(c.dataset.ics)}
+  else if('prnew' in c.dataset){prayAsk()}
+  else if('prrefresh' in c.dataset){state.prayers=undefined;keep(()=>{});loadPrayers()}
+  else if(c.dataset.prpray){prayToggle(c.dataset.prpray)}
+  else if(c.dataset.prdel){prayDel(c.dataset.prdel)}
+  else if('contactedit' in c.dataset){contactAsk()}
   else if(c.dataset.rem){
     const id=c.dataset.rem,ev=rsEv(id);if(!ev||!FB)return;
     try{
@@ -1706,7 +1814,7 @@ async function loadSnaps(){
   catch(e){state.snaps=[];state.snapMsg='Kunne ikke hente sikkerhetspunkter ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{});
 }
-document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
+document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB)loadPrayers();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
   if('prmute' in d){const m=new Set(state.profile.muted||[]);e.target.checked?m.delete(d.prmute):m.add(d.prmute);try{await FB.setProfile(state.user.email,{muted:[...m]});state.profile.muted=[...m];state.prMsg='Lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code);e.target.checked=!e.target.checked}keep(()=>{});return}
