@@ -42,6 +42,8 @@ service cloud.firestore {
         && request.resource.data.t is string && request.resource.data.t.size() > 0 && request.resource.data.t.size() <= 400
         && request.resource.data.name is string && request.resource.data.name.size() <= 60
         && request.resource.data.by == request.auth.uid && request.resource.data.ms is number && request.resource.data.ber == [];
+      // Lederne markerer emner som bedt for etter bønnemøtet (feltet bedt, tidspunkt).
+      allow update: if prayReader() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bedt']) && request.resource.data.bedt is number;
       allow delete: if isMember() && (resource.data.by == request.auth.uid || prayReader());
     }
     // Kontaktinfo som vises på Hjem: alle kan lese, bare administrator endrer.

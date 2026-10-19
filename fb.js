@@ -85,6 +85,7 @@ const FB={
     updScheduled:(id,d)=>sl((async()=>{const ref=S.doc(db,'scheduled',id),s=await S.getDoc(ref);if(!s.exists())return false;await S.updateDoc(ref,d);return true})(),'Lagrer …'),
     // Bønneemner (prayers): bare medlemmer. by og ber bruker uid, ikke e-post.
     async prayersList(){const s=await S.getDocs(S.query(S.collection(db,'prayers'),S.orderBy('ms','desc'),S.limit(40)));return s.docs.map(d=>({id:d.id,...d.data()}))},
+    markPrayed:ids=>sl((async()=>{const b=S.writeBatch(db),t=Date.now();ids.forEach(id=>b.update(S.doc(db,'prayers',id),{bedt:t}));await b.commit()})()),
     addPrayer:d=>S.addDoc(S.collection(db,'prayers'),{t:String(d.t).slice(0,400),name:String(d.name||'').slice(0,60),by:auth.currentUser.uid,ms:Date.now(),ber:[]}),
     delPrayer:id=>sl(S.deleteDoc(S.doc(db,'prayers',id))),
     // Kontaktinfo («Finn frem» på Hjem): alle kan lese, administrator endrer.

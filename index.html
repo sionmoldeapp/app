@@ -404,16 +404,27 @@ function contactAsk(){
 const prUid=()=>(FB&&FB.user&&FB.user.uid)||'';
 /* Alle medlemmer kan sende inn et bønneemne, men bare administrator, pastor (lederkategorien Forkynnere) og ledere av gruppen Bønnemøte kan lese dem. */
 const prayLes=()=>effAdmin()||effLeads().includes('bonnemote')||(effLeder()&&state.ltype==='forkynner');
+const PR_DAGER=7;   // bønneemner står i opptil en uke
+const prSynlige=()=>(state.prayers||[]).filter(x=>(x.ms||0)>Date.now()-PR_DAGER*864e5);
+const prNye=()=>prSynlige().filter(x=>!x.bedt).sort((a,b)=>(b.ms||0)-(a.ms||0));
+const prBedte=()=>prSynlige().filter(x=>x.bedt).sort((a,b)=>(b.bedt||0)-(a.bedt||0));
 function prayerCard(){
   if(!state.user||!state.member)return '';
-  const les=prayLes(),l=state.prayers,uid=prUid(),vis=l?l.filter(x=>(x.ms||0)>Date.now()-60*864e5):[];
+  const les=prayLes(),l=state.prayers,nye=prNye(),bedte=prBedte();
+  const rad=(x,grå)=>'<div class="r" style="display:block;'+(grå?'opacity:.5':'')+'"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'Anonym')+' · '+esc(ago({ms:x.ms}))+(grå?' · bedt for':'')+'</div><div class="btns"><button class="btn" data-prdel="'+esc(x.id)+'">Slett</button></div></div>';
   let inn;
   if(!les)inn='<p class="small" style="margin:0 0 8px">Send inn et bønneemne. Det blir bedt for på bønnemøtene i menigheten.</p><div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button></div>';
   else if(l===undefined)inn='<p class="small">Henter bønneemner …</p>';
-  else inn='<p class="small" style="margin:0 0 8px">Bønneemner samles opp og blir bedt for på bønnemøtene i menigheten. Emner skjules etter 60 dager.</p>'
-   +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><button class="btn" data-prrefresh>Oppdater</button>'+(vis.length?'<button class="btn" data-prcopy>Kopier listen</button>':'')+'</div>'
-   +'<div class="reg">'+(vis.map(x=>'<div class="r" style="display:block"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'Anonym')+' · '+esc(ago({ms:x.ms}))+'</div><div class="btns"><button class="btn" data-prdel="'+esc(x.id)+'">Slett</button></div></div>').join('')||'<p class="small">Ingen bønneemner ennå.</p>')+'</div>';
-  return '<details class="card acc" data-acc="bonn" '+(state.acc.bonn?'open':'')+'><summary><h2>Bønneemner'+(les&&l?' ('+vis.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
+  else inn='<p class="small" style="margin:0 0 8px">Bønneemner samles opp og blir bedt for på bønnemøtene i menigheten. Nye står øverst, og de som er bedt for flyttes nederst. Emner skjules etter en uke.</p>'
+   +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><button class="btn" data-prrefresh>Oppdater</button>'+(nye.length?'<button class="btn" data-prcopy>Kopier listen</button><button class="btn" data-prdone>Bønnemøtet er holdt</button>':'')+'</div>'
+   +'<div class="reg">'+(nye.map(x=>rad(x,false)).join('')||'<p class="small">Ingen nye bønneemner.</p>')+'</div>'
+   +(bedte.length?'<p class="small" style="margin:12px 0 4px"><b>Bedt for</b></p><div class="reg">'+bedte.map(x=>rad(x,true)).join('')+'</div>':'');
+  return '<details class="card acc" data-acc="bonn" '+(state.acc.bonn?'open':'')+'><summary><h2>Bønneemner'+(les&&l?' ('+nye.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
+async function prayDone(){
+  const nye=prNye();if(!nye.length||!FB)return;
+  if(!await bekreft('Marker de '+nye.length+' nye bønneemnene som bedt for? De flyttes nederst og gråes ut.',{ok:'Marker som bedt for',fare:false}))return;
+  try{await FB.markPrayed(nye.map(x=>x.id));const t=Date.now();nye.forEach(x=>x.bedt=t);keep(()=>{});push('Merket','Bønneemnene er markert som bedt for.')}
+  catch(er){push('Kunne ikke lagre',saveMsg(er&&er.code))}}
 async function loadPrayers(){
   try{state.prayers=await FB.prayersList();state.prMsg=''}catch(e){state.prayers=[];state.prMsg='Kunne ikke hente bønneemner ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{})}
@@ -435,7 +446,7 @@ function prayAsk(){
     catch(er){dlg.querySelector('#pMsg').textContent='Kunne ikke legge ut ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 async function prayCopy(){
-  const vis=(state.prayers||[]).filter(x=>(x.ms||0)>Date.now()-60*864e5).slice().sort((a,b)=>(a.ms||0)-(b.ms||0)),tekst='Bønneemner\n\n'+vis.map(x=>'• '+x.t.replace(/\s*\n\s*/g,' ')+' ('+(x.name||'anonym')+')').join('\n');
+  const vis=prNye().slice().reverse(),tekst='Bønneemner\n\n'+vis.map(x=>'• '+x.t.replace(/\s*\n\s*/g,' ')+' ('+(x.name||'anonym')+')').join('\n');
   try{await navigator.clipboard.writeText(tekst);push('Kopiert','Listen med bønneemner er kopiert.')}catch(e){await visTekst('Kopier listen:',tekst.replace(/\n/g,' '))}}
 async function prayDel(id){
   if(!await bekreft('Slette dette bønneemnet?'))return;
@@ -1326,6 +1337,7 @@ document.addEventListener('click',async e=>{
   else if('prnew' in c.dataset){prayAsk()}
   else if('prrefresh' in c.dataset){state.prayers=undefined;keep(()=>{});loadPrayers()}
   else if('prcopy' in c.dataset){prayCopy()}
+  else if('prdone' in c.dataset){prayDone()}
   else if(c.dataset.prdel){prayDel(c.dataset.prdel)}
   else if('contactedit' in c.dataset){contactAsk()}
   else if(c.dataset.rem){
