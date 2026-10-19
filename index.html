@@ -423,10 +423,10 @@ function prayAsk(){
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Nytt bønneemne</h3>'
    +'<label class="f">Bønneemne<textarea id="pT" rows="4" maxlength="400" placeholder="Skriv kort hva du ønsker forbønn for …"></textarea></label>'
    +'<label class="f" id="pNL">Navn (valgfritt)<input id="pN" maxlength="60" value="'+esc(lsGet('sm-navn')||(state.profile&&state.profile.name)||'')+'"></label>'
-   +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send inn</button><button type="button" class="btn" id="pAnon" aria-pressed="false">Anonymt: Av</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+   +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send inn</button><button type="button" class="btn" id="pAnon" aria-pressed="false">Anonymt</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   let anon=false;const anonKnapp=dlg.querySelector('#pAnon');
-  anonKnapp.addEventListener('click',()=>{anon=!anon;anonKnapp.textContent='Anonymt: '+(anon?'På':'Av');anonKnapp.setAttribute('aria-pressed',String(anon));anonKnapp.classList.toggle('on',anon);dlg.querySelector('#pN').disabled=anon;dlg.querySelector('#pNL').style.opacity=anon?'.5':''});
+  anonKnapp.addEventListener('click',()=>{anon=!anon;anonKnapp.textContent=(anon?'✓ ':'')+'Anonymt';anonKnapp.setAttribute('aria-pressed',String(anon));anonKnapp.classList.toggle('on',anon);dlg.querySelector('#pN').disabled=anon;dlg.querySelector('#pNL').style.opacity=anon?'.5':''});
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
     const t=dlg.querySelector('#pT').value.trim(),name=anon?'':dlg.querySelector('#pN').value.trim();
