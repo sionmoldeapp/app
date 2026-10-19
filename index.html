@@ -453,10 +453,11 @@ const postTags=p=>(p.groups&&p.groups.length?p.groups.map(gName):(p.audience&&p.
 const PLACES=['Kometvegen 7','Åndalsnes','Eidsvåg','Eide','Tingvoll'],TIMES=['11:00','12:00','19:00'];
 /* [felt, etikett, type, valg, type på feltet for «Annet»]. Stjerne etter typen betyr obligatorisk. */
 const FIELDS={
- events:[['title','Tittel','text*'],['start','Startdato','date*'],['end','Sluttdato (bare for flere dager)','date'],['time','Klokkeslett','combo',TIMES,'time'],['place','Sted','combo',PLACES,'text'],['who','Taler eller hvem','text'],['text','Beskrivelse','area'],['cat','Kategori','sel',CATS],['groups','Gruppe (valgfritt). Bare medlemmer i valgte grupper og administratorer ser arrangementet','multi',GR_IDS],['m','Bare for medlemmer','chk'],['hideHome','Ikke vis på Hjem (vises fortsatt i Program)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk']],
+ events:[['title','Tittel','text*'],['start','Startdato','date*'],['end','Sluttdato (bare for flere dager)','date'],['time','Klokkeslett','combo',TIMES,'time'],['place','Sted','combo',PLACES,'text'],['who','Taler eller hvem','text'],['text','Beskrivelse','area'],['cat','Kategori','sel',CATS],['groups','Gruppe (valgfritt). Bare medlemmer i valgte grupper og administratorer ser arrangementet','multi',GR_IDS],['m','Bare for medlemmer','chk'],['remindH','Påminnelse til medlemmene i gruppen (gjelder grupper med automatisk påminnelse)','sel',[24,48,3,1,0]],['hideHome','Ikke vis på Hjem (vises fortsatt i Program)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk']],
  posts:[['t','Tittel','text*'],['b','Melding','area*'],['audience','Målgruppe','multi',['Alle','Medlem',...GR_IDS]],['hideHome','Ikke vis på Hjem (vises fortsatt i Nyheter)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['expireAt','Skjul etter (valgfritt)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk'],['push','Send også som varsel til telefonene (ved planlagt visning sendes det på det tidspunktet)','chk']],
  regular:[['title','Tittel','text*'],['day','Ukedag','sel',[1,2,3,4,5,6,0]],['time','Klokkeslett','combo*',TIMES,'time'],['note','Merknad','text'],['cat','Kategori','sel',CATS]]};
 const COL={events:'events',posts:'posts',regular:'regular'};
+const REMIND_OPT={24:'Dagen før (ett døgn før)',48:'To dager før',3:'3 timer før',1:'1 time før',0:'Ingen påminnelse'};
 const TYPES=[['events','Arrangement'],['posts','Nyhet'],['regular','Fast samling']];
 function fields(t,ed,only){return FIELDS[t].filter(f=>(!only||only.includes(f[0]))&&(f[0]!=='push'||(PUSH_URL&&!ed))&&(state.admin||f[0]!=='m')).map(([k,l,ty,o,it])=>{
   const req=ty.endsWith('*'),b=ty.replace('*',''),v=ed?((k==='pubAt'||k==='expireAt')?(ed[k]?toDT(ed[k]):''):ed[k]):undefined;
@@ -469,7 +470,7 @@ function fields(t,ed,only){return FIELDS[t].filter(f=>(!only||only.includes(f[0]
     const tips=!state.admin?'Velg minst én av gruppene du leder. Bare medlemmer i gruppene og administratorer ser innholdet.':isAud?'Velger du ingenting, blir nyheten åpen for alle. «Bare medlemmer» krever innlogging. Velger du grupper, er det bare medlemmer i de gruppene (og administratorer) som ser nyheten.':'Velger du ingen grupper, gjelder arrangementet alle.';
     return `<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">${l}</legend>${(state.admin?(isAud?['Alle','Medlem',...GR_IDS]:GR_IDS):myGroupOptions()).map(x=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="${k}" value="${x}" style="width:22px;height:22px;flex:none" ${cur.includes(x)?'checked':''}>${esc(nm(x))}</label>`).join('')}<span class="small">${tips}</span></fieldset>`}
   if(b==='area')return `<label class="f">${l}<textarea name="${k}" rows="3" ${req?'required':''}>${esc(v)}</textarea></label>`;
-  if(b==='sel')return `<label class="f">${l}<select name="${k}">${(k==='cat'?allCats():o).map(x=>`<option value="${x}" ${String(v==null?o[0]:(k==='cat'?normCat(v):v))===String(x)?'selected':''}>${k==='day'?cap(DAYS[x]):x}</option>`).join('')}</select></label>`;
+  if(b==='sel')return `<label class="f">${l}<select name="${k}">${(k==='cat'?allCats():o).map(x=>`<option value="${x}" ${String(v==null?o[0]:(k==='cat'?normCat(v):v))===String(x)?'selected':''}>${k==='day'?cap(DAYS[x]):k==='remindH'?REMIND_OPT[x]:x}</option>`).join('')}</select></label>`;
   if(b==='chk')return `<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="${k}" style="width:auto" ${v?'checked':''}>${l}</label>`;
   return `<label class="f">${l}<input name="${k}" type="${b}" ${req?'required':''} value="${esc(v)}"></label>`}).join('')}
 function admItems(t){const l=t==='events'?rawEvents.slice().sort((a,b)=>a.start<b.start?-1:1):t==='posts'?posts:regular;const f=t==='posts'||state.af==='Alle'?l:l.filter(x=>normCat(x.cat)===state.af);return state.admin?f:f.filter(ledItem)}
@@ -1373,7 +1374,7 @@ document.addEventListener('submit',async e=>{
     catch(er){keep(()=>{state.sv='Kunne ikke melde på. Sjekk nettforbindelsen og prøv igjen.';state.svE=m})}}
   else if(f.id==='adm'){e.preventDefault();
     const t=f.dataset.type,fd=new FormData(f),d={};
-    FIELDS[t].forEach(([k,,ty])=>{const b=ty.replace('*','');d[k]=b==='multi'?fd.getAll(k):b==='combo'?(fd.get(k+'Sel')==='__annet'?String(fd.get(k)||'').trim():fd.get(k+'Sel')):b==='chk'?fd.has(k):k==='day'?+fd.get(k):String(fd.get(k)||'').trim()});
+    FIELDS[t].forEach(([k,,ty])=>{const b=ty.replace('*','');d[k]=b==='multi'?fd.getAll(k):b==='combo'?(fd.get(k+'Sel')==='__annet'?String(fd.get(k)||'').trim():fd.get(k+'Sel')):b==='chk'?fd.has(k):(k==='day'||k==='remindH')?+fd.get(k):String(fd.get(k)||'').trim()});
     const wantPush=t==='posts'&&!!d.push&&!d.draft;if(t==='posts')delete d.push;
     if('pubAt' in d)d.pubAt=d.pubAt?new Date(d.pubAt).getTime():0;
     if('expireAt' in d)d.expireAt=d.expireAt?new Date(d.expireAt).getTime():0;
@@ -1421,7 +1422,7 @@ document.addEventListener('click',e=>{if(lpFired){lpFired=false;e.stopPropagatio
 const WIZ={
   events:[
     {h:'Hva slags arrangement?',p:'Start med de store linjene.',keys:['title','cat']},
-    {h:'Hvem er det for?',p:'',keys:['groups','m']},
+    {h:'Hvem er det for?',p:'',keys:['groups','m','remindH']},
     {h:'Når skjer det?',p:'Sluttdato trengs bare hvis det varer flere dager.',keys:['start','end','time']},
     {h:'Hvor og hvem?',p:'Alt her er valgfritt.',keys:['place','who','text']},
     {h:'Se over og opprett',p:'Du kan lagre som utkast eller velge at det først skal vises senere.',keys:['hideHome','pubAt','draft'],sum:true}],
