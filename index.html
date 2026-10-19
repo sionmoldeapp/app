@@ -104,6 +104,7 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 .emo{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:42px;height:42px;font-size:24px;line-height:1;padding:0;cursor:pointer;font-family:"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif}
 .ptitle{display:block;width:100%;background:none;border:0;padding:0;margin:0;text-align:left;color:inherit;font:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer}
 .pbody{display:block;width:100%;text-align:left;background:none;border:0;padding:0;color:var(--ink);font:inherit;font-size:14px;line-height:1.45;cursor:pointer;border-radius:0}
+.pt a{color:var(--lamp);text-decoration:underline;word-break:break-all}
 .pbody .pt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
 .pbody.open .pt{display:block;-webkit-line-clamp:unset;overflow:visible}
 .pmore{display:block;color:var(--lamp);font-weight:600;margin-top:4px}
@@ -219,7 +220,7 @@ async function load(){
   if(FB&&state.admin)try{applyLtypes(await FB.ltypesList())}catch(e){}
   const [e,p,g]=await fetchAll();
   rawEvents=e;
-  events=e.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)).map(x=>({...x,t:esc(x.title),d:esc(x.text),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
+  events=e.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)).map(x=>({...x,t:esc(x.title),d:linkify(esc(x.text)),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
     .filter(x=>(x.e||x.w)>=todayStart).sort((a,b)=>a.w-b.w);
   posts=p.filter(canSee).filter(liveOK).sort((a,b)=>(b.ms||0)-(a.ms||0));
   regular=g.filter(r=>canSeeCat(r.cat)&&visOK(r)).sort((a,b)=>((a.day+6)%7-(b.day+6)%7)||String(a.time).localeCompare(String(b.time)));
@@ -349,7 +350,7 @@ function home(){
   ${welcomeCard()}
   ${visitorCard()}
   ${myShiftsCard()}
-  ${post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b><button type="button" class="ptitle" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${esc(post.t)}</button></b><button type="button" class="pbody ${state.open['p_'+post.id]?'open':''}" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}"><span class="pt">${esc(post.b)}</span>${(String(post.b).length>130||(String(post.b).match(/\n/g)||[]).length>=2)?`<span class="pmore">${state.open['p_'+post.id]?'Vis mindre':'Les mer'}</span>`:''}</button></div></div>`:''}
+  ${post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b><button type="button" class="ptitle" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${esc(post.t)}</button></b><div role="button" tabindex="0" class="pbody ${state.open['p_'+post.id]?'open':''}" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}"><span class="pt">${linkify(esc(post.b))}</span>${(String(post.b).length>130||(String(post.b).match(/\n/g)||[]).length>=2)?`<span class="pmore">${state.open['p_'+post.id]?'Vis mindre':'Les mer'}</span>`:''}</div></div></div>`:''}
   ${wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:''}
   ${svCard()}
   <div class="card"><h2>Finn frem</h2><p class="small" style="margin:6px 0 0">Adresse: Kometvegen 7, 6419 Molde<br>Kontortid: tirsdag–torsdag kl. 10–16<br>Telefon: <a href="tel:+4771251029">71 25 10 29</a><br>E-post: <a href="mailto:post@sionmolde.no">post@sionmolde.no</a></p></div>`}
@@ -388,7 +389,7 @@ function regList(){
 function news(){
   const l=posts.map(p=>{
    if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
-   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3><button type="button" class="ptitle" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}">${esc(p.t)}</button></h3><button type="button" class="pbody ${state.open['p_'+p.id]?'open':''}" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}"><span class="pt">${esc(p.b)}</span>${(String(p.b).length>130||(String(p.b).match(/\n/g)||[]).length>=2)?`<span class="pmore">${state.open['p_'+p.id]?'Vis mindre':'Les mer'}</span>`:''}</button></div>`}).join('');
+   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3><button type="button" class="ptitle" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}">${esc(p.t)}</button></h3><div role="button" tabindex="0" class="pbody ${state.open['p_'+p.id]?'open':''}" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}"><span class="pt">${linkify(esc(p.b))}</span>${(String(p.b).length>130||(String(p.b).match(/\n/g)||[]).length>=2)?`<span class="pmore">${state.open['p_'+p.id]?'Vis mindre':'Les mer'}</span>`:''}</div></div>`}).join('');
   const kan=editOn();
   return `<h1>Nyheter</h1>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Pastorens hilsen</button>':'')+'</div>':''}<div class="list">${l||'<p class="small">Ingen nyheter ennå.</p>'}</div>${kan?'<div class="lpzone"></div>':''}`}
 
@@ -698,6 +699,8 @@ function shareCard(){
 /* Møtenotater: private notater per medlem (opptil 100), lagres i members/{e-post}/notes/n1..n100. Bare eieren kan lese dem (heller ikke administratorer).
    Enkel teksteditor: fet, kursiv og tekststørrelse. Skrifttypen er alltid standard; innlimt tekst blir ren tekst. */
 const NOTE_MAX=100;
+/* Gjør nettadresser i (allerede escapet) tekst til lenker. Bare http(s) og www. */
+const linkify=t=>String(t||'').replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi,m=>{let u=m,rest='';const tr=u.match(/[.,;:!?)]+$/);if(tr){rest=tr[0];u=u.slice(0,-rest.length)}return '<a href="'+(/^www\./i.test(u)?'https://':'')+u+'" target="_blank" rel="noopener noreferrer">'+u+'</a>'+rest});
 const MÅNEDER=['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
 const noDato=iso=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');return m?(+m[3])+'. '+MÅNEDER[+m[2]-1]+' '+m[1]:''};
 const noteEmail=()=>state.user?state.user.email.toLowerCase():'';
@@ -1143,6 +1146,8 @@ function viewOpts(){
 document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.target.value;const l=$('#noteList');if(l)l.innerHTML=noteRows(state.nq.trim()?(state.notes||[]).filter(x=>norm(x.title+' '+(x.speaker||'')+' '+noteText(x.html)).includes(norm(state.nq).trim())):(state.notes||[]));return}
   if(e.target.id==='brQ'){state.brQ=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
+document.addEventListener('click',e=>{const po=e.target.closest('div[data-postopen]');if(po&&!e.target.closest('a')){keep(()=>{state.open['p_'+po.dataset.postopen]=!state.open['p_'+po.dataset.postopen]})}});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('div[data-postopen]')){e.preventDefault();const k=e.target.dataset.postopen;keep(()=>{state.open['p_'+k]=!state.open['p_'+k]})}});
 document.addEventListener('click',async e=>{
   const c=e.target.closest('button');if(!c)return;
   if(c.dataset.t){if('openvakter' in c.dataset){state.acc.vakter=true;if(state.shifts===undefined)loadShifts()}state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}render()}
