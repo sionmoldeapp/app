@@ -402,8 +402,8 @@ function contactAsk(){
 
 /* Bønneemner: bare innloggede medlemmer. Navn er valgfritt. «Jeg ber» teller per person, og emner skjules etter 60 dager. */
 const prUid=()=>(FB&&FB.user&&FB.user.uid)||'';
-/* Alle medlemmer kan sende inn et bønneemne, men bare administrator, pastor (lederkategorien Forkynnere) og ledere av gruppen Bønnemøte kan lese dem. */
-const prayLes=()=>effAdmin()||effLeads().includes('bonnemote')||(effLeder()&&state.ltype==='forkynner');
+/* Alle medlemmer kan sende inn et bønneemne, men bare administratorer og medlemmer i gruppen Bønneledere kan lese dem. */
+const prayLes=()=>effAdmin()||effGroups().includes('bonneledere');
 const PR_DAGER=7;   // bønneemner står i opptil en uke
 const prSynlige=()=>(state.prayers||[]).filter(x=>(x.ms||0)>Date.now()-PR_DAGER*864e5);
 const prNye=()=>prSynlige().filter(x=>!x.bedt).sort((a,b)=>(b.ms||0)-(a.ms||0));
