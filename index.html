@@ -429,7 +429,9 @@ const effLeads=()=>state.view==='meg'?(state.leads||[]):[];
 const effGroups=()=>state.view==='meg'?(state.groups||[]):[];
 const visOK=x=>state.view!=='besok'||!x.m;
 const effLeder=()=>state.view==='meg'&&state.leder===true;
-const canSeeCat=c=>normCat(c)!=='Ledersamling'||effAdmin()||effLeder()||effLeads().length>0||effGroups().includes('lederradet');
+const LEDERKAT=['Ledersamling','Lederrådet'];   // kategorier som bare ledere ser (navnet avgjør)
+const lederKat=c=>LEDERKAT.includes(normCat(c));
+const canSeeCat=c=>!lederKat(c)||effAdmin()||effLeder()||effLeads().length>0||effGroups().includes('lederradet');
 /* «Vis som gruppeleder» (bare for administrator): vi bytter midlertidig ut rollen i appen med en gruppeleder for de valgte gruppene. Reglene i databasen gjelder fortsatt administratoren. */
 function setView(v){
   if(state.real&&v!=='leder'){Object.assign(state,state.real);state.real=null}
@@ -1456,8 +1458,8 @@ document.addEventListener('submit',async e=>{
       else if(gs.length){d.audience=gs;d.groups=gs;d.tag=gs.map(gName).join(' · ');d.m=true}
       else{d.audience=['Medlem'];d.groups=[];d.tag='Medlem';d.m=true}
     }
-    if(t==='regular'){d.m=normCat(d.cat)==='Ledersamling';if(!d.time){keep(()=>state.msg='Velg eller skriv inn klokkeslett.');return}}
-    if(t==='events'){d.groups=(d.groups||[]).filter(x=>GR_IDS.includes(x));d.m=!!d.m||d.groups.length>0||normCat(d.cat)==='Ledersamling'}
+    if(t==='regular'){d.m=lederKat(d.cat);if(!d.time){keep(()=>state.msg='Velg eller skriv inn klokkeslett.');return}}
+    if(t==='events'){d.groups=(d.groups||[]).filter(x=>GR_IDS.includes(x));d.m=!!d.m||d.groups.length>0||lederKat(d.cat)}
     const isEdit=!!state.adm.edit;
     try{
       if(state.adm.edit)await FB.set(COL[t],state.adm.edit,d);else await FB.add(COL[t],d);
