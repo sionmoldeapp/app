@@ -419,12 +419,14 @@ function prayAsk(){
   const dlg=document.createElement('dialog');dlg.className='lp pub';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Nytt bønneemne</h3>'
    +'<label class="f">Bønneemne<textarea id="pT" rows="4" maxlength="400" placeholder="Skriv kort hva du ønsker forbønn for …"></textarea></label>'
-   +'<label class="f">Navn (valgfritt, tomt vises som anonym)<input id="pN" maxlength="60" value="'+esc(lsGet('sm-navn')||(state.profile&&state.profile.name)||'')+'"></label>'
-   +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Legg ut</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+   +'<label class="f" id="pNL">Navn (valgfritt)<input id="pN" maxlength="60" value="'+esc(lsGet('sm-navn')||(state.profile&&state.profile.name)||'')+'"></label>'
+   +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Legg ut</button><button type="button" class="btn" id="pAnon" aria-pressed="false">Anonymt: Av</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
+  let anon=false;const anonKnapp=dlg.querySelector('#pAnon');
+  anonKnapp.addEventListener('click',()=>{anon=!anon;anonKnapp.textContent='Anonymt: '+(anon?'På':'Av');anonKnapp.setAttribute('aria-pressed',String(anon));anonKnapp.classList.toggle('on',anon);dlg.querySelector('#pN').disabled=anon;dlg.querySelector('#pNL').style.opacity=anon?'.5':''});
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
-    const t=dlg.querySelector('#pT').value.trim(),name=dlg.querySelector('#pN').value.trim();
+    const t=dlg.querySelector('#pT').value.trim(),name=anon?'':dlg.querySelector('#pN').value.trim();
     if(!t){dlg.querySelector('#pMsg').textContent='Skriv et bønneemne.';return}
     try{await FB.addPrayer({t,name});dlg.close();state.acc.bonn=true;await loadPrayers();push('Lagt ut','Bønneemnet er lagt ut.')}
     catch(er){dlg.querySelector('#pMsg').textContent='Kunne ikke legge ut ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
