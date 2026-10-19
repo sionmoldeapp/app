@@ -99,9 +99,6 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 .nbars i:nth-child(1){height:8px}.nbars i:nth-child(2){height:13px}.nbars i:nth-child(3){height:19px}.nbars i:nth-child(4){height:26px}
 .nbars i.on{background:var(--lamp);opacity:1}
 [data-noteopen]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
-.emorad{display:flex;flex-wrap:wrap;gap:4px}
-.emorad[hidden]{display:none}
-.emo{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:42px;height:42px;font-size:24px;line-height:1;padding:0;cursor:pointer;font-family:"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif}
 .ptitle{display:block;width:100%;background:none;border:0;padding:0;margin:0;text-align:left;color:inherit;font:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer}
 .pbody{display:block;width:100%;text-align:left;color:var(--ink);font-size:14px;line-height:1.45}
 .pt a{color:var(--lamp);text-decoration:underline;word-break:break-all}
@@ -974,8 +971,6 @@ function hilsenAsk(){
   dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">Pastorens hilsen</h3>'
    +'<label class="f">Tittel<input id="hT" maxlength="80" value="Pastorens hilsen"></label>'
    +'<label class="f">Melding<textarea id="hB" rows="7" maxlength="3000" placeholder="Skriv hilsenen her …"></textarea></label>'
-   +'<div><button type="button" class="btn" id="hEmoKnapp" aria-expanded="false">😊 Emojier</button></div>'
-   +'<div class="emorad" id="hEmoPanel" role="group" aria-label="Emojier" hidden>'+['🙏','❤️','✝️','🕊️','🙌','😊','🌟','☀️','🔥','🎶','📖','⛪','🌈','👋','✨','💛','🕯️','🎉','💪','🌿','🤗','🙂','📣','🎁'].map(e=>'<button type="button" class="emo" data-emo="'+e+'" aria-label="Sett inn '+e+'">'+e+'</button>').join('')+'</div>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Hvem skal få den?</legend><div style="display:grid;gap:6px">'
    +maal.map((m,i)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="hMaal" value="'+esc(m.v)+'" '+(i===0?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(m.l)+' <span class="small">('+hilsenAntall(m.v)+')</span></label>').join('')+'</div></fieldset>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Når skal den sendes?</legend><div style="display:grid;gap:6px">'
@@ -987,12 +982,6 @@ function hilsenAsk(){
    +'</div></fieldset><p class="small" id="hMsg" role="status" style="margin:0"></p>'
    +'<div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
-  let sistFelt=dlg.querySelector('#hB');
-  dlg.querySelectorAll('#hT,#hB').forEach(f=>['focus','input','pointerdown','click'].forEach(ev=>f.addEventListener(ev,()=>{sistFelt=f})));
-  const panel=dlg.querySelector('#hEmoPanel'),knapp0=dlg.querySelector('#hEmoKnapp');
-  knapp0.addEventListener('click',()=>{panel.hidden=!panel.hidden;knapp0.setAttribute('aria-expanded',String(!panel.hidden))});
-  panel.addEventListener('mousedown',e=>{if(e.target.closest('.emo'))e.preventDefault()});
-  panel.addEventListener('click',e=>{const b=e.target.closest('.emo');if(!b)return;const f=sistFelt,a=f.selectionStart==null?f.value.length:f.selectionStart,z=f.selectionEnd==null?a:f.selectionEnd;if(f.maxLength>0&&f.value.length-(z-a)+b.dataset.emo.length>f.maxLength)return;f.value=f.value.slice(0,a)+b.dataset.emo+f.value.slice(z);const p=a+b.dataset.emo.length;f.focus();try{f.setSelectionRange(p,p)}catch(x){}});
   dlg.addEventListener('change',e=>{if(e.target.name==='hNaar')dlg.querySelector('#hEgen').style.display=e.target.value==='egen'?'grid':'none'});
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;
