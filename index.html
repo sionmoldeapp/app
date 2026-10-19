@@ -113,6 +113,7 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 @keyframes snurr{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
 .nwrap{position:relative}
+textarea{resize:none;padding-bottom:36px;min-height:70px}
 .ngrip{position:absolute;right:4px;bottom:4px;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:nwse-resize;touch-action:none;border-radius:8px;background:var(--bg);opacity:.9}
 .ned{min-height:140px;height:260px;max-height:80vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
 .ned:focus{border-color:var(--lamp)}
@@ -1303,6 +1304,17 @@ function viewOpts(){
 document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.target.value;const l=$('#noteList');if(l)l.innerHTML=noteRows(state.nq.trim()?(state.notes||[]).filter(x=>norm(x.title+' '+(x.speaker||'')+' '+noteText(x.html)).includes(norm(state.nq).trim())):(state.notes||[]));return}
   if(e.target.id==='brQ'){state.brQ=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
+/* Alle tekstfelt (ny melding, hilsen, beskrivelse ...) kan gjøres høyere eller lavere, men ikke bredere, med samme håndtak som i notatene. */
+function gripTa(ta){
+  if(ta.dataset.grip||!ta.parentNode)return;ta.dataset.grip='1';
+  const wrap=document.createElement('div');wrap.className='nwrap';ta.parentNode.insertBefore(wrap,ta);wrap.appendChild(ta);
+  const g=document.createElement('div');g.className='ngrip';g.setAttribute('role','separator');g.setAttribute('aria-label','Dra for å endre høyden på tekstfeltet');g.title='Dra for å endre høyden';
+  g.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M14 5L5 14M14 10l-4 4"/></svg>';wrap.appendChild(g);
+  let y0=0,h0=0,on=false;
+  g.addEventListener('pointerdown',e=>{on=true;y0=e.clientY;h0=ta.getBoundingClientRect().height;try{g.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault()});
+  g.addEventListener('pointermove',e=>{if(on)ta.style.height=Math.max(70,Math.min(innerHeight*0.8,h0+(e.clientY-y0)))+'px'});
+  ['pointerup','pointercancel'].forEach(n=>g.addEventListener(n,()=>{on=false}))}
+{const alle=()=>document.querySelectorAll('textarea:not([data-grip])').forEach(gripTa);alle();new MutationObserver(alle).observe(document.body,{childList:true,subtree:true})}
 document.addEventListener('click',async e=>{
   const c=e.target.closest('button');if(!c)return;
   if(c.dataset.t){if('openvakter' in c.dataset){state.acc.vakter=true;if(state.shifts===undefined)loadShifts()}state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}render()}
