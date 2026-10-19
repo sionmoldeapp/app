@@ -408,9 +408,9 @@ function prayerCard(){
   if(!state.user||!state.member)return '';
   const les=prayLes(),l=state.prayers,uid=prUid(),vis=l?l.filter(x=>(x.ms||0)>Date.now()-60*864e5):[];
   let inn;
-  if(!les)inn='<p class="small" style="margin:0 0 8px">Send inn et bønneemne. Det samles opp til bønnemøtene i menigheten og leses bare av pastor og de som leder bønnemøtene.</p><div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button></div>';
+  if(!les)inn='<p class="small" style="margin:0 0 8px">Send inn et bønneemne. Det blir bedt for på bønnemøtene i menigheten.</p><div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button></div>';
   else if(l===undefined)inn='<p class="small">Henter bønneemner …</p>';
-  else inn='<p class="small" style="margin:0 0 8px">Bønneemner samles opp til bønnemøtene i menigheten. Bare administrator, pastor og ledere av bønnemøtene ser listen. Emner skjules etter 60 dager.</p>'
+  else inn='<p class="small" style="margin:0 0 8px">Bønneemner samles opp og blir bedt for på bønnemøtene i menigheten. Emner skjules etter 60 dager.</p>'
    +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><button class="btn" data-prrefresh>Oppdater</button>'+(vis.length?'<button class="btn" data-prcopy>Kopier listen</button>':'')+'</div>'
    +'<div class="reg">'+(vis.map(x=>'<div class="r" style="display:block"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'Anonym')+' · '+esc(ago({ms:x.ms}))+'</div><div class="btns"><button class="btn" data-prdel="'+esc(x.id)+'">Slett</button></div></div>').join('')||'<p class="small">Ingen bønneemner ennå.</p>')+'</div>';
   return '<details class="card acc" data-acc="bonn" '+(state.acc.bonn?'open':'')+'><summary><h2>Bønneemner'+(les&&l?' ('+vis.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
