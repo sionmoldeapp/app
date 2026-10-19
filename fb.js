@@ -51,6 +51,9 @@ const FB={
     delRsvpDoc:id=>S.deleteDoc(S.doc(db,'rsvps',id)),
     async rsvpList(eventId){const s=await S.getDocs(S.query(S.collection(db,'rsvps'),S.where('eventId','==',eventId)));return s.docs.map(d=>{const x=d.data();return {id:d.id,name:x.name||'',contact:x.contact||'',ms:x.created&&x.created.toMillis?x.created.toMillis():0}}).sort((a,b)=>a.ms-b.ms)},
     // Egen profil: navn og gruppevarsler en ikke vil ha (muted). Sletting av seg selv: konto, medlemskap og varselkode.
+    // Egne innstillinger (userPrefs/{e-post}): rekkefølgen på kortene under Meg. Bare eieren leser og skriver.
+    async myPrefs(email){try{const s=await S.getDoc(S.doc(db,'userPrefs',email));return s.exists()?s.data():null}catch(e){return null}},
+    setMeOrder:(email,list)=>S.setDoc(S.doc(db,'userPrefs',email),{meorder:list.slice(0,20).map(x=>String(x).slice(0,20))}),
     async myProfile(email){try{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()?{name:s.data().name||'',muted:s.data().muted||[]}:null}catch(e){return null}},
     setProfile:(email,d)=>S.updateDoc(S.doc(db,'members',email),d),
     async deleteSelf(password){

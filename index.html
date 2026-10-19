@@ -1228,7 +1228,7 @@ const ME_KORT={
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'']};
 function meRekkefolge(){
-  let lagret=[];try{lagret=JSON.parse(localStorage.getItem('sm-meorder')||'[]')}catch(e){}
+  let lagret=state.meorder||[];if(!lagret.length)try{lagret=JSON.parse(localStorage.getItem('sm-meorder')||'[]')}catch(e){}
   const alle=Object.keys(ME_KORT);return [...lagret.filter(k=>alle.includes(k)),...alle.filter(k=>!lagret.includes(k))]}
 function me(){
   const vis=meRekkefolge().map(k=>[k,ME_KORT[k][1]()]).filter(x=>x[1]&&x[1].trim());
@@ -1239,7 +1239,8 @@ function meFlytt(k,d){
   const vis=meRekkefolge().filter(x=>{const h=ME_KORT[x][1]();return h&&h.trim()}),ord=meRekkefolge(),i=vis.indexOf(k),j=i+d;
   if(i<0||j<0||j>=vis.length)return;
   const x=ord.indexOf(k),y=ord.indexOf(vis[j]);[ord[x],ord[y]]=[ord[y],ord[x]];
-  try{localStorage.setItem('sm-meorder',JSON.stringify(ord))}catch(e){}
+  state.meorder=ord;try{localStorage.setItem('sm-meorder',JSON.stringify(ord))}catch(e){}
+  if(FB&&state.user&&state.user.email)FB.setMeOrder(state.user.email.toLowerCase(),ord).catch(()=>{});
   keep(()=>{})}
 
 const VIEWS={home,prog,news,me};
@@ -1893,6 +1894,7 @@ async function start(){
     state.leder=u&&state.member&&!state.admin?await FB.myLeder(u.email):false;
     state.ltype=state.leder?((await FB.myLtype(u.email))||''):'';
     state.profile=u&&state.member&&!state.admin?await FB.myProfile(u.email):null;
+    state.meorder=null;if(u&&state.member){const pr=await FB.myPrefs(u.email.toLowerCase());if(pr&&Array.isArray(pr.meorder))state.meorder=pr.meorder}
     state.notes=undefined;state.shifts=undefined;state.reqs=undefined;state.myShifts=[];
     if(u&&state.member)loadMyShifts().then(()=>keep(()=>{}));
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
