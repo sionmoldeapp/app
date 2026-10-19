@@ -348,7 +348,7 @@ function home(){
   ${welcomeCard()}
   ${visitorCard()}
   ${myShiftsCard()}
-  ${post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b>${esc(post.t)}</b><span class="small">${esc(post.b)}</span></div></div>`:''}
+  ${post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b>${esc(post.t)}</b><button type="button" class="pbody ${state.open['p_'+post.id]?'open':''}" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}"><span class="pt">${esc(post.b)}</span>${(String(post.b).length>130||(String(post.b).match(/\n/g)||[]).length>=2)?`<span class="pmore">${state.open['p_'+post.id]?'Vis mindre':'Les mer'}</span>`:''}</button></div></div>`:''}
   ${wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:''}
   ${svCard()}
   <div class="card"><h2>Finn frem</h2><p class="small" style="margin:6px 0 0">Adresse: Kometvegen 7, 6419 Molde<br>Kontortid: tirsdag–torsdag kl. 10–16<br>Telefon: <a href="tel:+4771251029">71 25 10 29</a><br>E-post: <a href="mailto:post@sionmolde.no">post@sionmolde.no</a></p></div>`}
