@@ -155,7 +155,7 @@ dialog.lp .btns.col .btn{width:100%}
 .tg[aria-checked="true"]{background:var(--brand)}
 .tg[aria-checked="true"]::after{transform:translateX(20px)}
 label.f{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:14px}
-input,textarea,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%}
+input,textarea,select{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%}
 .form{display:flex;flex-direction:column;gap:12px}
 nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
 nav.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:12px;font-weight:600;color:var(--muted);border-radius:10px}
@@ -418,7 +418,7 @@ const canEdit=()=>state.view==='meg'&&(state.admin||isLeader());
 const editOn=()=>state.edit&&canEdit();
 /* Utkast og planlagt visning: admin ser alt (med merke), alle andre bare det som er klart og ikke utløpt. Dette er en visning i appen, ikke en sperre i databasen. */
 const toDT=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())};
-const fmtDT=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return d.getDate()+'. '+MON[d.getMonth()]+' kl. '+p(d.getHours())+':'+p(d.getMinutes())};
+const fmtDT=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return d.getDate()+'. '+MON[d.getMonth()]+(d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():'')+' kl. '+p(d.getHours())+':'+p(d.getMinutes())};
 const liveOK=x=>{if(state.admin&&state.view==='meg')return true;const n=Date.now();return !x.draft&&(!x.pubAt||x.pubAt<=n)&&(!x.expireAt||x.expireAt>n)};
 const statusTag=x=>{if(!(state.admin&&state.view==='meg'))return '';const n=Date.now();return x.draft?' · <b>Utkast</b>':x.pubAt>n?' · <b>Vises '+fmtDT(x.pubAt)+'</b>':x.expireAt&&x.expireAt<=n?' · <b>Utløpt</b>':x.expireAt?' · skjules '+fmtDT(x.expireAt):''};
 const effAdmin=()=>state.admin&&state.view==='meg';
@@ -506,7 +506,7 @@ function admin(){
   ${t==='posts'?'':`<div class="chips" style="margin:4px 0 8px">${['Alle',...allCats().filter(canSeeCat)].map(c=>`<button class="chip" data-af="${esc(c)}" aria-pressed="${state.af===c}">${esc(c)}</button>`).join('')}</div>`}
   ${items.length?`<div class="btns" style="align-items:center;margin:4px 0 8px"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" data-aselall style="width:22px;height:22px" ${nSel===items.length?'checked':''}>Velg alle</label>
   <button class="btn" data-adelsel ${nSel?'':'disabled'}>Slett valgte (${nSel})</button></div>`:''}
-  <div class="reg">${items.map(x=>`<div class="r"><input type="checkbox" data-asel="${esc(x.id)}" aria-label="Velg" style="width:22px;height:22px;flex:none;align-self:center" ${state.sel[x.id]?'checked':''}><div class="grow">${admLabel(t,x)}</div><button class="btn" data-aedit="${esc(x.id)}">Rediger</button><button class="btn" data-adel="${esc(x.id)}">Slett</button></div>`).join('')||'<p class="small">Ingenting ennå.</p>'}</div>
+  <div class="reg">${items.map(x=>`<div class="r"><input type="checkbox" data-asel="${esc(x.id)}" aria-label="Velg" style="width:22px;height:22px;flex:none;align-self:center" ${state.sel[x.id]?'checked':''}><div class="grow">${admLabel(t,x)}</div><button class="btn" data-aedit="${esc(x.id)}">Rediger</button><button class="btn" data-adel="${esc(x.id)}">Slett</button></div>`).join('')||'<p class="small">Ingen oppføringer ennå.</p>'}</div>
   </details>`}
 
 const PEN='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
