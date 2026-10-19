@@ -21,7 +21,7 @@ try{
   const utTid=v=>v&&typeof v.toDate==='function'?{__tid:v.toDate().toISOString()}:Array.isArray(v)?v.map(utTid):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,utTid(x)])):v;
   const revive=v=>v&&typeof v==='object'&&typeof v.__tid==='string'?S.Timestamp.fromDate(new Date(v.__tid)):Array.isArray(v)?v.map(revive):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,revive(x)])):v;
   // Viser «Sletter …» i appen til slettingen er bekreftet av databasen.
-const sl=async p=>{if(window.smBusy)window.smBusy(1);try{return await p}finally{if(window.smBusy)window.smBusy(-1)}};
+const sl=async(p,t)=>{if(window.smBusy)window.smBusy(1,t);try{return await p}finally{if(window.smBusy)window.smBusy(-1)}};
 const FB={
     full:false,   // true for medlemmer og administratorer: da hentes også medlemsinnhold
     get user(){return auth.currentUser},
@@ -81,6 +81,8 @@ const FB={
     addScheduled:d=>S.addDoc(S.collection(db,'scheduled'),{...d,by:auth.currentUser.email,created:S.serverTimestamp()}),
     // Avlyser et planlagt varsel. Returnerer false hvis det allerede er sendt (dokumentet finnes ikke lenger).
     delScheduled:id=>sl((async()=>{const ref=S.doc(db,'scheduled',id),s=await S.getDoc(ref);if(!s.exists())return false;await S.deleteDoc(ref);return true})()),
+    // Endrer et planlagt varsel (tid, tittel, tekst). false hvis det allerede er sendt.
+    updScheduled:(id,d)=>sl((async()=>{const ref=S.doc(db,'scheduled',id),s=await S.getDoc(ref);if(!s.exists())return false;await S.updateDoc(ref,d);return true})(),'Lagrer …'),
     // Kategorier (samlingen categories): navn og rekkefølge.
     async catsList(){const s=await S.getDocs(S.collection(db,'categories'));return s.docs.map(d=>({id:d.id,...d.data()}))},
     setCatDoc:(id,d)=>S.setDoc(S.doc(db,'categories',id),d,{merge:true}),
@@ -307,5 +309,8 @@ const FB={
       return b.commit();
     }
   };
+  // Lagring og sending vises med «Lagrer …» / «Sender …» til databasen eller tjenesten har svart.
+  for(const n of ['add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
+  for(const n of ['sendPush','sendNote','sendWelcome','sendRsvpMail','sendMail']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Sender …')}
   window._fbRes(FB);
 }catch(e){console.warn('Firebase kunne ikke lastes, bruker JSON-filene',e);window._fbRes(null)}

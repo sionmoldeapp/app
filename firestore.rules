@@ -67,7 +67,7 @@ service cloud.firestore {
         && request.resource.data.fireAt is int
         && (isAdmin() || (isLeader() && request.resource.data.malType == 'grupper'
              && request.resource.data.groups is list && request.resource.data.groups.size() > 0 && request.resource.data.groups.hasOnly(myLeads())));
-      allow read, delete: if isAdmin();
+      allow read, update, delete: if isAdmin();
     }
 
     // Lederkategorier (Hovedledere, Ungdomsledere, Forkynnere ...): bare administratorer.
