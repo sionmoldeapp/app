@@ -20,7 +20,9 @@ try{
   const SNAP_COLS=['events','posts','regular','members','admins'],KEEP_COLS=['events','posts','regular'];
   const utTid=v=>v&&typeof v.toDate==='function'?{__tid:v.toDate().toISOString()}:Array.isArray(v)?v.map(utTid):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,utTid(x)])):v;
   const revive=v=>v&&typeof v==='object'&&typeof v.__tid==='string'?S.Timestamp.fromDate(new Date(v.__tid)):Array.isArray(v)?v.map(revive):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,revive(x)])):v;
-  const FB={
+  // Viser «Sletter …» i appen til slettingen er bekreftet av databasen.
+const sl=async p=>{if(window.smBusy)window.smBusy(1);try{return await p}finally{if(window.smBusy)window.smBusy(-1)}};
+const FB={
     full:false,   // true for medlemmer og administratorer: da hentes også medlemsinnhold
     get user(){return auth.currentUser},
     onAuth:cb=>A.onAuthStateChanged(auth,cb),
@@ -67,25 +69,25 @@ try{
     // Private møtenotater: members/{e-post}/notes/n1..n100. Bare eieren har tilgang.
     async notesList(email){const s=await S.getDocs(S.collection(db,'members',email,'notes'));return s.docs.map(d=>{const x=d.data();return {id:d.id,title:x.title||'',date:x.date||'',speaker:x.speaker||'',html:x.html||'',ms:x.updated&&x.updated.toMillis?x.updated.toMillis():0}}).sort((a,b)=>b.ms-a.ms)},
     saveNote:(email,id,d)=>S.setDoc(S.doc(db,'members',email,'notes',id),{title:d.title,date:d.date,speaker:d.speaker||'',html:d.html,updated:S.serverTimestamp()}),
-    delNote:(email,id)=>S.deleteDoc(S.doc(db,'members',email,'notes',id)),
+    delNote:(email,id)=>sl(S.deleteDoc(S.doc(db,'members',email,'notes',id))),
     // Vakter: shifts/{gruppe}/items (vaktene) og shifts/{gruppe}/requests (byttebeskjeder til lederen).
     async shiftsList(group,fromIso){const s=await S.getDocs(S.collection(db,'shifts',group,'items'));return s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>!fromIso||x.date>=fromIso).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.role).localeCompare(String(b.role)))},
     setShift:(group,id,d)=>S.setDoc(S.doc(db,'shifts',group,'items',id),d),
-    delShift:(group,id)=>S.deleteDoc(S.doc(db,'shifts',group,'items',id)),
+    delShift:(group,id)=>sl(S.deleteDoc(S.doc(db,'shifts',group,'items',id))),
     async requestsList(group){const s=await S.getDocs(S.collection(db,'shifts',group,'requests'));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.date).localeCompare(String(b.date)))},
     addRequest:(group,d)=>S.addDoc(S.collection(db,'shifts',group,'requests'),{...d,created:S.serverTimestamp()}),
-    delRequest:(group,id)=>S.deleteDoc(S.doc(db,'shifts',group,'requests',id)),
+    delRequest:(group,id)=>sl(S.deleteDoc(S.doc(db,'shifts',group,'requests',id))),
     // Planlagte varsler (samlingen scheduled): Apps Script sender dem når fireAt er passert.
     addScheduled:d=>S.addDoc(S.collection(db,'scheduled'),{...d,by:auth.currentUser.email,created:S.serverTimestamp()}),
     // Avlyser et planlagt varsel. Returnerer false hvis det allerede er sendt (dokumentet finnes ikke lenger).
-    async delScheduled(id){const ref=S.doc(db,'scheduled',id),s=await S.getDoc(ref);if(!s.exists())return false;await S.deleteDoc(ref);return true},
+    delScheduled:id=>sl((async()=>{const ref=S.doc(db,'scheduled',id),s=await S.getDoc(ref);if(!s.exists())return false;await S.deleteDoc(ref);return true})()),
     // Kategorier (samlingen categories): navn og rekkefølge.
     async catsList(){const s=await S.getDocs(S.collection(db,'categories'));return s.docs.map(d=>({id:d.id,...d.data()}))},
     setCatDoc:(id,d)=>S.setDoc(S.doc(db,'categories',id),d,{merge:true}),
-    delCatDoc:id=>S.deleteDoc(S.doc(db,'categories',id)),
+    delCatDoc:id=>sl(S.deleteDoc(S.doc(db,'categories',id))),
     setGroupDoc:(id,d)=>S.setDoc(S.doc(db,'groups',id),d,{merge:true}),
-    delGroupDoc:id=>S.deleteDoc(S.doc(db,'groups',id)),
-    del:(col,id)=>S.deleteDoc(S.doc(db,col,id)),
+    delGroupDoc:id=>sl(S.deleteDoc(S.doc(db,'groups',id))),
+    del:(col,id)=>sl(S.deleteDoc(S.doc(db,col,id))),
     // «Jeg kommer»: en anonym teller per arrangement. Ingen navn lagres, bare antallet.
     async counts(){const snap=await S.getDocs(S.collection(db,'rsvpCounts'));const o={};snap.docs.forEach(d=>o[d.id]=d.data().n||0);return o},
     async rsvp(id,delta){
@@ -196,8 +198,11 @@ try{
     },
     // Lager et punkt bare hvis det siste er eldre enn minMs (så vi ikke lager ett for hver sletting).
     async ensureSnapshot(label,minMs){
-      const l=await FB.listSnapshots();
-      return l.length&&Date.now()-l[0].ms<minMs?l[0].id:FB.makeSnapshot(label);
+      const vis=String(label).startsWith('Før');   // sikkerhetspunkt før sletting hører med til «Sletter …»
+      if(vis&&window.smBusy)window.smBusy(1);
+      try{const l=await FB.listSnapshots();
+        return l.length&&Date.now()-l[0].ms<minMs?l[0].id:await FB.makeSnapshot(label)}
+      finally{if(vis&&window.smBusy)window.smBusy(-1)}
     },
     async loadSnapshot(id){
       const s=await S.getDoc(S.doc(db,'snapshotData',id));
@@ -250,7 +255,7 @@ try{
     // Lederkategorier (samlingen leaderTypes) og hvilken kategori en leder tilhører (feltet ltype).
     async ltypesList(){const s=await S.getDocs(S.collection(db,'leaderTypes'));return s.docs.map(d=>({id:d.id,...d.data()}))},
     setLtypeDoc:(id,d)=>S.setDoc(S.doc(db,'leaderTypes',id),d,{merge:true}),
-    delLtypeDoc:id=>S.deleteDoc(S.doc(db,'leaderTypes',id)),
+    delLtypeDoc:id=>sl(S.deleteDoc(S.doc(db,'leaderTypes',id))),
     setLtype:(email,ltype)=>S.updateDoc(S.doc(db,'members',email),{ltype}),
     setLeder:(email,v)=>S.updateDoc(S.doc(db,'members',email),{leder:!!v}),
     setLeads:(email,leads,groups)=>S.updateDoc(S.doc(db,'members',email),{leads,groups}),
