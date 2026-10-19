@@ -406,10 +406,10 @@ function prayerCard(){
   const l=state.prayers,uid=prUid(),vis=l?l.filter(x=>(x.ms||0)>Date.now()-60*864e5):[];
   let inn;
   if(l===undefined)inn='<p class="small">Henter bønneemner …</p>';
-  else inn='<p class="small" style="margin:0 0 8px">Del noe du ønsker at andre skal be for. Alle innloggede medlemmer kan se emnene, og de skjules etter 60 dager.</p>'
-   +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><button class="btn" data-prrefresh>Oppdater</button></div>'
-   +'<div class="reg">'+(vis.map(x=>{const ber=(x.ber||[]).includes(uid),n=(x.ber||[]).length;
-      return '<div class="r" style="display:block"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'Anonym')+' · '+esc(ago({ms:x.ms}))+'</div><div class="btns"><button class="btn '+(ber?'on':'')+'" data-prpray="'+esc(x.id)+'">'+(ber?'✓ Du ber':'Jeg ber')+(n?' ('+n+')':'')+'</button>'+((x.by===uid||state.admin||isLeader())?'<button class="btn" data-prdel="'+esc(x.id)+'">Slett</button>':'')+'</div></div>'}).join('')||'<p class="small">Ingen bønneemner ennå.</p>')+'</div>';
+  else inn='<p class="small" style="margin:0 0 8px">Legg inn bønneemner her. De samles opp til bønnemøtene i menigheten. Alle innloggede medlemmer kan se emnene, og de skjules etter 60 dager.</p>'
+   +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><button class="btn" data-prrefresh>Oppdater</button>'+((state.admin||isLeader())&&vis.length?'<button class="btn" data-prcopy>Kopier listen</button>':'')+'</div>'
+   +'<div class="reg">'+(vis.map(x=>{
+      return '<div class="r" style="display:block"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'Anonym')+' · '+esc(ago({ms:x.ms}))+'</div>'+((x.by===uid||state.admin||isLeader())?'<div class="btns"><button class="btn" data-prdel="'+esc(x.id)+'">Slett</button></div>':'')+'</div>'}).join('')||'<p class="small">Ingen bønneemner ennå.</p>')+'</div>';
   return '<details class="card acc" data-acc="bonn" '+(state.acc.bonn?'open':'')+'><summary><h2>Bønneemner'+(l?' ('+vis.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
 async function loadPrayers(){
   try{state.prayers=await FB.prayersList();state.prMsg=''}catch(e){state.prayers=[];state.prMsg='Kunne ikke hente bønneemner ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
@@ -431,11 +431,9 @@ function prayAsk(){
     try{await FB.addPrayer({t,name});dlg.close();state.acc.bonn=true;await loadPrayers();push('Lagt ut','Bønneemnet er lagt ut.')}
     catch(er){dlg.querySelector('#pMsg').textContent='Kunne ikke legge ut ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
-async function prayToggle(id){
-  const x=(state.prayers||[]).find(p=>p.id===id);if(!x||!FB)return;
-  const uid=prUid(),på=!(x.ber||[]).includes(uid),før=x.ber||[];
-  x.ber=på?[...før,uid]:før.filter(u=>u!==uid);keep(()=>{});
-  try{await FB.prayToggle(id,på)}catch(er){x.ber=før;keep(()=>{});push('Kunne ikke lagre',saveMsg(er&&er.code))}}
+async function prayCopy(){
+  const vis=(state.prayers||[]).filter(x=>(x.ms||0)>Date.now()-60*864e5).slice().sort((a,b)=>(a.ms||0)-(b.ms||0)),tekst='Bønneemner\n\n'+vis.map(x=>'• '+x.t.replace(/\s*\n\s*/g,' ')+' ('+(x.name||'anonym')+')').join('\n');
+  try{await navigator.clipboard.writeText(tekst);push('Kopiert','Listen med bønneemner er kopiert.')}catch(e){await visTekst('Kopier listen:',tekst.replace(/\n/g,' '))}}
 async function prayDel(id){
   if(!await bekreft('Slette dette bønneemnet?'))return;
   try{await FB.delPrayer(id);state.prayers=(state.prayers||[]).filter(p=>p.id!==id);keep(()=>{})}
@@ -1313,7 +1311,7 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ics){icsFil(c.dataset.ics)}
   else if('prnew' in c.dataset){prayAsk()}
   else if('prrefresh' in c.dataset){state.prayers=undefined;keep(()=>{});loadPrayers()}
-  else if(c.dataset.prpray){prayToggle(c.dataset.prpray)}
+  else if('prcopy' in c.dataset){prayCopy()}
   else if(c.dataset.prdel){prayDel(c.dataset.prdel)}
   else if('contactedit' in c.dataset){contactAsk()}
   else if(c.dataset.rem){
