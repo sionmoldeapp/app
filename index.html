@@ -311,9 +311,8 @@ function rsPanel(id,titel,dato,groups){
   if(l===undefined)inn='<p class="small">Henter listen …</p>';
   else if(!l.length)inn='<p class="small">Ingen navn ennå.</p>';
   else{
-    const mail='mailto:?subject='+encodeURIComponent('Påmeldte: '+titel+' ('+dato+')')+'&body='+encodeURIComponent(rsText(id,titel,dato));
     inn='<div class="reg">'+l.map(u=>'<div class="r"><div class="grow">'+esc(u.name)+'</div></div>').join('')+'</div>'
-      +'<div class="btns"><a class="btn" href="'+mail+'" style="display:inline-block;text-decoration:none;color:var(--ink)">Send på e-post</a><button class="btn" data-rscopy="'+esc(id)+'|'+esc(titel)+'|'+esc(dato)+'">Kopier listen</button></div>'}
+      +'<div class="btns"><button class="btn" data-rsmail="'+esc(id)+'|'+esc(titel)+'|'+esc(dato)+'">Send til e-post</button><button class="btn" data-rscopy="'+esc(id)+'|'+esc(titel)+'|'+esc(dato)+'">Kopier listen</button></div>'}
   return '<details class="acc sub" data-acc="rs_'+id+'" '+(state.acc['rs_'+id]?'open':'')+'><summary><b>Påmeldte: '+n+'</b></summary>'+inn+'</details>'}
 async function loadRs(id){try{state.rsList[id]=await FB.rsvpList(id)}catch(e){state.rsList[id]=[]}keep(()=>{})}
 async function setRsvp(id,on,navn,kontakt){
@@ -1233,6 +1232,8 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.lgdel){const [em,g]=c.dataset.lgdel.split('|');if(!confirm('Fjerne '+em+' fra '+gName(g)+'?'))return;
     try{await FB.leaderRemove(em,g);state.lgMsg=em+' er fjernet fra '+gName(g)+'.';state.acc['mg_'+g]=true;state.acc.mingr=true}catch(er){state.lgMsg=saveMsg(er.code)}
     await refresh()}
+  else if(c.dataset.rsmail){const [i,t,d]=c.dataset.rsmail.split('|'),navn=(state.rsList[i]||[]).map(u=>u.name);if(!PUSH_URL){push('Ikke tilgjengelig','Utsending er ikke satt opp.');return}
+    c.disabled=true;try{const r=await FB.sendRsvpMail(PUSH_URL,{title:t,date:d,names:navn});push(r.ok?'Sendt':'Ikke sendt',r.ok?'Listen er sendt til '+r.til+'.':r.feil)}catch(er){push('Kunne ikke sende','Ingen kontakt med tjenesten.')}c.disabled=false}
   else if(c.dataset.rscopy){const [i,t,d]=c.dataset.rscopy.split('|');try{await navigator.clipboard.writeText(rsText(i,t,d));push('Kopiert','Listen over påmeldte er kopiert.')}catch(x){push('Kunne ikke kopiere','Bruk «Send på e-post» i stedet.')}}
   else if('ltnew' in c.dataset){ltAsk(null)}
   else if(c.dataset.ltedit){ltAsk(c.dataset.ltedit)}

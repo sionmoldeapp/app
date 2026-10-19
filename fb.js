@@ -130,6 +130,12 @@ try{
       if(token)await S.deleteDoc(S.doc(db,'pushTokens',token));
     },
     // Sender varsel via Apps Script-tjenesten. Tjenesten sjekker innloggingsbeviset og at brukeren er administrator.
+    // Liste over påmeldte på e-post til brukerens egen adresse (administrator eller gruppeleder).
+    async sendRsvpMail(url,d){
+      const idToken=await auth.currentUser.getIdToken(true);
+      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'paameldte',title:d.title,date:d.date,names:d.names})});
+      return r.json();
+    },
     // Møtenotat på e-post til brukerens egen adresse (adressen tas fra innloggingsbeviset i Apps Script).
     async sendNote(url,d){
       const idToken=await auth.currentUser.getIdToken(true);
