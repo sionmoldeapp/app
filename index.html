@@ -1134,12 +1134,13 @@ function badge(){
 const viewBanner=()=>'';
 function render(){drawTabs();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();badge();window.scrollTo(0,0)}
 /* «Sletter …»: en sirkel som snurrer til databasen har bekreftet slettingen. Vises i åpen dialog hvis det finnes en, ellers over hele siden. */
-let busyN=0,busyT=null,busyIv=null,busyRm=null,busyTekst='Sletter …';
+let busyN=0,busyT=null,busyIv=null,busyRm=null,busyTekst='Sletter …',busyVist=0;
 function busyVis(){
   let el=document.getElementById('busy');
   const host=[...document.querySelectorAll('dialog[open]')].pop()||document.body;
   if(!el){el=document.createElement('div');el.id='busy';el.setAttribute('role','status');el.setAttribute('aria-live','polite');el.innerHTML='<div class="busybox"><div class="spin"></div><div class="busytxt"></div></div>'}
   el.querySelector('.busytxt').textContent=busyTekst;
+  if(!busyVist)busyVist=Date.now();
   if(el.parentNode!==host)host.appendChild(el);
   el.classList.toggle('indialog',host!==document.body)}
 window.smBusy=(d,tekst)=>{
@@ -1148,7 +1149,8 @@ window.smBusy=(d,tekst)=>{
   if(d>0){clearTimeout(busyRm);busyRm=null;const el=document.getElementById('busy');if(el)el.querySelector('.busytxt').textContent=busyTekst}
   if(busyN>0&&!busyT&&!document.getElementById('busy')){busyT=setTimeout(()=>{busyT=null;if(busyN>0){busyVis();busyIv=setInterval(busyVis,250)}},120)}
   if(busyN===0){clearTimeout(busyT);busyT=null;clearTimeout(busyRm);
-    busyRm=setTimeout(()=>{busyRm=null;if(busyN>0)return;clearInterval(busyIv);busyIv=null;const el=document.getElementById('busy');if(el)el.remove();busyTekst='Sletter …'},150)}};
+    const igjen=busyVist?Math.max(150,700-(Date.now()-busyVist)):150;
+    busyRm=setTimeout(()=>{busyRm=null;if(busyN>0)return;clearInterval(busyIv);busyIv=null;const el=document.getElementById('busy');if(el)el.remove();busyTekst='Sletter …';busyVist=0},igjen)}};
 let pt;
 function push(t,b){$('#pushT').textContent=t;$('#pushB').textContent=b;$('#push').classList.add('show');clearTimeout(pt);pt=setTimeout(()=>$('#push').classList.remove('show'),5000)}
 /* Meldingsboksen kan sveipes bort (opp eller til siden) eller trykkes bort. */
@@ -1161,7 +1163,10 @@ function push(t,b){$('#pushT').textContent=t;$('#pushB').textContent=b;$('#push'
     else{pb.classList.remove('drag');pb.style.transform='';pb.style.opacity='';if(!moved)hide();else pt=setTimeout(hide,2500)}};
   pb.addEventListener('pointerup',end);pb.addEventListener('pointercancel',end)}
 function keep(fn){const y=scrollY;fn();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();drawTabs();badge();window.scrollTo(0,y)}
-async function refresh(){await load();keep(()=>{})}
+async function refresh(){
+  const aktiv=busyN>0||busyRm;   // rett etter lagring/sletting: hold sirkelen til listene er oppdatert
+  if(aktiv&&window.smBusy)window.smBusy(1);
+  try{await load();keep(()=>{})}finally{if(aktiv&&window.smBusy)window.smBusy(-1)}}
 const authMsg=c=>({'auth/invalid-credential':'Feil e-post eller passord.','auth/invalid-email':'Ugyldig e-postadresse.','auth/user-disabled':'Brukeren er sperret.','auth/too-many-requests':'For mange forsøk. Vent litt og prøv igjen.','auth/network-request-failed':'Ingen nettforbindelse.','auth/weak-password':'Passordet er for svakt. Bruk minst 8 tegn.','auth/requires-recent-login':'Logg ut og inn igjen, og prøv på nytt.'}[c]||'Noe gikk galt. Prøv igjen.');
 const saveMsg=c=>c==='permission-denied'?'Du har ikke tilgang til å lagre.':'Kunne ikke lagre ('+(c||'ukjent feil')+').';
 
