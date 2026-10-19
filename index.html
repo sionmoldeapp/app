@@ -113,6 +113,12 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 @keyframes snurr{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
 .nwrap{position:relative}
+.merow{display:flex;align-items:center;gap:10px;padding:14px;margin:0 0 8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.merow b{flex:1;min-width:0}
+.mehandle{font-size:22px;line-height:1;color:var(--muted)}
+.mebtns{display:flex;gap:6px}
+.mebtns .btn{padding:4px 10px}
+.merow.lift{position:relative;z-index:3;box-shadow:0 10px 28px rgba(0,0,0,.35);opacity:.96}
 textarea{resize:none;padding-bottom:36px;min-height:70px}
 .ngrip{position:absolute;right:4px;bottom:4px;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:nwse-resize;touch-action:none;border-radius:8px;background:var(--bg);opacity:.9}
 .ned{min-height:140px;height:260px;max-height:80vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
@@ -1233,14 +1239,18 @@ function meRekkefolge(){
 function me(){
   const vis=meRekkefolge().map(k=>[k,ME_KORT[k][1]()]).filter(x=>x[1]&&x[1].trim());
   const ro=state.reorder;
-  return `<h1>Meg</h1>${vis.length>1?`<div class="btns" style="margin:-4px 0 12px"><button class="btn ${ro?'on':''}" data-meorder>${ro?'Ferdig':'Endre rekkefølge'}</button></div>`:''}
-  ${vis.map(([k,h],i)=>ro?`<div class="rowrap" style="margin:0 0 6px;padding:6px;border:2px dashed var(--line);border-radius:16px"><div class="btns" style="align-items:center;margin:0 0 6px"><b style="flex:1;min-width:0">${esc(ME_KORT[k][0])}</b><button class="btn" data-meup="${k}" ${i===0?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} opp">▲ Opp</button><button class="btn" data-medown="${k}" ${i===vis.length-1?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} ned">▼ Ned</button></div>${h}</div>`:h).join('')}`}
+  const knapp=vis.length>1?`<div class="btns" style="margin:-4px 0 12px"><button class="btn ${ro?'on':''}" data-meorder>${ro?'Ferdig':'Endre rekkefølge'}</button></div>`:'';
+  if(ro)return `<h1>Meg</h1>${knapp}<p class="small" style="margin:0 0 10px">Hold fingeren på en rad til den løsner, og dra den opp eller ned. Slipp der den skal stå.</p><div id="meList">${vis.map(([k],i)=>`<div class="merow" data-mek="${k}"><span class="mehandle" aria-hidden="true">≡</span><b>${esc(ME_KORT[k][0])}</b><span class="mebtns"><button class="btn" data-meup="${k}" ${i===0?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} opp">▲</button><button class="btn" data-medown="${k}" ${i===vis.length-1?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} ned">▼</button></span></div>`).join('')}</div>`;
+  return `<h1>Meg</h1>${knapp}
+  ${vis.map(x=>x[1]).join('')}`}
+function meLagre(ord){
+  state.meorder=ord;try{localStorage.setItem('sm-meorder',JSON.stringify(ord))}catch(e){}
+  if(FB&&state.user&&state.user.email)FB.setMeOrder(state.user.email.toLowerCase(),ord).catch(()=>{})}
 function meFlytt(k,d){
   const vis=meRekkefolge().filter(x=>{const h=ME_KORT[x][1]();return h&&h.trim()}),ord=meRekkefolge(),i=vis.indexOf(k),j=i+d;
   if(i<0||j<0||j>=vis.length)return;
   const x=ord.indexOf(k),y=ord.indexOf(vis[j]);[ord[x],ord[y]]=[ord[y],ord[x]];
-  state.meorder=ord;try{localStorage.setItem('sm-meorder',JSON.stringify(ord))}catch(e){}
-  if(FB&&state.user&&state.user.email)FB.setMeOrder(state.user.email.toLowerCase(),ord).catch(()=>{});
+  meLagre(ord);
   keep(()=>{})}
 
 const VIEWS={home,prog,news,me};
@@ -1324,6 +1334,32 @@ function viewOpts(){
 document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.target.value;const l=$('#noteList');if(l)l.innerHTML=noteRows(state.nq.trim()?(state.notes||[]).filter(x=>norm(x.title+' '+(x.speaker||'')+' '+noteText(x.html)).includes(norm(state.nq).trim())):(state.notes||[]));return}
   if(e.target.id==='brQ'){state.brQ=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
+/* Endre rekkefølge: hold fingeren på en rad til den løsner, og dra den opp eller ned. */
+{let row=null,list=null,tid=null,x0=0,y0=0,drag=false;
+  const Y=e=>e.clientY+scrollY,nat=()=>{row.style.transform='none';return row.getBoundingClientRect().top+scrollY};
+  document.addEventListener('pointerdown',e=>{const r=e.target.closest('.merow');if(!r||e.target.closest('button'))return;
+    row=r;list=r.parentNode;x0=e.clientX;y0=Y(e);drag=false;clearTimeout(tid);
+    tid=setTimeout(()=>{tid=null;drag=true;row.classList.add('lift');try{row.setPointerCapture(e.pointerId)}catch(x){}try{navigator.vibrate&&navigator.vibrate(25)}catch(x){}},350)});
+  document.addEventListener('pointermove',e=>{
+    if(!row)return;
+    if(!drag){if(tid&&Math.hypot(e.clientX-x0,Y(e)-y0)>10){clearTimeout(tid);tid=null;row=null}return}
+    let n=nat(),dy=Y(e)-y0;
+    for(let guard=0;guard<20;guard++){
+      const mid=n+dy+row.offsetHeight/2,sib=[...list.children],i=sib.indexOf(row),prev=sib[i-1],next=sib[i+1];
+      let flyttet=false;
+      if(prev){const bb=prev.getBoundingClientRect();if(mid<bb.top+scrollY+bb.height/2){list.insertBefore(row,prev);flyttet=true}}
+      if(!flyttet&&next){const bb=next.getBoundingClientRect();if(mid>bb.top+scrollY+bb.height/2){list.insertBefore(next,row);flyttet=true}}
+      if(!flyttet)break;
+      const n2=nat();y0+=n2-n;n=n2;dy=Y(e)-y0}
+    row.style.transform='translateY('+dy+'px)';
+    if(e.clientY<90)scrollBy(0,-14);else if(e.clientY>innerHeight-90)scrollBy(0,14)});
+  const slipp=()=>{clearTimeout(tid);tid=null;if(!row)return;const r=row;row=null;
+    if(!drag)return;drag=false;r.classList.remove('lift');r.style.transform='';
+    const keys=[...list.children].map(x=>x.dataset.mek),rest=meRekkefolge().filter(k=>!keys.includes(k));
+    meLagre([...keys,...rest]);keep(()=>{})};
+  document.addEventListener('pointerup',slipp);document.addEventListener('pointercancel',slipp);
+  document.addEventListener('touchmove',e=>{if(drag)e.preventDefault()},{passive:false});
+  document.addEventListener('contextmenu',e=>{if(e.target.closest('.merow'))e.preventDefault()})}
 /* Alle tekstfelt (ny melding, hilsen, beskrivelse ...) kan gjøres høyere eller lavere, men ikke bredere, med samme håndtak som i notatene. */
 function gripTa(ta){
   if(ta.dataset.grip||!ta.parentNode)return;ta.dataset.grip='1';
