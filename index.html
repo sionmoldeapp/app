@@ -1221,18 +1221,26 @@ function loginCard(){
   <button class="btn primary" type="submit">Logg inn</button><button class="theme" type="button" data-reset>Glemt passord?</button></form>
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.err)}</p>`:'<p class="small">Innlogging er ikke tilgjengelig akkurat nå.</p>'}</div>`}
 
+/* Kortene under Meg kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
+const ME_KORT={
+  login:['Innlogging',()=>loginCard()],push:['Varsler',()=>pushCard()],install:['Slik installerer du appen',()=>installCard()],share:['Del appen',()=>shareCard()],
+  vakter:['Vakter',()=>vakterCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],stat:['Oversikt',()=>statCard()],
+  medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
+  ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'']};
+function meRekkefolge(){
+  let lagret=[];try{lagret=JSON.parse(localStorage.getItem('sm-meorder')||'[]')}catch(e){}
+  const alle=Object.keys(ME_KORT);return [...lagret.filter(k=>alle.includes(k)),...alle.filter(k=>!lagret.includes(k))]}
 function me(){
-  const sw=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${state.prefs[k]}" aria-label="${l}" data-pref="${k}"></button></div>`;
-  return `<h1>Meg</h1>${loginCard()}
-  ${pushCard()}
-  ${installCard()}
-  ${shareCard()}
-  ${vakterCard()}
-  ${notesCard()}
-  ${profileCard()}
-
-  ${statCard()}
-  ${state.view!=='meg'?'':state.admin?memberCard()+groupsCard()+snapCard():isLeader()?leaderGroups()+admin():''}`}
+  const vis=meRekkefolge().map(k=>[k,ME_KORT[k][1]()]).filter(x=>x[1]&&x[1].trim());
+  const ro=state.reorder;
+  return `<h1>Meg</h1>${vis.length>1?`<div class="btns" style="margin:-4px 0 12px"><button class="btn ${ro?'on':''}" data-meorder>${ro?'Ferdig':'Endre rekkefølge'}</button></div>`:''}
+  ${vis.map(([k,h],i)=>ro?`<div class="rowrap" style="margin:0 0 6px;padding:6px;border:2px dashed var(--line);border-radius:16px"><div class="btns" style="align-items:center;margin:0 0 6px"><b style="flex:1;min-width:0">${esc(ME_KORT[k][0])}</b><button class="btn" data-meup="${k}" ${i===0?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} opp">▲ Opp</button><button class="btn" data-medown="${k}" ${i===vis.length-1?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} ned">▼ Ned</button></div>${h}</div>`:h).join('')}`}
+function meFlytt(k,d){
+  const vis=meRekkefolge().filter(x=>{const h=ME_KORT[x][1]();return h&&h.trim()}),ord=meRekkefolge(),i=vis.indexOf(k),j=i+d;
+  if(i<0||j<0||j>=vis.length)return;
+  const x=ord.indexOf(k),y=ord.indexOf(vis[j]);[ord[x],ord[y]]=[ord[y],ord[x]];
+  try{localStorage.setItem('sm-meorder',JSON.stringify(ord))}catch(e){}
+  keep(()=>{})}
 
 const VIEWS={home,prog,news,me};
 const SUN='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
@@ -1333,6 +1341,9 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ev){keep(()=>state.open[c.dataset.ev]=!state.open[c.dataset.ev])}
   else if(c.dataset.rsvp){
     if(state.rsvp[c.dataset.rsvp])await setRsvp(c.dataset.rsvp,false);else openRsvp(c.dataset.rsvp)}
+  else if('meorder' in c.dataset){keep(()=>{state.reorder=!state.reorder})}
+  else if(c.dataset.meup){meFlytt(c.dataset.meup,-1)}
+  else if(c.dataset.medown){meFlytt(c.dataset.medown,1)}
   else if(c.dataset.ics){icsFil(c.dataset.ics)}
   else if('prnew' in c.dataset){prayAsk()}
   else if('prrefresh' in c.dataset){state.prayers=undefined;keep(()=>{});loadPrayers()}
