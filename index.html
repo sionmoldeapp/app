@@ -381,7 +381,7 @@ function contactCard(){
   if(c.hours)R.push('Kontortid: '+esc(c.hours));
   if(c.phone)R.push('Telefon: <a href="tel:'+esc(tel.startsWith('+')?tel:'+47'+tel)+'">'+esc(c.phone)+'</a>');
   if(c.email)R.push('E-post: <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a>');
-  return '<div class="card"><h2>Finn frem</h2><p class="small" style="margin:6px 0 0">'+R.join('<br>')+'</p>'+(state.admin?'<div class="btns" style="margin-top:10px"><button class="btn" data-contactedit>Endre</button></div>':'')+'</div>'}
+  return '<div class="card"><h2>Finn frem</h2><p class="small" style="margin:6px 0 0">'+R.join('<br>')+'</p>'+(state.admin&&editOn()?'<div class="btns" style="margin-top:10px"><button class="btn" data-contactedit>Endre</button></div>':'')+'</div>'}
 function contactAsk(){
   if(!state.admin||document.querySelector('dialog.pub'))return;
   const c={...CONTACT_DEF,...(state.contact||{})},dlg=document.createElement('dialog');dlg.className='lp pub';
