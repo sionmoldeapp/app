@@ -431,7 +431,10 @@ const visOK=x=>state.view!=='besok'||!x.m;
 const effLeder=()=>state.view==='meg'&&state.leder===true;
 const LEDERKAT=['Ledersamling','Lederrådet'];   // kategorier som bare ledere ser (navnet avgjør)
 const lederKat=c=>LEDERKAT.includes(normCat(c));
-const canSeeCat=c=>!lederKat(c)||effAdmin()||effLeder()||effLeads().length>0||effGroups().includes('lederradet');
+const katSyn={   // hvem som ser hver intern kategori
+  'Ledersamling':()=>effAdmin()||effLeder()||effLeads().length>0||effGroups().includes('lederradet'),
+  'Lederrådet':()=>effAdmin()||effGroups().includes('lederradet')};
+const canSeeCat=c=>{const f=katSyn[normCat(c)];return f?f():true};
 /* «Vis som gruppeleder» (bare for administrator): vi bytter midlertidig ut rollen i appen med en gruppeleder for de valgte gruppene. Reglene i databasen gjelder fortsatt administratoren. */
 function setView(v){
   if(state.real&&v!=='leder'){Object.assign(state,state.real);state.real=null}
