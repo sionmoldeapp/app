@@ -102,6 +102,10 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 .emorad{display:flex;flex-wrap:wrap;gap:4px}
 .emorad[hidden]{display:none}
 .emo{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:42px;height:42px;font-size:24px;line-height:1;padding:0;cursor:pointer;font-family:"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif}
+.pbody{display:block;width:100%;text-align:left;background:none;border:0;padding:0;color:var(--ink);font:inherit;font-size:14px;line-height:1.45;cursor:pointer;border-radius:0}
+.pbody .pt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
+.pbody.open .pt{display:block;-webkit-line-clamp:unset;overflow:visible}
+.pmore{display:block;color:var(--lamp);font-weight:600;margin-top:4px}
 .nwrap{position:relative}
 .ngrip{position:absolute;right:4px;bottom:4px;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:nwse-resize;touch-action:none;border-radius:8px;background:var(--bg);opacity:.9}
 .ned{min-height:140px;height:260px;max-height:80vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
@@ -383,7 +387,7 @@ function regList(){
 function news(){
   const l=posts.map(p=>{
    if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
-   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3>${esc(p.t)}</h3><div class="small" style="color:var(--ink)">${esc(p.b)}</div></div>`}).join('');
+   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3>${esc(p.t)}</h3><button type="button" class="pbody ${state.open['p_'+p.id]?'open':''}" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}"><span class="pt">${esc(p.b)}</span>${(String(p.b).length>130||(String(p.b).match(/\n/g)||[]).length>=2)?`<span class="pmore">${state.open['p_'+p.id]?'Vis mindre':'Les mer'}</span>`:''}</button></div>`}).join('');
   const kan=editOn();
   return `<h1>Nyheter</h1>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Pastorens hilsen</button>':'')+'</div>':''}<div class="list">${l||'<p class="small">Ingen nyheter ennå.</p>'}</div>${kan?'<div class="lpzone"></div>':''}`}
 
@@ -1260,6 +1264,7 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.vkswap){const [g,i]=c.dataset.vkswap.split('|');vaktSwap(g,i)}
   else if(c.dataset.vkreqdel){const [g,i]=c.dataset.vkreqdel.split('|');try{await FB.delRequest(g,i);state.reqs[g]=(state.reqs[g]||[]).filter(r=>r.id!==i);keep(()=>{})}catch(er){push('Kunne ikke fjerne',saveMsg(er.code))}}
   else if('hilsen' in c.dataset){hilsenAsk()}
+  else if(c.dataset.postopen){keep(()=>{state.open['p_'+c.dataset.postopen]=!state.open['p_'+c.dataset.postopen]})}
   else if('pubnew' in c.dataset){pubAsk()}
   else if('grpnew' in c.dataset){grpAsk(null)}
   else if(c.dataset.grpedit){grpAsk(c.dataset.grpedit)}
