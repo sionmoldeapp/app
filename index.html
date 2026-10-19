@@ -229,7 +229,7 @@ async function load(){
   views=canStats()&&FB&&usingFb?await FB.viewCounts().catch(()=>({})):{};
   state.stat=state.admin&&FB&&usingFb?{push:await FB.pushCount().catch(()=>null)}:null;
   leaderMem=isLeader()&&FB?await FB.leaderMembers(state.leads).catch(()=>[]):[];
-  state.unread=posts.filter(isNew).length;
+  state.unread=posts.filter(p=>isNew(p)&&!postSkjult(p)).length;
 }
 function ago(p){
   if(!p.ms)return p.ago||'';
@@ -341,7 +341,7 @@ function home(){
   const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome), n=vis[0];
   const fast=nextFast();
   const wk=[...vis.slice(0,4).map(e=>({ev:e,w:e.w})),...fast.map(f=>({fast:f.fast,w:f.w}))].sort((a,b)=>a.w-b.w).slice(0,6);
-  const post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome)[0];
+  const post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p))[0];
   return `<div><h1>Velkommen</h1><span class="script">dette skjer i Sion Molde</span></div>
   ${n?`<div class="card next"><div class="eyebrow">Neste samling</div><h2>${n.t}</h2>
    <div class="meta">${when(n.w)}${tm(n)}${n.place?' · '+esc(n.place):''}</div>
@@ -387,11 +387,13 @@ function regList(){
   return `<div><h2 style="margin-bottom:10px">Faste samlinger</h2><div class="card reg">${l.map(r=>`<div class="r"><div class="d">${cap(DAYS[r.day])}<span>kl. ${esc(r.time)}</span></div><div class="grow"><b>${esc(r.title)}</b>${r.note?`<span class="small">${esc(r.note)}</span>`:''}</div></div>`).join('')}</div></div>`}
 
 function news(){
-  const l=posts.map(p=>{
+  const kortFor=p=>{
    if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
-   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3><button type="button" class="ptitle" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}">${esc(p.t)}</button></h3><div role="button" tabindex="0" class="pbody ${state.open['p_'+p.id]?'open':''}" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}"><span class="pt">${linkify(esc(p.b))}</span>${(String(p.b).length>130||(String(p.b).match(/\n/g)||[]).length>=2)?`<span class="pmore">${state.open['p_'+p.id]?'Vis mindre':'Les mer'}</span>`:''}</div></div>`}).join('');
+   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3><button type="button" class="ptitle" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}">${esc(p.t)}</button></h3><div role="button" tabindex="0" class="pbody ${state.open['p_'+p.id]?'open':''}" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}"><span class="pt">${linkify(esc(p.b))}</span>${(String(p.b).length>130||(String(p.b).match(/\n/g)||[]).length>=2)?`<span class="pmore">${state.open['p_'+p.id]?'Vis mindre':'Les mer'}</span>`:''}</div></div>`};
+  const sk=state.admin&&state.view==='meg'?posts.filter(postSkjult):[];
+  const l=posts.filter(p=>!sk.includes(p)).map(kortFor).join('');
   const kan=editOn();
-  return `<h1>Nyheter</h1>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Pastorens hilsen</button>':'')+'</div>':''}<div class="list">${l||'<p class="small">Ingen nyheter ennå.</p>'}</div>${kan?'<div class="lpzone"></div>':''}`}
+  return `<h1>Nyheter</h1>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Pastorens hilsen</button>':'')+'</div>':''}<div class="list">${l||'<p class="small">Ingen nyheter ennå.</p>'}</div>${sk.length?`<details class="card acc" data-acc="skjulte" ${state.acc.skjulte?'open':''}><summary><h3>Planlagt, utkast og utløpt (${sk.length})</h3></summary><p class="small" style="margin:0 0 8px">Disse vises ikke for medlemmene nå. Bare du ser dem.</p><div class="list">${sk.map(kortFor).join('')}</div></details>`:''}${kan?'<div class="lpzone"></div>':''}`}
 
 /* ---------- Innlogging og administrasjon ---------- */
 const CATS_DEFAULT=['Møte','Samling','Ledersamling','Menighetsmøte','Happeninger','Ungdom'];
@@ -447,6 +449,7 @@ function applyGroups(l){
 const gName=id=>{const g=GROUPS.find(x=>x[0]===id);return g?g[1]:id};
 const gLabel=id=>{const g=GROUPS.find(x=>x[0]===id);return g?g[1]+(g[2]?' ('+g[2]+')':''):id};
 /* Innhold med grupper vises bare for administratorer og medlemmer i minst én av gruppene. Dette er en visning i appen; sikkerheten for «bare medlemmer» ligger i databasen. */
+const postSkjult=p=>{const n=Date.now();return !!p.draft||(p.pubAt>n)||!!(p.expireAt&&p.expireAt<=n)};
 const ltypeSyn=x=>!(x.ltypes&&x.ltypes.length)||effAdmin()||(state.view==='meg'&&state.leder===true&&x.ltypes.includes(state.ltype||'hoved'));
 const canSee=x=>visOK(x)&&ltypeSyn(x)&&(!(x.groups&&x.groups.length)||effAdmin()||effGroups().concat(effLeads()).some(g=>x.groups.includes(g)));
 /* Gruppeledere (leads på oppføringen i members) kan bare publisere til gruppene de leder. Det håndheves i databasen (firestore.rules) og i varselscriptet. */
@@ -699,8 +702,12 @@ function shareCard(){
 /* Møtenotater: private notater per medlem (opptil 100), lagres i members/{e-post}/notes/n1..n100. Bare eieren kan lese dem (heller ikke administratorer).
    Enkel teksteditor: fet, kursiv og tekststørrelse. Skrifttypen er alltid standard; innlimt tekst blir ren tekst. */
 const NOTE_MAX=100;
-/* Gjør nettadresser i (allerede escapet) tekst til lenker. Bare http(s) og www. */
-const linkify=t=>String(t||'').replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi,m=>{let u=m,rest='';const tr=u.match(/[.,;:!?)]+$/);if(tr){rest=tr[0];u=u.slice(0,-rest.length)}return '<a href="'+(/^www\./i.test(u)?'https://':'')+u+'" target="_blank" rel="noopener noreferrer">'+u+'</a>'+rest});
+/* Gjør nettadresser, e-postadresser og telefonnumre (8 siffer) i (allerede escapet) tekst til lenker. */
+const linkify=t=>String(t||'').replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)|([\w.+-]+@[\w-]+(?:\.[\w-]+)+)|(^|[\s(>])((?:\+47\s?)?(?:\d{2}\s?\d{2}\s?\d{2}\s?\d{2}|\d{3}\s?\d{2}\s?\d{3}))(?![\d\w-])/gi,(m,url,epost,fore,tlf)=>{
+  if(url){let u=url,rest='';const tr=u.match(/[.,;:!?)]+$/);if(tr){rest=tr[0];u=u.slice(0,-rest.length)}return '<a href="'+(/^www\./i.test(u)?'https://':'')+u+'" target="_blank" rel="noopener noreferrer">'+u+'</a>'+rest}
+  if(epost)return '<a href="mailto:'+epost+'">'+epost+'</a>';
+  const siffer=tlf.replace(/\D/g,''),nr=tlf.trim().startsWith('+')?'+'+siffer:'+47'+siffer;
+  return fore+'<a href="tel:'+nr+'">'+tlf+'</a>'});
 const MÅNEDER=['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
 const noDato=iso=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||'');return m?(+m[3])+'. '+MÅNEDER[+m[2]-1]+' '+m[1]:''};
 const noteEmail=()=>state.user?state.user.email.toLowerCase():'';
