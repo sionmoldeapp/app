@@ -301,7 +301,7 @@ function openRsvp(id){
 }
 const rsDocId=id=>{let d=lsGet('sm-dev');if(!d){d=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now()).replace(/[^A-Za-z0-9]/g,'').slice(0,24);lsSet('sm-dev',d)}return String(id).replace(/[^A-Za-z0-9_-]/g,'')+'_'+d};
 /* Oversikt over påmeldte (administrator, og gruppeleder for arrangementer i egne grupper): antall i overskriften, navnene i en rullegardin. */
-function rsText(id,titel,dato){const l=state.rsList[id]||[];return 'Påmeldte: '+titel+' ('+dato+')\n'+l.length+' navn\n\n'+l.map((u,i)=>(i+1)+'. '+u.name+(u.contact?' – '+u.contact:'')).join('\n')}
+function rsText(id,titel,dato){const l=state.rsList[id]||[];return 'Påmeldte: '+titel+' ('+dato+')\n'+l.length+' navn\n\n'+l.map((u,i)=>(i+1)+'. '+u.name).join('\n')}
 function rsPanel(id,titel,dato,groups){
   if(state.view!=='meg')return '';
   const adm=state.admin,led=!adm&&(state.leads||[]).some(g=>(groups||[]).includes(g));
@@ -312,8 +312,7 @@ function rsPanel(id,titel,dato,groups){
   else if(!l.length)inn='<p class="small">Ingen navn ennå.</p>';
   else{
     const mail='mailto:?subject='+encodeURIComponent('Påmeldte: '+titel+' ('+dato+')')+'&body='+encodeURIComponent(rsText(id,titel,dato));
-    inn='<div class="reg">'+l.map(u=>'<div class="r"><div class="grow">'+esc(u.name)+(u.contact?'<span class="small">'+esc(u.contact)+'</span>':'')+'</div></div>').join('')+'</div>'
-      +(l.length<n?'<p class="small">Navn finnes for påmeldinger som er gjort etter at oversikten kom. Tallet over er den samlede summen.</p>':'')
+    inn='<div class="reg">'+l.map(u=>'<div class="r"><div class="grow">'+esc(u.name)+'</div></div>').join('')+'</div>'
       +'<div class="btns"><a class="btn" href="'+mail+'" style="display:inline-block;text-decoration:none;color:var(--ink)">Send på e-post</a><button class="btn" data-rscopy="'+esc(id)+'|'+esc(titel)+'|'+esc(dato)+'">Kopier listen</button></div>'}
   return '<details class="acc sub" data-acc="rs_'+id+'" '+(state.acc['rs_'+id]?'open':'')+'><summary><b>Påmeldte: '+n+'</b></summary>'+inn+'</details>'}
 async function loadRs(id){try{state.rsList[id]=await FB.rsvpList(id)}catch(e){state.rsList[id]=[]}keep(()=>{})}
