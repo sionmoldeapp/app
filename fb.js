@@ -62,8 +62,23 @@ const FB={
       let tk='';try{tk=localStorage.getItem('sm-push')||''}catch(e){}
       if(tk){try{await S.deleteDoc(S.doc(db,'pushTokens',tk))}catch(e){}}
       try{const ns=await S.getDocs(S.collection(db,'members',email,'notes'));for(const d of ns.docs)await S.deleteDoc(d.ref)}catch(e){}
+      // Personvern: alt som er knyttet til brukeren fjernes (bønneemner, egne samtaler med meldinger, innstillinger).
+      try{const ps=await S.getDocs(S.query(S.collection(db,'prayers'),S.where('by','==',u.uid)));for(const d of ps.docs)await S.deleteDoc(d.ref)}catch(e){}
+      try{const ts=await S.getDocs(S.query(S.collection(db,'threads'),S.where('from','==',email)));for(const t of ts.docs){const ms=await S.getDocs(S.collection(db,'threads',t.id,'messages'));for(const m of ms.docs)await S.deleteDoc(m.ref);await S.deleteDoc(t.ref)}}catch(e){}
+      try{await S.deleteDoc(S.doc(db,'userPrefs',email))}catch(e){}
       await S.deleteDoc(S.doc(db,'members',email));
       await A.deleteUser(u);
+    },
+    // Innsyn (GDPR artikkel 15): alt appen har lagret om brukeren, som en fil.
+    async exportMine(){
+      const u=auth.currentUser,email=u.email.toLowerCase(),o={eksportert:new Date().toISOString(),epost:email};
+      const prøv=async f=>{try{return await f()}catch(e){return null}};
+      o.profil=await prøv(async()=>{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()?s.data():null});
+      o.notater=await prøv(async()=>(await S.getDocs(S.collection(db,'members',email,'notes'))).docs.map(d=>({id:d.id,...d.data()})));
+      o.innstillinger=await prøv(async()=>{const s=await S.getDoc(S.doc(db,'userPrefs',email));return s.exists()?s.data():null});
+      o.bonneemner=await prøv(async()=>(await S.getDocs(S.query(S.collection(db,'prayers'),S.where('by','==',u.uid)))).docs.map(d=>{const x=d.data();return {t:x.t,navn:x.name,tidspunkt:x.ms}}));
+      o.beskjeder=await prøv(async()=>{const ts=await S.getDocs(S.query(S.collection(db,'threads'),S.where('parts','array-contains',email)));const ut=[];for(const t of ts.docs){const x=t.data(),ms=await S.getDocs(S.query(S.collection(db,'threads',t.id,'messages'),S.orderBy('created')));ut.push({ansvarsomrade:x.roleName,fra:x.fromName,deltakere:x.parts,meldinger:ms.docs.map(m=>{const y=m.data();return {fra:y.name,epost:y.by,tekst:y.text,tidspunkt:y.created&&y.created.toDate?y.created.toDate().toISOString():null}})})}return ut});
+      return o;
     },
     // Visninger av nyheter (postViews) og antall telefoner med varsler på (bare administrator).
     async view(id){const ref=S.doc(db,'postViews',id),s=await S.getDoc(ref);if(s.exists())await S.updateDoc(ref,{n:S.increment(1)});else await S.setDoc(ref,{n:1})},

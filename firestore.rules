@@ -60,6 +60,7 @@ service cloud.firestore {
       allow delete: if isAdmin() || (signedIn() && resource.data.from == request.auth.token.email);
       match /messages/{mid} {
         allow read: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts;
+        allow delete: if signedIn() && (isAdmin() || get(/databases/$(database)/documents/threads/$(id)).data.from == request.auth.token.email);
         allow create: if signedIn() && request.auth.token.email in getAfter(/databases/$(database)/documents/threads/$(id)).data.parts
           && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created'])
           && request.resource.data.by == request.auth.token.email
@@ -75,7 +76,7 @@ service cloud.firestore {
         && 'bonneledere' in get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []));
     }
     match /prayers/{id} {
-      allow read: if prayReader();
+      allow read: if prayReader() || (signedIn() && resource.data.by == request.auth.uid);   // leserne ser alle, forfatteren ser egne (innsyn og sletting)
       allow create: if isMember() && request.resource.data.keys().hasOnly(['t', 'name', 'by', 'ms', 'ber'])
         && request.resource.data.t is string && request.resource.data.t.size() > 0 && request.resource.data.t.size() <= 400
         && request.resource.data.name is string && request.resource.data.name.size() <= 60

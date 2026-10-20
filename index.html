@@ -787,11 +787,12 @@ function profileCard(){
    +'<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre</button>'
    +'<h3 style="margin:16px 0 4px;font-size:18px">Varsler fra gruppene mine</h3>'
    +(gs.length?'<p class="small" style="margin:0 0 8px">Fjern haken for å slippe varsler som sendes bare til en gruppe. Du blir stående i gruppen.</p><div style="display:grid;gap:6px">'+gs.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-prmute="'+esc(g)+'" style="width:22px;height:22px;flex:none" '+((p.muted||[]).includes(g)?'':'checked')+'>'+esc(gName(g))+'</label>').join('')+'</div>':'<p class="small" style="margin:0">Du er ikke med i noen grupper ennå.</p>')
-   +'<h3 style="margin:16px 0 4px;font-size:18px">Slett meg</h3><p class="small" style="margin:0 0 8px">Fjerner kontoen din, medlemskapet og varselkoden på denne telefonen. Dette kan ikke angres. Du kan alltid bli lagt til igjen av en leder.</p><button class="btn danger" data-prdel>Slett meg og dataene mine</button>'
+   +'<h3 style="margin:16px 0 4px;font-size:18px">Mine data</h3><p class="small" style="margin:0 0 8px">Last ned alt appen har lagret om deg (profil, notater, bønneemner du har sendt inn og beskjedene dine) som en fil.</p><button class="btn" data-prexport>Last ned mine data</button>'
+   +'<h3 style="margin:16px 0 4px;font-size:18px">Slett meg</h3><p class="small" style="margin:0 0 8px">Fjerner kontoen din, medlemskapet, notatene, bønneemnene dine, samtalene du har startet og varselkoden på denne telefonen. Dette kan ikke angres. Du kan alltid bli lagt til igjen av en leder.</p><button class="btn danger" data-prdel>Slett meg og dataene mine</button>'
    +'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
 function deleteSelfAsk(){
   const dlg=document.createElement('dialog');dlg.className='lp';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Slette deg selv?</h3><p class="small" style="margin:0">Kontoen, medlemskapet og varselkoden fjernes. Det kan ikke angres. Skriv passordet ditt for å bekrefte.</p><label class="f">Passord<input id="dsP" type="password" autocomplete="current-password"></label><p class="small" role="status" id="dsMsg" style="margin:0"></p><div class="btns"><button class="btn danger" value="slett">Slett meg</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Slette deg selv?</h3><p class="small" style="margin:0">Kontoen, medlemskapet, notatene, bønneemnene dine, samtalene du har startet og varselkoden fjernes. Det kan ikke angres. Skriv passordet ditt for å bekrefte.</p><label class="f">Passord<input id="dsP" type="password" autocomplete="current-password"></label><p class="small" role="status" id="dsMsg" style="margin:0"></p><div class="btns"><button class="btn danger" value="slett">Slett meg</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='slett')return;
@@ -1655,6 +1656,11 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ltdel){ltDel(c.dataset.ltdel)}
   else if('prsave' in c.dataset){const n=($('#prN').value||'').trim();try{await FB.setProfile(state.user.email,{name:n});state.profile.name=n;if(n)lsSet('sm-navn',n);state.prMsg='Navnet er lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code)}keep(()=>{})}
   else if('prdel' in c.dataset){deleteSelfAsk()}
+  else if('prexport' in c.dataset){
+    c.disabled=true;
+    try{const o=await FB.exportMine(),blob=new Blob([JSON.stringify(o,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mine-data-sion-molde.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);push('Lastet ned','Filen med dataene dine er lagret.')}
+    catch(er){push('Kunne ikke hente dataene',saveMsg(er&&er.code))}
+    c.disabled=false}
   else if('copylink' in c.dataset){try{await navigator.clipboard.writeText(APP_LINK);push('Kopiert','Lenken til appen er kopiert.')}catch(x){visTekst('Kopier lenken:',APP_LINK)}}
   else if('sharelink' in c.dataset){try{await navigator.share({title:'Sion Molde',text:'Appen til Sion Molde',url:APP_LINK})}catch(x){}}
   else if('notenew' in c.dataset){noteAsk(null)}
