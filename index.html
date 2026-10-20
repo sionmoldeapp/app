@@ -113,7 +113,7 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 @keyframes snurr{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
 .nwrap{position:relative}
-.merow{display:flex;align-items:center;gap:10px;padding:14px;margin:0 0 8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.merow{display:flex;align-items:center;gap:10px;padding:14px;margin:0 0 8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .merow b{flex:1;min-width:0}
 .mehandle{font-size:22px;line-height:1;color:var(--muted)}
 .mebtns{display:flex;gap:6px}
@@ -1240,7 +1240,7 @@ function me(){
   const vis=meRekkefolge().map(k=>[k,ME_KORT[k][1]()]).filter(x=>x[1]&&x[1].trim());
   const ro=state.reorder;
   const knapp=ro?`<div class="btns" style="margin:-4px 0 12px"><button class="btn on" data-meorder>Ferdig</button></div>`:'';
-  if(ro)return `<h1>Meg</h1>${knapp}<p class="small" style="margin:0 0 10px">Hold fingeren på en rad til den løsner, og dra den opp eller ned. Slipp der den skal stå.</p><div id="meList">${vis.map(([k],i)=>`<div class="merow" data-mek="${k}"><span class="mehandle" aria-hidden="true">≡</span><b>${esc(ME_KORT[k][0])}</b><span class="mebtns"><button class="btn" data-meup="${k}" ${i===0?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} opp">▲</button><button class="btn" data-medown="${k}" ${i===vis.length-1?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} ned">▼</button></span></div>`).join('')}</div>`;
+  if(ro)return `<h1>Meg</h1>${knapp}<p class="small" style="margin:0 0 10px">Dra en rad opp eller ned. Slipp der den skal stå.</p><div id="meList">${vis.map(([k],i)=>`<div class="merow" data-mek="${k}"><span class="mehandle" aria-hidden="true">≡</span><b>${esc(ME_KORT[k][0])}</b><span class="mebtns"><button class="btn" data-meup="${k}" ${i===0?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} opp">▲</button><button class="btn" data-medown="${k}" ${i===vis.length-1?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} ned">▼</button></span></div>`).join('')}</div>`;
   return `<h1>Meg</h1>${knapp}
   ${vis.map(x=>x[1]).join('')}${vis.length>1?'<p class="small" style="text-align:center;margin:8px 0 0">Hold fingeren på et kort for å endre rekkefølgen.</p>':''}`}
 function meLagre(ord){
@@ -1352,8 +1352,8 @@ document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.targe
 {let row=null,list=null,tid=null,x0=0,y0=0,drag=false;
   const Y=e=>e.clientY+scrollY,nat=()=>{row.style.transform='none';return row.getBoundingClientRect().top+scrollY};
   document.addEventListener('pointerdown',e=>{const r=e.target.closest('.merow');if(!r||e.target.closest('button'))return;
-    row=r;list=r.parentNode;x0=e.clientX;y0=Y(e);drag=false;clearTimeout(tid);
-    tid=setTimeout(()=>{tid=null;drag=true;row.classList.add('lift');try{row.setPointerCapture(e.pointerId)}catch(x){}try{navigator.vibrate&&navigator.vibrate(25)}catch(x){}},350)});
+    row=r;list=r.parentNode;x0=e.clientX;y0=Y(e);clearTimeout(tid);tid=null;drag=true;   // i omordningsmodus løsner raden med en gang
+    row.classList.add('lift');try{row.setPointerCapture(e.pointerId)}catch(x){}try{navigator.vibrate&&navigator.vibrate(15)}catch(x){}});
   document.addEventListener('pointermove',e=>{
     if(!row)return;
     if(!drag){if(tid&&Math.hypot(e.clientX-x0,Y(e)-y0)>10){clearTimeout(tid);tid=null;row=null}return}
