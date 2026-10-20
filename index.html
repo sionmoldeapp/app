@@ -938,7 +938,7 @@ function noteAsk(id){
     if(!d.title&&!noteText(d.html)){msg('Skriv en tittel eller litt tekst.');return}
     if(!d.title)d.title=noteText(d.html).slice(0,40);
     try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();
-      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.notater=true;start=snap();dlg.close();keep(()=>{});push('Lagret','Notatet er lagret.')}
+      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.notater=true;dlg.querySelector('#nT').value=d.title;start=snap();msg('Lagret. Trykk Lukk når du er ferdig.');keep(()=>{});push('Lagret','Notatet er lagret.')}
     catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
   dlg.querySelector('#nShare').addEventListener('click',async()=>{
     const t=dlg.querySelector('#nT').value.trim(),tekst=[t,[noDato(dlg.querySelector('#nD').value),dlg.querySelector('#nP').value.trim()].filter(Boolean).join(' · '),'',noteLinjer(ed.innerHTML)].join('\n').trim();
