@@ -122,9 +122,14 @@ const FB={
     // Bønneemner (prayers): bare medlemmer. by og ber bruker uid, ikke e-post.
     async prayersList(){const s=await S.getDocs(S.query(S.collection(db,'prayers'),S.orderBy('ms','desc'),S.limit(40)));return s.docs.map(d=>({id:d.id,...d.data()}))},
     markPrayed:ids=>sl((async()=>{const b=S.writeBatch(db),t=Date.now();ids.forEach(id=>b.update(S.doc(db,'prayers',id),{bedt:t}));await b.commit()})()),
-    addPrayer:d=>S.addDoc(S.collection(db,'prayers'),auth.currentUser?{t:String(d.t).slice(0,400),name:String(d.name||'').slice(0,60),by:auth.currentUser.uid,ms:Date.now(),ber:[]}:{t:String(d.t).slice(0,400),name:'',by:'anonym',ms:Date.now(),ber:[]}),
+    addPrayer:d=>S.addDoc(S.collection(db,'prayers'),{t:String(d.t).slice(0,400),name:String(d.name||'').slice(0,60),by:auth.currentUser.uid,ms:Date.now(),ber:[]}),
+    // Anonyme bønneemner uten innlogging går via Apps Script (regnestykke og grenser).
+    async bonnUtfordring(url){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'bonnutfordring'})});return r.json()},
+    async bonnAnon(url,d){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'bonnanon',...d})});return r.json()},
     delPrayer:id=>sl(S.deleteDoc(S.doc(db,'prayers',id))),
     // Kontaktinfo («Finn frem» på Hjem): alle kan lese, administrator endrer.
+    async getPrivacy(){const s=await S.getDoc(S.doc(db,'settings','personvern'));return s.exists()?s.data():null},
+    setPrivacy:(text,updated)=>S.setDoc(S.doc(db,'settings','personvern'),{text:String(text).slice(0,20000),updated:String(updated).slice(0,10)}),
     async getContact(){const s=await S.getDoc(S.doc(db,'settings','contact'));return s.exists()?s.data():null},
     setContact:d=>S.setDoc(S.doc(db,'settings','contact'),{address:String(d.address||'').slice(0,120),hours:String(d.hours||'').slice(0,120),phone:String(d.phone||'').slice(0,30),email:String(d.email||'').slice(0,100)}),
     // Kategorier (samlingen categories): navn og rekkefølge.
@@ -360,7 +365,7 @@ const FB={
     }
   };
   // Lagring og sending vises med «Lagrer …» / «Sender …» til databasen eller tjenesten har svart.
-  for(const n of ['setRole','newThread','addMsg','addPrayer','setContact','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
+  for(const n of ['setPrivacy','setRole','newThread','addMsg','addPrayer','setContact','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
   for(const n of ['sendPush','sendNote','sendPrayers','sendWelcome','sendRsvpMail','sendMail']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Sender …')}
   window._fbRes(FB);
 }catch(e){console.warn('Firebase kunne ikke lastes, bruker JSON-filene',e);window._fbRes(null)}

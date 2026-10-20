@@ -77,13 +77,12 @@ service cloud.firestore {
     }
     match /prayers/{id} {
       allow read: if prayReader() || (signedIn() && resource.data.by == request.auth.uid);   // leserne ser alle, forfatteren ser egne (innsyn og sletting)
-      // Innloggede medlemmer sender med navn. Uten innlogging sendes bønneemner anonymt (name tomt og by == 'anonym').
+      // Bare innloggede medlemmer skriver direkte (med navn). Anonyme bønneemner uten innlogging går via Apps Script, som skriver med egen tilgang.
       allow create: if request.resource.data.keys().hasOnly(['t', 'name', 'by', 'ms', 'ber'])
         && request.resource.data.t is string && request.resource.data.t.size() > 0 && request.resource.data.t.size() <= 400
         && request.resource.data.name is string && request.resource.data.name.size() <= 60
         && request.resource.data.ms is number && request.resource.data.ber == []
-        && ((isMember() && request.resource.data.name.size() >= 1 && request.resource.data.by == request.auth.uid)
-            || (request.resource.data.name == '' && request.resource.data.by == 'anonym'));
+        && isMember() && request.resource.data.name.size() >= 1 && request.resource.data.by == request.auth.uid;
       // Lederne markerer emner som bedt for etter bønnemøtet (feltet bedt, tidspunkt).
       allow update: if prayReader() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bedt']) && request.resource.data.bedt is number;
       allow delete: if isMember() && (resource.data.by == request.auth.uid || prayReader());
@@ -95,10 +94,14 @@ service cloud.firestore {
         && (!('meorder' in request.resource.data) || (request.resource.data.meorder is list && request.resource.data.meorder.size() <= 20))
         && (!('homeorder' in request.resource.data) || (request.resource.data.homeorder is list && request.resource.data.homeorder.size() <= 20));
     }
-    // Kontaktinfo som vises på Hjem: alle kan lese, bare administrator endrer.
+    // Kontaktinfo som vises på Hjem og personvernteksten under Meg: alle kan lese, bare administrator endrer.
     match /settings/{id} {
       allow read: if true;
-      allow write: if isAdmin() && id == 'contact' && request.resource.data.keys().hasOnly(['address', 'hours', 'phone', 'email']);
+      allow write: if isAdmin() && (
+        (id == 'contact' && request.resource.data.keys().hasOnly(['address', 'hours', 'phone', 'email']))
+        || (id == 'personvern' && request.resource.data.keys().hasOnly(['text', 'updated'])
+            && request.resource.data.text is string && request.resource.data.text.size() <= 20000
+            && request.resource.data.updated is string && request.resource.data.updated.size() <= 10));
     }
     // Sikkerhetspunkter for tilbakerulling (bare administratorer): oversikt i snapshots, innholdet som tekst i snapshotData.
     match /snapshots/{id} { allow read, write: if isAdmin(); }
