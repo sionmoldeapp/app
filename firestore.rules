@@ -44,11 +44,12 @@ service cloud.firestore {
       allow update: if prayReader() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bedt']) && request.resource.data.bedt is number;
       allow delete: if isMember() && (resource.data.by == request.auth.uid || prayReader());
     }
-    // Egne innstillinger (rekkefølgen på kortene under Meg): bare eieren leser og skriver sitt eget dokument.
+    // Egne innstillinger (rekkefølgen på kortene under Meg og Hjem): bare eieren leser og skriver sitt eget dokument.
     match /userPrefs/{email} {
       allow read, delete: if signedIn() && request.auth.token.email == email;
-      allow create, update: if signedIn() && request.auth.token.email == email && request.resource.data.keys().hasOnly(['meorder'])
-        && request.resource.data.meorder is list && request.resource.data.meorder.size() <= 20;
+      allow create, update: if signedIn() && request.auth.token.email == email && request.resource.data.keys().hasOnly(['meorder', 'homeorder'])
+        && (!('meorder' in request.resource.data) || (request.resource.data.meorder is list && request.resource.data.meorder.size() <= 20))
+        && (!('homeorder' in request.resource.data) || (request.resource.data.homeorder is list && request.resource.data.homeorder.size() <= 20));
     }
     // Kontaktinfo som vises på Hjem: alle kan lese, bare administrator endrer.
     match /settings/{id} {

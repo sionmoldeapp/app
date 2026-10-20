@@ -459,24 +459,26 @@ async function prayDel(id){
   try{await FB.delPrayer(id);state.prayers=(state.prayers||[]).filter(p=>p.id!==id);keep(()=>{})}
   catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}}
 
-function home(){
+function homeDeler(){
   const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome), n=vis[0];
   const fast=nextFast();
   const wk=[...vis.slice(0,4).map(e=>({ev:e,w:e.w})),...fast.map(f=>({fast:f.fast,w:f.w}))].sort((a,b)=>a.w-b.w).slice(0,6);
   const post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p))[0];
-  return `<div><h1>Velkommen</h1><span class="script">dette skjer i Sion Molde</span></div>
-  ${n?`<div class="card next"><div class="eyebrow">Neste samling</div><h2>${n.t}</h2>
+  return {
+   neste:['Neste samling',()=>(n?`<div class="card next"><div class="eyebrow">Neste samling</div><h2>${n.t}</h2>
    <div class="meta">${when(n.w)}${tm(n)}${n.place?' · '+esc(n.place):''}</div>
    <div class="btns" style="margin-top:12px"><button class="btn" style="color:var(--ink)" data-rsvp="${n.id}" data-stay="1">${state.rsvp[n.id]?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(n.id).replace('<button class="btn','<button style="color:var(--ink)" class="btn')}</div>${counts[n.id]>0?`<div class="meta" style="margin-top:8px">${counts[n.id]} kommer</div>`:''}</div>`
-  :`<div class="card next"><div class="eyebrow">Neste samling</div><h2>Ingen planlagt</h2><div class="meta">Se faste samlinger under Program.</div></div>`}
-  ${welcomeCard()}
-  ${visitorCard()}
-  ${myShiftsCard()}
-  ${prayerCard()}
-  ${post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b><button type="button" class="ptitle" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${esc(post.t)}</button></b><div class="pbody ${state.open['p_'+post.id]?'open':''}"><span class="pt">${linkify(esc(post.b))}</span></div>${(String(post.b).length>130||(String(post.b).match(/\n/g)||[]).length>=2)?`<button type="button" class="pmore" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${state.open['p_'+post.id]?'Vis mindre':'Les mer'}</button>`:''}</div></div>`:''}
-  ${wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:''}
-  ${svCard()}
-  ${contactCard()}`}
+  :`<div class="card next"><div class="eyebrow">Neste samling</div><h2>Ingen planlagt</h2><div class="meta">Se faste samlinger under Program.</div></div>`)],
+   velkomst:['Kom i gang',()=>welcomeCard()],
+   besok:['Logg inn for å få mer',()=>visitorCard()],
+   vakter:['Dine vakter',()=>myShiftsCard()],
+   bonn:['Bønneemner',()=>prayerCard()],
+   viktig:['Viktig',()=>(post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b><button type="button" class="ptitle" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${esc(post.t)}</button></b><div class="pbody ${state.open['p_'+post.id]?'open':''}"><span class="pt">${linkify(esc(post.b))}</span></div>${(String(post.b).length>130||(String(post.b).match(/\n/g)||[]).length>=2)?`<button type="button" class="pmore" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${state.open['p_'+post.id]?'Vis mindre':'Les mer'}</button>`:''}</div></div>`:'')],
+   snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:'')],
+   sommer:['Sommerstevne',()=>svCard()],
+   finn:['Finn frem',()=>contactCard()]}}
+function home(){
+  return `<div><h1>Velkommen</h1><span class="script">dette skjer i Sion Molde</span></div>${ordHtml('home')}`}
 
 /* Søk i Program: tittel, sted, taler, beskrivelse, merknad, kategori og ukedag/dato. Låste arrangementer søkes bare på tittel. */
 const norm=t=>String(t||'').toLowerCase();
@@ -1233,21 +1235,24 @@ const ME_KORT={
   vakter:['Mine vakter',()=>vakterCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'']};
-function meRekkefolge(){
-  let lagret=state.meorder||[];if(!lagret.length)try{lagret=JSON.parse(localStorage.getItem('sm-meorder')||'[]')}catch(e){}
-  const alle=Object.keys(ME_KORT);return [...lagret.filter(k=>alle.includes(k)),...alle.filter(k=>!lagret.includes(k))]}
-function me(){
-  const vis=meRekkefolge().map(k=>[k,ME_KORT[k][1]()]).filter(x=>x[1]&&x[1].trim());
-  const ro=state.reorder;
-  const knapp=ro?`<div class="btns" style="margin:-4px 0 12px"><button class="btn on" data-meorder>Ferdig</button></div>`:'';
-  if(ro)return `<h1>Meg</h1>${knapp}<p class="small" style="margin:0 0 10px">Hold på ≡ til venstre og dra raden opp eller ned. Slipp der den skal stå. Resten av raden kan du bruke til å bla.</p><div id="meList">${vis.map(([k],i)=>`<div class="merow" data-mek="${k}"><span class="mehandle" aria-hidden="true">≡</span><b>${esc(ME_KORT[k][0])}</b><span class="mebtns"><button class="btn" data-meup="${k}" ${i===0?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} opp">▲</button><button class="btn" data-medown="${k}" ${i===vis.length-1?'disabled':''} aria-label="Flytt ${esc(ME_KORT[k][0])} ned">▼</button></span></div>`).join('')}</div>`;
-  return `<h1>Meg</h1>${knapp}
-  ${vis.map(x=>x[1]).join('')}${vis.length>1?'<p class="small" style="text-align:center;margin:8px 0 0">Hold fingeren på et kort for å endre rekkefølgen.</p>':''}`}
+/* Kortene under Meg og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
+const ORD={me:{felt:'meorder',ls:'sm-meorder'},home:{felt:'homeorder',ls:'sm-homeorder'}};
+const ov=()=>state.tab==='home'?'home':'me';
+const ordKort=v=>v==='home'?homeDeler():ME_KORT;
+function ordRekke(v,kort){
+  let lagret=state[ORD[v].felt]||[];if(!lagret.length)try{lagret=JSON.parse(localStorage.getItem(ORD[v].ls)||'[]')}catch(e){}
+  const alle=Object.keys(kort);return [...lagret.filter(k=>alle.includes(k)),...alle.filter(k=>!lagret.includes(k))]}
+function ordSynlige(v){const kort=ordKort(v);return ordRekke(v,kort).map(k=>[k,kort[k][1](),kort[k][0]]).filter(x=>x[1]&&x[1].trim())}
+function ordHtml(v){
+  const vis=ordSynlige(v);
+  if(state.reorder)return `<div class="btns" style="margin:-4px 0 12px"><button class="btn on" data-meorder>Ferdig</button></div><p class="small" style="margin:0 0 10px">Hold på ≡ til venstre og dra raden opp eller ned. Slipp der den skal stå. Resten av raden kan du bruke til å bla.</p><div id="meList">${vis.map(([k,,navn],i)=>`<div class="merow" data-mek="${k}"><span class="mehandle" aria-hidden="true">≡</span><b>${esc(navn)}</b><span class="mebtns"><button class="btn" data-meup="${k}" ${i===0?'disabled':''} aria-label="Flytt ${esc(navn)} opp">▲</button><button class="btn" data-medown="${k}" ${i===vis.length-1?'disabled':''} aria-label="Flytt ${esc(navn)} ned">▼</button></span></div>`).join('')}</div>`;
+  return vis.map(x=>x[1]).join('')+(vis.length>1?'<p class="small" style="text-align:center;margin:8px 0 0">Hold fingeren på et kort for å endre rekkefølgen.</p>':'')}
+function me(){return `<h1>Meg</h1>${ordHtml('me')}`}
 function meLagre(ord){
-  state.meorder=ord;try{localStorage.setItem('sm-meorder',JSON.stringify(ord))}catch(e){}
-  if(FB&&state.user&&state.user.email)FB.setMeOrder(state.user.email.toLowerCase(),ord).catch(()=>{})}
+  const v=ov(),o=ORD[v];state[o.felt]=ord;try{localStorage.setItem(o.ls,JSON.stringify(ord))}catch(e){}
+  if(FB&&state.user&&state.user.email)FB.setPrefOrder(state.user.email.toLowerCase(),o.felt,ord).catch(()=>{})}
 function meFlytt(k,d){
-  const vis=meRekkefolge().filter(x=>{const h=ME_KORT[x][1]();return h&&h.trim()}),ord=meRekkefolge(),i=vis.indexOf(k),j=i+d;
+  const v=ov(),kort=ordKort(v),vis=ordSynlige(v).map(x=>x[0]),ord=ordRekke(v,kort),i=vis.indexOf(k),j=i+d;
   if(i<0||j<0||j>=vis.length)return;
   const x=ord.indexOf(k),y=ord.indexOf(vis[j]);[ord[x],ord[y]]=[ord[y],ord[x]];
   meLagre(ord);
@@ -1337,17 +1342,17 @@ document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.targe
 /* Langt trykk på et kort under Meg åpner «Endre rekkefølge». */
 {let t=null,x0=0,y0=0,svelg=false;
   document.addEventListener('pointerdown',e=>{
-    if(state.tab!=='me'||state.reorder||!e.target.closest('#view'))return;
-    if(e.target.closest('button,a,input,select,textarea,label,[data-noteopen],[contenteditable],.merow'))return;
+    if((state.tab!=='me'&&state.tab!=='home')||state.reorder||!e.target.closest('#view'))return;
+    if(e.target.closest('button,a,input,select,textarea,label,[data-noteopen],[data-lp],[contenteditable],.merow'))return;
     x0=e.clientX;y0=e.clientY;clearTimeout(t);
     t=setTimeout(()=>{t=null;
-      const n=meRekkefolge().filter(k=>{const h=ME_KORT[k][1]();return h&&h.trim()}).length;if(n<2)return;
+      const n=ordSynlige(ov()).length;if(n<2)return;
       svelg=true;try{navigator.vibrate&&navigator.vibrate(25)}catch(x){}
       state.reorder=true;keep(()=>{});scrollTo(0,0)},600)});
   document.addEventListener('pointermove',e=>{if(t&&Math.hypot(e.clientX-x0,e.clientY-y0)>10){clearTimeout(t);t=null}});
   ['pointerup','pointercancel'].forEach(n=>document.addEventListener(n,()=>{clearTimeout(t);t=null;if(svelg)setTimeout(()=>{svelg=false},350)}));
   document.addEventListener('click',e=>{if(svelg){svelg=false;e.preventDefault();e.stopPropagation()}},true);
-  document.addEventListener('contextmenu',e=>{if(state.tab==='me'&&!state.reorder&&e.target.closest('#view')&&!e.target.closest('input,textarea,[contenteditable]'))e.preventDefault()})}
+  document.addEventListener('contextmenu',e=>{if((state.tab==='me'||state.tab==='home')&&!state.reorder&&e.target.closest('#view')&&!e.target.closest('input,textarea,[contenteditable]'))e.preventDefault()})}
 /* Endre rekkefølge: hold fingeren på en rad til den løsner, og dra den opp eller ned. */
 {let row=null,list=null,tid=null,x0=0,y0=0,drag=false;
   const Y=e=>e.clientY+scrollY,nat=()=>{row.style.transform='none';return row.getBoundingClientRect().top+scrollY};
@@ -1369,7 +1374,7 @@ document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.targe
     if(e.clientY<90)scrollBy(0,-14);else if(e.clientY>innerHeight-90)scrollBy(0,14)});
   const slipp=()=>{clearTimeout(tid);tid=null;if(!row)return;const r=row;row=null;
     if(!drag)return;drag=false;r.classList.remove('lift');r.style.transform='';
-    const keys=[...list.children].map(x=>x.dataset.mek),rest=meRekkefolge().filter(k=>!keys.includes(k));
+    const keys=[...list.children].map(x=>x.dataset.mek),rest=ordRekke(ov(),ordKort(ov())).filter(k=>!keys.includes(k));
     meLagre([...keys,...rest]);keep(()=>{})};
   document.addEventListener('pointerup',slipp);document.addEventListener('pointercancel',slipp);
   document.addEventListener('touchmove',e=>{if(drag)e.preventDefault()},{passive:false});
@@ -1387,7 +1392,7 @@ function gripTa(ta){
 {const alle=()=>document.querySelectorAll('textarea:not([data-grip])').forEach(gripTa);alle();new MutationObserver(alle).observe(document.body,{childList:true,subtree:true})}
 document.addEventListener('click',async e=>{
   const c=e.target.closest('button');if(!c)return;
-  if(c.dataset.t){if('openvakter' in c.dataset){state.acc.vakter=true;if(state.shifts===undefined)loadShifts()}state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}render()}
+  if(c.dataset.t){state.reorder=false;if('openvakter' in c.dataset){state.acc.vakter=true;if(state.shifts===undefined)loadShifts()}state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}render()}
   else if(c.id==='bellBtn'){state.tab='news';markSeen();render()}
   else if(c.dataset.ev){keep(()=>state.open[c.dataset.ev]=!state.open[c.dataset.ev])}
   else if(c.dataset.rsvp){
@@ -1944,7 +1949,7 @@ async function start(){
     state.leder=u&&state.member&&!state.admin?await FB.myLeder(u.email):false;
     state.ltype=state.leder?((await FB.myLtype(u.email))||''):'';
     state.profile=u&&state.member&&!state.admin?await FB.myProfile(u.email):null;
-    state.meorder=null;if(u&&state.member){const pr=await FB.myPrefs(u.email.toLowerCase());if(pr&&Array.isArray(pr.meorder))state.meorder=pr.meorder}
+    state.meorder=null;state.homeorder=null;if(u&&state.member){const pr=await FB.myPrefs(u.email.toLowerCase());if(pr&&Array.isArray(pr.meorder))state.meorder=pr.meorder;if(pr&&Array.isArray(pr.homeorder))state.homeorder=pr.homeorder}
     state.notes=undefined;state.shifts=undefined;state.reqs=undefined;state.myShifts=[];
     if(u&&state.member)loadMyShifts().then(()=>keep(()=>{}));
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
