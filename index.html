@@ -1162,6 +1162,100 @@ function memberCard(onlyBody){
   <div id="brBody">${body}</div></details>`}
 
 
+/* ---------- Ansvarsområder og beskjeder ----------
+   roles/{id}: ansvarsområde med personer (navn, telefon, e-post). Bare medlemmer leser, administrator endrer.
+   threads/{id}: en samtale mellom et medlem og de ansvarlige for et område, med meldinger i threads/{id}/messages.
+   Bare deltakerne (parts, e-postadresser) leser og skriver. Ansvarspersonene får push-varsel via Apps Script (action beskjed). */
+async function loadRoles(){
+  try{state.roles=await FB.rolesList();state.ansMsg=''}catch(e){state.roles=[];state.ansMsg='Kunne ikke hente ansvarsområder ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
+  keep(()=>{})}
+async function loadThreads(){
+  try{state.threads=await FB.threadsList(meEmail());state.meldMsg=''}catch(e){state.threads=[];state.meldMsg='Kunne ikke hente beskjeder ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
+  keep(()=>{})}
+const tlfHref=t=>{const d=String(t||'').replace(/[^0-9+]/g,'');return 'tel:'+(d.startsWith('+')?d:'+47'+d)};
+function ansRad(r,red){
+  const meg=meEmail(),kanSende=(r.emails||[]).some(e=>e!==meg);
+  return '<div class="r" style="display:block"><b>'+esc(r.name)+'</b>'+(r.desc?'<div class="small">'+esc(r.desc)+'</div>':'')
+   +(r.persons||[]).map(p=>'<div style="margin-top:8px">'+esc(p.n)+'<div class="small">'+(p.tlf?'<a href="'+esc(tlfHref(p.tlf))+'">'+esc(p.tlf)+'</a>':'')+(p.tlf&&p.e?' · ':'')+(p.e?'<a href="mailto:'+esc(p.e)+'">'+esc(p.e)+'</a>':'')+'</div></div>').join('')
+   +((kanSende||red)?'<div class="btns" style="margin-top:10px">'+(kanSende?'<button class="btn primary" data-ansmsg="'+esc(r.id)+'" style="width:auto">Send beskjed</button>':'')+(red?'<button class="btn" data-ansedit="'+esc(r.id)+'">Endre</button>':'')+'</div>':'')+'</div>'}
+function ansvarCard(){
+  if(!state.user||!state.member)return '';
+  const l=state.roles,red=state.admin&&editOn();let inn;
+  if(l===undefined)inn='<p class="small">Henter ansvarsområder …</p>';
+  else inn='<p class="small" style="margin:0 0 8px">Hvem som har ansvar for hva i menigheten. Trykk «Send beskjed» for å skrive til de ansvarlige her i appen, og de kan svare deg under Beskjeder.</p>'
+    +(red?'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-ansnew style="width:auto">+ Nytt ansvarsområde</button></div>':'')
+    +'<div class="reg">'+(l.length?l.map(r=>ansRad(r,red)).join(''):'<p class="small">Ingen ansvarsområder er lagt inn ennå.'+(state.admin?' Slå på redigering (blyanten) for å legge inn.':'')+'</p>')+'</div>';
+  return '<details class="card acc" data-acc="ansvar" '+(state.acc.ansvar?'open':'')+'><summary><h2>Ansvarsområder</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.ansMsg||'')+'</p></details>'}
+function meldCard(){
+  if(!state.user||!state.member)return '';
+  const l=state.threads,meg=meEmail(),nye=l?l.filter(t=>(t.unread||[]).includes(meg)).length:0;let inn;
+  if(l===undefined)inn='<p class="small">Henter beskjeder …</p>';
+  else inn='<div class="btns" style="margin:0 0 8px"><button class="btn" data-meldrefresh>Oppdater</button></div><div class="reg">'+(l.length?l.map(t=>{const ny=(t.unread||[]).includes(meg);
+    return '<div class="r"><button type="button" data-thr="'+esc(t.id)+'" style="display:flex;width:100%;gap:8px;align-items:center;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><span class="grow"><b>'+esc(t.roleName)+'</b> <span class="small">'+(t.from===meg?'· Til de ansvarlige':'· Fra '+esc(t.fromName))+'</span><span class="small" style="display:block">'+esc(t.last||'')+' · '+esc(ago({ms:t.ms}))+'</span></span>'+(ny?'<span class="tag" style="background:var(--lamp);color:#fff">Ny</span>':'')+'</button></div>'}).join(''):'<p class="small">Ingen beskjeder ennå. Send en fra Ansvarsområder.</p>')+'</div>';
+  return '<details class="card acc" data-acc="meld" '+(state.acc.meld?'open':'')+'><summary><h2>Beskjeder'+(nye?' ('+nye+' ny'+(nye===1?'':'e')+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.meldMsg||'')+'</p></details>'}
+const nyBeskjedNavn=()=>(state.profile&&state.profile.name)||lsGet('sm-navn')||meEmail().split('@')[0];
+function ansMsgAsk(roleId){
+  const r=(state.roles||[]).find(x=>x.id===roleId);if(!r||document.querySelector('dialog.pub'))return;
+  const dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Beskjed til «'+esc(r.name)+'»</h3><p class="small" style="margin:0">Til: '+esc((r.persons||[]).map(p=>p.n).join(', '))+'. Navnet og e-postadressen din følger med, og de kan svare deg under Beskjeder.</p>'
+   +'<label class="f">Beskjed<textarea id="bT" rows="5" maxlength="1000" placeholder="Skriv beskjeden her …"></textarea></label><p class="small" id="bS" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
+    const text=dlg.querySelector('#bT').value.trim();if(!text){dlg.querySelector('#bS').textContent='Skriv en beskjed.';return}
+    try{const id=await FB.newThread(r,text,nyBeskjedNavn());dlg.close();
+      if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});
+      state.acc.meld=true;await loadThreads();push('Sendt','Beskjeden er sendt. Svar kommer under Beskjeder.')}
+    catch(er){dlg.querySelector('#bS').textContent='Kunne ikke sende ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
+  dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+async function thrAsk(id){
+  const t=(state.threads||[]).find(x=>x.id===id);if(!t||!FB||document.querySelector('dialog.pub'))return;
+  const meg=meEmail(),dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+esc(t.roleName)+'</h3><p class="small" style="margin:0">'+(t.from===meg?'Til de ansvarlige':'Fra '+esc(t.fromName))+'</p><div id="thM" style="display:grid;gap:8px;max-height:42vh;overflow:auto"><p class="small">Henter …</p></div>'
+   +'<label class="f">Svar<textarea id="thT" rows="3" maxlength="1000"></textarea></label><p class="small" id="thS" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="lukk" formnovalidate>Lukk</button></div></form>';
+  document.body.appendChild(dlg);
+  const tegn=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return d.getDate()+'. '+MON[d.getMonth()]+' kl. '+p(d.getHours())+':'+p(d.getMinutes())};
+  const vis=async()=>{
+    let l=[];try{l=await FB.msgsList(id)}catch(e){dlg.querySelector('#thS').textContent='Kunne ikke hente meldingene ('+((e&&e.code)||'feil')+').'}
+    const box=dlg.querySelector('#thM');
+    box.innerHTML=l.map(m=>{const mine=m.by===meg;return '<div style="justify-self:'+(mine?'end':'start')+';max-width:88%;padding:8px 12px;border-radius:14px;background:'+(mine?'var(--brand)':'var(--bg)')+';color:'+(mine?'var(--brand-ink)':'var(--ink)')+'"><div class="small" style="opacity:.8">'+esc(m.name)+' · '+esc(tegn(m.ms))+'</div><div style="white-space:pre-wrap">'+esc(m.text)+'</div></div>'}).join('')||'<p class="small">Ingen meldinger.</p>';
+    box.scrollTop=box.scrollHeight};
+  vis();
+  if((t.unread||[]).includes(meg)){t.unread=t.unread.filter(x=>x!==meg);FB.markThreadRead(id).catch(()=>{});keep(()=>{})}
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
+    const text=dlg.querySelector('#thT').value.trim();if(!text){dlg.querySelector('#thS').textContent='Skriv et svar.';return}
+    try{await FB.addMsg(t,text,nyBeskjedNavn());dlg.querySelector('#thT').value='';dlg.querySelector('#thS').textContent='';
+      t.last=text.slice(0,140);t.lastBy=meg;t.ms=Date.now();t.unread=t.parts.filter(x=>x!==meg);
+      if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});
+      await vis();keep(()=>{})}
+    catch(er){dlg.querySelector('#thS').textContent='Kunne ikke sende ('+((er&&er.code)||'feil')+').'}});
+  dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+function ansEditAsk(roleId){
+  if(!state.admin||document.querySelector('dialog.pub'))return;
+  const r=roleId?(state.roles||[]).find(x=>x.id===roleId):null,P=(r&&r.persons)||[];
+  const dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(r?'Endre ansvarsområde':'Nytt ansvarsområde')+'</h3>'
+   +'<label class="f">Ansvarsområde<input id="aN" maxlength="60" placeholder="For eksempel Kjøkken" value="'+esc(r?r.name:'')+'"></label>'
+   +'<label class="f">Beskrivelse (valgfritt)<input id="aD" maxlength="140" value="'+esc(r?r.desc||'':'')+'"></label>'
+   +[0,1,2,3].map(i=>{const p=P[i]||{};return '<fieldset class="f" style="border:1px solid var(--line);border-radius:12px;padding:8px;margin:0;display:grid;gap:6px"><legend class="small">Ansvarlig '+(i+1)+'</legend><input data-ap="n'+i+'" maxlength="60" placeholder="Navn" aria-label="Navn" value="'+esc(p.n||'')+'"><input data-ap="t'+i+'" type="tel" maxlength="30" placeholder="Telefon" aria-label="Telefon" value="'+esc(p.tlf||'')+'"><input data-ap="e'+i+'" type="email" maxlength="100" placeholder="E-post (må være medlemmets innloggingsadresse for å få beskjeder i appen)" aria-label="E-post" value="'+esc(p.e||'')+'"></fieldset>'}).join('')
+   +'<p class="small" id="aS" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button>'+(r?'<button class="btn danger" value="slett" formnovalidate>Slett</button>':'')+'<button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='slett')return;e.preventDefault();
+    const msg=t=>{dlg.querySelector('#aS').textContent=t};
+    try{
+      if(v==='slett'){if(!await bekreft('Slette ansvarsområdet «'+r.name+'»? Beskjeder som er sendt, blir liggende hos deltakerne.'))return;await FB.delRole(r.id);state.roles=state.roles.filter(x=>x.id!==r.id);dlg.close();keep(()=>{});return}
+      const name=dlg.querySelector('#aN').value.trim();if(!name){msg('Skriv navn på ansvarsområdet.');return}
+      const persons=[0,1,2,3].map(i=>({n:dlg.querySelector('[data-ap=n'+i+']').value.trim(),tlf:dlg.querySelector('[data-ap=t'+i+']').value.trim(),e:dlg.querySelector('[data-ap=e'+i+']').value.trim().toLowerCase()})).filter(p=>p.n);
+      if(!persons.length){msg('Legg inn minst én ansvarlig med navn.');return}
+      if(persons.some(p=>p.e&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.e))){msg('En e-postadresse er ugyldig.');return}
+      let id=r?r.id:slug(name),k=2;if(!r)while((state.roles||[]).some(x=>x.id===id))id=slug(name)+(k++);
+      const d={name,desc:dlg.querySelector('#aD').value.trim(),persons,emails:[...new Set(persons.map(p=>p.e).filter(Boolean))],ord:r?(r.ord==null?999:r.ord):(state.roles||[]).length};
+      await FB.setRole(id,d);dlg.close();state.roles=[...(state.roles||[]).filter(x=>x.id!==id),{id,...d}].sort((a,b)=>((a.ord==null?999:a.ord)-(b.ord==null?999:b.ord))||String(a.name).localeCompare(String(b.name)));keep(()=>{})}
+    catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
+  dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
 const UI={fs:1,sv:true,pr:true};
@@ -1249,7 +1343,7 @@ function loginCard(){
 /* Kortene under Meg kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
 const ME_KORT={
   login:['Innlogging',()=>loginCard()],innst:['Innstillinger',()=>settingsCard()],install:['Slik installerer du appen',()=>installCard()],share:['Del appen',()=>shareCard()],
-  vakter:['Mine vakter',()=>vakterCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],stat:['Oversikt',()=>statCard()],
+  vakter:['Mine vakter',()=>vakterCard()],ansvar:['Ansvarsområder',()=>ansvarCard()],meld:['Beskjeder',()=>meldCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'']};
 /* Kortene under Meg og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
@@ -1417,6 +1511,11 @@ document.addEventListener('click',async e=>{
   else if('meorder' in c.dataset){keep(()=>{state.reorder=!state.reorder})}
   else if(c.dataset.meup){meFlytt(c.dataset.meup,-1)}
   else if(c.dataset.medown){meFlytt(c.dataset.medown,1)}
+  else if(c.dataset.ansmsg){ansMsgAsk(c.dataset.ansmsg)}
+  else if('ansnew' in c.dataset){ansEditAsk('')}
+  else if(c.dataset.ansedit){ansEditAsk(c.dataset.ansedit)}
+  else if(c.dataset.thr){thrAsk(c.dataset.thr)}
+  else if('meldrefresh' in c.dataset){state.threads=undefined;keep(()=>{});loadThreads()}
   else if(c.dataset.ics){icsFil(c.dataset.ics)}
   else if('prnew' in c.dataset){prayAsk()}
   else if('prrefresh' in c.dataset){state.prayers=undefined;keep(()=>{});loadPrayers()}
@@ -1930,7 +2029,7 @@ async function loadSnaps(){
   catch(e){state.snaps=[];state.snapMsg='Kunne ikke hente sikkerhetspunkter ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{});
 }
-document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB&&prayLes())loadPrayers();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
+document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB&&prayLes())loadPrayers();if(k==='ansvar'&&e.target.open&&state.roles===undefined&&FB)loadRoles();if(k==='meld'&&e.target.open&&state.threads===undefined&&FB)loadThreads();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
   if('prmute' in d){const m=new Set(state.profile.muted||[]);e.target.checked?m.delete(d.prmute):m.add(d.prmute);try{await FB.setProfile(state.user.email,{muted:[...m]});state.profile.muted=[...m];state.prMsg='Lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code);e.target.checked=!e.target.checked}keep(()=>{});return}
@@ -1975,6 +2074,7 @@ async function start(){
     state.meorder=null;state.homeorder=null;if(u&&state.member){const pr=await FB.myPrefs(u.email.toLowerCase());if(pr&&Array.isArray(pr.meorder))state.meorder=pr.meorder;if(pr&&Array.isArray(pr.homeorder))state.homeorder=pr.homeorder}
     state.notes=undefined;state.shifts=undefined;state.reqs=undefined;state.myShifts=[];
     if(u&&state.member)loadMyShifts().then(()=>keep(()=>{}));
+    state.threads=undefined;state.roles=undefined;if(u&&state.member)loadThreads();
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
     await load();
     if(first){first=false;if(state.tab==='news')markSeen();render()}else keep(()=>{});

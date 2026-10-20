@@ -86,6 +86,24 @@ const FB={
     delScheduled:id=>sl((async()=>{const ref=S.doc(db,'scheduled',id),s=await S.getDoc(ref);if(!s.exists())return false;await S.deleteDoc(ref);return true})()),
     // Endrer et planlagt varsel (tid, tittel, tekst). false hvis det allerede er sendt.
     updScheduled:(id,d)=>sl((async()=>{const ref=S.doc(db,'scheduled',id),s=await S.getDoc(ref);if(!s.exists())return false;await S.updateDoc(ref,d);return true})(),'Lagrer …'),
+    // Ansvarsområder (roles) og beskjeder (threads med messages). Deltakere identifiseres med e-post (se reglene).
+    async rolesList(){const s=await S.getDocs(S.collection(db,'roles'));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>((a.ord==null?999:a.ord)-(b.ord==null?999:b.ord))||String(a.name).localeCompare(String(b.name)))},
+    setRole:(id,d)=>S.setDoc(S.doc(db,'roles',id),{name:String(d.name).slice(0,60),desc:String(d.desc||'').slice(0,140),persons:(d.persons||[]).slice(0,4).map(p=>({n:String(p.n).slice(0,60),tlf:String(p.tlf||'').slice(0,30),e:String(p.e||'').slice(0,100)})),emails:(d.emails||[]).slice(0,4),ord:d.ord==null?999:d.ord}),
+    delRole:id=>sl(S.deleteDoc(S.doc(db,'roles',id))),
+    async threadsList(me){const s=await S.getDocs(S.query(S.collection(db,'threads'),S.where('parts','array-contains',me),S.limit(50)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.ms||0)-(a.ms||0))},
+    async msgsList(id){const s=await S.getDocs(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)));return s.docs.map(d=>{const x=d.data();return {id:d.id,by:x.by,name:x.name,text:x.text,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})},
+    async newThread(role,text,name){
+      const me=auth.currentUser.email.toLowerCase(),parts=[...new Set([me,...(role.emails||[])])],tref=S.doc(S.collection(db,'threads')),mref=S.doc(S.collection(db,'threads',tref.id,'messages')),b=S.writeBatch(db);
+      b.set(tref,{roleId:role.id,roleName:String(role.name).slice(0,60),from:me,fromName:String(name).slice(0,60),parts,last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:parts.filter(p=>p!==me),created:S.serverTimestamp()});
+      b.set(mref,{by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()});
+      await b.commit();return tref.id},
+    async addMsg(t,text,name){
+      const me=auth.currentUser.email.toLowerCase(),tref=S.doc(db,'threads',t.id),mref=S.doc(S.collection(db,'threads',t.id,'messages')),b=S.writeBatch(db);
+      b.set(mref,{by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()});
+      b.update(tref,{last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:t.parts.filter(p=>p!==me)});
+      await b.commit()},
+    markThreadRead:id=>S.updateDoc(S.doc(db,'threads',id),{unread:S.arrayRemove(auth.currentUser.email.toLowerCase())}),
+    async notifyThread(url,id){const idToken=await auth.currentUser.getIdToken(true);const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'beskjed',threadId:id})});return r.json()},
     // Bønneemner (prayers): bare medlemmer. by og ber bruker uid, ikke e-post.
     async prayersList(){const s=await S.getDocs(S.query(S.collection(db,'prayers'),S.orderBy('ms','desc'),S.limit(40)));return s.docs.map(d=>({id:d.id,...d.data()}))},
     markPrayed:ids=>sl((async()=>{const b=S.writeBatch(db),t=Date.now();ids.forEach(id=>b.update(S.doc(db,'prayers',id),{bedt:t}));await b.commit()})()),
@@ -327,7 +345,7 @@ const FB={
     }
   };
   // Lagring og sending vises med «Lagrer …» / «Sender …» til databasen eller tjenesten har svart.
-  for(const n of ['addPrayer','setContact','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
+  for(const n of ['setRole','newThread','addMsg','addPrayer','setContact','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
   for(const n of ['sendPush','sendNote','sendPrayers','sendWelcome','sendRsvpMail','sendMail']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Sender …')}
   window._fbRes(FB);
 }catch(e){console.warn('Firebase kunne ikke lastes, bruker JSON-filene',e);window._fbRes(null)}
