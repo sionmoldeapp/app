@@ -77,10 +77,13 @@ service cloud.firestore {
     }
     match /prayers/{id} {
       allow read: if prayReader() || (signedIn() && resource.data.by == request.auth.uid);   // leserne ser alle, forfatteren ser egne (innsyn og sletting)
-      allow create: if isMember() && request.resource.data.keys().hasOnly(['t', 'name', 'by', 'ms', 'ber'])
+      // Innloggede medlemmer sender med navn. Uten innlogging sendes bønneemner anonymt (name tomt og by == 'anonym').
+      allow create: if request.resource.data.keys().hasOnly(['t', 'name', 'by', 'ms', 'ber'])
         && request.resource.data.t is string && request.resource.data.t.size() > 0 && request.resource.data.t.size() <= 400
         && request.resource.data.name is string && request.resource.data.name.size() <= 60
-        && request.resource.data.by == request.auth.uid && request.resource.data.ms is number && request.resource.data.ber == [];
+        && request.resource.data.ms is number && request.resource.data.ber == []
+        && ((isMember() && request.resource.data.name.size() >= 1 && request.resource.data.by == request.auth.uid)
+            || (request.resource.data.name == '' && request.resource.data.by == 'anonym'));
       // Lederne markerer emner som bedt for etter bønnemøtet (feltet bedt, tidspunkt).
       allow update: if prayReader() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bedt']) && request.resource.data.bedt is number;
       allow delete: if isMember() && (resource.data.by == request.auth.uid || prayReader());

@@ -414,7 +414,8 @@ const prSynlige=()=>(state.prayers||[]).filter(x=>(x.ms||0)>Date.now()-PR_DAGER*
 const prNye=()=>prSynlige().filter(x=>!x.bedt).sort((a,b)=>(b.ms||0)-(a.ms||0));
 const prBedte=()=>prSynlige().filter(x=>x.bedt).sort((a,b)=>(b.bedt||0)-(a.bedt||0));
 function prayerCard(){
-  if(!state.user||!state.member)return '';
+  if(!state.user)return '<div class="card"><h2>Bønneemner</h2><p class="small" style="margin:6px 0 10px">Send inn et bønneemne. Det sendes anonymt, og det blir bedt for på bønnemøtene i menigheten.</p><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></div>';
+  if(!state.member)return '';
   const les=prayLes(),l=state.prayers,nye=prNye(),bedte=prBedte();
   const rad=(x,grå)=>'<div class="r" style="display:block;'+(grå?'opacity:.5':'')+'"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'Anonym')+' · '+esc(ago({ms:x.ms}))+(grå?' · bedt for':'')+'</div><div class="btns"><button class="btn" data-prdel="'+esc(x.id)+'">Slett</button></div></div>';
   let inn;
@@ -435,20 +436,19 @@ async function loadPrayers(){
   keep(()=>{})}
 function prayAsk(){
   if(document.querySelector('dialog.pub'))return;
-  const dlg=document.createElement('dialog');dlg.className='lp pub';
+  const inn=!!state.user,dlg=document.createElement('dialog');dlg.className='lp pub';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Nytt bønneemne</h3>'
    +'<label class="f">Bønneemne<textarea id="pT" rows="4" maxlength="400" placeholder="Skriv kort hva du ønsker forbønn for …"></textarea></label>'
-   +'<label class="f" id="pNL">Navn (valgfritt)<input id="pN" maxlength="60" value="'+esc(lsGet('sm-navn')||(state.profile&&state.profile.name)||'')+'"></label>'
-   +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send inn</button><button type="button" class="btn" id="pAnon" aria-pressed="false">Anonymt</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+   +(inn?'<label class="f" id="pNL">Navn<input id="pN" maxlength="60" required value="'+esc(lsGet('sm-navn')||(state.profile&&state.profile.name)||'')+'"></label><p class="small" style="margin:0">Bønneemnet sendes med navnet ditt.</p>':'<p class="small" style="margin:0">Du er ikke innlogget, så bønneemnet sendes anonymt.</p>')
+   +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send inn</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
-  let anon=false;const anonKnapp=dlg.querySelector('#pAnon');
-  anonKnapp.addEventListener('click',()=>{anon=!anon;anonKnapp.textContent=(anon?'✓ ':'')+'Anonymt';anonKnapp.setAttribute('aria-pressed',String(anon));anonKnapp.classList.toggle('on',anon);dlg.querySelector('#pN').disabled=anon;dlg.querySelector('#pNL').style.opacity=anon?'.5':''});
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
-    const t=dlg.querySelector('#pT').value.trim(),name=anon?'':dlg.querySelector('#pN').value.trim();
+    const t=dlg.querySelector('#pT').value.trim(),name=inn?dlg.querySelector('#pN').value.trim():'';
     if(!t){dlg.querySelector('#pMsg').textContent='Skriv et bønneemne.';return}
-    try{await FB.addPrayer({t,name});dlg.close();state.acc.bonn=true;if(prayLes())await loadPrayers();else{state.prMsg='Takk! Bønneemnet er sendt inn.';keep(()=>{})}push('Sendt inn','Bønneemnet er sendt inn.')}
-    catch(er){dlg.querySelector('#pMsg').textContent='Kunne ikke legge ut ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
+    if(inn&&!name){dlg.querySelector('#pMsg').textContent='Skriv navnet ditt.';return}
+    try{await FB.addPrayer({t,name});dlg.close();state.acc.bonn=true;if(state.member&&prayLes())await loadPrayers();else{state.prMsg='Takk! Bønneemnet er sendt inn.';keep(()=>{})}push('Sendt inn','Bønneemnet er sendt inn.')}
+    catch(er){dlg.querySelector('#pMsg').textContent='Kunne ikke sende inn ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 async function prayCopy(){
   const vis=prNye().slice().reverse(),tekst='Bønneemner\n\n'+vis.map(x=>'• '+x.t.replace(/\s*\n\s*/g,' ')+' ('+(x.name||'anonym')+')').join('\n');
@@ -1278,6 +1278,7 @@ function ansEditAsk(roleId){
 
 /* Personvernerklæring (vises under Meg for alle). Teksten må holdes i samsvar med behandlingsoversikten (personvern/ utenfor repoet). */
 function personvernCard(){
+  if(!state.user)return '';
   const H=t=>`<h3 style="font-size:18px;margin:16px 0 6px">${t}</h3>`,P=t=>`<p class="small" style="margin:0 0 8px;font-size:14px">${t}</p>`,L=a=>`<ul style="margin:0 0 8px;padding-left:20px;display:grid;gap:4px;font-size:14px">${a.map(x=>'<li>'+x+'</li>').join('')}</ul>`;
   return `<details class="card acc" data-acc="personvern" ${state.acc.personvern?'open':''}><summary><h2>Personvern</h2></summary>
   <p class="small" style="margin:0 0 8px">Sist oppdatert 20. oktober 2026</p>
@@ -1287,7 +1288,7 @@ function personvernCard(){
    '<b>Medlemsliste:</b> e-post, navn hvis du har lagt det inn, grupper og rolle. For å gi riktig innhold og varsler. Administratorer og gruppeledere (for sine grupper) ser dette.',
    '<b>«Jeg kommer»:</b> navn og kontaktopplysning du skriver inn. Ledere ser hvem som kommer. Svarene lagres også i et regneark hos Google Drive.',
    '<b>Møtenotater:</b> dine private notater. Bare du kan lese dem, ikke engang administratorer.',
-   '<b>Bønneemner:</b> teksten, navn hvis du oppgir det, og tidspunkt. Bare administratorer og de som leder bønnemøtene ser dem. Du kan sende inn anonymt.',
+   '<b>Bønneemner:</b> teksten, navn hvis du oppgir det, og tidspunkt. Bare administratorer og de som leder bønnemøtene ser dem. Innloggede sender med navn. Uten innlogging sendes de anonymt.',
    '<b>Beskjeder:</b> meldinger mellom deg og de ansvarlige. Bare deltakerne i samtalen ser dem.',
    '<b>Vakter:</b> navn og e-post på vaktlisten. Gruppens medlemmer og leder ser den.',
    '<b>Varselkode:</b> en kode for telefonen din, koblet til e-posten din hvis du er innlogget, så vi kan sende varsler du har bedt om.',
