@@ -441,7 +441,7 @@ function prayAsk(){
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Nytt bønneemne</h3>'
    +'<label class="f">Bønneemne<textarea id="pT" rows="4" maxlength="400" placeholder="Skriv kort hva du ønsker forbønn for …"></textarea></label>'
    +(inn?'<label class="f" id="pNL">Navn<input id="pN" maxlength="60" required value="'+esc(lsGet('sm-navn')||(state.profile&&state.profile.name)||'')+'"></label><p class="small" style="margin:0">Bønneemnet sendes med navnet ditt.</p>'
-     :'<p class="small" style="margin:0">Du er ikke innlogget, så bønneemnet sendes anonymt.</p><label class="f">Bekreft at du er et menneske: <span id="pQt">henter …</span><input id="pQ" inputmode="numeric" autocomplete="off" maxlength="3" required></label><input id="pHp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">')
+     :'<p class="small" style="margin:0">Du er ikke innlogget, så bønneemnet sendes anonymt.</p><label class="f">Bekreft at du er et menneske: <span id="pQt">henter …</span><input id="pQ" inputmode="numeric" autocomplete="off" maxlength="1" required></label><input id="pHp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">')
    +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send inn</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   let u=null;
