@@ -1193,6 +1193,7 @@ const tlfHref=t=>{const d=String(t||'').replace(/[^0-9+]/g,'');return 'tel:'+(d.
 function ansRad(r,red){
   const meg=meEmail(),kanSende=(r.emails||[]).some(e=>e!==meg);
   return '<div class="r" style="display:block"><b>'+esc(r.name)+'</b>'+(r.desc?'<div class="small">'+esc(r.desc)+'</div>':'')
+   +((r.tasks||[]).length?'<ul style="margin:8px 0 0;padding-left:20px;display:grid;gap:3px;font-size:15px">'+r.tasks.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>':'')
    +(r.persons||[]).map(p=>'<div style="margin-top:8px">'+esc(p.n)+'<div class="small">'+(p.tlf?'<a href="'+esc(tlfHref(p.tlf))+'">'+esc(p.tlf)+'</a>':'')+(p.tlf&&p.e?' · ':'')+(p.e?'<a href="mailto:'+esc(p.e)+'">'+esc(p.e)+'</a>':'')+'</div></div>').join('')
    +((kanSende||red)?'<div class="btns" style="margin-top:10px">'+(kanSende?'<button class="btn primary" data-ansmsg="'+esc(r.id)+'" style="width:auto">Send beskjed</button>':'')+(red?'<button class="btn" data-ansedit="'+esc(r.id)+'">Endre</button>':'')+'</div>':'')+'</div>'}
 function ansvarCard(){
@@ -1255,6 +1256,7 @@ function ansEditAsk(roleId){
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(r?'Endre ansvarsområde':'Nytt ansvarsområde')+'</h3>'
    +'<label class="f">Ansvarsområde<input id="aN" maxlength="60" placeholder="For eksempel Kjøkken" value="'+esc(r?r.name:'')+'"></label>'
    +'<label class="f">Beskrivelse (valgfritt)<input id="aD" maxlength="140" value="'+esc(r?r.desc||'':'')+'"></label>'
+   +'<label class="f">Oppgaver (en per linje, valgfritt)<textarea id="aT" rows="5" maxlength="1500" placeholder="For eksempel:&#10;Sette frem kaffe og kopper&#10;Ta imot gjester ved døren">'+esc(r?(r.tasks||[]).join('\n'):'')+'</textarea></label>'
    +[0,1,2,3].map(i=>{const p=P[i]||{};return '<fieldset class="f" style="border:1px solid var(--line);border-radius:12px;padding:8px;margin:0;display:grid;gap:6px"><legend class="small">Ansvarlig '+(i+1)+'</legend><input data-ap="n'+i+'" maxlength="60" placeholder="Navn" aria-label="Navn" value="'+esc(p.n||'')+'"><input data-ap="t'+i+'" type="tel" maxlength="30" placeholder="Telefon" aria-label="Telefon" value="'+esc(p.tlf||'')+'"><input data-ap="e'+i+'" type="email" maxlength="100" placeholder="E-post (må være medlemmets innloggingsadresse for å få beskjeder i appen)" aria-label="E-post" value="'+esc(p.e||'')+'"></fieldset>'}).join('')
    +'<p class="small" id="aS" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button>'+(r?'<button class="btn danger" value="slett" formnovalidate>Slett</button>':'')+'<button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
@@ -1268,7 +1270,8 @@ function ansEditAsk(roleId){
       if(!persons.length){msg('Legg inn minst én ansvarlig med navn.');return}
       if(persons.some(p=>p.e&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.e))){msg('En e-postadresse er ugyldig.');return}
       let id=r?r.id:slug(name),k=2;if(!r)while((state.roles||[]).some(x=>x.id===id))id=slug(name)+(k++);
-      const d={name,desc:dlg.querySelector('#aD').value.trim(),persons,emails:[...new Set(persons.map(p=>p.e).filter(Boolean))],ord:r?(r.ord==null?999:r.ord):(state.roles||[]).length};
+      const tasks=dlg.querySelector('#aT').value.split('\n').map(x=>x.trim()).filter(Boolean).slice(0,20).map(x=>x.slice(0,120));
+      const d={name,desc:dlg.querySelector('#aD').value.trim(),tasks,persons,emails:[...new Set(persons.map(p=>p.e).filter(Boolean))],ord:r?(r.ord==null?999:r.ord):(state.roles||[]).length};
       await FB.setRole(id,d);dlg.close();state.roles=[...(state.roles||[]).filter(x=>x.id!==id),{id,...d}].sort((a,b)=>((a.ord==null?999:a.ord)-(b.ord==null?999:b.ord))||String(a.name).localeCompare(String(b.name)));keep(()=>{})}
     catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
