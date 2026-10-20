@@ -435,6 +435,10 @@ async function prayDone(){
 async function loadPrayers(){
   try{state.prayers=await FB.prayersList();state.prMsg=''}catch(e){state.prayers=[];state.prMsg='Kunne ikke hente bønneemner ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{})}
+/* Sjekken for anonyme bønneemner hentes på forhånd (Apps Script kan bruke noen sekunder), så den er klar når skjemaet åpnes. */
+async function bonnForhent(){
+  if(state.user||!FB||!PUSH_URL||state.bonnU&&Date.now()-state.bonnU.t<10*60e3)return;
+  try{const r=await FB.bonnUtfordring(PUSH_URL);if(r&&r.ok)state.bonnU={...r,t:Date.now()}}catch(e){}}
 function prayAsk(){
   if(document.querySelector('dialog.pub'))return;
   const inn=!!state.user,dlg=document.createElement('dialog');dlg.className='lp pub';
@@ -445,7 +449,9 @@ function prayAsk(){
    +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send inn</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   let u=null;
-  const hent=async()=>{if(inn)return;const q=dlg.querySelector('#pQt');q.textContent='henter …';u=null;
+  const hent=async()=>{if(inn)return;const q=dlg.querySelector('#pQt');u=null;
+    const f=state.bonnU;if(f&&Date.now()-f.t<10*60e3){state.bonnU=null;u=f;q.textContent=f.spm;return}   // ferdig hentet på forhånd (brukes én gang)
+    q.textContent='henter … (kan ta noen sekunder)';state.bonnU=null;
     try{const r=await FB.bonnUtfordring(PUSH_URL);if(!r.ok)throw 0;u=r;q.textContent=r.spm}catch(x){q.textContent='kunne ikke hente sjekken. Prøv å åpne skjemaet på nytt.'}};
   hent();
   dlg.querySelector('form').addEventListener('submit',async e=>{
@@ -2196,6 +2202,7 @@ async function start(){
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
     await load();
     if(first){first=false;if(state.tab==='news')markSeen();render()}else keep(()=>{});
+    if(!u)bonnForhent();
   };
   if(FB)FB.onAuth(u=>go(u).catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.'}));
   else{await load();render()}
