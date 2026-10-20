@@ -424,7 +424,7 @@ function prayerCard(){
   else inn='<p class="small" style="margin:0 0 8px">Bønneemner samles opp og blir bedt for på bønnemøtene i menigheten. Nye står øverst, og de som er bedt for flyttes nederst. Emner skjules etter en uke.</p>'
    +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><button class="btn" data-prrefresh>Oppdater</button>'+(nye.length?'<button class="btn" data-prcopy>Kopier listen</button><button class="btn" data-prdone>Bønnemøtet er holdt</button>':'')+'</div>'
    +'<div class="reg">'+(nye.map(x=>rad(x,false)).join('')||'<p class="small">Ingen nye bønneemner.</p>')+'</div>'
-   +(bedte.length?'<p class="small" style="margin:12px 0 4px"><b>Bedt for</b></p><div class="reg">'+bedte.map(x=>rad(x,true)).join('')+'</div>':'');
+   +(bedte.length?'<details class="acc sub" data-acc="bonn_gamle" '+(state.acc.bonn_gamle?'open':'')+' style="margin-top:12px"><summary><h3 style="font-size:17px">Eldre, bedt for ('+bedte.length+')</h3></summary><p class="small" style="margin:0 0 6px">Står her til de faller ut etter en uke.</p><div class="reg">'+bedte.map(x=>rad(x,true)).join('')+'</div></details>':'');
   return '<details class="card acc" data-acc="bonn" '+(state.acc.bonn?'open':'')+'><summary><h2>Bønneemner'+(les&&l?' ('+nye.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
 async function prayDone(){
   const nye=prNye();if(!nye.length||!FB)return;
