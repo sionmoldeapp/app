@@ -472,10 +472,10 @@ function homeDeler(){
    velkomst:['Kom i gang',()=>welcomeCard()],
    besok:['Logg inn for å få mer',()=>visitorCard()],
    vakter:['Dine vakter',()=>myShiftsCard()],
-   bonn:['Bønneemner',()=>prayerCard()],
+   bonn:['Bønneemner',()=>UI.pr===false?'':prayerCard()],
    viktig:['Viktig',()=>(post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b><button type="button" class="ptitle" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${esc(post.t)}</button></b><div class="pbody ${state.open['p_'+post.id]?'open':''}"><span class="pt">${linkify(esc(post.b))}</span></div>${(String(post.b).length>130||(String(post.b).match(/\n/g)||[]).length>=2)?`<button type="button" class="pmore" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${state.open['p_'+post.id]?'Vis mindre':'Les mer'}</button>`:''}</div></div>`:'')],
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:'')],
-   sommer:['Nyhetsbrev Sommerstevne',()=>svCard()],
+   sommer:['Nyhetsbrev Sommerstevne',()=>UI.sv===false?'':svCard()],
    finn:['Finn frem',()=>contactCard()]}}
 function home(){
   return `<div><h1>Velkommen</h1><span class="script">dette skjer i Sion Molde</span></div>${ordHtml('home')}`}
@@ -1161,14 +1161,31 @@ function memberCard(onlyBody){
   <div style="display:grid;gap:8px;margin:0 0 10px"><input type="search" id="brQ" placeholder="Søk etter e-post, gruppe eller rolle …" aria-label="Søk i brukere" autocomplete="off" value="${esc(state.brQ)}"><select id="brG" aria-label="Filtrer på gruppe"><option value="">Alle grupper</option>${GROUPS.map(g=>`<option value="${esc(g[0])}" ${gf===g[0]?'selected':''}>${esc(g[1])}</option>`).join('')}</select></div>
   <div id="brBody">${body}</div></details>`}
 
-function pushCard(){
+
+/* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
+const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
+const UI={fs:1,sv:true,pr:true};
+try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
+function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
+function uiLagre(){try{localStorage.setItem('sm-ui',JSON.stringify(UI))}catch(e){}}
+applyFs();
+function settingsCard(){
+  const bryter=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${UI[k]!==false}" aria-label="${l}" data-ui="${k}"></button></div>`;
+  const H=t=>`<h3 style="font-size:18px;margin:14px 0 6px">${t}</h3>`;
+  return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
+  ${state.user?H('Varsler').replace('margin:14px','margin:0')+pushInner():''}
+  ${H('Tekststørrelse')}<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div>
+  <p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>
+  ${H('Vis på Hjem')}${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Bønneemner','Kortet for å sende inn bønneemner.'):''}
+  <p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p></details>`}
+function pushInner(){
   if(!state.user)return '';   // varsler er bare for innloggede
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
   const on=!!lsGet('sm-push');
   const body=ios&&!standalone?'På iPhone må du først legge appen på hjemskjermen (Del → Legg til på Hjem-skjerm), og så slå på varsler derfra.'
     :!FB||!state.pushOk?'Varsler støttes ikke i denne nettleseren.'
     :on?'<button class="btn" data-pushoff>Slå av varsler</button>':'<button class="btn primary" data-pushon style="width:auto">Slå på varsler</button>';
-  return `<details class="card acc" data-acc="varsler" ${state.acc.varsler?'open':''}><summary><h2>Varsler</h2></summary><p class="small" style="margin:0 0 12px">Få beskjed om nyheter og endringer, også når appen er lukket.</p>${body}<p class="small" role="status" style="margin:8px 0 0">${esc(state.pushMsg)}</p></details>`}
+  return `<p class="small" style="margin:0 0 12px">Få beskjed om nyheter og endringer, også når appen er lukket.</p>${body}<p class="small" role="status" style="margin:8px 0 0">${esc(state.pushMsg)}</p>`}
 
 function pushAdmin(){
   if(!PUSH_URL)return '';
@@ -1231,7 +1248,7 @@ function loginCard(){
 
 /* Kortene under Meg kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
 const ME_KORT={
-  login:['Innlogging',()=>loginCard()],push:['Varsler',()=>pushCard()],install:['Slik installerer du appen',()=>installCard()],share:['Del appen',()=>shareCard()],
+  login:['Innlogging',()=>loginCard()],innst:['Innstillinger',()=>settingsCard()],install:['Slik installerer du appen',()=>installCard()],share:['Del appen',()=>shareCard()],
   vakter:['Mine vakter',()=>vakterCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'']};
@@ -1423,6 +1440,8 @@ document.addEventListener('click',async e=>{
   else if('rscancel' in c.dataset){$('#rsDlg').close();rsPending=null}
   else if(c.dataset.af){state.af=c.dataset.af;state.sel={};keep(()=>{})}
   else if(c.dataset.f){state.filter=c.dataset.f;keep(()=>{})}
+  else if(c.dataset.ui){keep(()=>{UI[c.dataset.ui]=UI[c.dataset.ui]===false;uiLagre()})}
+  else if(c.dataset.fs){UI.fs=+c.dataset.fs;uiLagre();applyFs();keep(()=>{})}
   else if(c.dataset.pref){keep(()=>{state.prefs[c.dataset.pref]=!state.prefs[c.dataset.pref];save()})}
   else if(c.dataset.ledertoggle){
     const on=c.dataset.on==='1',id=c.dataset.ledertoggle;
