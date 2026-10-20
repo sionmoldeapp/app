@@ -159,6 +159,12 @@ const FB={
       const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'notat',title:d.title,date:d.date,speaker:d.speaker,html:d.html})});
       return r.json();
     },
+    // Nye bønneemner på e-post til brukerens egen adresse (bare administrator og bønneledere; innholdet hentes av Apps Script).
+    async sendPrayers(url){
+      const idToken=await auth.currentUser.getIdToken(true);
+      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'bonn'})});
+      return r.json();
+    },
     // Velkomst-e-post (Apps Script) til nylig opprettede brukere.
     async sendWelcome(url,emails){
       const idToken=await auth.currentUser.getIdToken(true);
@@ -322,6 +328,6 @@ const FB={
   };
   // Lagring og sending vises med «Lagrer …» / «Sender …» til databasen eller tjenesten har svart.
   for(const n of ['addPrayer','setContact','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
-  for(const n of ['sendPush','sendNote','sendWelcome','sendRsvpMail','sendMail']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Sender …')}
+  for(const n of ['sendPush','sendNote','sendPrayers','sendWelcome','sendRsvpMail','sendMail']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Sender …')}
   window._fbRes(FB);
 }catch(e){console.warn('Firebase kunne ikke lastes, bruker JSON-filene',e);window._fbRes(null)}
