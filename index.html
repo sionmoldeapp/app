@@ -979,7 +979,7 @@ function vakterCard(){
   const gs=vaktGrupper();if(!gs.length)return '';
   const idag=isoDato(new Date());
   const inn=state.shifts===undefined?'<p class="small">Henter vaktlistene …</p>':(gs.map(g=>gruppeVakter(g,idag)).join('')||'<p class="small">Det er ingen vaktlister for gruppene dine ennå.</p>');
-  return '<details class="card acc" data-acc="vakter" '+(state.acc.vakter?'open':'')+'><summary><h2>Vakter</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.vaktMsg||'')+'</p></details>'}
+  return '<details class="card acc" data-acc="vakter" '+(state.acc.vakter?'open':'')+'><summary><h2>Mine vakter</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.vaktMsg||'')+'</p></details>'}
 function gruppeVakter(g,idag){
   const l=((state.shifts||{})[g]||[]).filter(x=>x.date>=idag),styr=kanStyre(g),rq=(state.reqs||{})[g]||[];
   if(!l.length&&!styr)return '';
@@ -1230,7 +1230,7 @@ function loginCard(){
 /* Kortene under Meg kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
 const ME_KORT={
   login:['Innlogging',()=>loginCard()],push:['Varsler',()=>pushCard()],install:['Slik installerer du appen',()=>installCard()],share:['Del appen',()=>shareCard()],
-  vakter:['Vakter',()=>vakterCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],stat:['Oversikt',()=>statCard()],
+  vakter:['Mine vakter',()=>vakterCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'']};
 function meRekkefolge(){
