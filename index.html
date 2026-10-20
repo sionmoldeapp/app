@@ -496,6 +496,20 @@ function progList(){
   list.forEach(x=>{const e=x.ev||{w:x.w};const k=when(e.w)+' '+e.w.getDate()+'. '+MON[e.w.getMonth()]+(e.w.getFullYear()!==now.getFullYear()?' '+e.w.getFullYear():'');
     if(k!==last){out+=`<div class="day">${k}</div>`;last=k}out+=x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)});
   return out||(q?'<p class="small">Ingen treff på «'+esc(q)+'».</p>':'<p class="small">Ingen oppføringer her ennå.</p>')}
+/* Tidligere arrangementer: alle som er over, nyeste først, med søk. Medlemsarrangementer vises bare for innloggede. */
+function pastEvents(){
+  return rawEvents.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)&&!(x.m&&!state.member))
+    .map(x=>({...x,t:esc(x.title),d:linkify(esc(x.text)),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
+    .filter(x=>(x.e||x.w)<todayStart).sort((a,b)=>b.w-a.w)}
+function pastItem(e){
+  const open=state.open['x'+e.id],yr=e.w.getFullYear()!==now.getFullYear()?' '+e.w.getFullYear():'';
+  return `<div class="item ${open?'open':''}"><button data-ev="x${esc(e.id)}" aria-expanded="${!!open}">${dateBox(e)}
+   <div class="grow"><b>${e.t}</b><span class="small">${cap(DAYS[e.w.getDay()])} ${e.w.getDate()}. ${MON[e.w.getMonth()]}${yr}${tm(e)}${e.place?' · '+esc(e.place):''}</span></div><span class="tag">${esc(normCat(e.cat))}</span></button>
+   <div class="detail">${e.d?'<div>'+e.d+'</div>':''}${e.who?'<div class="small">'+esc(e.who)+'</div>':''}${!e.d&&!e.who?'<div class="small">Ingen flere opplysninger.</div>':''}</div></div>`}
+function pastList(){
+  const q=(state.pq||'').trim(),n=state.pastN||40,alle=pastEvents().filter(e=>progMatch({ev:e,w:e.w},q)),vis=alle.slice(0,n);
+  return (vis.map(pastItem).join('')||(q?'<p class="small">Ingen treff på «'+esc(q)+'».</p>':'<p class="small">Ingen tidligere arrangementer ennå.</p>'))
+    +(alle.length>n?'<button class="btn" data-pastmore style="margin-top:8px">Vis flere ('+(alle.length-n)+')</button>':'')}
 function prog(){
   const cats=['Alle',...allCats().filter(canSeeCat)];
   const kanLp=state.admin&&editOn();
@@ -504,7 +518,10 @@ function prog(){
   <input type="search" id="progQ" placeholder="Søk i program …" aria-label="Søk i program" autocomplete="off" value="${esc(state.q||'')}">
   <div class="chips scroll" aria-label="Kategorier">${cats.map(c=>`<button class="chip" data-f="${esc(c)}"${kanLp&&c!=='Alle'&&c!==CAT_LOCKED?` data-lp="cat:${encodeURIComponent(c)}"`:''} aria-pressed="${state.filter===c}">${esc(c)}</button>`).join('')}</div>
   ${kanLp?'<p class="small" style="margin:0 0 8px">Hold inne på et arrangement eller en fast samling for å endre eller slette. Hold inne på en kategori for å endre navnet eller slette den.</p>':''}
-  <div class="list" id="progList">${progList()}</div>`}
+  <div class="list" id="progList">${progList()}</div>
+  <details class="card acc" data-acc="tidl" ${state.acc.tidl?'open':''} style="margin-top:16px"><summary><h2>Tidligere arrangementer</h2></summary>
+   <input type="search" id="pastQ" placeholder="Søk i tidligere arrangementer …" aria-label="Søk i tidligere arrangementer" autocomplete="off" value="${esc(state.pq||'')}" style="margin:0 0 8px">
+   <div class="list" id="pastList">${pastList()}</div></details>`}
 
 function regList(){
   const l=regular.filter(r=>state.filter==='Alle'||normCat(r.cat)===state.filter);
@@ -1449,6 +1466,7 @@ function viewOpts(){
   $('#viewOpts').innerHTML=o.map(([v,l,t])=>'<label style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-weight:400"><input type="radio" name="viewmode" value="'+v+'" '+(viewVal()===v?'checked':'')+' style="width:22px;height:22px;flex:none;margin-top:2px"><span><b>'+esc(l)+'</b><br><span class="small">'+esc(t)+'</span>'+(v==='leder'&&state.real?'<span style="display:grid;gap:6px;margin:8px 0 0">'+GROUPS.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:14px"><input type="checkbox" data-vl="'+g[0]+'" style="width:22px;height:22px;flex:none" '+(state.vl.includes(g[0])?'checked':'')+'>'+esc(gLabel(g[0]))+'</label>').join('')+'</span>':'')+'</span></label>').join('')}
 document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.target.value;const l=$('#noteList');if(l)l.innerHTML=noteRows(state.nq.trim()?(state.notes||[]).filter(x=>norm(x.title+' '+(x.speaker||'')+' '+noteText(x.html)).includes(norm(state.nq).trim())):(state.notes||[]));return}
   if(e.target.id==='brQ'){state.brQ=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
+  if(e.target.id==='pastQ'){state.pq=e.target.value;state.pastN=40;const l=$('#pastList');if(l)l.innerHTML=pastList();return}
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
 /* Langt trykk på et kort under Meg åpner «Endre rekkefølge». */
 {let t=null,x0=0,y0=0,svelg=false;
@@ -1511,6 +1529,7 @@ document.addEventListener('click',async e=>{
   else if('meorder' in c.dataset){keep(()=>{state.reorder=!state.reorder})}
   else if(c.dataset.meup){meFlytt(c.dataset.meup,-1)}
   else if(c.dataset.medown){meFlytt(c.dataset.medown,1)}
+  else if('pastmore' in c.dataset){keep(()=>{state.pastN=(state.pastN||40)+40})}
   else if(c.dataset.ansmsg){ansMsgAsk(c.dataset.ansmsg)}
   else if('ansnew' in c.dataset){ansEditAsk('')}
   else if(c.dataset.ansedit){ansEditAsk(c.dataset.ansedit)}
