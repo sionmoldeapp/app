@@ -286,7 +286,7 @@ function nextFast(){const out=[];
 const fastId=(r,w)=>'f_'+r.id+'_'+dkey(w);
 function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',note=ex&&ex.k==='endret'&&ex.note?ex.note:r.note;
   return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(r.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'?'<span class="tag avl" style="background:var(--lamp);color:#fff">Endret</span>':'<span class="tag">Fast</span>'}</button>
-   <div class="detail"><div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}${calBtn(id)}</div>${remHint(id)}${cnt(id)}`}${rsPanel(id,r.title,dkey(w),[])}</div></div>`}
+   <div class="detail"><div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>${remHint(id)}${cnt(id)}`}${rsPanel(id,r.title,dkey(w),[])}</div></div>`}
 function evItem(e){
   if(e.m&&!state.member)return `<div class="item"><div class="locked" style="padding:12px">${dateBox(e)}<div class="grow"><b>${e.t}</b><span class="small">Kun for medlemmer. Logg inn under «Meg».</span></div></div></div>`;
   const open=state.open[e.id],r=state.rsvp[e.id];
@@ -294,7 +294,7 @@ function evItem(e){
    <div class="grow"><b>${e.t}</b><span class="small">${when(e.w)} ${tm(e)}${statusTag(e)}${e.place?' · '+esc(e.place):''}${e.groups&&e.groups.length?' · '+esc(e.groups.map(gName).join(', ')):''}</span></div>
    ${e.m?'<span class="tag m">Medlem</span>':`<span class="tag">${esc(normCat(e.cat))}</span>`}</button>
    <div class="detail"><div>${e.d}</div><div class="small">${esc(e.who)}</div>
-   <div class="btns"><button class="btn ${r?'on':''}" data-rsvp="${e.id}">${r?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(e.id)}${calBtn(e.id)}${kartBtn(e.place)}
+   <div class="btns"><button class="btn ${r?'on':''}" data-rsvp="${e.id}">${r?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(e.id)}${kartBtn(e.place)}
    </div>${remHint(e.id)}${cnt(e.id)}${rsPanel(e.id,e.title,e.start,e.groups)}</div></div>`}
 
 /* Påmeldingen går til Google Skjema «Sommerstevne påmeldinger nyhetsbrev». Svarene havner i et regneark i Drive,
@@ -353,32 +353,8 @@ function svCard(){
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.sv)}</p><p class="small" style="margin:6px 0 0">E-posten brukes bare til informasjon om sommerstevnet.</p>`;
   return done?`<details class="card acc" data-acc="sv" ${state.acc.sv?'open':''}><summary><h2>Nyhetsbrev Sommerstevne</h2></summary>${body}</details>`:`<div class="card"><h2>Nyhetsbrev Sommerstevne</h2>${body}</div>`}
 
-/* Små hjelpere for medlemmene: legg i kalenderen (.ics), kart, bønneemner og redigerbar kontaktinfo. */
+/* Små hjelpere for medlemmene: kart, bønneemner og redigerbar kontaktinfo. */
 const kartUrl=p=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p+', Møre og Romsdal');
-function calInfo(id){
-  const f=String(id).match(/^f_(.+)_([0-9]{4}-[0-9]{2}-[0-9]{2})$/);
-  if(f){const r=regular.find(x=>x.id==f[1]);return r?{title:r.title,start:f[2],end:'',time:r.time,place:'',desc:r.note||''}:null}
-  const e=events.find(x=>x.id==id);return e?{title:e.title,start:e.start,end:e.end||'',time:e.time||'',place:e.place||'',desc:e.text||''}:null}
-const icsEsc=s=>String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
-function icsFil(id){
-  const c=calInfo(id);if(!c)return;
-  const p=n=>String(n).padStart(2,'0'),dd=s=>s.replace(/-/g,''),lok=d=>d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'T'+p(d.getHours())+p(d.getMinutes())+'00';
-  const nå=new Date(),stamp=nå.getUTCFullYear()+p(nå.getUTCMonth()+1)+p(nå.getUTCDate())+'T'+p(nå.getUTCHours())+p(nå.getUTCMinutes())+p(nå.getUTCSeconds())+'Z';
-  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Sion Molde//App//NO','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+String(id).replace(/[^A-Za-z0-9_-]/g,'')+'@sionmoldeapp.github.io','DTSTAMP:'+stamp];
-  if(TIDOK(c.time)){
-    const s0=new Date(c.start+'T'+p(c.time.split(':')[0])+':'+c.time.split(':')[1]);
-    const e0=c.end&&c.end>c.start?new Date(c.end+'T23:59'):new Date(s0.getTime()+36e5);
-    L.push('DTSTART:'+lok(s0),'DTEND:'+lok(e0))}
-  else{const e1=new Date((c.end||c.start)+'T12:00');e1.setDate(e1.getDate()+1);
-    L.push('DTSTART;VALUE=DATE:'+dd(c.start),'DTEND;VALUE=DATE:'+e1.getFullYear()+p(e1.getMonth()+1)+p(e1.getDate()))}
-  L.push('SUMMARY:'+icsEsc(c.title));
-  if(c.place)L.push('LOCATION:'+icsEsc(c.place));
-  if(c.desc)L.push('DESCRIPTION:'+icsEsc(c.desc));
-  L.push('END:VEVENT','END:VCALENDAR');
-  const blob=new Blob([L.join('\r\n')+'\r\n'],{type:'text/calendar;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='sion-molde.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
-  push('Kalender','Åpne filen som lastes ned for å legge arrangementet i kalenderen din.')}
-const calBtn=id=>`<button class="btn" data-ics="${esc(id)}">Legg i kalender</button>`;
 const kartBtn=p=>p?`<a class="btn" href="${esc(kartUrl(p))}" target="_blank" rel="noopener">Vis i kart</a>`:'';
 
 const CONTACT_DEF={address:'Kometvegen 7, 6419 Molde',hours:'tirsdag–torsdag kl. 10–16',phone:'71 25 10 29',email:'post@sionmolde.no'};
@@ -1636,7 +1612,6 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ansedit){ansEditAsk(c.dataset.ansedit)}
   else if(c.dataset.thr){thrAsk(c.dataset.thr)}
   else if('meldrefresh' in c.dataset){state.threads=undefined;keep(()=>{});loadThreads()}
-  else if(c.dataset.ics){icsFil(c.dataset.ics)}
   else if('prnew' in c.dataset){prayAsk()}
   else if('prrefresh' in c.dataset){state.prayers=undefined;keep(()=>{});loadPrayers()}
   else if('prcopy' in c.dataset){prayCopy()}
