@@ -436,6 +436,8 @@ async function loadPrayers(){
   try{state.prayers=await FB.prayersList();state.prMsg=''}catch(e){state.prayers=[];state.prMsg='Kunne ikke hente bønneemner ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{})}
 /* Sjekken for anonyme bønneemner hentes på forhånd (Apps Script kan bruke noen sekunder), så den er klar når skjemaet åpnes. */
+// Gjør «Hva er tre pluss fem?» om til «Hva er 3 + 5?» (tjenesten sender tallene som ord).
+const spmTall=t=>String(t).replace(/Hva er (\S+) pluss (\S+)\?/,(m,a,b)=>{const o=['null','en','to','tre','fire','fem','seks','sju','åtte','ni','ti'],n=x=>o.includes(x)?o.indexOf(x):x;return 'Hva er '+n(a)+' + '+n(b)+'?'});
 async function bonnForhent(){
   if(state.user||!FB||!PUSH_URL||state.bonnU&&Date.now()-state.bonnU.t<10*60e3)return;
   try{const r=await FB.bonnUtfordring(PUSH_URL);if(r&&r.ok)state.bonnU={...r,t:Date.now()}}catch(e){}}
@@ -450,9 +452,9 @@ function prayAsk(){
   document.body.appendChild(dlg);
   let u=null;
   const hent=async()=>{if(inn)return;const q=dlg.querySelector('#pQt');u=null;
-    const f=state.bonnU;if(f&&Date.now()-f.t<10*60e3){state.bonnU=null;u=f;q.textContent=f.spm;return}   // ferdig hentet på forhånd (brukes én gang)
+    const f=state.bonnU;if(f&&Date.now()-f.t<10*60e3){state.bonnU=null;u=f;q.textContent=spmTall(f.spm);return}   // ferdig hentet på forhånd (brukes én gang)
     q.textContent='henter … (kan ta noen sekunder)';state.bonnU=null;
-    try{const r=await FB.bonnUtfordring(PUSH_URL);if(!r.ok)throw 0;u=r;q.textContent=r.spm}catch(x){q.textContent='kunne ikke hente sjekken. Prøv å åpne skjemaet på nytt.'}};
+    try{const r=await FB.bonnUtfordring(PUSH_URL);if(!r.ok)throw 0;u=r;q.textContent=spmTall(r.spm)}catch(x){q.textContent='kunne ikke hente sjekken. Prøv å åpne skjemaet på nytt.'}};
   hent();
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
