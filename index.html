@@ -294,7 +294,7 @@ function evItem(e){
    <div class="grow"><b>${e.t}</b><span class="small">${when(e.w)} ${tm(e)}${statusTag(e)}${e.place?' · '+esc(e.place):''}${e.groups&&e.groups.length?' · '+esc(e.groups.map(gName).join(', ')):''}</span></div>
    ${e.m?'<span class="tag m">Medlem</span>':`<span class="tag">${esc(normCat(e.cat))}</span>`}</button>
    <div class="detail"><div>${e.d}</div><div class="small">${esc(e.who)}</div>
-   <div class="btns"><button class="btn ${r?'on':''}" data-rsvp="${e.id}">${r?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(e.id)}${kartBtn(e)}
+   <div class="btns"><button class="btn ${r?'on':''}" data-rsvp="${e.id}">${r?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(e.id)}
    </div>${remHint(e.id)}${cnt(e.id)}${rsPanel(e.id,e.title,e.start,e.groups)}</div></div>`}
 
 /* Påmeldingen går til Google Skjema «Sommerstevne påmeldinger nyhetsbrev». Svarene havner i et regneark i Drive,
@@ -355,8 +355,6 @@ function svCard(){
 
 /* Små hjelpere for medlemmene: kart, bønneemner og redigerbar kontaktinfo. */
 const kartUrl=p=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p+', Møre og Romsdal');
-// Kart vises ikke for arrangementer i menighetens eget lokale (Kometvegen 7) og ikke for kategorien Menighetsmøte.
-const kartBtn=e=>{const p=e&&e.place;return p&&!/^kometvegen 7(?!\d)/i.test(String(p).trim())&&normCat(e.cat)!=='Menighetsmøte'?`<a class="btn" href="${esc(kartUrl(p))}" target="_blank" rel="noopener">Vis i kart</a>`:''};
 
 const CONTACT_DEF={address:'Kometvegen 7, 6419 Molde',hours:'tirsdag–torsdag kl. 10–16',phone:'71 25 10 29',email:'post@sionmolde.no'};
 function contactCard(){
