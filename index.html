@@ -1276,6 +1276,39 @@ function ansEditAsk(roleId){
     catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 
+/* Personvernerklæring (vises under Meg for alle). Teksten må holdes i samsvar med behandlingsoversikten (personvern/ utenfor repoet). */
+function personvernCard(){
+  const H=t=>`<h3 style="font-size:18px;margin:16px 0 6px">${t}</h3>`,P=t=>`<p class="small" style="margin:0 0 8px;font-size:14px">${t}</p>`,L=a=>`<ul style="margin:0 0 8px;padding-left:20px;display:grid;gap:4px;font-size:14px">${a.map(x=>'<li>'+x+'</li>').join('')}</ul>`;
+  return `<details class="card acc" data-acc="personvern" ${state.acc.personvern?'open':''}><summary><h2>Personvern</h2></summary>
+  <p class="small" style="margin:0 0 8px">Sist oppdatert 20. oktober 2026</p>
+  ${H('Hvem er ansvarlig?')}${P('<b>Pinsemenigheten Sion Molde og omegn</b> (org.nr. 976 222 253), Kometvegen 7, 6419 Molde, er ansvarlig for personopplysningene i appen. Kontakt oss om personvern: <a href="mailto:post@sionmolde.no">post@sionmolde.no</a> eller telefon <a href="tel:+4771251029">71 25 10 29</a>.')}
+  ${H('Hva lagrer vi, og hvorfor?')}${L([
+   '<b>Innlogging:</b> e-postadresse og passord. Passordet lagres kryptert hos Google Firebase, og vi kan ikke se det. For at du skal få tilgang.',
+   '<b>Medlemsliste:</b> e-post, navn hvis du har lagt det inn, grupper og rolle. For å gi riktig innhold og varsler. Administratorer og gruppeledere (for sine grupper) ser dette.',
+   '<b>«Jeg kommer»:</b> navn og kontaktopplysning du skriver inn. Ledere ser hvem som kommer. Svarene lagres også i et regneark hos Google Drive.',
+   '<b>Møtenotater:</b> dine private notater. Bare du kan lese dem, ikke engang administratorer.',
+   '<b>Bønneemner:</b> teksten, navn hvis du oppgir det, og tidspunkt. Bare administratorer og de som leder bønnemøtene ser dem. Du kan sende inn anonymt.',
+   '<b>Beskjeder:</b> meldinger mellom deg og de ansvarlige. Bare deltakerne i samtalen ser dem.',
+   '<b>Vakter:</b> navn og e-post på vaktlisten. Gruppens medlemmer og leder ser den.',
+   '<b>Varselkode:</b> en kode for telefonen din, koblet til e-posten din hvis du er innlogget, så vi kan sende varsler du har bedt om.',
+   '<b>Nyhetsbrev Sommerstevne:</b> e-postadressen din, i et regneark hos Google Drive, bare til informasjon om sommerstevnet.',
+   '<b>Innstillinger:</b> rekkefølge på kort og tekststørrelse. Noe lagres bare på telefonen din.'])}
+  ${P('Vi bruker ikke annonser eller sporing, og vi selger eller deler ikke opplysninger med andre.')}
+  ${H('Sensitive opplysninger')}${P('At noen tilhører en menighet, og bønneemner som kan handle om tro eller helse, regnes som særlig sensitive opplysninger. Vi behandler opplysninger om medlemmer og andre med jevnlig kontakt bare i menighetens virksomhet, og gir dem ikke videre utenfor menigheten uten samtykke. Bønneemner sender du inn frivillig, og du kan slette dem når som helst. <b>Skriv ikke inn helseopplysninger om andre uten at de har sagt ja.</b>')}
+  ${H('Hvem behandler dataene for oss?')}${P('Google (Firebase, Google Skjema, Regneark og Apps Script) lagrer og driver dataene for oss, og GitHub Pages viser appen. De behandler opplysningene på våre vegne.')}
+  ${H('Hvor lenge lagrer vi?')}${L([
+   'Medlemmer: så lenge du er med. Du kan slette deg selv når som helst.',
+   'Bønneemner: vises i en uke og slettes automatisk etter 30 dager.',
+   '«Jeg kommer» i appen: slettes automatisk 90 dager etter arrangementet. Svar i regnearkene slettes når du ber om det.',
+   'Beskjeder: slettes automatisk etter ett år uten bruk.',
+   'Møtenotater: til du sletter dem eller sletter deg selv.',
+   'Nyhetsbrev: til du ber om å bli fjernet.'])}
+  ${H('Dine rettigheter')}${P('Du kan be om <b>innsyn</b>, <b>retting</b>, <b>sletting</b>, begrensning og å trekke tilbake samtykke. Under Meg → Min profil kan du <b>laste ned alt appen har lagret om deg</b> og <b>slette deg selv</b> med dataene dine (konto, notater, bønneemner og samtaler du har startet). Trenger du hjelp, send e-post til <a href="mailto:post@sionmolde.no">post@sionmolde.no</a>. Vi svarer innen 30 dager. Mener du at vi ikke følger reglene, kan du klage til <a href="https://www.datatilsynet.no" target="_blank" rel="noopener">Datatilsynet</a>.')}
+  ${H('Barn')}${P('Appen er ikke laget for barn under 13 år, og vi registrerer ikke opplysninger om barn under 13 år. Ledere skal ikke legge dem inn. Oppdager vi det, sletter vi opplysningene.')}
+  ${H('Sikkerhet')}${P('Dataene lagres hos Google og overføres kryptert. Databasen har regler for hvem som kan lese og endre hva. Beskjeder og bønneemner er ikke ende-til-ende-krypterte, så ikke skriv noe svært sensitivt der. Hvis det skjer et avvik som kan skade deg, varsler vi deg og Datatilsynet i samsvar med loven.')}
+  ${H('Lokal lagring')}${P('Appen lagrer innstillinger på telefonen din (for eksempel tekststørrelse og innlogging). Det er ikke sporing. Slår du på varsler, lagres en kode for telefonen din så varselsystemet kan nå den.')}
+  </details>`}
+
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
 const UI={fs:1,sv:true,pr:true};
@@ -1365,7 +1398,8 @@ const ME_KORT={
   login:['Innlogging',()=>loginCard()],innst:['Innstillinger',()=>settingsCard()],install:['Slik installerer du appen',()=>installCard()],share:['Del appen',()=>shareCard()],
   vakter:['Mine vakter',()=>vakterCard()],ansvar:['Ansvarsområder',()=>ansvarCard()],meld:['Beskjeder',()=>meldCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
-  ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'']};
+  ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():''],
+  personvern:['Personvern',()=>personvernCard()]};
 /* Kortene under Meg og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
 const ORD={me:{felt:'meorder',ls:'sm-meorder'},home:{felt:'homeorder',ls:'sm-homeorder'}};
 const ov=()=>state.tab==='home'?'home':'me';
