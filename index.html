@@ -351,7 +351,7 @@ function svCard(){
   const done=!!lsGet('sm-sv'),body=`<p class="small" style="margin:6px 0 12px">Neste sommerstevne er <b>22.–27. juni 2027</b>. ${done?'Du er påmeldt nyhetsbrevet. Legg inn en annen e-post hvis noen flere vil ha info.':'Legg igjen e-posten din for å få mer info.'}</p>
   <form class="form" id="sv"><label class="f">E-post<input id="svE" type="email" autocomplete="email" required value="${esc(state.svE)}"></label><button class="btn primary" type="submit">Meld meg på</button></form>
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.sv)}</p><p class="small" style="margin:6px 0 0">E-posten brukes bare til informasjon om sommerstevnet.</p>`;
-  return done?`<details class="card acc" data-acc="sv" ${state.acc.sv?'open':''}><summary><h2>Sommerstevne nyhetsbrev</h2></summary>${body}</details>`:`<div class="card"><h2>Sommerstevne</h2>${body}</div>`}
+  return done?`<details class="card acc" data-acc="sv" ${state.acc.sv?'open':''}><summary><h2>Nyhetsbrev Sommerstevne</h2></summary>${body}</details>`:`<div class="card"><h2>Nyhetsbrev Sommerstevne</h2>${body}</div>`}
 
 /* Små hjelpere for medlemmene: legg i kalenderen (.ics), kart, bønneemner og redigerbar kontaktinfo. */
 const kartUrl=p=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p+', Møre og Romsdal');
@@ -475,7 +475,7 @@ function homeDeler(){
    bonn:['Bønneemner',()=>prayerCard()],
    viktig:['Viktig',()=>(post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b><button type="button" class="ptitle" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${esc(post.t)}</button></b><div class="pbody ${state.open['p_'+post.id]?'open':''}"><span class="pt">${linkify(esc(post.b))}</span></div>${(String(post.b).length>130||(String(post.b).match(/\n/g)||[]).length>=2)?`<button type="button" class="pmore" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${state.open['p_'+post.id]?'Vis mindre':'Les mer'}</button>`:''}</div></div>`:'')],
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:'')],
-   sommer:['Sommerstevne',()=>svCard()],
+   sommer:['Nyhetsbrev Sommerstevne',()=>svCard()],
    finn:['Finn frem',()=>contactCard()]}}
 function home(){
   return `<div><h1>Velkommen</h1><span class="script">dette skjer i Sion Molde</span></div>${ordHtml('home')}`}
