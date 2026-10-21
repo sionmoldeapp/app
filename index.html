@@ -931,10 +931,10 @@ async function velkomst(liste){
 /* Min profil (innloggede medlemmer): navn, hvilke gruppevarsler en vil ha, og slette seg selv. */
 function profileCard(){
   if(!state.user||!state.member)return '';
-  if(state.admin||!state.profile)return '<details class="card acc" data-acc="profil" '+(state.acc.profil?'open':'')+'><summary><h2>Min profil</h2></summary><h3 style="margin:0 0 4px;font-size:18px">Politiattest</h3>'+attestBody()+'</details>';   // administratorer har ingen medlemsprofil, men kan legge inn politiattest
+  if(state.admin||!state.profile)return '';   // administratorer har ingen medlemsprofil
   const p=state.profile,gs=state.groups||[];
   return '<details class="card acc" data-acc="profil" '+(state.acc.profil?'open':'')+'><summary><h2>Min profil</h2></summary>'
-   +'<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre</button>'+'<h3 style="margin:16px 0 4px;font-size:18px">Politiattest</h3>'+attestBody()
+   +'<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre</button>'
    +'<h3 style="margin:16px 0 4px;font-size:18px">Varsler fra gruppene mine</h3>'
    +(gs.length?'<p class="small" style="margin:0 0 8px">Fjern haken for å slippe varsler som sendes bare til en gruppe. Du blir stående i gruppen.</p><div style="display:grid;gap:6px">'+gs.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-prmute="'+esc(g)+'" style="width:22px;height:22px;flex:none" '+((p.muted||[]).includes(g)?'':'checked')+'>'+esc(gName(g))+'</label>').join('')+'</div>':'<p class="small" style="margin:0">Du er ikke med i noen grupper ennå.</p>')
    +'<h3 style="margin:16px 0 4px;font-size:18px">Mine data</h3><p class="small" style="margin:0 0 8px">Last ned alt appen har lagret om deg (profil, notater, forbønner du har sendt inn og beskjedene dine) som en fil.</p><button class="btn" data-prexport>Last ned mine data</button>'
@@ -1521,6 +1521,9 @@ function attestStatus(dato){
   const dager=Math.ceil((d.getTime()-Date.now())/864e5),utl=isoDato(d);
   return {utl,dager,tekst:dager<0?'Utløpt':dager<=ATTEST_VARSEL_DAGER?'Utløper snart':'Gyldig',farge:dager<0?'#b3261e':dager<=ATTEST_VARSEL_DAGER?'var(--lamp)':'var(--ok)'}}
 const attestChip=st=>st?'<span class="tag" style="background:'+st.farge+';color:#fff">'+st.tekst+'</span>':'';
+function attestCard(){
+  if(!state.user||!state.member)return '';
+  return '<details class="card acc" data-acc="attest" '+(state.acc.attest?'open':'')+'><summary><h2>Politiattest</h2></summary>'+attestBody()+'</details>'}
 function attestBody(){
   const a=state.attest,st=a?attestStatus(a.dato):null,idag=isoDato(new Date());
   return '<p class="small" style="margin:0 0 8px">Legg inn datoen politiattesten din ble godkjent. Appen lagrer bare datoen, aldri selve attesten. Den er gyldig i '+ATTEST_AAR+' år, og du og lederne får en påminnelse '+ATTEST_VARSEL_DAGER+' dager før den går ut.</p>'
@@ -1652,7 +1655,7 @@ function loginCard(){
 /* Kortene under Meg kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
 const ME_KORT={
   login:['Innlogging',()=>loginCard()],lr:['Saker til lederrådet',()=>lrCard()],innst:['Innstillinger',()=>settingsCard()],install:['Slik installerer du appen',()=>installCard()],share:['Del appen',()=>shareCard()],
-  vakter:['Mine vakter',()=>vakterCard()],ansvar:['Ansvarsområder',()=>ansvarCard()],meld:['Beskjeder',()=>meldCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],attester:['Politiattester',()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''],stat:['Oversikt',()=>statCard()],
+  vakter:['Mine vakter',()=>vakterCard()],ansvar:['Ansvarsområder',()=>ansvarCard()],meld:['Beskjeder',()=>meldCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],attest:['Politiattest',()=>attestCard()],attester:['Politiattester',()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():''],
   personvern:['Personvern',()=>personvernCard()]};
@@ -1662,6 +1665,7 @@ const ov=()=>state.tab==='home'?'home':'me';
 const ordKort=v=>v==='home'?homeDeler():ME_KORT;
 function ordRekke(v,kort){
   let lagret=state[ORD[v].felt]||[];if(!lagret.length)try{lagret=JSON.parse(localStorage.getItem(ORD[v].ls)||'[]')}catch(e){}
+  if(lagret.includes('profil')&&!lagret.includes('attest')&&kort.attest){lagret=lagret.slice();lagret.splice(lagret.indexOf('profil')+1,0,'attest')}   // nytt kort: rett under Min profil
   const alle=Object.keys(kort);return [...lagret.filter(k=>alle.includes(k)),...alle.filter(k=>!lagret.includes(k))]}
 function ordSynlige(v){const kort=ordKort(v);return ordRekke(v,kort).map(k=>[k,kort[k][1](),kort[k][0]]).filter(x=>x[1]&&x[1].trim())}
 function ordHtml(v){
