@@ -31,9 +31,13 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 /* Oppstartsskjerm: logoen pulserer mens innholdet lastes */
 .splash{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:var(--bg)}   /* dekker hele skjermen, midtstilt som skjermbildet telefonen viser først */
 .splash img{width:150px;height:150px;object-fit:contain;animation:splashPuls 1.6s ease-in-out infinite;position:relative;z-index:1}
+.splash{transition:opacity .55s ease}
+.splash.bort{opacity:0;pointer-events:none}
+#view.fadeinn{animation:sideInn .55s ease both}
+@keyframes sideInn{from{opacity:0}to{opacity:1}}
 .splash-ring{position:absolute;width:196px;height:196px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--lamp);animation:snurr 1.1s linear infinite}
 @keyframes splashPuls{0%,100%{transform:scale(.9);opacity:.75}50%{transform:scale(1.04);opacity:1}}
-@media (prefers-reduced-motion:reduce){.splash img{animation:none}.splash-ring{animation-duration:3s}}
+@media (prefers-reduced-motion:reduce){.splash img{animation:none}.splash-ring{animation-duration:3s}.splash{transition-duration:.01s}#view.fadeinn{animation:none}}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo-mark img,:root:not([data-theme="light"]) .splash img{filter:invert(1)}}
 :root[data-theme="dark"] .logo-mark img,:root[data-theme="dark"] .splash img{filter:invert(1)}
 .logo b{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:24px;letter-spacing:.02em;display:block;line-height:1}
@@ -191,7 +195,8 @@ nav.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1
     <div class="logo"><div class="logo-mark"><img src="logo-512.png" alt="Sion Molde"></div><div><b>Sion Molde</b><span id="today"></span></div></div>
     <div class="hr"><button class="bell" id="editBtn" type="button" hidden></button><button class="bell" id="viewBtn" type="button" hidden aria-label="Du ser appen som en annen. Trykk for mer."></button><button class="bell" id="themeBtn" type="button"></button><button class="bell" id="bellBtn" aria-label="Varsler"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg><i id="badge">0</i></button></div>
   </header>
-  <main id="view" aria-live="polite"><div class="splash" role="status" aria-label="Laster"><img src="logo-512.png" alt="" width="150" height="150"><span class="splash-ring"></span></div></main>
+  <div class="splash" id="splash" role="status" aria-label="Laster"><img src="logo-512.png" alt="" width="150" height="150"><span class="splash-ring"></span></div>
+  <main id="view" aria-live="polite"></main>
   <nav class="tabs" id="tabs"></nav>
 </div>
 <dialog id="rsDlg" aria-labelledby="rsT"><form class="form" id="rs" method="dialog">
@@ -2180,6 +2185,10 @@ document.addEventListener('change',async e=>{
   if('asel' in d){keep(()=>{state.sel[d.asel]=e.target.checked});return}
   if('aselall' in d){const l=admItems(state.adm.type);keep(()=>{state.sel={};if(e.target.checked)l.forEach(x=>state.sel[x.id]=true)});return}if(e.target.name&&e.target.name.endsWith('Sel')){const i=e.target.parentNode.querySelector('input');i.hidden=e.target.value!=='__annet';if(!i.hidden)i.focus()}});
 let first=true;
+/* Oppstartsskjermen (logoen) tones ut og siden tones inn når første innlasting er ferdig. */
+function splashBort(){
+  const sp=document.getElementById('splash');if(!sp)return;
+  $('#view').classList.add('fadeinn');sp.classList.add('bort');setTimeout(()=>sp.remove(),700)}
 async function start(){
   FB=await window.fbReady;
   if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me')keep(()=>{})});FB.onPush(p=>push((p.notification&&p.notification.title)||'Melding',(p.notification&&p.notification.body)||''))}
@@ -2201,13 +2210,13 @@ async function start(){
     state.threads=undefined;state.roles=undefined;if(u&&state.member)loadThreads();
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
     await load();
-    if(first){first=false;if(state.tab==='news')markSeen();render()}else keep(()=>{});
+    if(first){first=false;if(state.tab==='news')markSeen();render();splashBort()}else keep(()=>{});
     if(!u)bonnForhent();
   };
-  if(FB)FB.onAuth(u=>go(u).catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.'}));
-  else{await load();first=false;render()}
+  if(FB)FB.onAuth(u=>go(u).catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()}));
+  else{await load();first=false;render();splashBort()}
 }
-start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.'});
+start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});
   navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='open-tab'&&['home','prog','news','me'].includes(d.tab)){state.tab=d.tab;if(d.tab==='news')markSeen();render()}})}
 </script>
