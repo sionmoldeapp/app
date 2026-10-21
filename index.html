@@ -1704,7 +1704,22 @@ document.addEventListener('click',async e=>{
   const c=e.target.closest('button');if(!c)return;
   if(c.dataset.t){state.reorder=false;if('openvakter' in c.dataset){state.acc.vakter=true;if(state.shifts===undefined)loadShifts()}state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}fadeRender()}
   else if(c.id==='bellBtn'){state.tab='news';markSeen();fadeRender()}
-  else if(c.dataset.ev){keep(()=>state.open[c.dataset.ev]=!state.open[c.dataset.ev])}
+  else if(c.dataset.ev){
+    // Arrangementer på Hjem og i Program åpner og lukker seg jevnt (høyde og gjennomsiktighet), i stedet for å sprette opp.
+    const id=c.dataset.ev,det=c.parentElement&&c.parentElement.querySelector('.detail');
+    if(!det||matchMedia('(prefers-reduced-motion:reduce)').matches){keep(()=>state.open[id]=!state.open[id]);return}
+    if(det.dataset.anim)return;
+    if(state.open[id]){
+      det.dataset.anim='1';det.style.overflow='hidden';
+      const a=det.animate({height:[det.offsetHeight+'px','0px'],paddingBottom:['14px','0px'],opacity:[1,0]},{duration:220,easing:'cubic-bezier(.4,0,.2,1)'});
+      a.onfinish=a.oncancel=()=>keep(()=>{state.open[id]=false})}
+    else{
+      keep(()=>{state.open[id]=true});
+      const ny=[...document.querySelectorAll('.item>button[data-ev]')].find(b=>b.dataset.ev===id),d2=ny&&ny.parentElement.querySelector('.detail');
+      if(d2){const h=d2.offsetHeight;d2.style.overflow='hidden';d2.dataset.anim='1';
+        const a=d2.animate({height:['0px',h+'px'],paddingBottom:['0px','14px'],opacity:[0,1]},{duration:280,easing:'cubic-bezier(.2,.7,.2,1)'});
+        a.onfinish=a.oncancel=()=>{d2.style.overflow='';delete d2.dataset.anim}}}
+  }
   else if(c.dataset.rsvp){
     if(state.rsvp[c.dataset.rsvp])await setRsvp(c.dataset.rsvp,false);else openRsvp(c.dataset.rsvp)}
   else if('meorder' in c.dataset){keep(()=>{state.reorder=!state.reorder})}
