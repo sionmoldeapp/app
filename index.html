@@ -344,7 +344,7 @@ async function loadRs(id){try{state.rsList[id]=await FB.rsvpList(id)}catch(e){st
 async function setRsvp(id,on,navn,kontakt){
   const ev=rsEv(id);
   keep(()=>{state.rsvp[id]=on;save();if(usingFb)counts[id]=Math.max(0,(counts[id]||0)+(on?1:-1))});
-  push(on?'Du kommer':'Svaret er fjernet',on?String(ev&&ev.title||''):'');
+  if(!on)push('Svaret er fjernet','');   // når man melder seg på, kommer «Takk»-meldingen fra dialogen
   const nm=navn||lsGet('sm-navn');
   if(nm)fetch(RS_URL,{method:'POST',mode:'no-cors',body:new URLSearchParams({[RS.arr]:ev.title||'',[RS.dato]:(ev.start||'')+(ev.end?' – '+ev.end:''),[RS.navn]:nm,[RS.kontakt]:kontakt||lsGet('sm-kontakt'),[RS.svar]:on?'Kommer':'Kommer ikke'})}).catch(()=>{});
   if(usingFb&&FB){try{if(on&&nm)await FB.setRsvpDoc(rsDocId(id),{eventId:String(id),title:ev.title||'',start:ev.start||'',name:nm,contact:kontakt||lsGet('sm-kontakt')||'',groups:ev.groups||[]});else if(!on)await FB.delRsvpDoc(rsDocId(id))}catch(x){}}
