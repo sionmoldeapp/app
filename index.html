@@ -371,7 +371,7 @@ function svCard(){
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.sv)}</p><p class="small" style="margin:6px 0 0">E-posten brukes bare til informasjon om sommerstevnet.</p>`;
   return done?`<details class="card acc" data-acc="sv" ${state.acc.sv?'open':''}><summary><h2>Nyhetsbrev Sommerstevne</h2></summary>${body}</details>`:`<div class="card"><h2>Nyhetsbrev Sommerstevne</h2>${body}</div>`}
 
-/* Små hjelpere for medlemmene: kart, bønneemner og redigerbar kontaktinfo. */
+/* Små hjelpere for medlemmene: kart, forbønner og redigerbar kontaktinfo. */
 const kartUrl=p=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p+', Møre og Romsdal');
 
 const CONTACT_DEF={address:'Kometvegen 7, 6419 Molde',hours:'tirsdag–torsdag kl. 10–16',phone:'71 25 10 29',email:'post@sionmolde.no'};
@@ -399,36 +399,36 @@ function contactAsk(){
     catch(er){dlg.querySelector('#kMsg').textContent='Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 
-/* Bønneemner: bare innloggede medlemmer. Navn er valgfritt. «Jeg ber» teller per person, og emner skjules etter 60 dager. */
+/* Forbønner: bare innloggede medlemmer. Navn er valgfritt. «Jeg ber» teller per person, og emner skjules etter 60 dager. */
 const prUid=()=>(FB&&FB.user&&FB.user.uid)||'';
-/* Alle medlemmer kan sende inn et bønneemne, men bare administratorer og medlemmer i gruppen Bønneledere kan lese dem. */
+/* Alle medlemmer kan sende inn en forbønn, men bare administratorer og medlemmer i gruppen Bønneledere kan lese dem. */
 const prayLes=()=>effAdmin()||effGroups().includes('bonneledere');
-const PR_DAGER=7;   // bønneemner står i opptil en uke
+const PR_DAGER=7;   // forbønner står i opptil en uke
 const prSynlige=()=>(state.prayers||[]).filter(x=>(x.ms||0)>Date.now()-PR_DAGER*864e5);
 const prNye=()=>prSynlige().filter(x=>!x.bedt).sort((a,b)=>(b.ms||0)-(a.ms||0));
 const prBedte=()=>prSynlige().filter(x=>x.bedt).sort((a,b)=>(b.bedt||0)-(a.bedt||0));
 function prayerCard(){
-  if(!state.user)return !PUSH_URL?'':'<div class="card"><h2>Bønneemner</h2><p class="small" style="margin:6px 0 10px">Send inn et bønneemne. Det sendes anonymt, og det blir bedt for på bønnemøtene i menigheten.</p><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></div>';
+  if(!state.user)return !PUSH_URL?'':'<div class="card"><h2>Forbønn</h2><p class="small" style="margin:6px 0 10px">Send inn en forbønn. Det sendes anonymt, og det blir bedt for på bønnemøtene i menigheten.</p><button class="btn primary" data-prnew style="width:auto">+ Ny forbønn</button><p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></div>';
   if(!state.member)return '';
   const les=prayLes(),l=state.prayers,nye=prNye(),bedte=prBedte();
   const rad=(x,grå)=>'<div class="r" style="display:block;'+(grå?'opacity:.5':'')+'"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'Anonym')+' · '+esc(ago({ms:x.ms}))+(grå?' · bedt for':'')+'</div><div class="btns"><button class="btn" data-prdel="'+esc(x.id)+'">Slett</button></div></div>';
   let inn;
-  if(!les)inn='<p class="small" style="margin:0 0 8px">Send inn et bønneemne. Det blir bedt for på bønnemøtene i menigheten.</p><div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button></div>';
-  else if(l===undefined)inn='<p class="small">Henter bønneemner …</p>';
-  else inn='<p class="small" style="margin:0 0 8px">Bønneemner samles opp og blir bedt for på bønnemøtene i menigheten. Nye står øverst, og de som er bedt for flyttes nederst. Emner skjules etter en uke.</p>'
-   +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Nytt bønneemne</button><button class="btn" data-prrefresh>Oppdater</button>'+(nye.length?'<button class="btn" data-prcopy>Kopier listen</button>'+(PUSH_URL?'<button class="btn" data-prmail>Send til e-post</button>':'')+'<button class="btn" data-prdone>Bønnemøtet er holdt</button>':'')+'</div>'
-   +'<div class="reg">'+(nye.map(x=>rad(x,false)).join('')||'<p class="small">Ingen nye bønneemner.</p>')+'</div>'
+  if(!les)inn='<p class="small" style="margin:0 0 8px">Send inn en forbønn. Det blir bedt for på bønnemøtene i menigheten.</p><div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Ny forbønn</button></div>';
+  else if(l===undefined)inn='<p class="small">Henter forbønner …</p>';
+  else inn='<p class="small" style="margin:0 0 8px">Forbønner samles opp og blir bedt for på bønnemøtene i menigheten. Nye står øverst, og de som er bedt for flyttes nederst. Forbønner skjules etter en uke.</p>'
+   +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-prnew style="width:auto">+ Ny forbønn</button><button class="btn" data-prrefresh>Oppdater</button>'+(nye.length?'<button class="btn" data-prcopy>Kopier listen</button>'+(PUSH_URL?'<button class="btn" data-prmail>Send til e-post</button>':'')+'<button class="btn" data-prdone>Bønnemøtet er holdt</button>':'')+'</div>'
+   +'<div class="reg">'+(nye.map(x=>rad(x,false)).join('')||'<p class="small">Ingen nye forbønner.</p>')+'</div>'
    +(bedte.length?'<details class="acc sub" data-acc="bonn_gamle" '+(state.acc.bonn_gamle?'open':'')+' style="margin-top:12px"><summary><h3 style="font-size:17px">Eldre, bedt for ('+bedte.length+')</h3></summary><p class="small" style="margin:0 0 6px">Står her til de faller ut etter en uke.</p><div class="reg">'+bedte.map(x=>rad(x,true)).join('')+'</div></details>':'');
-  return '<details class="card acc" data-acc="bonn" '+(state.acc.bonn?'open':'')+'><summary><h2>Bønneemner'+(les&&l?' ('+nye.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
+  return '<details class="card acc" data-acc="bonn" '+(state.acc.bonn?'open':'')+'><summary><h2>Forbønn'+(les&&l?' ('+nye.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
 async function prayDone(){
   const nye=prNye();if(!nye.length||!FB)return;
-  if(!await bekreft('Marker de '+nye.length+' nye bønneemnene som bedt for? De flyttes nederst og gråes ut.',{ok:'Marker som bedt for',fare:false}))return;
-  try{await FB.markPrayed(nye.map(x=>x.id));const t=Date.now();nye.forEach(x=>x.bedt=t);keep(()=>{});push('Merket','Bønneemnene er markert som bedt for.')}
+  if(!await bekreft('Marker de '+nye.length+' nye forbønnene som bedt for? De flyttes nederst og gråes ut.',{ok:'Marker som bedt for',fare:false}))return;
+  try{await FB.markPrayed(nye.map(x=>x.id));const t=Date.now();nye.forEach(x=>x.bedt=t);keep(()=>{});push('Merket','Forbønnene er markert som bedt for.')}
   catch(er){push('Kunne ikke lagre',saveMsg(er&&er.code))}}
 async function loadPrayers(){
-  try{state.prayers=await FB.prayersList();state.prMsg=''}catch(e){state.prayers=[];state.prMsg='Kunne ikke hente bønneemner ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
+  try{state.prayers=await FB.prayersList();state.prMsg=''}catch(e){state.prayers=[];state.prMsg='Kunne ikke hente forbønner ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{})}
-/* Sjekken for anonyme bønneemner hentes på forhånd (Apps Script kan bruke noen sekunder), så den er klar når skjemaet åpnes. */
+/* Sjekken for anonyme forbønner hentes på forhånd (Apps Script kan bruke noen sekunder), så den er klar når skjemaet åpnes. */
 // Gjør «Hva er tre pluss fem?» om til «Hva er 3 + 5?» (tjenesten sender tallene som ord).
 const spmTall=t=>String(t).replace(/Hva er (\S+) pluss (\S+)\?/,(m,a,b)=>{const o=['null','en','to','tre','fire','fem','seks','sju','åtte','ni','ti'],n=x=>o.includes(x)?o.indexOf(x):x;return 'Hva er '+n(a)+' + '+n(b)+'?'});
 async function bonnForhent(){
@@ -437,10 +437,10 @@ async function bonnForhent(){
 function prayAsk(){
   if(document.querySelector('dialog.pub'))return;
   const inn=!!state.user,dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Nytt bønneemne</h3>'
-   +'<label class="f">Bønneemne<textarea id="pT" rows="4" maxlength="400" placeholder="Skriv kort hva du ønsker forbønn for …"></textarea></label>'
-   +(inn?'<label class="f" id="pNL">Navn<input id="pN" maxlength="60" required value="'+esc(lsGet('sm-navn')||(state.profile&&state.profile.name)||'')+'"></label><p class="small" style="margin:0">Bønneemnet sendes med navnet ditt.</p>'
-     :'<p class="small" style="margin:0">Du er ikke innlogget, så bønneemnet sendes anonymt.</p><label class="f">Bekreft at du er et menneske: <span id="pQt">henter …</span><input id="pQ" inputmode="numeric" autocomplete="off" maxlength="1" required></label><input id="pHp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">')
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Ny forbønn</h3>'
+   +'<label class="f">Forbønn<textarea id="pT" rows="4" maxlength="400" placeholder="Skriv kort hva du ønsker forbønn for …"></textarea></label>'
+   +(inn?'<label class="f" id="pNL">Navn<input id="pN" maxlength="60" required value="'+esc(lsGet('sm-navn')||(state.profile&&state.profile.name)||'')+'"></label><p class="small" style="margin:0">Forbønnen sendes med navnet ditt.</p>'
+     :'<p class="small" style="margin:0">Du er ikke innlogget, så forbønnen sendes anonymt.</p><label class="f">Bekreft at du er et menneske: <span id="pQt">henter …</span><input id="pQ" inputmode="numeric" autocomplete="off" maxlength="1" required></label><input id="pHp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">')
    +'<p class="small" id="pMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send inn</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   let u=null;
@@ -453,7 +453,7 @@ function prayAsk(){
     if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
     const msg=t=>{dlg.querySelector('#pMsg').textContent=t};
     const t=dlg.querySelector('#pT').value.trim(),name=inn?dlg.querySelector('#pN').value.trim():'';
-    if(!t){msg('Skriv et bønneemne.');return}
+    if(!t){msg('Skriv en forbønn.');return}
     if(inn&&!name){msg('Skriv navnet ditt.');return}
     try{
       if(inn){await FB.addPrayer({t,name})}
@@ -461,14 +461,14 @@ function prayAsk(){
         if(!u){msg('Sjekken er ikke klar. Åpne skjemaet på nytt.');return}
         const r=await FB.bonnAnon(PUSH_URL,{t,ts:u.ts,nonce:u.nonce,sig:u.sig,svar:dlg.querySelector('#pQ').value.trim(),hp:dlg.querySelector('#pHp').value});
         if(!r.ok){msg(r.feil||'Kunne ikke sende inn.');dlg.querySelector('#pQ').value='';hent();return}}
-      dlg.close();state.acc.bonn=true;if(inn&&state.member&&prayLes())await loadPrayers();else{state.prMsg='Takk! Bønneemnet er sendt inn.';keep(()=>{})}push('Sendt inn','Bønneemnet er sendt inn.')}
+      dlg.close();state.acc.bonn=true;if(inn&&state.member&&prayLes())await loadPrayers();else{state.prMsg='Takk! Forbønnen er sendt inn.';keep(()=>{})}push('Sendt inn','Forbønnen er sendt inn.')}
     catch(er){msg('Kunne ikke sende inn ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 async function prayCopy(){
-  const vis=prNye().slice().reverse(),tekst='Bønneemner\n\n'+vis.map(x=>'• '+x.t.replace(/\s*\n\s*/g,' ')+' ('+(x.name||'anonym')+')').join('\n');
-  try{await navigator.clipboard.writeText(tekst);push('Kopiert','Listen med bønneemner er kopiert.')}catch(e){await visTekst('Kopier listen:',tekst.replace(/\n/g,' '))}}
+  const vis=prNye().slice().reverse(),tekst='Forbønn\n\n'+vis.map(x=>'• '+x.t.replace(/\s*\n\s*/g,' ')+' ('+(x.name||'anonym')+')').join('\n');
+  try{await navigator.clipboard.writeText(tekst);push('Kopiert','Listen med forbønner er kopiert.')}catch(e){await visTekst('Kopier listen:',tekst.replace(/\n/g,' '))}}
 async function prayDel(id){
-  if(!await bekreft('Slette dette bønneemnet?'))return;
+  if(!await bekreft('Slette denne forbønnen?'))return;
   try{await FB.delPrayer(id);state.prayers=(state.prayers||[]).filter(p=>p.id!==id);keep(()=>{})}
   catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}}
 
@@ -485,7 +485,7 @@ function homeDeler(){
    velkomst:['Kom i gang',()=>welcomeCard()],
    besok:['Logg inn for å få mer',()=>visitorCard()],
    vakter:['Dine vakter',()=>myShiftsCard()],
-   bonn:['Bønneemner',()=>UI.pr===false?'':prayerCard()],
+   bonn:['Forbønn',()=>UI.pr===false?'':prayerCard()],
    viktig:['Viktig',()=>(post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b><button type="button" class="ptitle" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${esc(post.t)}</button></b><div class="pbody ${state.open['p_'+post.id]?'open':''}"><span class="pt">${linkify(esc(post.b))}</span></div>${(String(post.b).length>130||(String(post.b).match(/\n/g)||[]).length>=2)?`<button type="button" class="pmore" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${state.open['p_'+post.id]?'Vis mindre':'Les mer'}</button>`:''}</div></div>`:'')],
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:'')],
    sommer:['Nyhetsbrev Sommerstevne',()=>UI.sv===false?'':svCard()],
@@ -801,12 +801,12 @@ function profileCard(){
    +'<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre</button>'
    +'<h3 style="margin:16px 0 4px;font-size:18px">Varsler fra gruppene mine</h3>'
    +(gs.length?'<p class="small" style="margin:0 0 8px">Fjern haken for å slippe varsler som sendes bare til en gruppe. Du blir stående i gruppen.</p><div style="display:grid;gap:6px">'+gs.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-prmute="'+esc(g)+'" style="width:22px;height:22px;flex:none" '+((p.muted||[]).includes(g)?'':'checked')+'>'+esc(gName(g))+'</label>').join('')+'</div>':'<p class="small" style="margin:0">Du er ikke med i noen grupper ennå.</p>')
-   +'<h3 style="margin:16px 0 4px;font-size:18px">Mine data</h3><p class="small" style="margin:0 0 8px">Last ned alt appen har lagret om deg (profil, notater, bønneemner du har sendt inn og beskjedene dine) som en fil.</p><button class="btn" data-prexport>Last ned mine data</button>'
-   +'<h3 style="margin:16px 0 4px;font-size:18px">Slett meg</h3><p class="small" style="margin:0 0 8px">Fjerner kontoen din, medlemskapet, notatene, bønneemnene dine, samtalene du har startet og varselkoden på denne telefonen. Dette kan ikke angres. Du kan alltid bli lagt til igjen av en leder.</p><button class="btn danger" data-prdel>Slett meg og dataene mine</button>'
+   +'<h3 style="margin:16px 0 4px;font-size:18px">Mine data</h3><p class="small" style="margin:0 0 8px">Last ned alt appen har lagret om deg (profil, notater, forbønner du har sendt inn og beskjedene dine) som en fil.</p><button class="btn" data-prexport>Last ned mine data</button>'
+   +'<h3 style="margin:16px 0 4px;font-size:18px">Slett meg</h3><p class="small" style="margin:0 0 8px">Fjerner kontoen din, medlemskapet, notatene, forbønnene dine, samtalene du har startet og varselkoden på denne telefonen. Dette kan ikke angres. Du kan alltid bli lagt til igjen av en leder.</p><button class="btn danger" data-prdel>Slett meg og dataene mine</button>'
    +'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
 function deleteSelfAsk(){
   const dlg=document.createElement('dialog');dlg.className='lp';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Slette deg selv?</h3><p class="small" style="margin:0">Kontoen, medlemskapet, notatene, bønneemnene dine, samtalene du har startet og varselkoden fjernes. Det kan ikke angres. Skriv passordet ditt for å bekrefte.</p><label class="f">Passord<input id="dsP" type="password" autocomplete="current-password"></label><p class="small" role="status" id="dsMsg" style="margin:0"></p><div class="btns"><button class="btn danger" value="slett">Slett meg</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Slette deg selv?</h3><p class="small" style="margin:0">Kontoen, medlemskapet, notatene, forbønnene dine, samtalene du har startet og varselkoden fjernes. Det kan ikke angres. Skriv passordet ditt for å bekrefte.</p><label class="f">Passord<input id="dsP" type="password" autocomplete="current-password"></label><p class="small" role="status" id="dsMsg" style="margin:0"></p><div class="btns"><button class="btn danger" value="slett">Slett meg</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='slett')return;
@@ -1312,7 +1312,7 @@ const PV_STD=`## Hvem er ansvarlig?
 - **Medlemsliste:** e-post, navn hvis du har lagt det inn, grupper og rolle. For å gi riktig innhold og varsler. Administratorer og gruppeledere (for sine grupper) ser dette.
 - **«Jeg kommer»:** navn og kontaktopplysning du skriver inn. Ledere ser hvem som kommer. Svarene lagres også i et regneark hos Google Drive.
 - **Møtenotater:** dine private notater. Bare du kan lese dem, ikke engang administratorer.
-- **Bønneemner:** teksten, navn og tidspunkt. Bare administratorer og de som leder bønnemøtene ser dem. Innloggede sender med navn. Uten innlogging sendes de anonymt.
+- **Forbønn:** teksten, navn og tidspunkt. Bare administratorer og de som leder bønnemøtene ser dem. Innloggede sender med navn. Uten innlogging sendes de anonymt.
 - **Beskjeder:** meldinger mellom deg og de ansvarlige. Bare deltakerne i samtalen ser dem.
 - **Vakter:** navn og e-post på vaktlisten. Gruppens medlemmer og leder ser den.
 - **Varselkode:** en kode for telefonen din, koblet til e-posten din hvis du er innlogget, så vi kan sende varsler du har bedt om.
@@ -1322,27 +1322,27 @@ const PV_STD=`## Hvem er ansvarlig?
 Vi bruker ikke annonser eller sporing, og vi selger eller deler ikke opplysninger med andre.
 
 ## Sensitive opplysninger
-At noen tilhører en menighet, og bønneemner som kan handle om tro eller helse, regnes som særlig sensitive opplysninger. Vi behandler opplysninger om medlemmer og andre med jevnlig kontakt bare i menighetens virksomhet, og gir dem ikke videre utenfor menigheten uten samtykke. Bønneemner sender du inn frivillig, og du kan slette dem når som helst. **Skriv ikke inn helseopplysninger om andre uten at de har sagt ja.**
+At noen tilhører en menighet, og forbønner som kan handle om tro eller helse, regnes som særlig sensitive opplysninger. Vi behandler opplysninger om medlemmer og andre med jevnlig kontakt bare i menighetens virksomhet, og gir dem ikke videre utenfor menigheten uten samtykke. Forbønner sender du inn frivillig, og du kan slette dem når som helst. **Skriv ikke inn helseopplysninger om andre uten at de har sagt ja.**
 
 ## Hvem behandler dataene for oss?
 Google (Firebase, Google Skjema, Regneark og Apps Script) lagrer og driver dataene for oss, og GitHub Pages viser appen. De behandler opplysningene på våre vegne.
 
 ## Hvor lenge lagrer vi?
 - Medlemmer: så lenge du er med. Du kan slette deg selv når som helst.
-- Bønneemner: vises i en uke og slettes automatisk etter 30 dager.
+- Forbønn: vises i en uke og slettes automatisk etter 30 dager.
 - «Jeg kommer» i appen: slettes automatisk 90 dager etter arrangementet. Svar i regnearkene slettes når du ber om det.
 - Beskjeder: slettes automatisk etter ett år uten bruk.
 - Møtenotater: til du sletter dem eller sletter deg selv.
 - Nyhetsbrev: til du ber om å bli fjernet.
 
 ## Dine rettigheter
-Du kan be om **innsyn**, **retting**, **sletting**, begrensning og å trekke tilbake samtykke. Under Meg → Min profil kan du **laste ned alt appen har lagret om deg** og **slette deg selv** med dataene dine (konto, notater, bønneemner og samtaler du har startet). Trenger du hjelp, send e-post til post@sionmolde.no. Vi svarer innen 30 dager. Mener du at vi ikke følger reglene, kan du klage til Datatilsynet: https://www.datatilsynet.no
+Du kan be om **innsyn**, **retting**, **sletting**, begrensning og å trekke tilbake samtykke. Under Meg → Min profil kan du **laste ned alt appen har lagret om deg** og **slette deg selv** med dataene dine (konto, notater, forbønner og samtaler du har startet). Trenger du hjelp, send e-post til post@sionmolde.no. Vi svarer innen 30 dager. Mener du at vi ikke følger reglene, kan du klage til Datatilsynet: https://www.datatilsynet.no
 
 ## Barn
 Appen er ikke laget for barn under 13 år, og vi registrerer ikke opplysninger om barn under 13 år. Ledere skal ikke legge dem inn. Oppdager vi det, sletter vi opplysningene.
 
 ## Sikkerhet
-Dataene lagres hos Google og overføres kryptert. Databasen har regler for hvem som kan lese og endre hva. Beskjeder og bønneemner er ikke ende-til-ende-krypterte, så ikke skriv noe svært sensitivt der. Hvis det skjer et avvik som kan skade deg, varsler vi deg og Datatilsynet i samsvar med loven.
+Dataene lagres hos Google og overføres kryptert. Databasen har regler for hvem som kan lese og endre hva. Beskjeder og forbønner er ikke ende-til-ende-krypterte, så ikke skriv noe svært sensitivt der. Hvis det skjer et avvik som kan skade deg, varsler vi deg og Datatilsynet i samsvar med loven.
 
 ## Lokal lagring
 Appen lagrer innstillinger på telefonen din (for eksempel tekststørrelse og innlogging). Det er ikke sporing. Slår du på varsler, lagres en kode for telefonen din så varselsystemet kan nå den.`;
@@ -1391,7 +1391,7 @@ function settingsCard(){
   ${state.user?H('Varsler').replace('margin:14px','margin:0')+pushInner():''}
   ${H('Tekststørrelse')}<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div>
   <p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>
-  ${H('Vis på Hjem')}${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Bønneemner','Kortet for å sende inn bønneemner.'):''}
+  ${H('Vis på Hjem')}${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}
   <p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p></details>`}
 function pushInner(){
   if(!state.user)return '';   // varsler er bare for innloggede
@@ -1646,7 +1646,7 @@ document.addEventListener('click',async e=>{
   else if('prcopy' in c.dataset){prayCopy()}
   else if('prdone' in c.dataset){prayDone()}
   else if('prmail' in c.dataset){c.disabled=true;
-    try{const r=await FB.sendPrayers(PUSH_URL);push(r.ok&&r.til?'Sendt':'Ikke sendt',r.ok&&r.til?'Bønneemnene er sendt til '+r.til+'.':(r.ok?'Tjenesten er ikke oppdatert (versjon '+r.versjon+').':r.feil))}
+    try{const r=await FB.sendPrayers(PUSH_URL);push(r.ok&&r.til?'Sendt':'Ikke sendt',r.ok&&r.til?'Forbønnene er sendt til '+r.til+'.':(r.ok?'Tjenesten er ikke oppdatert (versjon '+r.versjon+').':r.feil))}
     catch(er){push('Ikke sendt','Ingen kontakt med tjenesten.')}
     c.disabled=false}
   else if(c.dataset.prdel){prayDel(c.dataset.prdel)}
