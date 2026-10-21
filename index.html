@@ -75,9 +75,6 @@ h3{font-size:22px;line-height:1.1}
 .proto{display:none}
 .card{background:var(--surface);border:0;border-radius:14px;padding:16px;min-width:0}
 .next{background:var(--brand);color:var(--brand-ink);border-color:transparent}
-/* Knappene i «Neste samling» står alltid hvite med mørk tekst, så de er lette å lese i både lys og mørk visning. Valgt tilstand får en farget kant. */
-.next .btn,.next .btn.on{background:#fff;color:#0f3a5f;border:2px solid transparent}
-.next .btn.on{border-color:var(--lamp);font-weight:700}
 .next .eyebrow{color:var(--brand-ink);opacity:.95;font-size:13px}
 .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)}
 .next h2{font-size:34px;margin:4px 0 6px}
@@ -483,7 +480,7 @@ function homeDeler(){
   return {
    neste:['Neste samling',()=>(n?`<div class="card next"><div class="eyebrow">Neste samling</div><h2>${n.t}</h2>
    <div class="meta">${when(n.w)}${tm(n)}${n.place?' · '+esc(n.place):''}</div>
-   <div class="btns" style="margin-top:12px"><button class="btn ${state.rsvp[n.id]?'on':''}" data-rsvp="${n.id}" data-stay="1">${state.rsvp[n.id]?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(n.id)}</div>${counts[n.id]>0?`<div class="meta" style="margin-top:8px">${counts[n.id]} kommer</div>`:''}</div>`
+   <div class="btns" style="margin-top:12px"><button class="btn" style="color:var(--ink)" data-rsvp="${n.id}" data-stay="1">${state.rsvp[n.id]?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(n.id).replace('<button class="btn','<button style="color:var(--ink)" class="btn')}</div>${counts[n.id]>0?`<div class="meta" style="margin-top:8px">${counts[n.id]} kommer</div>`:''}</div>`
   :`<div class="card next"><div class="eyebrow">Neste samling</div><h2>Ingen planlagt</h2><div class="meta">Se faste samlinger under Program.</div></div>`)],
    velkomst:['Kom i gang',()=>welcomeCard()],
    besok:['Logg inn for å få mer',()=>visitorCard()],
