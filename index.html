@@ -257,7 +257,6 @@ function ago(p){
   const d=Math.round((todayStart-new Date(p.ms).setHours(0,0,0,0))/864e5);
   if(d<=0)return 'i dag';if(d===1)return 'i går';if(d<14)return 'for '+d+' dager siden';
   const x=new Date(p.ms);return x.getDate()+'. '+MON[x.getMonth()]}
-const cnt=id=>counts[id]>0?`<div class="small">${counts[id]} kommer</div>`:'';
 const tm=e=>e.time?' kl. '+e.time:'';
 const state={tab:'home',filter:'Alle',member:false,admin:false,user:null,rsvp:{},rem:{},open:{},
   prefs:{Møter:true,Happeninger:true,Ungdom:false,Viktig:true},unread:0,sv:'',svE:'',pwMsg:'',leder:false,memELd:'',memEA:'',memEL:'',memEM:'',memGL:[],memGM:[],snaps:null,snapMsg:'',view:'meg',brQ:'',brG:'',memBulk:'',memGB:[],rsList:{},q:'',edit:true,real:null,vl:['activ8'],af:'Alle',acc:{},sel:{},groups:[],leads:[],ulOpen:'',psMal:'alle',psGr:[],ugOpen:'',backupMsg:'',pushMsg:'',pushSendMsg:'',psT:'',psB:'',psTab:'news',psNews:true,psHide:false,pushOk:false,memMsg:'',memE:'',memR:'member',adm:{type:'events',edit:null},msg:'',err:''};
@@ -291,7 +290,7 @@ function nextFast(){const out=[];
 const fastId=(r,w)=>'f_'+r.id+'_'+dkey(w);
 function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',note=ex&&ex.k==='endret'&&ex.note?ex.note:r.note;
   return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(r.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'?'<span class="tag avl" style="background:var(--lamp);color:#fff">Endret</span>':'<span class="tag">Fast</span>'}</button>
-   <div class="detail"><div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>${remHint(id)}${cnt(id)}`}${rsPanel(id,r.title,dkey(w),[])}</div></div>`}
+   <div class="detail"><div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
 function evItem(e){
   if(e.m&&!state.member)return `<div class="item"><div class="locked" style="padding:12px">${dateBox(e)}<div class="grow"><b>${e.t}</b><span class="small">Kun for medlemmer. Logg inn under «Meg».</span></div></div></div>`;
   const open=state.open[e.id],r=state.rsvp[e.id];
@@ -300,7 +299,7 @@ function evItem(e){
    ${e.m?'<span class="tag m">Medlem</span>':`<span class="tag">${esc(normCat(e.cat))}</span>`}</button>
    <div class="detail"><div>${e.d}</div><div class="small">${esc(e.who)}</div>
    <div class="btns"><button class="btn ${r?'on':''}" data-rsvp="${e.id}">${r?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(e.id)}
-   </div>${remHint(e.id)}${cnt(e.id)}${rsPanel(e.id,e.title,e.start,e.groups)}</div></div>`}
+   </div></div></div>`}
 
 /* Påmeldingen går til Google Skjema «Sommerstevne påmeldinger nyhetsbrev». Svarene havner i et regneark i Drive,
    og scriptet i regnearket sender e-postvarsel. Google svarer ikke tilbake til nettsider, så vi kan ikke se om det lyktes. */
@@ -319,7 +318,6 @@ function rsEv(id){const f=String(id).match(/^f_(.+)_([0-9]{4}-[0-9]{2}-[0-9]{2})
 function remAt(ev){return new Date(ev.start+'T'+(ev.time||'09:00')).getTime()-864e5}
 const remId=id=>(lsGet('sm-push').slice(-24)+'_'+id).replace(/[^A-Za-z0-9_-]/g,'');
 const remBtn=id=>`<button class="btn ${state.rem[id]?'on':''}" data-rem="${id}">${state.rem[id]?'✓ Varsel satt':'Minn meg på'}</button>`;
-const remHint=id=>`<div class="small">${state.rem[id]?'Du får et varsel ett døgn før.':'«Minn meg på» sender et varsel ett døgn før.'}</div>`;
 function openRsvp(id){
   const ev=rsEv(id);if(!ev)return;
   rsPending=id;$('#rsT').textContent='Jeg kommer: '+ev.title;
@@ -346,6 +344,7 @@ async function loadRs(id){try{state.rsList[id]=await FB.rsvpList(id)}catch(e){st
 async function setRsvp(id,on,navn,kontakt){
   const ev=rsEv(id);
   keep(()=>{state.rsvp[id]=on;save();if(usingFb)counts[id]=Math.max(0,(counts[id]||0)+(on?1:-1))});
+  push(on?'Du kommer':'Svaret er fjernet',on?String(ev&&ev.title||''):'');
   const nm=navn||lsGet('sm-navn');
   if(nm)fetch(RS_URL,{method:'POST',mode:'no-cors',body:new URLSearchParams({[RS.arr]:ev.title||'',[RS.dato]:(ev.start||'')+(ev.end?' – '+ev.end:''),[RS.navn]:nm,[RS.kontakt]:kontakt||lsGet('sm-kontakt'),[RS.svar]:on?'Kommer':'Kommer ikke'})}).catch(()=>{});
   if(usingFb&&FB){try{if(on&&nm)await FB.setRsvpDoc(rsDocId(id),{eventId:String(id),title:ev.title||'',start:ev.start||'',name:nm,contact:kontakt||lsGet('sm-kontakt')||'',groups:ev.groups||[]});else if(!on)await FB.delRsvpDoc(rsDocId(id))}catch(x){}}
