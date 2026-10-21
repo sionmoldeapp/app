@@ -201,7 +201,9 @@ input,textarea,select{font:inherit;font-size:16px;color:var(--ink);background:va
 .form{display:flex;flex-direction:column;gap:12px}
 nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
 nav.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:12px;font-weight:600;color:var(--muted);border-radius:10px}
-nav.tabs button[aria-current="page"]{color:var(--brand)}
+nav.tabs button{transition:transform .14s ease,background .25s ease,color .25s ease}
+nav.tabs button[aria-current="page"]{background:var(--brand);color:var(--brand-ink);font-weight:700}   /* valgt fane: fylt, tydelig kontrast */
+nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 nav.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #push{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-160%);width:calc(100% - 24px);max-width:440px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-left:6px solid var(--lamp);border-radius:8px 18px 18px 8px;padding:16px 18px;box-shadow:0 14px 40px rgba(0,0,0,.35),0 2px 8px rgba(0,0,0,.2);z-index:20;transition:transform .4s cubic-bezier(.2,.9,.3,1.2);display:flex;gap:14px;align-items:center;cursor:pointer}
 #push.show{transform:translate(-50%,0)}
