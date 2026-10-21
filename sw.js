@@ -1,4 +1,4 @@
-const V='sion-v10',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','fb.js','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
+const V='sion-v11',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','fb.js','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(V).then(c=>c.addAll(F))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x))))));
 // Raskt og oppdatert: filene fra appen vises med en gang fra hurtigbufferen (appen åpnes uten å vente på nettet),
