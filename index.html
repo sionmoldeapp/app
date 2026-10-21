@@ -582,7 +582,7 @@ function homeDeler(){
    besok:['Logg inn for å få mer',()=>visitorCard()],
    vakter:['Dine vakter',()=>myShiftsCard()],
    bonn:['Forbønn',()=>UI.pr===false?'':prayerCard()],
-   viktig:['Viktig',()=>(post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
+   viktig:['Viktig',()=>(UI.vk!==false&&post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
    nyheter:['Nyheter',()=>UI.nh===true?nyhHjem():''],
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:'')],
    sommer:['Nyhetsbrev Sommerstevne',()=>UI.sv===false?'':svCard()],
@@ -664,7 +664,7 @@ function nyhKort(p){
   return `<div class="nrad ${open?'open':''} ${u?'ulest':''}"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><button type="button" class="nhode ptitle" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="ndot">${u?'<span class="dot" title="Ulest"></span>':''}</span><span class="ntekst"><b class="ntit">${fest?'📌 ':''}${esc(p.t)}</b>${open?'':`<span class="nprev">${esc(tekst)}</span>`}</span><span class="nmeta">${esc(ago(p))}</span></button>${open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open"><span class="pt">${linkify(esc(p.b))}</span></div>${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:''}</div>`}
 /* Valgfritt kort på Hjem (Innstillinger → Vis på Hjem): den nyeste nyheten som en kompakt rad. Trykk åpner meldingen i Nyheter. */
 function nyhHjem(){
-  const vp=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p))[0],viktigVises=vp&&lsGet('sm-viktig-skjult')!==String(vp.id);   // samme melding vises ikke to ganger
+  const vp=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p))[0],viktigVises=UI.vk!==false&&vp&&lsGet('sm-viktig-skjult')!==String(vp.id);   // samme melding vises ikke to ganger
   const l=posts.filter(p=>(!p.m||state.member)&&!postSkjult(p)&&!(viktigVises&&p===vp)).slice(0,1);
   if(!l.length)return '';
   const rad=p=>{const u=ulest(p),tekst=String(p.b||'').replace(/s+/g,' ').trim();
@@ -1583,7 +1583,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const UI={fs:1,sv:true,pr:true,nh:false};
+const UI={fs:1,sv:true,pr:true,nh:false,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
 function uiLagre(){try{localStorage.setItem('sm-ui',JSON.stringify(UI))}catch(e){}}
@@ -1594,7 +1594,7 @@ function settingsCard(){
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
   ${state.user?profSub('inpush','Varsler',pushInner()):''}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
-  ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('nh','Nyheter','Den nyeste nyheten. Er av til du slår den på.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
+  ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}${bryter('nh','Nyheter','Den nyeste nyheten. Er av til du slår den på.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('installer','Slik installerer du appen',installBody())}</details>`}
 function pushInner(){
   if(!state.user)return '';   // varsler er bare for innloggede
@@ -1909,7 +1909,7 @@ document.addEventListener('click',async e=>{
   else if('rscancel' in c.dataset){$('#rsDlg').close();rsPending=null}
   else if(c.dataset.af){state.af=c.dataset.af;state.sel={};keep(()=>{})}
   else if(c.dataset.f){state.filter=c.dataset.f;keep(()=>{})}
-  else if(c.dataset.ui){keep(()=>{UI[c.dataset.ui]=UI[c.dataset.ui]===false;uiLagre()})}
+  else if(c.dataset.ui){keep(()=>{UI[c.dataset.ui]=UI[c.dataset.ui]===false;if(c.dataset.ui==='vk'&&UI.vk)lsSet('sm-viktig-skjult','');uiLagre()})}
   else if(c.dataset.fs){UI.fs=+c.dataset.fs;uiLagre();applyFs();keep(()=>{})}
   else if(c.dataset.pref){keep(()=>{state.prefs[c.dataset.pref]=!state.prefs[c.dataset.pref];save()})}
   else if(c.dataset.ledertoggle){
