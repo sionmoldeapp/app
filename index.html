@@ -112,6 +112,7 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 @keyframes snurr{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
 .nwrap{position:relative}
+.nslide{flex:1;min-width:90px;max-width:200px;height:36px;margin:0 4px;accent-color:var(--brand);touch-action:pan-y;background:transparent}
 .merow{display:flex;align-items:center;gap:10px;padding:14px;margin:0 0 8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .merow b{flex:1;min-width:0}
 .mehandle{font-size:26px;line-height:1;color:var(--muted);align-self:stretch;display:flex;align-items:center;padding:0 12px 0 14px;margin:-14px 0 -14px -14px;touch-action:none;cursor:grab}
@@ -909,7 +910,7 @@ function noteAsk(id){
   dlg.innerHTML='<h3 style="margin:0 0 8px">'+(ex?'Notat':'Nytt notat')+'</h3>'
    +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:14px"><label class="f">Tittel<input id="nT" maxlength="120" placeholder="For eksempel tema" value="'+esc(ex?ex.title:'')+'"></label><label class="f">Dato<input id="nD" type="date" value="'+esc(ex?ex.date:idag)+'"></label></div><label class="f">Forkynner<input id="nP" maxlength="80" placeholder="Hvem talte?" value="'+esc(ex?(ex.speaker||''):'')+'"></label>'
    +'<div class="ntools" role="toolbar" aria-label="Tekstverktøy"><button type="button" class="btn" data-ncmd="bold" aria-label="Fet"><b>B</b></button><button type="button" class="btn" data-ncmd="italic" aria-label="Kursiv"><i>I</i></button>'
-   +'<span class="nsep"></span><button type="button" class="btn" data-nsize="-1" aria-label="Mindre tekst" style="font-size:13px;font-weight:700">A</button><span class="nbars" id="nBars" role="img" aria-label="Tekststørrelse"><i></i><i></i><i></i><i></i></span><button type="button" class="btn" data-nsize="1" aria-label="Større tekst" style="font-size:22px;font-weight:700;line-height:1">A</button></div>'
+   +'<span class="nsep"></span><button type="button" class="btn" data-nsize="-1" aria-label="Mindre tekst" style="font-size:13px;font-weight:700">A</button><input type="range" class="nslide" id="nSlide" min="0" max="3" step="1" value="1" aria-label="Tekststørrelse: dra til høyre for større og til venstre for mindre"><button type="button" class="btn" data-nsize="1" aria-label="Større tekst" style="font-size:22px;font-weight:700;line-height:1">A</button></div>'
    +'<div class="nwrap"><div id="nEd" class="ned" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notat">'+(ex?sanitizeNote(ex.html):'')+'</div><div class="ngrip" id="nGrip" role="separator" aria-label="Dra for å endre størrelsen på tekstfeltet" title="Dra for å endre størrelse"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M14 5L5 14M14 10l-4 4"/></svg></div></div>'
    +'<p class="small" role="status" id="nMsg" style="margin:6px 0 0"></p>'
    +'<div class="btns nbtns"><button type="button" class="btn primary" id="nSave" style="flex:1">Lagre</button><button type="button" class="btn primary" id="nClose" style="flex:1"'+(ex?'':' hidden')+'>Lukk</button></div><div class="btns nbtns" style="margin-top:8px">'+(PUSH_URL?'<button type="button" class="btn" id="nMail" style="flex:1" aria-label="Send til e-post" title="Send til e-post">E-post</button>':'')+'<button type="button" class="btn" id="nShare" style="flex:1">Del</button>'+(ex?'<button type="button" class="btn danger" id="nDel" style="flex:1">Slett</button>':'')+'</div>';   // Lukk vises først etter at et nytt notat er lagret
@@ -925,14 +926,19 @@ function noteAsk(id){
   dlg.addEventListener('click',e=>{const b=e.target.closest('[data-ncmd]');if(b){ed.focus();document.execCommand(b.dataset.ncmd,false,null);sync()}});
   const TRINN=[2,3,5,6];
   const trinnNå=()=>{let v=parseInt(document.queryCommandValue('fontSize'),10);if(!(v>=1&&v<=7))v=3;const i=TRINN.findIndex(x=>x>=v);return i<0?3:i};
-  let sistTrinn=1;
+  let sistTrinn=1,sistRange=null;
   const sync=()=>{
     const sl=getSelection();if(!sl.rangeCount||!ed.contains(sl.anchorNode))return;
     ['bold','italic'].forEach(c=>{let on=false;try{on=document.queryCommandState(c)}catch(x){}const b=dlg.querySelector('[data-ncmd='+c+']');b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
-    sistTrinn=trinnNå();dlg.querySelectorAll('#nBars i').forEach((el,i)=>el.classList.toggle('on',i<=sistTrinn))};
+    try{sistRange=sl.getRangeAt(0).cloneRange()}catch(x){}
+    sistTrinn=trinnNå();const gl=dlg.querySelector('#nSlide');if(gl&&document.activeElement!==gl)gl.value=String(sistTrinn)};
   document.addEventListener('selectionchange',sync);ed.addEventListener('keyup',sync);ed.addEventListener('input',sync);
   dlg.addEventListener('click',e=>{const b=e.target.closest('[data-nsize]');if(!b)return;ed.focus();const n=Math.max(0,Math.min(3,trinnNå()+parseInt(b.dataset.nsize,10)));document.execCommand('fontSize',false,String(TRINN[n]));sync()});
-  dlg.querySelectorAll('#nBars i').forEach((el,i)=>el.classList.toggle('on',i<=1));
+  // Dra glidebryteren til høyre eller venstre for å endre tekststørrelsen på det som er markert (eller der markøren står).
+  dlg.querySelector('#nSlide').addEventListener('input',e=>{
+    if(sistRange){const sl=getSelection();sl.removeAllRanges();sl.addRange(sistRange)}
+    ed.focus({preventScroll:true});document.execCommand('fontSize',false,String(TRINN[+e.target.value]));
+    try{const sl=getSelection();if(sl.rangeCount)sistRange=sl.getRangeAt(0).cloneRange()}catch(x){}});
   ed.addEventListener('paste',e=>{e.preventDefault();const t=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,t)});
   ed.addEventListener('drop',e=>e.preventDefault());
   const lukk=async()=>{if(snap()!==start&&!await bekreft('Lukke uten å lagre endringene?'))return;dlg.close()};
