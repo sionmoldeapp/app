@@ -112,7 +112,7 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 @keyframes snurr{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
 .nwrap{position:relative}
-.nslide{flex:1;min-width:90px;max-width:200px;height:36px;margin:0 4px;accent-color:var(--brand);touch-action:pan-y;background:transparent}
+.nslide{flex:1;min-width:90px;max-width:200px;height:36px;margin:0 4px;padding:0;border:0;accent-color:var(--brand);touch-action:pan-y;background:transparent}   /* padding 0: ellers er det 10 px luft i hver ende, og kulen når ikke enden */
 .merow{display:flex;align-items:center;gap:10px;padding:14px;margin:0 0 8px;background:var(--surface);border:1px solid var(--line);border-radius:14px;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .merow b{flex:1;min-width:0}
 .mehandle{font-size:26px;line-height:1;color:var(--muted);align-self:stretch;display:flex;align-items:center;padding:0 12px 0 14px;margin:-14px 0 -14px -14px;touch-action:none;cursor:grab}
