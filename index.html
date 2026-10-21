@@ -291,11 +291,21 @@ async function fetchAll(){
   if(FB){
     try{
       const [e,p,g]=await Promise.all([FB.list('events'),FB.list('posts'),FB.list('regular')]);
-      if(e.length||p.length||g.length){usingFb=true;return [e,p,g]}
+      if(e.length||p.length||g.length){usingFb=true;
+        try{localStorage.setItem('sm-cache',JSON.stringify({e:e.filter(x=>!x.m),p:p.filter(x=>!x.m),g:g.filter(x=>!x.m)}))}catch(er){}   // bare det som er åpent for alle; brukes til rask oppstart
+        return [e,p,g]}
     }catch(err){console.warn('Firestore:',err)}
   }
   usingFb=false;
   return Promise.all([getJson('events'),getJson('posts'),getJson('regular').catch(()=>[])]);
+}
+/* Arrangementer, nyheter og faste samlinger: filtrerer og sorterer det som er lastet (fra databasen eller fra den lokale kopien). */
+function bruk(e,p,g){
+  rawEvents=e;
+  events=e.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)).map(x=>({...x,t:esc(x.title),d:linkify(esc(x.text)),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
+    .filter(x=>(x.e||x.w)>=todayStart).sort((a,b)=>a.w-b.w);
+  posts=p.filter(canSee).filter(liveOK).sort((a,b)=>(!!b.pinned-!!a.pinned)||((b.ms||0)-(a.ms||0)));   // festede nyheter først
+  regular=g.filter(r=>canSeeCat(r.cat)&&visOK(r)).sort((a,b)=>((a.day+6)%7-(b.day+6)%7)||String(a.time).localeCompare(String(b.time)));
 }
 async function load(){
   // Alle forespørslene sendes samtidig (tidligere én og én, og det tok mange sekunder).
@@ -306,12 +316,7 @@ async function load(){
   if(ko)state.contact=ko;
   if(FB&&state.user)state.pv=pv;
   if(lt)applyLtypes(lt);
-  const [e,p,g]=fr;
-  rawEvents=e;
-  events=e.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)).map(x=>({...x,t:esc(x.title),d:linkify(esc(x.text)),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
-    .filter(x=>(x.e||x.w)>=todayStart).sort((a,b)=>a.w-b.w);
-  posts=p.filter(canSee).filter(liveOK).sort((a,b)=>(!!b.pinned-!!a.pinned)||((b.ms||0)-(a.ms||0)));   // festede nyheter først
-  regular=g.filter(r=>canSeeCat(r.cat)&&visOK(r)).sort((a,b)=>((a.day+6)%7-(b.day+6)%7)||String(a.time).localeCompare(String(b.time)));
+  bruk(...fr);
   const [cn,mb,vw,st,lm]=await Promise.all([
     usingFb&&FB?FB.counts().catch(()=>({})):{},
     state.admin&&FB?FB.listUsers().catch(()=>[]):[],
@@ -2500,6 +2505,9 @@ function splashBort(){
   // Logoen står minst ca. ett sekund fra siden ble åpnet, så animasjonen rekker å bli sett også når alt lastes raskt.
   setTimeout(()=>{$('#view').classList.add('fadeinn');sp.classList.add('bort');setTimeout(()=>sp.remove(),700)},Math.max(0,1000-performance.now()))}
 async function start(){
+  /* Rask oppstart: vis sist kjente (offentlige) program og nyheter med en gang, mens Firebase lastes. Resten kommer inn når innloggingen og databasen er klare. */
+  try{const c=JSON.parse(localStorage.getItem('sm-cache')||'null');
+    if(c&&c.e&&c.p&&c.g){bruk(c.e,c.p,c.g);state.unread=posts.filter(p=>isNew(p)&&!postSkjult(p)).length;if(state.tab==='news')markSeen();first=false;render();splashBort()}}catch(er){first=true}
   FB=await window.fbReady;
   if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me')keep(()=>{})});FB.onPush(p=>push((p.notification&&p.notification.title)||'Melding',(p.notification&&p.notification.body)||''))}
   const go=async u=>{
