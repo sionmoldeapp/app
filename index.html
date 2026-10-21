@@ -926,15 +926,19 @@ function noteAsk(id){
   dlg.addEventListener('click',e=>{const b=e.target.closest('[data-ncmd]');if(b){ed.focus();document.execCommand(b.dataset.ncmd,false,null);sync()}});
   const TRINN=[2,3,5,6];
   const trinnNå=()=>{let v=parseInt(document.queryCommandValue('fontSize'),10);if(!(v>=1&&v<=7))v=3;const i=TRINN.findIndex(x=>x>=v);return i<0?3:i};
-  let sistTrinn=1,sistRange=null;
+  let sistTrinn=1,sistRange=null,glDrar=false;
   const sync=()=>{
     const sl=getSelection();if(!sl.rangeCount||!ed.contains(sl.anchorNode))return;
     ['bold','italic'].forEach(c=>{let on=false;try{on=document.queryCommandState(c)}catch(x){}const b=dlg.querySelector('[data-ncmd='+c+']');b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
     try{sistRange=sl.getRangeAt(0).cloneRange()}catch(x){}
-    sistTrinn=trinnNå();const gl=dlg.querySelector('#nSlide');if(gl&&document.activeElement!==gl)gl.value=String(sistTrinn)};
+    sistTrinn=trinnNå();const gl=dlg.querySelector('#nSlide');if(gl&&!glDrar&&document.activeElement!==gl)gl.value=String(sistTrinn)};
   document.addEventListener('selectionchange',sync);ed.addEventListener('keyup',sync);ed.addEventListener('input',sync);
   dlg.addEventListener('click',e=>{const b=e.target.closest('[data-nsize]');if(!b)return;ed.focus();const n=Math.max(0,Math.min(3,trinnNå()+parseInt(b.dataset.nsize,10)));document.execCommand('fontSize',false,String(TRINN[n]));sync()});
   // Dra glidebryteren til høyre eller venstre for å endre tekststørrelsen på det som er markert (eller der markøren står).
+  { const gl=dlg.querySelector('#nSlide');
+    ['pointerdown','touchstart','mousedown'].forEach(n=>gl.addEventListener(n,()=>{glDrar=true}));
+    ['pointerup','pointercancel','touchend','touchcancel','mouseup','change'].forEach(n=>gl.addEventListener(n,()=>{setTimeout(()=>{glDrar=false},250)}));
+    document.addEventListener('pointerup',()=>{setTimeout(()=>{glDrar=false},250)}); }
   dlg.querySelector('#nSlide').addEventListener('input',e=>{
     if(sistRange){const sl=getSelection();sl.removeAllRanges();sl.addRange(sistRange)}
     ed.focus({preventScroll:true});document.execCommand('fontSize',false,String(TRINN[+e.target.value]));
