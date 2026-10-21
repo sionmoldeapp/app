@@ -330,7 +330,7 @@ function rsEv(id){const f=String(id).match(/^f_(.+)_([0-9]{4}-[0-9]{2}-[0-9]{2})
 // Tidspunkt (ms) for påminnelsen: ett døgn før. Samlinger uten klokkeslett regnes som kl. 09.
 function remAt(ev){return new Date(ev.start+'T'+(ev.time||'09:00')).getTime()-864e5}
 const remId=id=>(lsGet('sm-push').slice(-24)+'_'+id).replace(/[^A-Za-z0-9_-]/g,'');
-const remBtn=id=>`<button class="btn ${state.rem[id]?'on':''}" data-rem="${id}">${state.rem[id]?'✓ Varsel satt':'Minn meg på'}</button>`;
+const remBtn=id=>`<button class="btn" data-rem="${id}" aria-pressed="${!!state.rem[id]}">${state.rem[id]?'✓ Varsel satt':'Minn meg på'}</button>`;
 function openRsvp(id){
   const ev=rsEv(id);if(!ev)return;
   rsPending=id;$('#rsT').textContent='Jeg kommer: '+ev.title;
