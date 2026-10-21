@@ -205,6 +205,16 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .day{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin:6px 0 -2px}
 .post{display:flex;flex-direction:column;gap:6px}
 .post .head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.nrad{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.nhode{display:flex!important;align-items:center;gap:10px;padding:12px 14px!important;width:100%}
+.ndot{flex:none;width:9px}
+.ntekst{flex:1;min-width:0;display:block}
+.ntit{display:block;font-size:15px;font-weight:600;line-height:1.3}
+.nrad:not(.ulest) .ntit{font-weight:500}
+.nprev{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.nmeta{flex:none;font-size:12px;color:var(--muted);align-self:flex-start;margin-top:2px}
+.ndetalj{padding:0 14px 14px 33px;display:flex;flex-direction:column;gap:8px}
+.nrad.open .ntit{white-space:normal}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--lamp);flex:none}
 .locked{display:flex;gap:12px;align-items:center;color:var(--muted)}
 .switch{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
@@ -622,14 +632,48 @@ function regList(){
   if(!l.length)return '';
   return `<div><h2 style="margin-bottom:10px">Faste samlinger</h2><div class="card reg">${l.map(r=>`<div class="r"><div class="d">${cap(DAYS[r.day])}<span>kl. ${esc(r.time)}</span></div><div class="grow"><b>${esc(r.title)}</b>${r.note?`<span class="small">${esc(r.note)}</span>`:''}</div></div>`).join('')}</div></div>`}
 
+/* Nyheter: kompakte rader (ulest-prikk, tittel, én linje tekst, dato) gruppert etter tid, med søk, filter og «Vis eldre». Trykk på en rad åpner hele meldingen. */
+const NYH_SIDE=15;
+let lest={};try{lest=JSON.parse(localStorage.getItem('sm-lest')||'{}')}catch(e){}
+let lestFra=0;try{lestFra=+localStorage.getItem('sm-lest-fra')||0;if(!lestFra){lestFra=Date.now()-7*864e5;localStorage.setItem('sm-lest-fra',String(lestFra))}}catch(e){lestFra=Date.now()-7*864e5}
+const lagreLest=()=>{try{localStorage.setItem('sm-lest',JSON.stringify(lest))}catch(e){}};
+const markLest=id=>{if(!lest[id]){lest[id]=1;lagreLest()}};
+const ulest=p=>!!(p.ms&&p.ms>lestFra&&!lest[p.id]&&!(p.m&&!state.member));
+const postEtiketter=p=>p.groups&&p.groups.length?p.groups.map(gName):(p.audience&&p.audience.length?p.audience:[p.tag||'Alle']);
+function nyhKort(p){
+  if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
+  const open=!!state.open['p_'+p.id],u=ulest(p),fest=p.pinned&&(effAdmin()||(effLeder()&&state.ltype==='forkynner')),tekst=String(p.b||'').replace(/\s+/g,' ').trim();
+  return `<div class="nrad ${open?'open':''} ${u?'ulest':''}"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><button type="button" class="nhode ptitle" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="ndot">${u?'<span class="dot" title="Ulest"></span>':''}</span><span class="ntekst"><b class="ntit">${fest?'📌 ':''}${esc(p.t)}</b>${open?'':`<span class="nprev">${esc(tekst)}</span>`}</span><span class="nmeta">${esc(ago(p))}</span></button>${open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open"><span class="pt">${linkify(esc(p.b))}</span></div>${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:''}</div>`}
+function nyhGruppe(p){
+  if(p.pinned)return 0;
+  if(!p.ms)return 3;
+  const d=(todayStart-new Date(p.ms).setHours(0,0,0,0))/864e5,n=new Date(p.ms),t=new Date(todayStart);
+  if(d<7)return 1;if(n.getFullYear()===t.getFullYear()&&n.getMonth()===t.getMonth())return 2;return 3}
+const NYH_TITLER=['Festet','Denne uken','Tidligere denne måneden','Eldre'];
+function nyhFiltrert(l){
+  const q=norm(state.nq||'').trim(),f=state.nf||'Alle';
+  return l.filter(p=>{
+    if(f==='Uleste'&&!ulest(p))return false;
+    if(f!=='Alle'&&f!=='Uleste'&&!postEtiketter(p).includes(f))return false;
+    if(q){const h=norm(p.t+' '+(p.m&&!state.member?'':p.b)+' '+postEtiketter(p).join(' '));if(!q.split(/\s+/).every(o=>h.includes(o)))return false}
+    return true})}
+function nyhListe(l){
+  const alle=nyhFiltrert(l),søk=!!(state.nq||'').trim(),n=søk?alle.length:(state.nyhN||NYH_SIDE),vis=alle.slice(0,n);
+  if(!vis.length)return '<p class="small">'+(søk?'Ingen treff på «'+esc(state.nq)+'».':(state.nf==='Uleste'?'Du har lest alt.':'Ingen nyheter ennå.'))+'</p>';
+  let ut='',sist=-1;
+  vis.forEach(p=>{const g=nyhGruppe(p);if(g!==sist){ut+='<div class="day">'+NYH_TITLER[g]+'</div>';sist=g}ut+=nyhKort(p)});
+  return ut+(alle.length>n?'<button class="btn" data-nyhmore style="margin-top:4px">Vis eldre ('+(alle.length-n)+')</button>':'')}
 function news(){
-  const kortFor=p=>{
-   if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
-   return `<div class="card post"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><div class="head">${isNew(p)?'<span class="dot" title="Ulest"></span>':''}${p.pinned&&(effAdmin()||(effLeder()&&state.ltype==='forkynner'))?'<span class="tag">Festet</span> ':''}${postTags(p)}<span class="small">${esc(ago(p))}${statusTag(p)}${canStats()?' · sett '+(views[p.id]||0)+' ganger':''}</span></div><h3><button type="button" class="ptitle" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}">${esc(p.t)}</button></h3><div class="pbody ${state.open['p_'+p.id]?'open':''}"><span class="pt">${linkify(esc(p.b))}</span></div>${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}${(String(p.b).length>130||(String(p.b).match(/\n/g)||[]).length>=2)?`<button type="button" class="pmore" data-postopen="${esc(p.id)}" aria-expanded="${!!state.open['p_'+p.id]}">${state.open['p_'+p.id]?'Vis mindre':'Les mer'}</button>`:''}</div>`};
   const sk=state.admin&&state.view==='meg'?posts.filter(postSkjult):[];
-  const l=posts.filter(p=>!sk.includes(p)).map(kortFor).join('');
-  const kan=editOn();
-  return `<h1>Nyheter</h1>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Pastorens hilsen</button>':'')+'</div>':''}<div class="list">${l||'<p class="small">Ingen nyheter ennå.</p>'}</div>${sk.length?`<details class="card acc" data-acc="skjulte" ${state.acc.skjulte?'open':''}><summary><h3>Planlagt, utkast og utløpt (${sk.length})</h3></summary><p class="small" style="margin:0 0 8px">Disse vises ikke for medlemmene nå. Bare du ser dem.</p><div class="list">${sk.map(kortFor).join('')}</div></details>`:''}${kan?'<div class="lpzone"></div>':''}`}
+  const l=posts.filter(p=>!sk.includes(p));
+  const kan=editOn(),nU=l.filter(ulest).length,ett=[];
+  l.forEach(p=>{if(p.m&&!state.member)return;postEtiketter(p).forEach(a=>{if(a!=='Alle'&&!ett.includes(a))ett.push(a)})});
+  const chips=['Alle','Uleste'+(nU?' ('+nU+')':''),...ett.slice(0,8)];
+  return `<h1>Nyheter</h1>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Pastorens hilsen</button>':'')+'</div>':''}
+  <input type="search" id="nyhQ" placeholder="Søk i nyheter …" aria-label="Søk i nyheter" autocomplete="off" value="${esc(state.nq||'')}">
+  <div class="chips scroll" aria-label="Filter">${chips.map((c,i)=>{const v=i===1?'Uleste':c;return `<button class="chip" data-nf="${esc(v)}" aria-pressed="${(state.nf||'Alle')===v}">${esc(c)}</button>`}).join('')}</div>
+  ${nU?'<div class="btns" style="margin:0 0 8px"><button class="btn" data-nyhlest>Merk alle som lest</button></div>':''}
+  <div class="list" id="nyhList">${nyhListe(l)}</div>${sk.length?`<details class="card acc" data-acc="skjulte" ${state.acc.skjulte?'open':''}><summary><h3>Planlagt, utkast og utløpt (${sk.length})</h3></summary><p class="small" style="margin:0 0 8px">Disse vises ikke for medlemmene nå. Bare du ser dem.</p><div class="list">${sk.map(nyhKort).join('')}</div></details>`:''}${kan?'<div class="lpzone"></div>':''}`}
 
 /* ---------- Innlogging og administrasjon ---------- */
 const CATS_DEFAULT=['Møte','Samling','Ledersamling','Menighetsmøte','Happeninger','Ungdom'];
@@ -1707,6 +1751,7 @@ function viewOpts(){
 document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.target.value;const l=$('#noteList');if(l)l.innerHTML=noteRows(state.nq.trim()?(state.notes||[]).filter(x=>norm(x.title+' '+(x.speaker||'')+' '+noteText(x.html)).includes(norm(state.nq).trim())):(state.notes||[]));return}
   if(e.target.id==='brQ'){state.brQ=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
   if(e.target.id==='pastQ'){state.pq=e.target.value;state.pastN=40;const l=$('#pastList');if(l)l.innerHTML=pastList();return}
+  if(e.target.id==='nyhQ'){state.nq=e.target.value;const l=$('#nyhList');if(l)l.innerHTML=nyhListe(posts.filter(p=>!(state.admin&&state.view==='meg'&&postSkjult(p))));return}
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
 /* Langt trykk på et kort under Meg åpner «Endre rekkefølge». */
 {let t=null,x0=0,y0=0,svelg=false;
@@ -1785,6 +1830,9 @@ document.addEventListener('click',async e=>{
   else if('meorder' in c.dataset){keep(()=>{state.reorder=!state.reorder})}
   else if(c.dataset.meup){meFlytt(c.dataset.meup,-1)}
   else if(c.dataset.medown){meFlytt(c.dataset.medown,1)}
+  else if(c.dataset.nf!==undefined){state.nf=c.dataset.nf;state.nyhN=NYH_SIDE;keep(()=>{})}
+  else if('nyhmore' in c.dataset){keep(()=>{state.nyhN=(state.nyhN||NYH_SIDE)+NYH_SIDE})}
+  else if('nyhlest' in c.dataset){posts.forEach(p=>{if(p.ms)lest[p.id]=1});lagreLest();keep(()=>{})}
   else if('pastmore' in c.dataset){keep(()=>{state.pastN=(state.pastN||40)+40})}
   else if(c.dataset.ansmsg){ansMsgAsk(c.dataset.ansmsg)}
   else if('ansnew' in c.dataset){ansEditAsk('')}
@@ -1944,7 +1992,7 @@ document.addEventListener('click',async e=>{
     try{let sendt=false;if(p.schedId)sendt=!(await FB.delScheduled(p.schedId));
       await FB.del('posts',p.id);await refresh();push(sendt?'Meldingen er slettet':'Utsendelsen er avlyst',sendt?'Varselet var allerede sendt, så det kan ikke trekkes tilbake.':'Varselet blir ikke sendt.')}
     catch(er){c.disabled=false;push('Kunne ikke avlyse',saveMsg(er&&er.code))}}
-  else if(c.dataset.postopen){keep(()=>{state.open['p_'+c.dataset.postopen]=!state.open['p_'+c.dataset.postopen]})}
+  else if(c.dataset.postopen){keep(()=>{const k='p_'+c.dataset.postopen;state.open[k]=!state.open[k];if(state.open[k])markLest(c.dataset.postopen)})}
   else if('pubnew' in c.dataset){pubAsk()}
   else if('grpnew' in c.dataset){grpAsk(null)}
   else if(c.dataset.grpedit){grpAsk(c.dataset.grpedit)}
@@ -2394,7 +2442,7 @@ function viktigSkjul(id){
   const h=k.offsetHeight,a=k.animate({opacity:[getComputedStyle(k).opacity,0],height:[h+'px','0px'],paddingTop:['14px','0px'],paddingBottom:['14px','0px'],marginBottom:['0px','-12px']},{duration:260,easing:'ease'});
   k.style.overflow='hidden';a.onfinish=()=>keep(()=>{})}
 function viktigApne(id){
-  state.open['p_'+id]=true;state.tab='news';state.reorder=false;fadeRender();
+  state.open['p_'+id]=true;markLest(id);state.tab='news';state.nf='Alle';state.nq='';state.reorder=false;fadeRender();
   setTimeout(()=>{const b=document.querySelector('[data-postopen="'+id+'"]');if(b)b.scrollIntoView({block:'center',behavior:'smooth'})},520)}
 { let k=null,x0=0,y0=0,dx=0,drar=false,sperr=false;
   document.addEventListener('pointerdown',e=>{const v=e.target.closest('.viktig');if(!v||e.target.closest('.vik-x'))return;k=v;x0=e.clientX;y0=e.clientY;dx=0;drar=false});
