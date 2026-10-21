@@ -2194,8 +2194,9 @@ function fadeRender(){
   fadeT=setTimeout(()=>{render();v.style.transition='opacity .3s ease';v.style.opacity='1';setTimeout(()=>{v.style.transition='';v.style.opacity=''},330)},160)}
 /* Oppstartsskjermen (logoen) tones ut og siden tones inn når første innlasting er ferdig. */
 function splashBort(){
-  const sp=document.getElementById('splash');if(!sp)return;
-  $('#view').classList.add('fadeinn');sp.classList.add('bort');setTimeout(()=>sp.remove(),700)}
+  const sp=document.getElementById('splash');if(!sp||sp.dataset.bort)return;sp.dataset.bort='1';
+  // Logoen står minst ca. ett sekund fra siden ble åpnet, så animasjonen rekker å bli sett også når alt lastes raskt.
+  setTimeout(()=>{$('#view').classList.add('fadeinn');sp.classList.add('bort');setTimeout(()=>sp.remove(),700)},Math.max(0,1000-performance.now()))}
 async function start(){
   FB=await window.fbReady;
   if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me')keep(()=>{})});FB.onPush(p=>push((p.notification&&p.notification.title)||'Melding',(p.notification&&p.notification.body)||''))}
