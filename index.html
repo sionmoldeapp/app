@@ -1626,8 +1626,8 @@ function gripTa(ta){
 {const alle=()=>document.querySelectorAll('textarea:not([data-grip])').forEach(gripTa);alle();new MutationObserver(alle).observe(document.body,{childList:true,subtree:true})}
 document.addEventListener('click',async e=>{
   const c=e.target.closest('button');if(!c)return;
-  if(c.dataset.t){state.reorder=false;if('openvakter' in c.dataset){state.acc.vakter=true;if(state.shifts===undefined)loadShifts()}state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}render()}
-  else if(c.id==='bellBtn'){state.tab='news';markSeen();render()}
+  if(c.dataset.t){state.reorder=false;if('openvakter' in c.dataset){state.acc.vakter=true;if(state.shifts===undefined)loadShifts()}state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}fadeRender()}
+  else if(c.id==='bellBtn'){state.tab='news';markSeen();fadeRender()}
   else if(c.dataset.ev){keep(()=>state.open[c.dataset.ev]=!state.open[c.dataset.ev])}
   else if(c.dataset.rsvp){
     if(state.rsvp[c.dataset.rsvp])await setRsvp(c.dataset.rsvp,false);else openRsvp(c.dataset.rsvp)}
@@ -2185,6 +2185,13 @@ document.addEventListener('change',async e=>{
   if('asel' in d){keep(()=>{state.sel[d.asel]=e.target.checked});return}
   if('aselall' in d){const l=admItems(state.adm.type);keep(()=>{state.sel={};if(e.target.checked)l.forEach(x=>state.sel[x.id]=true)});return}if(e.target.name&&e.target.name.endsWith('Sel')){const i=e.target.parentNode.querySelector('input');i.hidden=e.target.value!=='__annet';if(!i.hidden)i.focus()}});
 let first=true;
+/* Skifte mellom Hjem, Program, Nyheter og Meg: innholdet tones ut og det nye tones inn. */
+let fadeT=null;
+function fadeRender(){
+  const v=$('#view');
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches){render();return}
+  clearTimeout(fadeT);drawTabs();v.classList.remove('fadeinn');v.style.transition='opacity .16s ease';v.style.opacity='0';
+  fadeT=setTimeout(()=>{render();v.style.transition='opacity .3s ease';v.style.opacity='1';setTimeout(()=>{v.style.transition='';v.style.opacity=''},330)},160)}
 /* Oppstartsskjermen (logoen) tones ut og siden tones inn når første innlasting er ferdig. */
 function splashBort(){
   const sp=document.getElementById('splash');if(!sp)return;
