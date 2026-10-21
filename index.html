@@ -19,7 +19,9 @@
   --bg:#0b2540; --surface:#123457; --ink:#e3f0ff; --muted:#9bbbdb; --line:#24507c;
   --brand:#7fb8ee; --brand-ink:#08243f; --lamp:#f0a553; --lamp-soft:#3a2a14;
   --ok:#8cd0f0; --ok-soft:#173d5c; --chip:#1c4a78; color-scheme:dark}
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}   /* ingen firkantet trykkmarkering fra telefonen; vi har egen trykkfølelse under */
+.item>button:active,details.acc>summary:active{background:rgba(127,160,200,.14)}
+details.acc>summary{transition:background .18s ease;border-radius:12px}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;margin:0}
 button{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
@@ -113,6 +115,7 @@ h3{font-size:22px;line-height:1.1}
 .list{display:flex;flex-direction:column;gap:10px}
 .item{background:var(--surface);border:0;border-radius:14px;overflow:hidden}
 .item>button{all:unset;display:flex;gap:12px;align-items:center;padding:12px;width:100%;box-sizing:border-box;cursor:pointer}
+.item>button{transition:background .18s ease;border-radius:12px}
 .item>button:focus-visible{outline:3px solid var(--lamp);outline-offset:-3px}
 [data-lp]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 dialog.lp{border:0;border-radius:18px;padding:20px;max-width:380px;width:calc(100% - 32px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.4)}
