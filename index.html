@@ -184,7 +184,7 @@ nav.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1
     <div class="logo"><div class="logo-mark"><img src="logo-512.png" alt="Sion Molde"></div><div><b>Sion Molde</b><span id="today"></span></div></div>
     <div class="hr"><button class="bell" id="editBtn" type="button" hidden></button><button class="bell" id="viewBtn" type="button" hidden aria-label="Du ser appen som en annen. Trykk for mer."></button><button class="bell" id="themeBtn" type="button"></button><button class="bell" id="bellBtn" aria-label="Varsler"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg><i id="badge">0</i></button></div>
   </header>
-  <main id="view"></main>
+  <main id="view" aria-live="polite"><p class="small" style="margin:24px 0">Laster …</p></main>
   <nav class="tabs" id="tabs"></nav>
 </div>
 <dialog id="rsDlg" aria-labelledby="rsT"><form class="form" id="rs" method="dialog">
@@ -1525,7 +1525,8 @@ function push(t,b){$('#pushT').textContent=t;$('#pushB').textContent=b;$('#push'
     if(Math.abs(dx)>70||dy<-35){pb.classList.remove('drag');pb.style.transition='transform .2s,opacity .2s';pb.style.transform='translate(calc(-50% + '+(Math.abs(dx)>70?(dx>0?400:-400):0)+'px),'+(Math.abs(dx)>70?0:-160)+'px)';pb.style.opacity='0';setTimeout(()=>{pb.style.transition='';hide()},220)}
     else{pb.classList.remove('drag');pb.style.transform='';pb.style.opacity='';if(!moved)hide();else pt=setTimeout(hide,2500)}};
   pb.addEventListener('pointerup',end);pb.addEventListener('pointercancel',end)}
-function keep(fn){const y=scrollY;fn();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
+function keep(fn){const y=scrollY;fn();if(first)return;   // ikke tegn siden på nytt før innholdet er lastet første gang (ellers vises «Ingen planlagt» et øyeblikk)
+  $('#view').innerHTML=viewBanner()+VIEWS[state.tab]();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
 async function refresh(){
   const aktiv=busyN>0||busyRm;   // rett etter lagring/sletting: hold sirkelen til listene er oppdatert
   if(aktiv&&window.smBusy)window.smBusy(1);
@@ -2181,7 +2182,7 @@ async function start(){
     if(!u)bonnForhent();
   };
   if(FB)FB.onAuth(u=>go(u).catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.'}));
-  else{await load();render()}
+  else{await load();first=false;render()}
 }
 start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.'});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});
