@@ -107,7 +107,7 @@ h3{font-size:22px;line-height:1.1}
 .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)}
 .next h2{font-size:34px;margin:4px 0 6px}
 .next .meta{opacity:.9;font-size:15px}
-.viktig{position:relative;display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.viktig{position:relative;display:flex;gap:12px;align-items:center;background:var(--surface);border:0;border-radius:14px;padding:14px;cursor:pointer;touch-action:pan-y;-webkit-user-select:none;user-select:none}
 .vik-ikon{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#3f8ad6,#17406f);box-shadow:0 4px 10px rgba(10,40,80,.22)}
 .vik-innhold{flex:1;min-width:0}
 .vik-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
@@ -190,7 +190,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .btns{display:flex;gap:8px;flex-wrap:wrap}
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:8px 14px;font-weight:600;font-size:14px}
 .btn.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
-.btn.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);padding:12px 18px;font-size:16px;border-radius:12px;width:100%}
+.btn.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);padding:12px 18px;font-size:16px;border-radius:99px;width:100%}
 .chips{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:4px}
 .chips.scroll{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 .chips.scroll::-webkit-scrollbar{display:none}
@@ -210,7 +210,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .srad{display:flex;justify-content:flex-end;margin:0 0 6px}
 .sokbtn{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}
 .sokbtn.on{background:var(--lamp);border-color:var(--lamp);color:#fff}
-.nrad{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.nrad{background:var(--surface);border:0;border-radius:14px;overflow:hidden}
 .nhode{display:flex!important;align-items:center;gap:10px;padding:12px 14px!important;width:100%}
 .ndot{flex:none;width:9px}
 .ntekst{flex:1;min-width:0;display:block}
@@ -705,7 +705,7 @@ function news(){
   ${sokInp('nyh','Søk i nyheter …')}
   <div class="chips scroll" aria-label="Filter">${chips.map((c,i)=>{const v=i===1?'Uleste':c;return `<button class="chip" data-nf="${esc(v)}" aria-pressed="${(state.nf||'Alle')===v}">${esc(c)}</button>`}).join('')}</div>
   ${nU?'<div class="btns" style="margin:0 0 8px"><button class="btn" data-nyhlest>Merk alle som lest</button></div>':''}
-  <div class="list" id="nyhList">${nyhListe(l)}</div>${sk.length?`<details class="card acc" data-acc="skjulte" ${state.acc.skjulte?'open':''}><summary><h3>Planlagt, utkast og utløpt (${sk.length})</h3></summary><p class="small" style="margin:0 0 8px">Disse vises ikke for medlemmene nå. Bare du ser dem.</p><div class="list">${sk.map(nyhKort).join('')}</div></details>`:''}${kan?'<div class="lpzone"></div>':''}`}
+  <div class="list" id="nyhList">${nyhListe(l)}</div>${sk.length?`<details class="card acc" data-acc="skjulte" ${state.acc.skjulte?'open':''}><summary><h2>Planlagt, utkast og utløpt (${sk.length})</h2></summary><p class="small" style="margin:0 0 8px">Disse vises ikke for medlemmene nå. Bare du ser dem.</p><div class="list">${sk.map(nyhKort).join('')}</div></details>`:''}${kan?'<div class="lpzone"></div>':''}`}
 
 /* ---------- Innlogging og administrasjon ---------- */
 const CATS_DEFAULT=['Møte','Samling','Ledersamling','Menighetsmøte','Happeninger','Ungdom'];
@@ -808,7 +808,7 @@ function admin(){
   ${usingFb||!state.admin?'':`<p class="small" style="margin:8px 0">Databasen er tom, og appen viser innholdet fra JSON-filene. Flytt det over først, ellers forsvinner det når du legger til noe nytt.</p><button class="btn" data-aimport>Flytt eksisterende innhold til databasen</button>`}
   <div class="chips" style="margin:12px 0">${TYPES.filter(([k])=>state.admin||k!=='regular').map(([k,l])=>`<button class="chip" data-at="${k}" aria-pressed="${t===k}">${l}</button>`).join('')}</div>
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.msg)}</p>
-  <h3 style="margin:14px 0 6px;font-size:19px">Eksisterende ${({events:'arrangementer',posts:'nyheter',regular:'faste samlinger'})[t]} (${items.length})</h3>
+  <h3 style="margin:14px 0 6px;font-size:17px">Eksisterende ${({events:'arrangementer',posts:'nyheter',regular:'faste samlinger'})[t]} (${items.length})</h3>
   ${t==='posts'?'':`<div class="chips" style="margin:4px 0 8px">${['Alle',...allCats().filter(canSeeCat)].map(c=>`<button class="chip" data-af="${esc(c)}" aria-pressed="${state.af===c}">${esc(c)}</button>`).join('')}</div>`}
   ${items.length?`<div class="btns" style="align-items:center;margin:4px 0 8px"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" data-aselall style="width:22px;height:22px" ${nSel===items.length?'checked':''}>Velg alle</label>
   <button class="btn" data-adelsel ${nSel?'':'disabled'}>Slett valgte (${nSel})</button></div>`:''}
@@ -831,13 +831,13 @@ function leaderGroups(){
   return `<details class="card acc" data-acc="mingr" ${state.acc.mingr?'open':''}><summary><h2>Mine grupper</h2></summary>
   <p class="small" style="margin:0 0 8px">Legg til og fjern medlemmer i gruppene du leder. En ny person får en e-post for å velge passord. Å fjerne tar bare personen ut av gruppen, ikke ut av appen.</p>
   <p class="small" role="status" style="margin:0 0 6px">${esc(state.lgMsg||'')}</p>
-  ${(state.leads||[]).map(g=>{const l=leaderMem.filter(u=>u.groups.includes(g));return `<details class="acc sub" data-acc="mg_${g}" ${state.acc['mg_'+g]?'open':''}><summary><h3 style="font-size:19px">${esc(gName(g))} (${l.length})</h3></summary>
+  ${(state.leads||[]).map(g=>{const l=leaderMem.filter(u=>u.groups.includes(g));return `<details class="acc sub" data-acc="mg_${g}" ${state.acc['mg_'+g]?'open':''}><summary><h3 style="font-size:17px">${esc(gName(g))} (${l.length})</h3></summary>
    <form class="form" data-lgform="${esc(g)}" style="margin:0 0 10px;padding:10px;background:var(--bg);border-radius:10px"><p class="small" style="margin:0"><b>Appen skal ikke inneholde opplysninger om barn under 13 år. Legg ikke inn dem.</b></p><label class="f">E-post til ny person<input type="email" required autocomplete="off"></label><button class="btn primary" type="submit">Legg til i ${esc(gName(g))}</button></form>
    <div class="reg">${l.map(u=>`<div class="r"><div class="grow">${esc(u.id)}</div><button class="btn" data-lgdel="${esc(u.id)}|${esc(g)}">Fjern</button></div>`).join('')||'<p class="small">Ingen ennå.</p>'}</div></details>`}).join('')}</details>`}
 /* Grupper: opprett, endre navn og slett. Første endring lagrer standardgruppene i databasen. */
 const slug=n=>String(n).toLowerCase().replace(/æ/g,'ae').replace(/ø/g,'o').replace(/å/g,'a').replace(/[^a-z0-9]+/g,'').slice(0,30)||'gruppe';
 function groupsCard(){
-  return `<details class="card acc" data-acc="grupper" ${state.acc.grupper?'open':''}><summary><h3>Grupper (${GROUPS.length})</h3></summary>
+  return `<details class="card acc" data-acc="grupper" ${state.acc.grupper?'open':''}><summary><h2>Grupper (${GROUPS.length})</h2></summary>
   <p class="small" style="margin:0 0 8px">Grupper brukes til å velge hvem som ser et arrangement eller en nyhet, og hvem en gruppeleder leder. Endrer du navnet, gjelder det overalt. Sletter du en gruppe, tas den ut av alle brukere, og innhold som bare var for gruppen blir «Bare medlemmer».</p>
   <button class="btn primary" data-grpnew style="width:auto">+ Ny gruppe</button>
   <div class="reg" style="margin-top:10px">${GROUPS.map(g=>`<div class="r"><div class="grow">${esc(g[1])}${g[2]?' <span class="small">('+esc(g[2])+')</span>':''}${grVakt(g[0])?' <span class="tag">Vaktliste</span>':''}${grRemind(g[0])?' <span class="tag m">Påminnelse</span>':''}</div><button class="btn" data-grpedit="${esc(g[0])}">Endre</button><button class="btn" data-grpdel="${esc(g[0])}">Slett</button></div>`).join('')}</div></details>`}
@@ -990,7 +990,7 @@ function statCard(){
   return '<details class="card acc" data-acc="oversikt" '+(state.acc.oversikt===false?'':'open')+'><summary><h2>Oversikt</h2></summary>'
    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:4px 0 12px">'+tall(members.length,'brukere')+tall(state.stat&&state.stat.push!=null?state.stat.push:'–','telefoner med varsler')+tall(events.length,'kommende arrangementer')+'</div>'
    +'<p class="small" style="margin:0 0 10px">'+adm+' administratorer · '+led+' ledere · '+gl+' gruppeledere · '+med+' medlemmer · '+GROUPS.length+' grupper</p>'
-   +'<h3 style="margin:8px 0 6px;font-size:17px">Påmeldte på de neste arrangementene</h3>'
+   +'<h3 style="margin:14px 0 6px;font-size:17px">Påmeldte på de neste arrangementene</h3>'
    +(kommende.length?kommende.map(e=>{const n=counts[e.id]||0;return '<div style="margin:0 0 8px"><div style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(e.title)+' <span class="small">'+esc(e.start)+'</span></span><b>'+n+'</b></div><div style="height:8px;background:var(--line);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+Math.round(n/maks*100)+'%;background:var(--lamp)"></div></div></div>'}).join(''):'<p class="small">Ingen kommende arrangementer.</p>')
    +'<h3 style="margin:14px 0 6px;font-size:17px">Mest sette nyheter</h3>'
    +(topp.length?topp.map(p=>'<div style="display:flex;justify-content:space-between;gap:8px"><span>'+esc(p.t)+'</span><b>'+(views[p.id]||0)+'</b></div>').join(''):'<p class="small">Tellingen starter nå. Hver telefon telles én gang per nyhet.</p>')
@@ -1005,13 +1005,13 @@ function visitorCard(){
 function installBody(){
   return ''
    +'<p class="small" style="margin:0 0 8px">Da ligger appen på telefonen som en vanlig app, og du kan få varsler.</p>'
-   +'<h3 style="font-size:17px;margin:8px 0 4px">Android (Chrome)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne <b>sionmoldeapp.github.io/app</b> i Chrome.</li><li>Trykk på menyen (tre prikker) øverst til høyre.</li><li>Velg <b>Installer app</b>, og bekreft.</li></ol>'
-   +'<h3 style="font-size:17px;margin:8px 0 4px">iPhone (Safari)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne siden i <b>Safari</b> (ikke Chrome).</li><li>Trykk på Del-ikonet (firkant med pil opp).</li><li>Velg <b>Legg til på Hjem-skjerm</b>.</li></ol>'
-   +'<h3 style="font-size:17px;margin:8px 0 4px">Varsler</h3><p class="small" style="margin:0">Åpne appen, gå til Meg → Varsler og trykk «Slå på varsler». På iPhone må appen ligge på Hjem-skjermen først.</p>'}
+   +'<h3 style="margin:14px 0 6px;font-size:17px">Android (Chrome)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne <b>sionmoldeapp.github.io/app</b> i Chrome.</li><li>Trykk på menyen (tre prikker) øverst til høyre.</li><li>Velg <b>Installer app</b>, og bekreft.</li></ol>'
+   +'<h3 style="margin:14px 0 6px;font-size:17px">iPhone (Safari)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne siden i <b>Safari</b> (ikke Chrome).</li><li>Trykk på Del-ikonet (firkant med pil opp).</li><li>Velg <b>Legg til på Hjem-skjerm</b>.</li></ol>'
+   +'<h3 style="margin:14px 0 6px;font-size:17px">Varsler</h3><p class="small" style="margin:0">Åpne appen, gå til Meg → Varsler og trykk «Slå på varsler». På iPhone må appen ligge på Hjem-skjermen først.</p>'}
 function shareCard(){
   if(!canStats())return '';
   const qr='https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data='+encodeURIComponent(APP_LINK);
-  return '<details class="card acc" data-acc="del" '+(state.acc.del?'open':'')+'><summary><h3>Del appen</h3></summary>'
+  return '<details class="card acc" data-acc="del" '+(state.acc.del?'open':'')+'><summary><h2>Del appen</h2></summary>'
    +'<p class="small" style="margin:0 0 8px">Send lenken, eller la folk skanne QR-koden (for eksempel på en plakat i kirken). QR-bildet hentes fra en åpen tjeneste og inneholder bare den offentlige lenken.</p>'
    +'<p style="margin:0 0 8px;word-break:break-all"><b>'+APP_LINK+'</b></p>'
    +'<div class="btns" style="margin-bottom:10px"><button class="btn" data-copylink>Kopier lenke</button>'+(navigator.share?'<button class="btn" data-sharelink>Del …</button>':'')+'</div>'
@@ -1187,7 +1187,7 @@ function gruppeVakter(g,idag){
   const rad=x=>{const mine=(x.emails||[]).includes(me);
     return '<div class="r" style="flex-wrap:wrap"><div class="d" style="min-width:84px">'+esc(kortDato(x.date))+(x.role?'<span>'+esc(x.role)+'</span>':'')+'</div><div class="grow">'+((x.names||[]).map((n,i)=>(x.emails||[])[i]===me?'<b style="color:var(--lamp)">'+esc(n)+'</b>':esc(n)).join(', ')||'<span class="small">Ingen satt opp</span>')+'</div>'
       +(mine?'<button class="btn" data-vkswap="'+esc(g)+'|'+esc(x.id)+'">Bytte</button>':'')+(styr?'<button class="btn" data-vkedit="'+esc(g)+'|'+esc(x.id)+'">Endre</button>':'')+'</div>'};
-  return '<details class="acc sub" data-acc="vk_'+g+'" '+(state.acc['vk_'+g]?'open':'')+'><summary><h3 style="font-size:19px">'+esc(gName(g))+' ('+l.length+')</h3></summary>'
+  return '<details class="acc sub" data-acc="vk_'+g+'" '+(state.acc['vk_'+g]?'open':'')+'><summary><h3 style="font-size:17px">'+esc(gName(g))+' ('+l.length+')</h3></summary>'
    +(styr?'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-vknew="'+esc(g)+'" style="width:auto">+ Legg til vakter</button></div>':'')
    +(styr&&rq.length?'<h4 style="margin:6px 0">Byttebeskjeder ('+rq.length+')</h4><div class="reg">'+rq.map(r=>'<div class="r"><div class="grow"><b>'+esc(r.fromName||r.from)+'</b> vil bytte '+esc(kortDato(r.date))+(r.role?' ('+esc(r.role)+')':'')+(r.text?'<span class="small">'+esc(r.text)+'</span>':'')+'<a class="small" href="mailto:'+esc(r.from)+'">'+esc(r.from)+'</a></div><button class="btn" data-vkreqdel="'+esc(g)+'|'+esc(r.id)+'">Ferdig</button></div>').join('')+'</div>':'')
    +'<div class="reg">'+(l.map(rad).join('')||'<p class="small">Ingen kommende vakter.</p>')+'</div></details>'}
@@ -1340,7 +1340,7 @@ function memberCard(onlyBody){
   const rolleTxt=x=>x.role==='admin'?'administrator':x.leder?'leder '+ltName(x):(x.leads||[]).length?'gruppeleder':'medlem';
   const ml=members.filter(x=>(!gf||(x.groups||[]).includes(gf)||(x.leads||[]).includes(gf))&&(!q||q.split(/\s+/).every(o=>norm(x.id+' '+(x.groups||[]).map(gName).join(' ')+' '+rolleTxt(x)).includes(o))));
   const adms=ml.filter(x=>x.role==='admin'),lds=ml.filter(x=>x.role!=='admin'&&x.leder),leds=ml.filter(x=>x.role!=='admin'&&!x.leder&&(x.leads||[]).length),meds=ml.filter(x=>x.role!=='admin'&&!x.leder&&!(x.leads||[]).length);
-  const sec=(key,tittel,n,body)=>`<details class="acc sub" data-acc="${key}" ${(forced?n>0:state.acc[key])?'open':''}><summary><h3 style="font-size:19px">${tittel}${n===''?'':' ('+n+')'}</h3></summary>${body}</details>`;
+  const sec=(key,tittel,n,body)=>`<details class="acc sub" data-acc="${key}" ${(forced?n>0:state.acc[key])?'open':''}><summary><h3 style="font-size:17px">${tittel}${n===''?'':' ('+n+')'}</h3></summary>${body}</details>`;
   const grBoks=(sel,hjelp)=>`<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">${hjelp}</legend><div style="display:grid;gap:6px">${GROUPS.map(g=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:14px"><input type="checkbox" data-newg="${g[0]}" style="width:22px;height:22px;flex:none" ${sel.includes(g[0])?'checked':''}>${esc(gLabel(g[0]))}</label>`).join('')}</div></fieldset>`;
   const skjema=(id,tekst,ekstra,knapp)=>`<form class="form" id="${id}" style="margin:0 0 10px;padding:10px;background:var(--bg);border-radius:10px"><p class="small" style="margin:0">${tekst}</p><p class="small" style="margin:0"><b>Appen skal ikke inneholde opplysninger om barn under 13 år. Legg ikke inn dem.</b></p><label class="f">E-post<input id="mE${id.slice(3)}" type="email" required value="${esc(state['memE'+id.slice(3)]||'')}"></label>${ekstra}<button class="btn primary" type="submit">${knapp}</button></form>`;
   const liste=l=>`<div class="reg">${l.map(x=>userRow(x,me)).join('')||'<p class="small">Ingen ennå.</p>'}</div>`;
@@ -1353,7 +1353,7 @@ function memberCard(onlyBody){
   ${sec('b_med','Medlemmer',meds.length,skjema('memM','<b>Nytt medlem.</b> Ser medlemsinnhold og innhold for gruppene hen er med i.',grBoks(state.memGM,'Med i grupper (valgfritt)'),'Legg til medlem')+liste(meds))}
   ${sec('b_bulk','Legg til flere samtidig','','<form class="form" id="memBulk" style="margin:0 0 10px;padding:10px;background:var(--bg);border-radius:10px"><p class="small" style="margin:0">Lim inn e-postadresser, én per linje eller adskilt med komma eller mellomrom (maks 50 om gangen). Alle legges til som <b>medlemmer</b>, ikke administratorer. <b>Appen skal ikke inneholde opplysninger om barn under 13 år. Legg ikke inn dem.</b> Nye personer får e-post for å velge passord. De som allerede finnes, hoppes over, men legges i valgte grupper.</p><label class="f">E-postadresser<textarea id="mBulkT" rows="6" placeholder="kari@eksempel.no&#10;ola@eksempel.no">'+esc(state.memBulk)+'</textarea></label>'+grBoks(state.memGB,'Legg også i grupper (valgfritt)')+'<button class="btn primary" type="submit">Legg til alle</button></form>')}`;
   if(onlyBody)return body;
-  return `<details class="card acc" data-acc="brukere" ${state.acc.brukere?'open':''}><summary><h3>Brukere (${forced?ml.length+' av '+members.length:members.length})</h3></summary>
+  return `<details class="card acc" data-acc="brukere" ${state.acc.brukere?'open':''}><summary><h2>Brukere (${forced?ml.length+' av '+members.length:members.length})</h2></summary>
   <p class="small" style="margin:0 0 6px">Søk eller velg gruppe for å finne folk. Åpne riktig rolle for å legge til en ny bruker. Personen får en e-post og velger passord selv.</p>
   <p class="small" role="status" style="margin:0 0 6px">${esc(state.memMsg)}</p>
   <div style="display:grid;gap:8px;margin:0 0 10px"><input type="search" id="brQ" placeholder="Søk etter e-post, gruppe eller rolle …" aria-label="Søk i brukere" autocomplete="off" value="${esc(state.brQ)}"><select id="brG" aria-label="Filtrer på gruppe"><option value="">Alle grupper</option>${GROUPS.map(g=>`<option value="${esc(g[0])}" ${gf===g[0]?'selected':''}>${esc(g[1])}</option>`).join('')}</select></div>
@@ -1505,7 +1505,7 @@ function pvHtml(t){
   let ut='',liste=[];
   const tøm=()=>{if(liste.length){ut+='<ul style="margin:0 0 8px;padding-left:20px;display:grid;gap:4px;font-size:14px">'+liste.map(x=>'<li>'+inl(x)+'</li>').join('')+'</ul>';liste=[]}};
   String(t||'').split('\n').forEach(l=>{l=l.trimEnd();
-    if(/^##\s+/.test(l)){tøm();ut+='<h3 style="font-size:18px;margin:16px 0 6px">'+inl(l.replace(/^##\s+/,''))+'</h3>'}
+    if(/^##\s+/.test(l)){tøm();ut+='<h3 style="margin:14px 0 6px;font-size:17px">'+inl(l.replace(/^##\s+/,''))+'</h3>'}
     else if(/^-\s+/.test(l))liste.push(l.replace(/^-\s+/,''));
     else if(!l.trim())tøm();
     else{tøm();ut+='<p class="small" style="margin:0 0 8px;font-size:14px">'+inl(l)+'</p>'}});
@@ -1596,7 +1596,7 @@ function uiLagre(){try{localStorage.setItem('sm-ui',JSON.stringify(UI))}catch(e)
 applyFs();
 function settingsCard(){
   const bryter=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${k==='nh'?UI[k]===true:UI[k]!==false}" aria-label="${l}" data-ui="${k}"></button></div>`;
-  const H=t=>`<h3 style="font-size:18px;margin:14px 0 6px">${t}</h3>`;
+  const H=t=>`<h3 style="margin:14px 0 6px;font-size:17px">${t}</h3>`;
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
   ${state.user?profSub('inpush','Varsler',pushInner()):''}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
@@ -1613,7 +1613,7 @@ function pushInner(){
 
 function pushAdmin(){
   if(!PUSH_URL)return '';
-  return `<details class="card acc" data-acc="sendvarsel" ${state.acc.sendvarsel?'open':''}><summary><h3>Send varsel</h3></summary>
+  return `<details class="card acc" data-acc="sendvarsel" ${state.acc.sendvarsel?'open':''}><summary><h2>Send varsel</h2></summary>
   <p class="small" style="margin:0 0 10px">Skriv ikke noe sensitivt, for varselet kan vises på låst skjerm. Varsler til medlemmer og grupper når bare dem som er innlogget og har slått på varsler.</p>
   <form class="form" id="pushsend"><label class="f">Tittel<input id="psT" maxlength="60" required value="${esc(state.psT)}"></label>
   <label class="f">Tekst<textarea id="psB" rows="3" maxlength="500">${esc(state.psB)}</textarea></label>
@@ -1627,7 +1627,7 @@ function pushAdmin(){
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.pushSendMsg)}</p></details>`}
 
 function backupCard(){
-  return `<details class="card acc" data-acc="kopi" ${state.acc.kopi?'open':''}><summary><h3>Sikkerhetskopi</h3></summary>
+  return `<details class="card acc" data-acc="kopi" ${state.acc.kopi?'open':''}><summary><h2>Sikkerhetskopi</h2></summary>
   <p class="small" style="margin:0 0 10px">Laster ned en fil med alle arrangementer, nyheter, faste samlinger, brukerlister og tellere. Filen inneholder e-postadresser til brukerne, så oppbevar den trygt og del den ikke utenfor administratorene. Ta en kopi av og til.</p>
   <button class="btn" data-backup>Last ned sikkerhetskopi</button>
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.backupMsg)}</p></details>`}
@@ -1640,17 +1640,17 @@ const fmtTid=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return d.g
 const tellTxt=c=>(c.events||0)+' arrangementer · '+(c.posts||0)+' nyheter · '+(c.regular||0)+' faste samlinger · '+((c.members||0)+(c.admins||0))+' brukere';
 function snapCard(){
   const l=state.snaps;
-  return `<details class="card acc" data-acc="tilbake" ${state.acc.tilbake?'open':''}><summary><h3>Sikkerhetskopi og tilbakerulling</h3></summary>
-  <h3 style="margin:0 0 4px;font-size:18px">Last ned en kopi</h3>
+  return `<details class="card acc" data-acc="tilbake" ${state.acc.tilbake?'open':''}><summary><h2>Sikkerhetskopi og tilbakerulling</h2></summary>
+  <h3 style="margin:0 0 4px;font-size:17px">Last ned en kopi</h3>
   <p class="small" style="margin:0 0 8px">Laster ned en fil med alle arrangementer, nyheter, faste samlinger, brukerlister og tellere. Filen inneholder e-postadresser til brukerne, så oppbevar den trygt og del den ikke utenfor administratorene. Ta en kopi av og til.</p>
   <button class="btn" data-backup>Last ned sikkerhetskopi</button>
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.backupMsg)}</p>
-  <h3 style="margin:18px 0 4px;font-size:18px">Rull tilbake</h3>
+  <h3 style="margin:14px 0 6px;font-size:17px">Rull tilbake</h3>
   <p class="small" style="margin:0 0 10px">Hvis noe er slettet ved et uhell, kan du rulle arrangementer, nyheter, faste samlinger og brukerlister tilbake til et tidligere punkt. Appen lager automatisk et punkt første gang en administrator åpner appen hver dag, og før noe slettes. De 30 nyeste beholdes.</p>
   <button class="btn" data-snapnow>Lag sikkerhetspunkt nå</button>
   <p class="small" role="status" style="margin:8px 0">${esc(state.snapMsg)}</p>
   <div class="reg">${l===null?'<p class="small">Henter sikkerhetspunkter ...</p>':l.length?l.map(x=>`<div class="r" style="flex-wrap:wrap"><div class="grow" style="min-width:60%"><b>${esc(fmtTid(x.ms))}</b><span class="small">${esc(x.label||'')}${x.by?' · '+esc(x.by):''}<br>${esc(tellTxt(x.counts||{}))}</span></div><button class="btn" data-snaprestore="${esc(x.id)}">Rull tilbake</button></div>`).join(''):'<p class="small">Ingen sikkerhetspunkter ennå. Trykk «Lag sikkerhetspunkt nå».</p>'}</div>
-  <h3 style="margin:18px 0 4px;font-size:18px">Gjenopprett fra fil</h3>
+  <h3 style="margin:14px 0 6px;font-size:17px">Gjenopprett fra fil</h3>
   <p class="small" style="margin:0 0 8px">Brukes hvis sikkerhetspunktene også er borte. Velg en fil du har lastet ned med «Last ned sikkerhetskopi».</p>
   <input type="file" id="restoreFile" accept=".json,application/json" style="margin-bottom:8px">
   <button class="btn" data-filerestore>Gjenopprett fra fil</button></details>`}
