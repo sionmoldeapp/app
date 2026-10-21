@@ -987,12 +987,12 @@ function visitorCard(){
   return '<div class="card"><div class="eyebrow">Medlem?</div><h2 style="margin:4px 0 6px">Logg inn for å få mer</h2>'
    +'<ul class="small" style="margin:0 0 10px;padding-left:18px;display:grid;gap:4px;color:var(--ink)"><li>Se medlemsinnhold og innhold for gruppene dine</li><li>Få varsler fra gruppene du er med i</li><li>Meld deg på arrangementer med navnet ditt</li></ul>'
    +'<button class="btn primary" data-t="me" style="width:auto">Logg inn</button></div>'}
-function installCard(){
-  return '<details class="card acc" data-acc="installer" '+(state.acc.installer?'open':'')+'><summary><h2>Slik installerer du appen</h2></summary>'
+function installBody(){
+  return ''
    +'<p class="small" style="margin:0 0 8px">Da ligger appen på telefonen som en vanlig app, og du kan få varsler.</p>'
    +'<h3 style="font-size:17px;margin:8px 0 4px">Android (Chrome)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne <b>sionmoldeapp.github.io/app</b> i Chrome.</li><li>Trykk på menyen (tre prikker) øverst til høyre.</li><li>Velg <b>Installer app</b>, og bekreft.</li></ol>'
    +'<h3 style="font-size:17px;margin:8px 0 4px">iPhone (Safari)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne siden i <b>Safari</b> (ikke Chrome).</li><li>Trykk på Del-ikonet (firkant med pil opp).</li><li>Velg <b>Legg til på Hjem-skjerm</b>.</li></ol>'
-   +'<h3 style="font-size:17px;margin:8px 0 4px">Varsler</h3><p class="small" style="margin:0">Åpne appen, gå til Meg → Varsler og trykk «Slå på varsler». På iPhone må appen ligge på Hjem-skjermen først.</p></details>'}
+   +'<h3 style="font-size:17px;margin:8px 0 4px">Varsler</h3><p class="small" style="margin:0">Åpne appen, gå til Meg → Varsler og trykk «Slå på varsler». På iPhone må appen ligge på Hjem-skjermen først.</p>'}
 function shareCard(){
   if(!canStats())return '';
   const qr='https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data='+encodeURIComponent(APP_LINK);
@@ -1583,11 +1583,10 @@ function settingsCard(){
   const bryter=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${UI[k]!==false}" aria-label="${l}" data-ui="${k}"></button></div>`;
   const H=t=>`<h3 style="font-size:18px;margin:14px 0 6px">${t}</h3>`;
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
-  ${state.user?H('Varsler').replace('margin:14px','margin:0')+pushInner():''}
-  ${H('Tekststørrelse')}<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div>
-  <p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>
-  ${H('Vis på Hjem')}${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}
-  <p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p></details>`}
+  ${state.user?profSub('inpush','Varsler',pushInner()):''}
+  ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
+  ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
+  ${profSub('installer','Slik installerer du appen',installBody())}</details>`}
 function pushInner(){
   if(!state.user)return '';   // varsler er bare for innloggede
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
@@ -1658,7 +1657,7 @@ function loginCard(){
 
 /* Kortene under Meg kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
 const ME_KORT={
-  login:['Innlogging',()=>loginCard()],lr:['Saker til lederrådet',()=>lrCard()],innst:['Innstillinger',()=>settingsCard()],install:['Slik installerer du appen',()=>installCard()],share:['Del appen',()=>shareCard()],
+  login:['Innlogging',()=>loginCard()],lr:['Saker til lederrådet',()=>lrCard()],innst:['Innstillinger',()=>settingsCard()],share:['Del appen',()=>shareCard()],
   vakter:['Mine vakter',()=>vakterCard()],ansvar:['Ansvarsområder',()=>ansvarCard()],meld:['Beskjeder',()=>meldCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],attester:['Politiattester',()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():''],
