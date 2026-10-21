@@ -229,22 +229,27 @@ async function fetchAll(){
   return Promise.all([getJson('events'),getJson('posts'),getJson('regular').catch(()=>[])]);
 }
 async function load(){
-  if(FB)try{applyGroups(await FB.groupsList())}catch(e){}
-  if(FB)try{applyCats(await FB.catsList())}catch(e){}
-  if(FB)try{const k=await FB.getContact();if(k)state.contact=k}catch(e){}
-  if(FB&&state.user)try{state.pv=await FB.getPrivacy()}catch(e){}
-  if(FB&&state.admin)try{applyLtypes(await FB.ltypesList())}catch(e){}
-  const [e,p,g]=await fetchAll();
+  // Alle forespørslene sendes samtidig (tidligere én og én, og det tok mange sekunder).
+  const ok=p=>p.catch(()=>null);
+  const [gr,ca,ko,pv,lt,fr]=await Promise.all([FB?ok(FB.groupsList()):null,FB?ok(FB.catsList()):null,FB?ok(FB.getContact()):null,FB&&state.user?ok(FB.getPrivacy()):null,FB&&state.admin?ok(FB.ltypesList()):null,fetchAll()]);
+  if(gr)applyGroups(gr);
+  if(ca)applyCats(ca);
+  if(ko)state.contact=ko;
+  if(FB&&state.user)state.pv=pv;
+  if(lt)applyLtypes(lt);
+  const [e,p,g]=fr;
   rawEvents=e;
   events=e.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)).map(x=>({...x,t:esc(x.title),d:linkify(esc(x.text)),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
     .filter(x=>(x.e||x.w)>=todayStart).sort((a,b)=>a.w-b.w);
   posts=p.filter(canSee).filter(liveOK).sort((a,b)=>(!!b.pinned-!!a.pinned)||((b.ms||0)-(a.ms||0)));   // festede nyheter først
   regular=g.filter(r=>canSeeCat(r.cat)&&visOK(r)).sort((a,b)=>((a.day+6)%7-(b.day+6)%7)||String(a.time).localeCompare(String(b.time)));
-  counts=usingFb&&FB?await FB.counts().catch(()=>({})):{};
-  members=state.admin&&FB?await FB.listUsers().catch(()=>[]):[];
-  views=canStats()&&FB&&usingFb?await FB.viewCounts().catch(()=>({})):{};
-  state.stat=state.admin&&FB&&usingFb?{push:await FB.pushCount().catch(()=>null)}:null;
-  leaderMem=isLeader()&&FB?await FB.leaderMembers(state.leads).catch(()=>[]):[];
+  const [cn,mb,vw,st,lm]=await Promise.all([
+    usingFb&&FB?FB.counts().catch(()=>({})):{},
+    state.admin&&FB?FB.listUsers().catch(()=>[]):[],
+    canStats()&&FB&&usingFb?FB.viewCounts().catch(()=>({})):{},
+    state.admin&&FB&&usingFb?FB.pushCount().catch(()=>null):null,
+    isLeader()&&FB?FB.leaderMembers(state.leads).catch(()=>[]):[]]);
+  counts=cn;members=mb;views=vw;state.stat=state.admin&&FB&&usingFb?{push:st}:null;leaderMem=lm;
   state.unread=posts.filter(p=>isNew(p)&&!postSkjult(p)).length;
 }
 function ago(p){
@@ -2163,17 +2168,17 @@ async function start(){
   if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me')keep(()=>{})});FB.onPush(p=>push((p.notification&&p.notification.title)||'Melding',(p.notification&&p.notification.body)||''))}
   const go=async u=>{
     state.user=u||null;
-    state.admin=u?await FB.isAdmin(u.email):false;
-    state.member=!!u&&(state.admin||await FB.isMember(u.email));
+    const [adm,mem]=u?await Promise.all([FB.isAdmin(u.email),FB.isMember(u.email)]):[false,false];
+    state.admin=!!adm;
+    state.member=!!u&&(state.admin||!!mem);
     FB.full=state.member;
     state.view='meg';state.real=null;
     if(state.admin)FB.ensureSnapshot('Automatisk',20*3600e3).then(()=>{state.snaps=null}).catch(()=>{});
-    state.groups=u&&state.member?await FB.myGroups(u.email):[];
-    state.leads=u&&state.member&&!state.admin?await FB.myLeads(u.email):[];
-    state.leder=u&&state.member&&!state.admin?await FB.myLeder(u.email):false;
+    const med=!!u&&state.member,ikkeAdm=med&&!state.admin;
+    const [grp,lds,ldr,prof,pr]=await Promise.all([med?FB.myGroups(u.email):[],ikkeAdm?FB.myLeads(u.email):[],ikkeAdm?FB.myLeder(u.email):false,ikkeAdm?FB.myProfile(u.email):null,med?FB.myPrefs(u.email.toLowerCase()):null]);
+    state.groups=grp;state.leads=lds;state.leder=ldr;state.profile=prof;
     state.ltype=state.leder?((await FB.myLtype(u.email))||''):'';
-    state.profile=u&&state.member&&!state.admin?await FB.myProfile(u.email):null;
-    state.meorder=null;state.homeorder=null;if(u&&state.member){const pr=await FB.myPrefs(u.email.toLowerCase());if(pr&&Array.isArray(pr.meorder))state.meorder=pr.meorder;if(pr&&Array.isArray(pr.homeorder))state.homeorder=pr.homeorder}
+    state.meorder=null;state.homeorder=null;if(pr&&Array.isArray(pr.meorder))state.meorder=pr.meorder;if(pr&&Array.isArray(pr.homeorder))state.homeorder=pr.homeorder;
     state.notes=undefined;state.shifts=undefined;state.reqs=undefined;state.myShifts=[];
     if(u&&state.member)loadMyShifts().then(()=>keep(()=>{}));
     state.threads=undefined;state.roles=undefined;if(u&&state.member)loadThreads();
