@@ -24,7 +24,9 @@
 details.acc>summary{transition:background .18s ease;border-radius:12px}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;margin:0}
 button{font:inherit;color:inherit;cursor:pointer}
-:focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
+:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
+/* Skrivefelt: ingen tykk ring, bare oransje kant og et svakt skjær */
+input:focus-visible,textarea:focus-visible,select:focus-visible,.ned:focus-visible{outline:none;border-color:var(--lamp);box-shadow:0 0 0 3px rgba(240,165,83,.22)}
 .app{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);position:relative}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 16px 8px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
 .logo{display:flex;align-items:center;gap:10px;min-width:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;outline:none}   /* ingen firkantet markering når logoen trykkes på telefonen */
