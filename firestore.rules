@@ -75,6 +75,18 @@ service cloud.firestore {
       return isAdmin() || (signedIn() && exists(/databases/$(database)/documents/members/$(request.auth.token.email))
         && 'bonneledere' in get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []));
     }
+    // Saker til lederrådet: administratorer og medlemmer i gruppen lederradet leser og legger til. Alle disse kan merke en sak som behandlet
+    // (bare done og doneMs kan endres). Forfatteren og administratorer sletter.
+    match /lrsaker/{id} {
+      allow read: if inGroup('lederradet');
+      allow create: if inGroup('lederradet') && request.resource.data.keys().hasOnly(['t', 'name', 'by', 'ms', 'done'])
+        && request.resource.data.t is string && request.resource.data.t.size() > 0 && request.resource.data.t.size() <= 600
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60
+        && request.resource.data.by == request.auth.token.email && request.resource.data.ms is number && request.resource.data.done == false;
+      allow update: if inGroup('lederradet') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['done', 'doneMs'])
+        && request.resource.data.done is bool;
+      allow delete: if isAdmin() || (signedIn() && resource.data.by == request.auth.token.email);
+    }
     match /prayers/{id} {
       allow read: if prayReader() || (signedIn() && resource.data.by == request.auth.uid);   // leserne ser alle, forfatteren ser egne (innsyn og sletting)
       // Bare innloggede medlemmer skriver direkte (med navn). Anonyme bønneemner uten innlogging går via Apps Script, som skriver med egen tilgang.

@@ -135,6 +135,11 @@ const FB={
     async bonnUtfordring(url){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'bonnutfordring'})});return r.json()},
     async bonnAnon(url,d){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'bonnanon',...d})});return r.json()},
     delPrayer:id=>sl(S.deleteDoc(S.doc(db,'prayers',id))),
+    // Saker til lederrådet: bare administratorer og medlemmer i gruppen lederradet (reglene).
+    async lrList(){const s=await S.getDocs(S.query(S.collection(db,'lrsaker'),S.orderBy('ms','desc'),S.limit(100)));return s.docs.map(d=>({id:d.id,...d.data()}))},
+    lrAdd:d=>S.addDoc(S.collection(db,'lrsaker'),{t:String(d.t).slice(0,600),name:String(d.name||'').slice(0,60),by:auth.currentUser.email.toLowerCase(),ms:Date.now(),done:false}),
+    lrDone:(id,v)=>sl(S.updateDoc(S.doc(db,'lrsaker',id),{done:!!v,doneMs:v?Date.now():0})),
+    lrDel:id=>sl(S.deleteDoc(S.doc(db,'lrsaker',id))),
     // Kontaktinfo («Finn frem» på Hjem): alle kan lese, administrator endrer.
     async getPrivacy(){const s=await S.getDoc(S.doc(db,'settings','personvern'));return s.exists()?s.data():null},
     setPrivacy:(text,updated)=>S.setDoc(S.doc(db,'settings','personvern'),{text:String(text).slice(0,20000),updated:String(updated).slice(0,10)}),
@@ -373,7 +378,7 @@ const FB={
     }
   };
   // Lagring og sending vises med «Lagrer …» / «Sender …» til databasen eller tjenesten har svart.
-  for(const n of ['setAttest','setPrivacy','setRole','newThread','addMsg','addPrayer','setContact','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
+  for(const n of ['setAttest','setPrivacy','setRole','newThread','addMsg','addPrayer','lrAdd','setContact','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
   for(const n of ['sendPush','sendNote','sendPrayers','sendWelcome','sendRsvpMail','sendMail']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Sender …')}
   window._fbRes(FB);
 }catch(e){console.warn('Firebase kunne ikke lastes, bruker JSON-filene',e);window._fbRes(null)}

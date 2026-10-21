@@ -513,6 +513,38 @@ async function prayDel(id){
   try{await FB.delPrayer(id);state.prayers=(state.prayers||[]).filter(p=>p.id!==id);keep(()=>{})}
   catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}}
 
+/* Saker til lederrådet: medlemmer i gruppen Lederrådet (og administratorer) skriver inn en sak rett i kortet og ser sakene til de andre. Behandlede saker flyttes ned. Forfatteren og administrator kan slette. */
+const lrTilgang=()=>!!(state.user&&state.member&&(effAdmin()||effGroups().includes('lederradet')));
+const lrNavn=()=>lsGet('sm-navn')||(state.profile&&state.profile.name)||((state.user&&state.user.email)||'').split('@')[0];
+function lrCard(){
+  if(!lrTilgang())return '';
+  const l=state.lr,apne=(l||[]).filter(x=>!x.done).sort((a,b)=>(a.ms||0)-(b.ms||0)),ferdige=(l||[]).filter(x=>x.done).sort((a,b)=>(b.doneMs||0)-(a.doneMs||0));
+  const mine=x=>effAdmin()||(x.by&&state.user&&x.by===String(state.user.email||'').toLowerCase());
+  const rad=(x,grå)=>'<div class="r" style="display:block;'+(grå?'opacity:.55':'')+'"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'')+' · '+esc(ago({ms:x.ms}))+'</div><div class="btns"><button class="btn" data-lrdone="'+esc(x.id)+'" data-v="'+(grå?'0':'1')+'">'+(grå?'Åpne igjen':'Behandlet')+'</button>'+(mine(x)?'<button class="btn" data-lrdel="'+esc(x.id)+'">Slett</button>':'')+'</div></div>';
+  const inn='<p class="small" style="margin:0 0 8px">Skriv inn en sak du vil ta opp i lederrådet. Alle i lederrådet ser den.</p>'
+   +'<textarea id="lrT" rows="3" maxlength="600" placeholder="Hva vil du ta opp? …" style="margin-bottom:8px"></textarea>'
+   +'<div class="btns" style="margin:0 0 10px"><button class="btn primary" data-lradd style="width:auto">Legg til sak</button><button class="btn" data-lrrefresh>Oppdater</button>'+(apne.length?'<button class="btn" data-lrcopy>Kopier saklisten</button>':'')+'</div>'
+   +(l===undefined?'<p class="small">Henter saker …</p>':'<div class="reg">'+(apne.map(x=>rad(x,false)).join('')||'<p class="small">Ingen saker ennå.</p>')+'</div>'
+   +(ferdige.length?'<details class="acc sub" data-acc="lr_ferdige" '+(state.acc.lr_ferdige?'open':'')+' style="margin-top:12px"><summary><h3 style="font-size:17px">Behandlet ('+ferdige.length+')</h3></summary><div class="reg">'+ferdige.map(x=>rad(x,true)).join('')+'</div></details>':''));
+  return '<details class="card acc" data-acc="lr" '+(state.acc.lr?'open':'')+'><summary><h2>Saker til lederrådet'+(l?' ('+apne.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.lrMsg||'')+'</p></details>'}
+async function loadLr(){
+  try{state.lr=await FB.lrList();state.lrMsg=''}catch(e){state.lr=[];state.lrMsg='Kunne ikke hente sakene ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
+  keep(()=>{})}
+async function lrAdd(){
+  const t=($('#lrT')&&$('#lrT').value||'').trim();if(!t){state.lrMsg='Skriv en sak først.';keep(()=>{});return}
+  try{await FB.lrAdd({t,name:lrNavn()});state.acc.lr=true;await loadLr();push('Lagt til','Saken er lagt til.')}
+  catch(er){state.lrMsg=saveMsg(er&&er.code);keep(()=>{})}}
+async function lrDone(id,v){
+  try{await FB.lrDone(id,v);const x=(state.lr||[]).find(p=>p.id===id);if(x){x.done=v;x.doneMs=v?Date.now():0}keep(()=>{})}
+  catch(er){push('Kunne ikke lagre',saveMsg(er&&er.code))}}
+async function lrDel(id){
+  if(!await bekreft('Slette denne saken?'))return;
+  try{await FB.lrDel(id);state.lr=(state.lr||[]).filter(p=>p.id!==id);keep(()=>{})}
+  catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}}
+async function lrCopy(){
+  const v=(state.lr||[]).filter(x=>!x.done).sort((a,b)=>(a.ms||0)-(b.ms||0)),tekst='Saker til lederrådet\n\n'+v.map((x,i)=>(i+1)+'. '+x.t.replace(/\s*\n\s*/g,' ')+' ('+(x.name||'')+')').join('\n');
+  try{await navigator.clipboard.writeText(tekst);push('Kopiert','Saklisten er kopiert.')}catch(e){await visTekst('Kopier saklisten:',tekst.replace(/\n/g,' '))}}
+
 /* «Viktig»-kortet på Hjem: rolig kort i samme stil som de andre, med ikon, tid, tittel, to linjer tekst og en pil. Hele kortet åpner meldingen i Nyheter. Kan fjernes med ✕ eller ved å trekke til siden, og kommer tilbake først når det kommer en ny melding. */
 function viktigKort(p){
   const tekst=String(p.b||'').replace(/\s+/g,' ').trim();
@@ -1565,7 +1597,7 @@ function loginCard(){
 
 /* Kortene under Meg kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
 const ME_KORT={
-  login:['Innlogging',()=>loginCard()],innst:['Innstillinger',()=>settingsCard()],install:['Slik installerer du appen',()=>installCard()],share:['Del appen',()=>shareCard()],
+  login:['Innlogging',()=>loginCard()],lr:['Saker til lederrådet',()=>lrCard()],innst:['Innstillinger',()=>settingsCard()],install:['Slik installerer du appen',()=>installCard()],share:['Del appen',()=>shareCard()],
   vakter:['Mine vakter',()=>vakterCard()],ansvar:['Ansvarsområder',()=>ansvarCard()],meld:['Beskjeder',()=>meldCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],attester:['Politiattester',()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():''],
@@ -1759,6 +1791,11 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ansedit){ansEditAsk(c.dataset.ansedit)}
   else if(c.dataset.thr){thrAsk(c.dataset.thr)}
   else if('meldrefresh' in c.dataset){state.threads=undefined;keep(()=>{});loadThreads()}
+  else if('lradd' in c.dataset){lrAdd()}
+  else if('lrrefresh' in c.dataset){state.lr=undefined;keep(()=>{});loadLr()}
+  else if('lrcopy' in c.dataset){lrCopy()}
+  else if(c.dataset.lrdone){lrDone(c.dataset.lrdone,c.dataset.v==='1')}
+  else if(c.dataset.lrdel){lrDel(c.dataset.lrdel)}
   else if('prnew' in c.dataset){prayAsk()}
   else if('prrefresh' in c.dataset){state.prayers=undefined;keep(()=>{});loadPrayers()}
   else if('prcopy' in c.dataset){prayCopy()}
@@ -2285,7 +2322,7 @@ async function loadSnaps(){
   catch(e){state.snaps=[];state.snapMsg='Kunne ikke hente sikkerhetspunkter ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{});
 }
-document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB&&prayLes())loadPrayers();if(k==='ansvar'&&e.target.open&&state.roles===undefined&&FB)loadRoles();if(k==='attester'&&e.target.open&&state.attester===undefined&&FB)loadAttester();if(k==='meld'&&e.target.open&&state.threads===undefined&&FB)loadThreads();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
+document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='notater'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='lr'&&e.target.open&&state.lr===undefined&&FB&&lrTilgang())loadLr();if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB&&prayLes())loadPrayers();if(k==='ansvar'&&e.target.open&&state.roles===undefined&&FB)loadRoles();if(k==='attester'&&e.target.open&&state.attester===undefined&&FB)loadAttester();if(k==='meld'&&e.target.open&&state.threads===undefined&&FB)loadThreads();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
   if('prmute' in d){const m=new Set(state.profile.muted||[]);e.target.checked?m.delete(d.prmute):m.add(d.prmute);try{await FB.setProfile(state.user.email,{muted:[...m]});state.profile.muted=[...m];state.prMsg='Lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code);e.target.checked=!e.target.checked}keep(()=>{});return}
