@@ -44,6 +44,11 @@ header.top.scrolled .logo-mark{transform:scale(.86)}
   @keyframes glans{0%,70%{background-position:160% 0}100%{background-position:-60% 0}}
   .logo-mark.hopp img{animation:logoHopp .5s cubic-bezier(.2,1.4,.4,1)}
   @keyframes logoHopp{0%{transform:scale(1)}35%{transform:scale(1.22) rotate(-6deg)}70%{transform:scale(.94) rotate(3deg)}100%{transform:scale(1)}}
+  /* Vinduer (dialoger) kommer mykt til syne: bakgrunnen tones inn, og selve vinduet glir litt opp og tones inn */
+  dialog[open]{animation:dialogInn .34s cubic-bezier(.2,.8,.2,1) both}
+  dialog[open]::backdrop{animation:bakInn .3s ease both}
+  @keyframes dialogInn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+  @keyframes bakInn{from{opacity:0}to{opacity:1}}
   .btn,.chip,.tabs button,.tg{transition:transform .14s ease,background .2s ease,box-shadow .2s ease}
   .btn:active,.chip:active,.tabs button:active{transform:scale(.95)}
 }
@@ -2310,6 +2315,19 @@ let first=true;
       else{const til=sm.offsetHeight+parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom)+parseFloat(cs.borderTopWidth)+parseFloat(cs.borderBottomWidth);d.style.overflow='hidden';
         const a=d.animate({height:[fra+'px',til+'px']},{duration:240,easing:'cubic-bezier(.4,0,.2,1)'});a.onfinish=()=>{d.open=false;slutt()};a.oncancel=()=>{d.open=false;slutt()}}
     }},true) }
+/* Vinduer lukkes også mykt: close() og lukking via skjema (method=dialog) tones ut før vinduet fjernes. */
+{ const orig=HTMLDialogElement.prototype.close,lite=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;
+  HTMLDialogElement.prototype.close=function(rv){
+    if(!this.open||this.dataset.lukker||lite())return orig.call(this,rv);
+    const d=this;d.dataset.lukker='1';
+    if(rv!==undefined)d.returnValue=rv;
+    const a=d.animate({opacity:[1,0],transform:['none','translateY(10px) scale(.98)']},{duration:180,easing:'ease-in'});
+    const ferdig=()=>{delete d.dataset.lukker;orig.call(d,rv!==undefined?rv:d.returnValue)};
+    a.onfinish=ferdig;a.oncancel=ferdig};
+  document.addEventListener('submit',e=>{
+    const f=e.target;if(!f||f.method!=='dialog'||e.defaultPrevented||lite())return;
+    const d=f.closest('dialog');if(!d)return;
+    e.preventDefault();d.close(e.submitter&&e.submitter.value!==undefined?e.submitter.value:'')}) }
 /* Skifte mellom Hjem, Program, Nyheter og Meg: innholdet tones ut og det nye tones inn. */
 let fadeT=null;
 function fadeRender(){
