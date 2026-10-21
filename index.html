@@ -205,6 +205,11 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .day{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin:6px 0 -2px}
 .post{display:flex;flex-direction:column;gap:6px}
 .post .head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hrad{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.hrad .hd{flex:1;min-width:0}
+.srad{display:flex;justify-content:flex-end;margin:0 0 6px}
+.sokbtn{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}
+.sokbtn.on{background:var(--lamp);border-color:var(--lamp);color:#fff}
 .nrad{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .nhode{display:flex!important;align-items:center;gap:10px;padding:12px 14px!important;width:100%}
 .ndot{flex:none;width:9px}
@@ -618,13 +623,13 @@ function prog(){
   const cats=['Alle',...allCats().filter(canSeeCat)];
   const kanLp=state.admin&&editOn();
   const kanNy=editOn();
-  return `<div class="hd"><h1>Kommende arrangementer</h1><span class="script">sett av datoene!</span></div>${kanNy?'<button class="btn primary" data-wiz style="width:auto">+ Nytt arrangement</button>':''}
-  <input type="search" id="progQ" placeholder="Søk i program …" aria-label="Søk i program" autocomplete="off" value="${esc(state.q||'')}">
+  return `<div class="hrad"><div class="hd"><h1>Kommende arrangementer</h1><span class="script">sett av datoene!</span></div>${sokBtn('prog')}</div>${kanNy?'<button class="btn primary" data-wiz style="width:auto">+ Nytt arrangement</button>':''}
+  ${sokInp('prog','Søk i program …')}
   <div class="chips scroll" aria-label="Kategorier">${cats.map(c=>`<button class="chip" data-f="${esc(c)}"${kanLp&&c!=='Alle'&&c!==CAT_LOCKED?` data-lp="cat:${encodeURIComponent(c)}"`:''} aria-pressed="${state.filter===c}">${esc(c)}</button>`).join('')}</div>
   ${kanLp?'<p class="small" style="margin:0 0 8px">Hold inne på et arrangement eller en fast samling for å endre eller slette. Hold inne på en kategori for å endre navnet eller slette den.</p>':''}
   <div class="list" id="progList">${progList()}</div>
   <details class="card acc" data-acc="tidl" ${state.acc.tidl?'open':''} style="margin-top:16px"><summary><h2>Tidligere arrangementer</h2></summary>
-   <input type="search" id="pastQ" placeholder="Søk i tidligere arrangementer …" aria-label="Søk i tidligere arrangementer" autocomplete="off" value="${esc(state.pq||'')}" style="margin:0 0 8px">
+   <div class="srad">${sokBtn('past')}</div>${sokInp('past','Søk i tidligere arrangementer …','margin:0 0 8px')}
    <div class="list" id="pastList">${pastList()}</div></details>`}
 
 function regList(){
@@ -633,6 +638,11 @@ function regList(){
   return `<div><h2 style="margin-bottom:10px">Faste samlinger</h2><div class="card reg">${l.map(r=>`<div class="r"><div class="d">${cap(DAYS[r.day])}<span>kl. ${esc(r.time)}</span></div><div class="grow"><b>${esc(r.title)}</b>${r.note?`<span class="small">${esc(r.note)}</span>`:''}</div></div>`).join('')}</div></div>`}
 
 /* Nyheter: kompakte rader (ulest-prikk, tittel, én linje tekst, dato) gruppert etter tid, med søk, filter og «Vis eldre». Trykk på en rad åpner hele meldingen. */
+/* Søkefelt står skjult bak et søkeikon (til høyre for overskriften). Feltet åpnes ved trykk, og står åpent så lenge det står noe i det. */
+const SOK={nyh:'nyq',prog:'q',past:'pq',note:'nq'},SOK_ID={nyh:'nyhQ',prog:'progQ',past:'pastQ',note:'noteQ'};
+const sokApen=k=>!!(state.sok&&state.sok[k])||!!String(state[SOK[k]]||'').trim();
+const sokBtn=k=>'<button type="button" class="sokbtn'+(sokApen(k)?' on':'')+'" data-sok="'+k+'" aria-label="Søk" aria-expanded="'+sokApen(k)+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>';
+const sokInp=(k,ph,stil)=>sokApen(k)?'<input type="search" id="'+SOK_ID[k]+'" placeholder="'+ph+'" aria-label="'+ph.replace(' …','')+'" autocomplete="off" value="'+esc(state[SOK[k]]||'')+'"'+(stil?' style="'+stil+'"':'')+'>':'';
 const NYH_SIDE=15;
 let lest={};try{lest=JSON.parse(localStorage.getItem('sm-lest')||'{}')}catch(e){}
 let lestFra=0;try{lestFra=+localStorage.getItem('sm-lest-fra')||0;if(!lestFra){lestFra=Date.now()-7*864e5;localStorage.setItem('sm-lest-fra',String(lestFra))}}catch(e){lestFra=Date.now()-7*864e5}
@@ -651,15 +661,15 @@ function nyhGruppe(p){
   if(d<7)return 1;if(n.getFullYear()===t.getFullYear()&&n.getMonth()===t.getMonth())return 2;return 3}
 const NYH_TITLER=['Festet','Denne uken','Tidligere denne måneden','Eldre'];
 function nyhFiltrert(l){
-  const q=norm(state.nq||'').trim(),f=state.nf||'Alle';
+  const q=norm(state.nyq||'').trim(),f=state.nf||'Alle';
   return l.filter(p=>{
     if(f==='Uleste'&&!ulest(p))return false;
     if(f!=='Alle'&&f!=='Uleste'&&!postEtiketter(p).includes(f))return false;
     if(q){const h=norm(p.t+' '+(p.m&&!state.member?'':p.b)+' '+postEtiketter(p).join(' '));if(!q.split(/\s+/).every(o=>h.includes(o)))return false}
     return true})}
 function nyhListe(l){
-  const alle=nyhFiltrert(l),søk=!!(state.nq||'').trim(),n=søk?alle.length:(state.nyhN||NYH_SIDE),vis=alle.slice(0,n);
-  if(!vis.length)return '<p class="small">'+(søk?'Ingen treff på «'+esc(state.nq)+'».':(state.nf==='Uleste'?'Du har lest alt.':'Ingen nyheter ennå.'))+'</p>';
+  const alle=nyhFiltrert(l),søk=!!(state.nyq||'').trim(),n=søk?alle.length:(state.nyhN||NYH_SIDE),vis=alle.slice(0,n);
+  if(!vis.length)return '<p class="small">'+(søk?'Ingen treff på «'+esc(state.nyq)+'».':(state.nf==='Uleste'?'Du har lest alt.':'Ingen nyheter ennå.'))+'</p>';
   let ut='',sist=-1;
   vis.forEach(p=>{const g=nyhGruppe(p);if(g!==sist){ut+='<div class="day">'+NYH_TITLER[g]+'</div>';sist=g}ut+=nyhKort(p)});
   return ut+(alle.length>n?'<button class="btn" data-nyhmore style="margin-top:4px">Vis eldre ('+(alle.length-n)+')</button>':'')}
@@ -669,8 +679,8 @@ function news(){
   const kan=editOn(),nU=l.filter(ulest).length,ett=[];
   l.forEach(p=>{if(p.m&&!state.member)return;postEtiketter(p).forEach(a=>{if(a!=='Alle'&&!ett.includes(a))ett.push(a)})});
   const chips=['Alle','Uleste'+(nU?' ('+nU+')':''),...ett.slice(0,8)];
-  return `<h1>Nyheter</h1>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Pastorens hilsen</button>':'')+'</div>':''}
-  <input type="search" id="nyhQ" placeholder="Søk i nyheter …" aria-label="Søk i nyheter" autocomplete="off" value="${esc(state.nq||'')}">
+  return `<div class="hrad"><h1>Nyheter</h1>${sokBtn('nyh')}</div>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Pastorens hilsen</button>':'')+'</div>':''}
+  ${sokInp('nyh','Søk i nyheter …')}
   <div class="chips scroll" aria-label="Filter">${chips.map((c,i)=>{const v=i===1?'Uleste':c;return `<button class="chip" data-nf="${esc(v)}" aria-pressed="${(state.nf||'Alle')===v}">${esc(c)}</button>`}).join('')}</div>
   ${nU?'<div class="btns" style="margin:0 0 8px"><button class="btn" data-nyhlest>Merk alle som lest</button></div>':''}
   <div class="list" id="nyhList">${nyhListe(l)}</div>${sk.length?`<details class="card acc" data-acc="skjulte" ${state.acc.skjulte?'open':''}><summary><h3>Planlagt, utkast og utløpt (${sk.length})</h3></summary><p class="small" style="margin:0 0 8px">Disse vises ikke for medlemmene nå. Bare du ser dem.</p><div class="list">${sk.map(nyhKort).join('')}</div></details>`:''}${kan?'<div class="lpzone"></div>':''}`}
@@ -1020,7 +1030,7 @@ function notesCard(){
     inn='<p class="small" style="margin:0 0 8px">Du kan ha opptil '+NOTE_MAX+' notater. Hold inne på et notat for å slette det.</p>'
      +'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-notenew style="width:auto" '+(n>=NOTE_MAX?'disabled':'')+'>+ Nytt notat</button></div>'
      +(n>=NOTE_MAX?'<p class="small">Du har '+NOTE_MAX+' notater. Slett et gammelt for å lage et nytt.</p>':'')
-     +(n>2?'<input type="search" id="noteQ" placeholder="Søk i notatene …" aria-label="Søk i notater" autocomplete="off" value="'+esc(state.nq||'')+'" style="margin:0 0 8px">':'')
+     +(n>2?'<div class="srad">'+sokBtn('note')+'</div>'+sokInp('note','Søk i notatene …','margin:0 0 8px'):'')
      +'<div class="reg" id="noteList">'+noteRows(vis)+'</div>'}
   return '<details class="card acc" data-acc="notater" '+(state.acc.notater?'open':'')+'><summary><h2>Møtenotater'+(l?' ('+n+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.noteMsg||'')+'</p></details>'}
 function noteRows(l){
@@ -1751,7 +1761,7 @@ function viewOpts(){
 document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.target.value;const l=$('#noteList');if(l)l.innerHTML=noteRows(state.nq.trim()?(state.notes||[]).filter(x=>norm(x.title+' '+(x.speaker||'')+' '+noteText(x.html)).includes(norm(state.nq).trim())):(state.notes||[]));return}
   if(e.target.id==='brQ'){state.brQ=e.target.value;const b=$('#brBody');if(b)b.innerHTML=memberCard(true);return}
   if(e.target.id==='pastQ'){state.pq=e.target.value;state.pastN=40;const l=$('#pastList');if(l)l.innerHTML=pastList();return}
-  if(e.target.id==='nyhQ'){state.nq=e.target.value;const l=$('#nyhList');if(l)l.innerHTML=nyhListe(posts.filter(p=>!(state.admin&&state.view==='meg'&&postSkjult(p))));return}
+  if(e.target.id==='nyhQ'){state.nyq=e.target.value;const l=$('#nyhList');if(l)l.innerHTML=nyhListe(posts.filter(p=>!(state.admin&&state.view==='meg'&&postSkjult(p))));return}
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
 /* Langt trykk på et kort under Meg åpner «Endre rekkefølge». */
 {let t=null,x0=0,y0=0,svelg=false;
@@ -1831,6 +1841,9 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.meup){meFlytt(c.dataset.meup,-1)}
   else if(c.dataset.medown){meFlytt(c.dataset.medown,1)}
   else if(c.dataset.nf!==undefined){state.nf=c.dataset.nf;state.nyhN=NYH_SIDE;keep(()=>{})}
+  else if(c.dataset.sok){const k=c.dataset.sok,f=SOK[k];state.sok=state.sok||{};const apen=sokApen(k);
+    if(apen){state.sok[k]=false;state[f]='';if(k==='past')state.pastN=40;if(k==='nyh')state.nyhN=NYH_SIDE;keep(()=>{})}
+    else{state.sok[k]=true;keep(()=>{});setTimeout(()=>{const i=document.getElementById(SOK_ID[k]);if(i)i.focus()},60)}}
   else if('nyhmore' in c.dataset){keep(()=>{state.nyhN=(state.nyhN||NYH_SIDE)+NYH_SIDE})}
   else if('nyhlest' in c.dataset){posts.forEach(p=>{if(p.ms)lest[p.id]=1});lagreLest();keep(()=>{})}
   else if('pastmore' in c.dataset){keep(()=>{state.pastN=(state.pastN||40)+40})}
@@ -2442,7 +2455,7 @@ function viktigSkjul(id){
   const h=k.offsetHeight,a=k.animate({opacity:[getComputedStyle(k).opacity,0],height:[h+'px','0px'],paddingTop:['14px','0px'],paddingBottom:['14px','0px'],marginBottom:['0px','-12px']},{duration:260,easing:'ease'});
   k.style.overflow='hidden';a.onfinish=()=>keep(()=>{})}
 function viktigApne(id){
-  state.open['p_'+id]=true;markLest(id);state.tab='news';state.nf='Alle';state.nq='';state.reorder=false;fadeRender();
+  state.open['p_'+id]=true;markLest(id);state.tab='news';state.nf='Alle';state.nyq='';state.reorder=false;fadeRender();
   setTimeout(()=>{const b=document.querySelector('[data-postopen="'+id+'"]');if(b)b.scrollIntoView({block:'center',behavior:'smooth'})},520)}
 { let k=null,x0=0,y0=0,dx=0,drar=false,sperr=false;
   document.addEventListener('pointerdown',e=>{const v=e.target.closest('.viktig');if(!v||e.target.closest('.vik-x'))return;k=v;x0=e.clientX;y0=e.clientY;dx=0;drar=false});
