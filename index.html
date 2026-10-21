@@ -643,6 +643,13 @@ const SOK={nyh:'nyq',prog:'q',past:'pq',note:'nq'},SOK_ID={nyh:'nyhQ',prog:'prog
 const sokApen=k=>!!(state.sok&&state.sok[k])||!!String(state[SOK[k]]||'').trim();
 const sokBtn=k=>'<button type="button" class="sokbtn'+(sokApen(k)?' on':'')+'" data-sok="'+k+'" aria-label="Søk" aria-expanded="'+sokApen(k)+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>';
 const sokInp=(k,ph,stil)=>sokApen(k)?'<input type="search" id="'+SOK_ID[k]+'" placeholder="'+ph+'" aria-label="'+ph.replace(' …','')+'" autocomplete="off" value="'+esc(state[SOK[k]]||'')+'"'+(stil?' style="'+stil+'"':'')+'>':'';
+/* Søkefeltet ruller mykt ut og inn (høyde og gjennomsiktighet), som rullegardinene. Ingen animasjon ved prefers-reduced-motion. */
+function sokAnim(el,inn,ferdig){
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches){if(ferdig)ferdig();return}
+  const cs=getComputedStyle(el),h=el.offsetHeight,kf={height:h+'px',opacity:1,paddingTop:cs.paddingTop,paddingBottom:cs.paddingBottom,marginTop:cs.marginTop,marginBottom:cs.marginBottom},null0={height:'0px',opacity:0,paddingTop:'0px',paddingBottom:'0px',marginTop:'0px',marginBottom:'0px'};
+  el.style.overflow='hidden';
+  const a=el.animate(inn?[null0,kf]:[kf,null0],{duration:inn?260:200,easing:inn?'cubic-bezier(.2,.7,.2,1)':'ease-in',fill:inn?'none':'forwards'});
+  const slutt=()=>{el.style.overflow='';if(ferdig)ferdig()};a.onfinish=slutt;a.oncancel=slutt}
 const NYH_SIDE=15;
 let lest={};try{lest=JSON.parse(localStorage.getItem('sm-lest')||'{}')}catch(e){}
 let lestFra=0;try{lestFra=+localStorage.getItem('sm-lest-fra')||0;if(!lestFra){lestFra=Date.now()-7*864e5;localStorage.setItem('sm-lest-fra',String(lestFra))}}catch(e){lestFra=Date.now()-7*864e5}
@@ -1842,8 +1849,8 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.medown){meFlytt(c.dataset.medown,1)}
   else if(c.dataset.nf!==undefined){state.nf=c.dataset.nf;state.nyhN=NYH_SIDE;keep(()=>{})}
   else if(c.dataset.sok){const k=c.dataset.sok,f=SOK[k];state.sok=state.sok||{};const apen=sokApen(k);
-    if(apen){state.sok[k]=false;state[f]='';if(k==='past')state.pastN=40;if(k==='nyh')state.nyhN=NYH_SIDE;keep(()=>{})}
-    else{state.sok[k]=true;keep(()=>{});setTimeout(()=>{const i=document.getElementById(SOK_ID[k]);if(i)i.focus()},60)}}
+    if(apen){const rydd=()=>{state.sok[k]=false;state[f]='';if(k==='past')state.pastN=40;if(k==='nyh')state.nyhN=NYH_SIDE;keep(()=>{})},i=document.getElementById(SOK_ID[k]);if(i){c.classList.remove('on');sokAnim(i,false,rydd)}else rydd()}
+    else{state.sok[k]=true;keep(()=>{});const i=document.getElementById(SOK_ID[k]);if(i){sokAnim(i,true);i.focus()}}}
   else if('nyhmore' in c.dataset){keep(()=>{state.nyhN=(state.nyhN||NYH_SIDE)+NYH_SIDE})}
   else if('nyhlest' in c.dataset){posts.forEach(p=>{if(p.ms)lest[p.id]=1});lagreLest();keep(()=>{})}
   else if('pastmore' in c.dataset){keep(()=>{state.pastN=(state.pastN||40)+40})}
