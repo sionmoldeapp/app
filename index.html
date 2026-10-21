@@ -39,8 +39,8 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:12p
 @keyframes splashPuls{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.93);opacity:.8}}   /* starter i full størrelse, som et stille ikon, og pulserer derfra */
 @keyframes ringInn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.splash img{animation:none}.splash-ring{animation:snurr 3s linear infinite}.splash{transition-duration:.01s}#view.fadeinn{animation:none}}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo-mark img}
-:root[data-theme="dark"] .logo-mark img
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .logo-mark img{filter:invert(1)}}
+:root[data-theme="dark"] .logo-mark img{filter:invert(1)}
 .logo b{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:24px;letter-spacing:.02em;display:block;line-height:1}
 .logo span{font-size:13px;color:var(--muted)}
 dialog{background:var(--surface);color:var(--ink);border:0;border-radius:16px;padding:18px;width:min(92vw,400px);box-shadow:0 10px 30px rgba(0,0,0,.3)}
