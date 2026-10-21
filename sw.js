@@ -1,4 +1,4 @@
-const V='sion-v14',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','icon-192.png','badge-96.png','fb.js','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
+const V='sion-v15',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','icon-192.png','badge-96.png','fb.js','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(V).then(c=>c.addAll(F))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x))))));
 // Raskt og oppdatert: filene fra appen vises med en gang fra hurtigbufferen (appen åpnes uten å vente på nettet),
@@ -17,7 +17,7 @@ self.addEventListener('fetch',e=>{
 self.addEventListener('push',e=>{
   let d={};try{d=e.data.json()}catch(x){}
   const n=d.notification||d.data||{};
-  e.waitUntil(self.registration.showNotification(n.title||'Sion Molde',{body:n.body||'',icon:'icon-192.png',badge:'badge-96.png',data:{url:(d.fcmOptions&&d.fcmOptions.link)||(d.data&&d.data.url)||'./'}}))});
+  e.waitUntil(self.registration.showNotification(n.title||'Sion Molde',{body:n.body||'',icon:'icon-192.png',badge:'badge-96.png',silent:false,vibrate:[200,100,200],data:{url:(d.fcmOptions&&d.fcmOptions.link)||(d.data&&d.data.url)||'./'}}))});
 self.addEventListener('notificationclick',e=>{
   e.notification.close();
   const url=(e.notification.data&&e.notification.data.url)||'./';
