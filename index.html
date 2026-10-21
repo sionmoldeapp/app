@@ -934,11 +934,9 @@ function profileCard(){
   if(state.admin||!state.profile)return '<details class="card acc" data-acc="profil" '+(state.acc.profil?'open':'')+'><summary><h2>Min profil</h2></summary>'+attestSub()+'</details>';   // administratorer har ingen medlemsprofil, men kan legge inn politiattest
   const p=state.profile,gs=state.groups||[];
   return '<details class="card acc" data-acc="profil" '+(state.acc.profil?'open':'')+'><summary><h2>Min profil</h2></summary>'
-   +'<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre</button>'+attestSub()
-   +'<h3 style="margin:16px 0 4px;font-size:18px">Varsler fra gruppene mine</h3>'
-   +(gs.length?'<p class="small" style="margin:0 0 8px">Fjern haken for å slippe varsler som sendes bare til en gruppe. Du blir stående i gruppen.</p><div style="display:grid;gap:6px">'+gs.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-prmute="'+esc(g)+'" style="width:22px;height:22px;flex:none" '+((p.muted||[]).includes(g)?'':'checked')+'>'+esc(gName(g))+'</label>').join('')+'</div>':'<p class="small" style="margin:0">Du er ikke med i noen grupper ennå.</p>')
-   +'<h3 style="margin:16px 0 4px;font-size:18px">Mine data</h3><p class="small" style="margin:0 0 8px">Last ned alt appen har lagret om deg (profil, notater, forbønner du har sendt inn og beskjedene dine) som en fil.</p><button class="btn" data-prexport>Last ned mine data</button>'
-   +'<h3 style="margin:16px 0 4px;font-size:18px">Slett meg</h3><p class="small" style="margin:0 0 8px">Fjerner kontoen din, notatene, forbønnene dine, samtalene du har startet og varselkoden på denne telefonen. Dette kan ikke angres. Du kan alltid bli lagt til igjen av en leder.</p><button class="btn danger" data-prdel>Slett meg og dataene mine</button>'
+   +profSub('prnavn','Navn','<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre</button>')+profSub('prvarsel','Varsler fra gruppene mine',(gs.length?'<p class="small" style="margin:0 0 8px">Fjern haken for å slippe varsler som sendes bare til en gruppe. Du blir stående i gruppen.</p><div style="display:grid;gap:6px">'+gs.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-prmute="'+esc(g)+'" style="width:22px;height:22px;flex:none" '+((p.muted||[]).includes(g)?'':'checked')+'>'+esc(gName(g))+'</label>').join('')+'</div>':'<p class="small" style="margin:0">Du er ikke med i noen grupper ennå.</p>'))+attestSub()
+   +profSub('prdata','Mine data','<p class="small" style="margin:0 0 8px">Last ned alt appen har lagret om deg (profil, notater, forbønner du har sendt inn og beskjedene dine) som en fil.</p><button class="btn" data-prexport>Last ned mine data</button>')
+   +profSub('prslett','Slett meg','<p class="small" style="margin:0 0 8px">Fjerner kontoen din, notatene, forbønnene dine, samtalene du har startet og varselkoden på denne telefonen. Dette kan ikke angres. Du kan alltid bli lagt til igjen av en leder.</p><button class="btn danger" data-prdel>Slett meg og dataene mine</button>')
    +'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
 function deleteSelfAsk(){
   const dlg=document.createElement('dialog');dlg.className='lp';
@@ -1521,7 +1519,8 @@ function attestStatus(dato){
   const dager=Math.ceil((d.getTime()-Date.now())/864e5),utl=isoDato(d);
   return {utl,dager,tekst:dager<0?'Utløpt':dager<=ATTEST_VARSEL_DAGER?'Utløper snart':'Gyldig',farge:dager<0?'#b3261e':dager<=ATTEST_VARSEL_DAGER?'var(--lamp)':'var(--ok)'}}
 const attestChip=st=>st?'<span class="tag" style="background:'+st.farge+';color:#fff">'+st.tekst+'</span>':'';
-const attestSub=()=>'<details class="acc sub" data-acc="attest" '+(state.acc.attest?'open':'')+' style="margin-top:12px"><summary><h3 style="font-size:17px">Politiattest</h3></summary>'+attestBody()+'</details>';
+const profSub=(k,tittel,html)=>'<details class="acc sub" data-acc="'+k+'" '+(state.acc[k]?'open':'')+' style="margin-top:10px"><summary><h3 style="font-size:17px">'+tittel+'</h3></summary>'+html+'</details>';
+const attestSub=()=>profSub('attest','Politiattest',attestBody());
 function attestBody(){
   const a=state.attest,st=a?attestStatus(a.dato):null,idag=isoDato(new Date());
   return '<p class="small" style="margin:0 0 8px">Legg inn datoen politiattesten din ble godkjent. Appen lagrer bare datoen, aldri selve attesten. Den er gyldig i '+ATTEST_AAR+' år, og du og lederne får en påminnelse '+ATTEST_VARSEL_DAGER+' dager før den går ut.</p>'
@@ -1982,7 +1981,7 @@ document.addEventListener('click',async e=>{
   else if('ltnew' in c.dataset){ltAsk(null)}
   else if(c.dataset.ltedit){ltAsk(c.dataset.ltedit)}
   else if(c.dataset.ltdel){ltDel(c.dataset.ltdel)}
-  else if('prsave' in c.dataset){const n=($('#prN').value||'').trim();try{await FB.setProfile(state.user.email,{name:n});state.profile.name=n;if(n)lsSet('sm-navn',n);state.prMsg='Navnet er lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code)}keep(()=>{})}
+  else if('prsave' in c.dataset){const n=($('#prN').value||'').trim();try{await FB.setProfile(state.user.email,{name:n});state.profile.name=n;if(n)lsSet('sm-navn',n);state.prMsg='Navnet er lagret.';state.acc.profil=true;state.acc.prnavn=true}catch(er){state.prMsg=saveMsg(er.code)}keep(()=>{})}
   else if('prdel' in c.dataset){deleteSelfAsk()}
   else if('prexport' in c.dataset){
     c.disabled=true;
