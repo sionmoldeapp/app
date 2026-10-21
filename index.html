@@ -334,7 +334,7 @@ const remBtn=id=>`<button class="btn ${state.rem[id]?'on':''}" data-rem="${id}">
 function openRsvp(id){
   const ev=rsEv(id);if(!ev)return;
   rsPending=id;$('#rsT').textContent='Jeg kommer: '+ev.title;
-  $('#rsN').value=lsGet('sm-navn')||(state.profile&&state.profile.name)||'';$('#rsK').value=lsGet('sm-kontakt')||(state.user?state.user.email:'');
+  $('#rsN').value=lsGet('sm-navn')||(state.profile&&state.profile.name)||'';$('#rsK').value=state.user?'':(lsGet('sm-kontakt')||'');$('#rsK').closest('label').style.display=state.user?'none':'';   // innloggede trenger bare navn
   $('#rsDlg').showModal();$('#rsN').focus();
 }
 const rsDocId=id=>{let d=lsGet('sm-dev');if(!d){d=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now()).replace(/[^A-Za-z0-9]/g,'').slice(0,24);lsSet('sm-dev',d)}return String(id).replace(/[^A-Za-z0-9_-]/g,'')+'_'+d};
@@ -358,9 +358,9 @@ async function setRsvp(id,on,navn,kontakt){
   const ev=rsEv(id);
   keep(()=>{state.rsvp[id]=on;save();if(usingFb)counts[id]=Math.max(0,(counts[id]||0)+(on?1:-1))});
   if(!on)push('Svaret er fjernet','');   // når man melder seg på, kommer «Takk»-meldingen fra dialogen
-  const nm=navn||lsGet('sm-navn');
-  if(nm)fetch(RS_URL,{method:'POST',mode:'no-cors',body:new URLSearchParams({[RS.arr]:ev.title||'',[RS.dato]:(ev.start||'')+(ev.end?' – '+ev.end:''),[RS.navn]:nm,[RS.kontakt]:kontakt||lsGet('sm-kontakt'),[RS.svar]:on?'Kommer':'Kommer ikke'})}).catch(()=>{});
-  if(usingFb&&FB){try{if(on&&nm)await FB.setRsvpDoc(rsDocId(id),{eventId:String(id),title:ev.title||'',start:ev.start||'',name:nm,contact:kontakt||lsGet('sm-kontakt')||'',groups:ev.groups||[]});else if(!on)await FB.delRsvpDoc(rsDocId(id))}catch(x){}}
+  const nm=navn||lsGet('sm-navn'),kont=state.user?'':(kontakt||lsGet('sm-kontakt')||'');   // innloggede sender ingen kontaktopplysning
+  if(nm)fetch(RS_URL,{method:'POST',mode:'no-cors',body:new URLSearchParams({[RS.arr]:ev.title||'',[RS.dato]:(ev.start||'')+(ev.end?' – '+ev.end:''),[RS.navn]:nm,[RS.kontakt]:kont,[RS.svar]:on?'Kommer':'Kommer ikke'})}).catch(()=>{});
+  if(usingFb&&FB){try{if(on&&nm)await FB.setRsvpDoc(rsDocId(id),{eventId:String(id),title:ev.title||'',start:ev.start||'',name:nm,contact:kont,groups:ev.groups||[]});else if(!on)await FB.delRsvpDoc(rsDocId(id))}catch(x){}}
   if(usingFb&&FB)try{await FB.rsvp(id,on?1:-1)}catch(er){keep(()=>{state.rsvp[id]=!on;save();counts[id]=Math.max(0,(counts[id]||0)+(on?-1:1))});push('Kunne ikke lagre svaret','Prøv igjen om litt.')}
 }
 
@@ -1894,9 +1894,9 @@ document.addEventListener('submit',async e=>{
       try{if(window.PasswordCredential)await navigator.credentials.store(new PasswordCredential({id:state.user.email,password:n,name:state.user.email}))}catch(x){}}
     catch(er){keep(()=>state.pwMsg=er.code==='auth/invalid-credential'||er.code==='auth/wrong-password'?'Nåværende passord er feil.':authMsg(er.code))}}
   else if(f.id==='rs'){e.preventDefault();
-    const n=$('#rsN').value.trim(),k=$('#rsK').value.trim(),id=rsPending;
+    const n=$('#rsN').value.trim(),k=state.user?'':$('#rsK').value.trim(),id=rsPending;
     if(!n||!id)return;
-    lsSet('sm-navn',n);lsSet('sm-kontakt',k);$('#rsDlg').close();rsPending=null;
+    lsSet('sm-navn',n);if(!state.user)lsSet('sm-kontakt',k);$('#rsDlg').close();rsPending=null;
     await setRsvp(id,true,n,k);push('Takk, '+n+'!','Vi har registrert at du kommer.')}
   else if(f.id==='sv'){e.preventDefault();
     const m=$('#svE').value.trim().toLowerCase();
