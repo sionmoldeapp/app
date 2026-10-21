@@ -662,9 +662,10 @@ function nyhKort(p){
   if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
   const open=!!state.open['p_'+p.id],u=ulest(p),fest=p.pinned&&(effAdmin()||(effLeder()&&state.ltype==='forkynner')),tekst=String(p.b||'').replace(/\s+/g,' ').trim();
   return `<div class="nrad ${open?'open':''} ${u?'ulest':''}"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><button type="button" class="nhode ptitle" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="ndot">${u?'<span class="dot" title="Ulest"></span>':''}</span><span class="ntekst"><b class="ntit">${fest?'📌 ':''}${esc(p.t)}</b>${open?'':`<span class="nprev">${esc(tekst)}</span>`}</span><span class="nmeta">${esc(ago(p))}</span></button>${open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open"><span class="pt">${linkify(esc(p.b))}</span></div>${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:''}</div>`}
-/* Valgfritt kort på Hjem (Innstillinger → Vis på Hjem): de tre nyeste nyhetene som kompakte rader. Trykk åpner meldingen i Nyheter. */
+/* Valgfritt kort på Hjem (Innstillinger → Vis på Hjem): den nyeste nyheten som en kompakt rad. Trykk åpner meldingen i Nyheter. */
 function nyhHjem(){
-  const l=posts.filter(p=>(!p.m||state.member)&&!postSkjult(p)).slice(0,3);
+  const vp=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p))[0],viktigVises=vp&&lsGet('sm-viktig-skjult')!==String(vp.id);   // samme melding vises ikke to ganger
+  const l=posts.filter(p=>(!p.m||state.member)&&!postSkjult(p)&&!(viktigVises&&p===vp)).slice(0,1);
   if(!l.length)return '';
   const rad=p=>{const u=ulest(p),tekst=String(p.b||'').replace(/s+/g,' ').trim();
     return '<div class="nrad '+(u?'ulest':'')+'"><button type="button" class="nhode ptitle" data-nhopen="'+esc(p.id)+'"><span class="ndot">'+(u?'<span class="dot" title="Ulest"></span>':'')+'</span><span class="ntekst"><b class="ntit">'+esc(p.t)+'</b><span class="nprev">'+esc(tekst)+'</span></span><span class="nmeta">'+esc(ago(p))+'</span></button></div>'};
@@ -1593,7 +1594,7 @@ function settingsCard(){
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
   ${state.user?profSub('inpush','Varsler',pushInner()):''}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
-  ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('nh','Nyheter','De tre nyeste nyhetene. Er av til du slår dem på.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
+  ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('nh','Nyheter','Den nyeste nyheten. Er av til du slår den på.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('installer','Slik installerer du appen',installBody())}</details>`}
 function pushInner(){
   if(!state.user)return '';   // varsler er bare for innloggede
