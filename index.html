@@ -587,8 +587,8 @@ function homeDeler(){
    besok:['Logg inn for å få mer',()=>visitorCard()],
    vakter:['Dine vakter',()=>myShiftsCard()],
    bonn:['Forbønn',()=>UI.pr===false?'':prayerCard()],
-   viktig:['Viktig',()=>(UI.vk!==false&&post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
-   nyheter:['Nyheter',()=>UI.nh===true?nyhHjem():''],
+   viktig:['Viktig',()=>(!state.fast&&UI.vk!==false&&post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
+   nyheter:['Nyheter',()=>UI.nh===true&&!state.fast?nyhHjem():''],
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:'')],
    sommer:['Nyhetsbrev Sommerstevne',()=>UI.sv===false?'':svCard()],
    finn:['Finn frem',()=>contactCard()]}}
@@ -695,6 +695,7 @@ function nyhListe(l){
   vis.forEach(p=>{const g=nyhGruppe(p);if(g!==sist){ut+='<div class="day">'+NYH_TITLER[g]+'</div>';sist=g}ut+=nyhKort(p)});
   return ut+(alle.length>n?'<button class="btn" data-nyhmore style="margin-top:4px">Vis eldre ('+(alle.length-n)+')</button>':'')}
 function news(){
+  if(state.fast)return '<h1>Nyheter</h1><p class="small">Laster …</p>';
   const sk=state.admin&&state.view==='meg'?posts.filter(postSkjult):[];
   const l=posts.filter(p=>!sk.includes(p));
   const kan=editOn(),nU=l.filter(ulest).length,ett=[];
@@ -2507,7 +2508,9 @@ function splashBort(){
 async function start(){
   /* Rask oppstart: vis sist kjente (offentlige) program og nyheter med en gang, mens Firebase lastes. Resten kommer inn når innloggingen og databasen er klare. */
   try{const c=JSON.parse(localStorage.getItem('sm-cache')||'null');
-    if(c&&c.e&&c.p&&c.g){bruk(c.e,c.p,c.g);state.unread=posts.filter(p=>isNew(p)&&!postSkjult(p)).length;if(state.tab==='news')markSeen();first=false;render();splashBort()}}catch(er){first=true}
+    if(c&&c.e&&c.p&&c.g){
+      const medl=localStorage.getItem('sm-innlogget')==='1';   // sist innlogget: nyhetene kan være andre enn de åpne, så de vises først når alt er lastet
+      state.fast=medl;bruk(c.e,medl?[]:c.p,c.g);state.unread=posts.filter(p=>isNew(p)&&!postSkjult(p)).length;if(state.tab==='news')markSeen();first=false;render();splashBort()}}catch(er){first=true}
   FB=await window.fbReady;
   if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me')keep(()=>{})});FB.onPush(p=>push((p.notification&&p.notification.title)||'Melding',(p.notification&&p.notification.body)||''))}
   const go=async u=>{
@@ -2528,12 +2531,13 @@ async function start(){
     if(u&&state.member)loadMyShifts().then(()=>keep(()=>{}));
     state.threads=undefined;state.roles=undefined;if(u&&state.member)loadThreads();
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
-    await load();
+    try{u?localStorage.setItem('sm-innlogget','1'):localStorage.removeItem('sm-innlogget')}catch(er){}
+    await load();state.fast=false;
     if(first){first=false;if(state.tab==='news')markSeen();render();splashBort()}else keep(()=>{});
     if(!u)bonnForhent();
   };
-  if(FB)FB.onAuth(u=>go(u).catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()}));
-  else{await load();first=false;render();splashBort()}
+  if(FB)FB.onAuth(u=>go(u).catch(()=>{state.fast=false;$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()}));
+  else{await load();state.fast=false;first=false;render();splashBort()}
 }
 start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});
