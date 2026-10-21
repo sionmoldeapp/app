@@ -329,6 +329,7 @@ function rsPanel(id,titel,dato,groups){
   const adm=state.admin,led=!adm&&(state.leads||[]).some(g=>(groups||[]).includes(g));
   if(!adm&&!led)return '';
   const l=state.rsList[id],n=counts[id]||0;
+  if(!n&&(l===undefined||!l.length))return '';   // ingen påmeldte: ingen linje
   let inn;
   if(l===undefined)inn='<p class="small">Henter listen …</p>';
   else if(!l.length)inn='<p class="small">Ingen navn ennå.</p>';
