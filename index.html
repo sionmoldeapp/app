@@ -107,6 +107,16 @@ h3{font-size:22px;line-height:1.1}
 .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)}
 .next h2{font-size:34px;margin:4px 0 6px}
 .next .meta{opacity:.9;font-size:15px}
+.viktig{position:relative;display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;touch-action:pan-y;-webkit-user-select:none;user-select:none}
+.vik-ikon{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#3f8ad6,#17406f);box-shadow:0 4px 10px rgba(10,40,80,.22)}
+.vik-innhold{flex:1;min-width:0}
+.vik-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.vik-meta b{color:var(--lamp);font-weight:600}
+.vik-x{all:unset;cursor:pointer;width:28px;height:28px;margin:-6px -6px -6px 0;display:grid;place-items:center;border-radius:50%;color:var(--muted);font-size:13px}
+.vik-x:hover{background:rgba(127,160,200,.16)}
+.vik-tittel{font-weight:600;font-size:16px;line-height:1.3;margin-top:2px}
+.vik-tekst{font-size:14px;line-height:1.4;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.vik-pil{flex:none;color:var(--muted)}
 .alert{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border-radius:14px;padding:16px;box-shadow:inset 0 3px 0 var(--lamp)}
 .alert .ico{flex:none;width:40px;height:40px;border-radius:50%;background:var(--lamp-soft);color:var(--lamp);display:grid;place-items:center}
 .alert .eyebrow{color:var(--lamp);display:block}
@@ -503,6 +513,14 @@ async function prayDel(id){
   try{await FB.delPrayer(id);state.prayers=(state.prayers||[]).filter(p=>p.id!==id);keep(()=>{})}
   catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}}
 
+/* «Viktig»-kortet på Hjem: rolig kort i samme stil som de andre, med ikon, tid, tittel, to linjer tekst og en pil. Hele kortet åpner meldingen i Nyheter. Kan fjernes med ✕ eller ved å trekke til siden, og kommer tilbake først når det kommer en ny melding. */
+function viktigKort(p){
+  const tekst=String(p.b||'').replace(/\s+/g,' ').trim();
+  return '<div class="viktig" data-viktig="'+esc(p.id)+'" role="link" tabindex="0" aria-label="Viktig: '+esc(p.t)+'">'
+   +'<div class="vik-ikon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div>'
+   +'<div class="vik-innhold"><div class="vik-meta"><span><b>Viktig</b>'+(ago(p)?' · '+esc(ago(p)):'')+'</span><button type="button" class="vik-x" data-viktigx="'+esc(p.id)+'" aria-label="Skjul meldingen">✕</button></div>'
+   +'<div class="vik-tittel">'+esc(p.t)+'</div><div class="vik-tekst">'+esc(tekst)+'</div></div>'
+   +'<svg class="vik-pil" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>'}
 function homeDeler(){
   const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome), n=vis[0];
   const fast=nextFast();
@@ -517,7 +535,7 @@ function homeDeler(){
    besok:['Logg inn for å få mer',()=>visitorCard()],
    vakter:['Dine vakter',()=>myShiftsCard()],
    bonn:['Forbønn',()=>UI.pr===false?'':prayerCard()],
-   viktig:['Viktig',()=>(post?`<div class="alert"><div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div><div><span class="eyebrow">Viktig</span><b><button type="button" class="ptitle" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${esc(post.t)}</button></b><div class="pbody ${state.open['p_'+post.id]?'open':''}"><span class="pt">${linkify(esc(post.b))}</span></div>${(String(post.b).length>130||(String(post.b).match(/\n/g)||[]).length>=2)?`<button type="button" class="pmore" data-postopen="${esc(post.id)}" aria-expanded="${!!state.open['p_'+post.id]}">${state.open['p_'+post.id]?'Vis mindre':'Les mer'}</button>`:''}</div></div>`:'')],
+   viktig:['Viktig',()=>(post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:'')],
    sommer:['Nyhetsbrev Sommerstevne',()=>UI.sv===false?'':svCard()],
    finn:['Finn frem',()=>contactCard()]}}
@@ -1713,6 +1731,7 @@ document.addEventListener('click',async e=>{
   const c=e.target.closest('button');if(!c)return;
   if(c.dataset.t){state.reorder=false;if('openvakter' in c.dataset){state.acc.vakter=true;if(state.shifts===undefined)loadShifts()}state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}fadeRender()}
   else if(c.id==='bellBtn'){state.tab='news';markSeen();fadeRender()}
+  else if(c.dataset.viktigx){viktigSkjul(c.dataset.viktigx)}
   else if(c.dataset.ev){
     // Arrangementer på Hjem og i Program åpner og lukker seg jevnt (høyde og gjennomsiktighet), i stedet for å sprette opp.
     const id=c.dataset.ev,det=c.parentElement&&c.parentElement.querySelector('.detail');
@@ -2330,6 +2349,28 @@ let first=true;
     const f=e.target;if(!f||f.method!=='dialog'||e.defaultPrevented||lite())return;
     const d=f.closest('dialog');if(!d)return;
     e.preventDefault();d.close(e.submitter&&e.submitter.value!==undefined?e.submitter.value:'')}) }
+/* «Viktig»-kortet: trykk åpner meldingen i Nyheter, ✕ eller sveip til siden skjuler det til en ny melding kommer. */
+function viktigSkjul(id){
+  lsSet('sm-viktig-skjult',String(id));
+  const k=document.querySelector('.viktig');
+  if(!k||matchMedia('(prefers-reduced-motion:reduce)').matches){keep(()=>{});return}
+  const h=k.offsetHeight,a=k.animate({opacity:[getComputedStyle(k).opacity,0],height:[h+'px','0px'],paddingTop:['14px','0px'],paddingBottom:['14px','0px'],marginBottom:['0px','-12px']},{duration:260,easing:'ease'});
+  k.style.overflow='hidden';a.onfinish=()=>keep(()=>{})}
+function viktigApne(id){
+  state.open['p_'+id]=true;state.tab='news';state.reorder=false;fadeRender();
+  setTimeout(()=>{const b=document.querySelector('[data-postopen="'+id+'"]');if(b)b.scrollIntoView({block:'center',behavior:'smooth'})},520)}
+{ let k=null,x0=0,y0=0,dx=0,drar=false,sperr=false;
+  document.addEventListener('pointerdown',e=>{const v=e.target.closest('.viktig');if(!v||e.target.closest('.vik-x'))return;k=v;x0=e.clientX;y0=e.clientY;dx=0;drar=false});
+  document.addEventListener('pointermove',e=>{if(!k)return;const ddx=e.clientX-x0,ddy=e.clientY-y0;
+    if(!drar&&Math.abs(ddx)>12&&Math.abs(ddx)>Math.abs(ddy)*1.5){drar=true;try{k.setPointerCapture(e.pointerId)}catch(x){}}
+    if(drar){dx=ddx;k.style.transform='translateX('+dx+'px)';k.style.opacity=String(Math.max(.2,1-Math.abs(dx)/260))}});
+  const slipp=()=>{if(!k)return;const v=k;k=null;
+    if(drar){sperr=true;setTimeout(()=>{sperr=false},350);
+      if(Math.abs(dx)>90){const id=v.dataset.viktig;v.style.transition='transform .22s ease,opacity .22s ease';v.style.transform='translateX('+(dx>0?'':'-')+'110%)';v.style.opacity='0';setTimeout(()=>{lsSet('sm-viktig-skjult',String(id));keep(()=>{})},200)}
+      else{v.style.transition='transform .2s ease,opacity .2s ease';v.style.transform='';v.style.opacity='';setTimeout(()=>{v.style.transition=''},220)}}};
+  document.addEventListener('pointerup',slipp);document.addEventListener('pointercancel',slipp);
+  document.addEventListener('click',e=>{const v=e.target.closest('.viktig');if(!v||e.target.closest('.vik-x'))return;if(sperr){e.preventDefault();e.stopPropagation();return}viktigApne(v.dataset.viktig)},true);
+  document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('viktig')){e.preventDefault();viktigApne(e.target.dataset.viktig)}}) }
 /* Skifte mellom Hjem, Program, Nyheter og Meg: innholdet tones ut og det nye tones inn. */
 let fadeT=null;
 function fadeRender(){
