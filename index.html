@@ -1118,7 +1118,7 @@ function statCard(){
 /* Besøkende: tydelig invitasjon til å logge inn. Alle: «Slik installerer du appen». Ledere: «Del appen» med lenke og QR-kode. */
 const APP_LINK='https://sionmoldeapp.github.io/app/';
 function visitorCard(){
-  if(state.user)return '';
+  if(state.user||state.authVent)return '';
   return '<div class="card"><div class="eyebrow">Medlem?</div><h2 style="margin:4px 0 6px">Logg inn for å få mer</h2>'
    +'<ul class="small" style="margin:0 0 10px;padding-left:18px;display:grid;gap:4px;color:var(--ink)"><li>Se medlemsinnhold og innhold for gruppene dine</li><li>Få varsler fra gruppene du er med i</li><li>Meld deg på arrangementer med navnet ditt</li></ul>'
    +'<div class="btns"><button class="btn primary" data-t="me" style="width:auto">Logg inn</button>'+(state.pushOk&&!lsGet('sm-push')?'<button class="btn" data-pushon>Slå på varsler</button>':'')+'</div></div>'}
@@ -1783,7 +1783,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 20:18';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 20:24';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
@@ -1851,6 +1851,7 @@ function snapCard(){
   <button class="btn" data-filerestore>Gjenopprett fra fil</button></details>`}
 
 function loginCard(){
+  if(state.authVent&&!state.user)return '<div class="card"><h2>Innlogging</h2><p class="small" role="status" style="margin:8px 0 0">Logger inn …</p></div>';
   if(state.user)return `<div class="card"><div class="row"><div class="grow"><b>${state.admin?'Innlogget som administrator':state.leder||isLeader()?'Innlogget som '+[state.leder?'leder':'',isLeader()?'gruppeleder':''].filter(Boolean).join(' og '):state.member?'Innlogget som medlem':'Innlogget, men ikke på medlemslisten'}</b><div class="small">${esc(state.user.email)}</div></div>
    <button class="btn" data-logout>Logg ut</button></div>
    <details style="margin-top:12px"${state.pwMsg?' open':''}><summary style="cursor:pointer;font-weight:600">Endre passord</summary>
@@ -2766,11 +2767,11 @@ async function start(){
   try{const c=JSON.parse(localStorage.getItem('sm-cache')||'null');
     if(c&&c.e&&c.p&&c.g){
       const medl=localStorage.getItem('sm-innlogget')==='1';   // sist innlogget: nyhetene kan være andre enn de åpne, så de vises først når alt er lastet
-      state.fast=medl;bruk(c.e,medl?[]:c.p,c.g);state.unread=posts.filter(p=>isNew(p)&&!postSkjult(p)).length;if(state.tab==='news')markSeen();first=false;render();splashBort()}}catch(er){first=true}
-  FB=await window.fbReady;
+      state.fast=medl;state.authVent=medl;bruk(c.e,medl?[]:c.p,c.g);state.unread=posts.filter(p=>isNew(p)&&!postSkjult(p)).length;if(state.tab==='news')markSeen();first=false;render();splashBort()}}catch(er){first=true}
+  if(state.authVent)setTimeout(()=>{if(state.authVent){state.authVent=false;state.fast=false;keep(()=>{})}},15000); FB=await window.fbReady;
   if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me'||state.tab==='home')keep(()=>{})});FB.onPush(p=>{const t=(p.notification&&p.notification.title)||'Melding',b=(p.notification&&p.notification.body)||'';push(t,b);varselLagre(t,b);nyMelding()})}
   const go=async u=>{
-    state.user=u||null;
+    state.user=u||null;if(!u)state.authVent=false;
     const [adm,mem]=u?await Promise.all([FB.isAdmin(u.email),FB.isMember(u.email)]):[false,false];
     state.admin=!!adm;
     state.member=!!u&&(state.admin||!!mem);
@@ -2788,12 +2789,12 @@ async function start(){
     state.threads=undefined;state.roles=undefined;if(u&&state.member){loadThreads();loadVaktReq();if(lrTilgang())loadLr()}
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
     try{u?localStorage.setItem('sm-innlogget','1'):localStorage.removeItem('sm-innlogget')}catch(er){}
-    await load();state.fast=false;
+    await load();state.fast=false;state.authVent=false;
     if(first){first=false;if(state.tab==='news')markSeen();render();splashBort()}else keep(()=>{});
     if(!u)bonnForhent();
   };
-  if(FB)FB.onAuth(u=>go(u).catch(()=>{state.fast=false;$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()}));
-  else{await load();state.fast=false;first=false;render();splashBort()}
+  if(FB)FB.onAuth(u=>go(u).catch(()=>{state.fast=false;state.authVent=false;$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()}));
+  else{await load();state.fast=false;state.authVent=false;first=false;render();splashBort()}
 }
 start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});hentVarselFraSW();
