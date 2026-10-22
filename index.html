@@ -342,6 +342,10 @@ function bruk(e,p,g){
   posts=p.filter(canSee).filter(liveOK).sort((a,b)=>(!!b.pinned-!!a.pinned)||((b.ms||0)-(a.ms||0)));   // festede nyheter først
   regular=g.filter(r=>canSeeCat(r.cat)&&visOK(r)).sort((a,b)=>((a.day+6)%7-(b.day+6)%7)||String(a.time).localeCompare(String(b.time)));
 }
+let pushTallCache={t:0,v:null};
+async function pushTall(){   // leser alle varselkoder, så resultatet gjenbrukes i 30 minutter
+  if(Date.now()-pushTallCache.t<30*60e3&&pushTallCache.v!=null)return pushTallCache.v;
+  const v=await FB.pushCount().catch(()=>null);pushTallCache={t:Date.now(),v};return v}
 async function load(){
   // Alle forespørslene sendes samtidig (tidligere én og én, og det tok mange sekunder).
   const ok=p=>p.catch(()=>null);
@@ -356,7 +360,7 @@ async function load(){
     usingFb&&FB?FB.counts().catch(()=>({})):{},
     state.admin&&FB?FB.listUsers().catch(()=>[]):[],
     canStats()&&FB&&usingFb?FB.viewCounts().catch(()=>({})):{},
-    state.admin&&FB&&usingFb?FB.pushCount().catch(()=>null):null,
+    state.admin&&FB&&usingFb?pushTall():null,
     isLeader()&&FB?FB.leaderMembers(state.leads).catch(()=>[]):[]]);
   counts=cn;members=mb;views=vw;state.stat=state.admin&&FB&&usingFb?{push:st}:null;leaderMem=lm;
   state.unread=posts.filter(p=>isNew(p)&&!postSkjult(p)).length;
@@ -1802,7 +1806,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 21:48';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 21:52';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
@@ -2004,7 +2008,7 @@ function nyMelding(){
   if(FB&&!first)refresh().catch(()=>{})}
 { let borte=0;
   document.addEventListener('visibilitychange',()=>{if(document.hidden){borte=Date.now();return}
-    if(borte&&Date.now()-borte>60000&&!first)nyMelding();borte=0;hentVarselFraSW()}) }
+    if(borte&&Date.now()-borte>5*60000&&!first)nyMelding();borte=0;hentVarselFraSW()}) }
 const authMsg=c=>({'auth/invalid-credential':'Feil e-post eller passord.','auth/invalid-email':'Ugyldig e-postadresse.','auth/user-disabled':'Brukeren er sperret.','auth/too-many-requests':'For mange forsøk. Vent litt og prøv igjen.','auth/network-request-failed':'Ingen nettforbindelse.','auth/weak-password':'Passordet er for svakt. Bruk minst 8 tegn.','auth/requires-recent-login':'Logg ut og inn igjen, og prøv på nytt.'}[c]||'Noe gikk galt. Prøv igjen.');
 const saveMsg=c=>c==='permission-denied'?'Du har ikke tilgang til å lagre.':'Kunne ikke lagre ('+(c||'ukjent feil')+').';
 
