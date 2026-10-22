@@ -56,7 +56,7 @@ header.top.scrolled .logo-mark{transform:scale(.86)}
 }
 .logo-mark img{width:100%;height:100%;object-fit:contain;display:block}
 /* Oppstartsskjerm: logoen pulserer mens innholdet lastes */
-.splash{--opp:8px;position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding-bottom:calc(var(--opp)*2);box-sizing:border-box;background:radial-gradient(circle at 50% 46%,rgba(120,180,240,.55) 0,rgba(120,180,240,0) 55%),linear-gradient(135deg,#2e76c4 0%,#081e36 100%)}   /* samme blå overgang og lysskjær som appikonet; dekker hele skjermen, midtstilt som telefonens egen oppstartsskjerm */
+.splash{--opp:14px;position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding-bottom:calc(var(--opp)*2);box-sizing:border-box;background:radial-gradient(circle at 50% 46%,rgba(120,180,240,.55) 0,rgba(120,180,240,0) 55%),linear-gradient(135deg,#2e76c4 0%,#081e36 100%)}   /* samme blå overgang og lysskjær som appikonet; dekker hele skjermen, midtstilt som telefonens egen oppstartsskjerm */
 .splash img{width:180px;height:180px;object-fit:contain;filter:brightness(0) invert(1) drop-shadow(0 6px 8px rgba(0,0,0,.35));animation:splashPuls 1.6s ease-in-out infinite;position:relative;z-index:1}   /* hvit logo med myk skygge, som i ikonet */
 .splash{transition:opacity .55s ease}
 .splash.bort{opacity:0;pointer-events:none}
