@@ -636,7 +636,7 @@ function homeDeler(){
    besok:['Logg inn for å få mer',()=>visitorCard()],
    vakter:['Dine vakter',()=>myShiftsCard()],
    bonn:['Forbønn',()=>UI.pr===false?'':prayerCard()],
-   viktig:['Viktig',()=>(!state.fast&&UI.vk!==false&&post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
+   viktig:['Viktig',()=>((!state.fast||String(post&&post.id).startsWith('varsel'))&&UI.vk!==false&&post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:'')],
    sommer:['Nyhetsbrev Sommerstevne',()=>UI.sv===false?'':svCard()],
    finn:['Finn frem',()=>contactCard()]}}
