@@ -1737,7 +1737,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 15:32';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 16:02';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
@@ -2385,6 +2385,11 @@ const WIZ={
     {h:'Når skjer det?',p:'Sluttdato trengs bare hvis det varer flere dager.',keys:['start','end','time']},
     {h:'Hvor og hvem?',p:'Alt her er valgfritt.',keys:['place','who','text']},
     {h:'Se over og opprett',p:'Du kan lagre som utkast eller velge at det først skal vises senere.',keys:['hideHome','pubAt','draft'],sum:true}],
+  posts:[
+    {h:'Skriv meldingen',p:'Tittel og melding. Du kan bruke fet, kursiv og ulik tekststørrelse.',keys:['t','b']},
+    {h:'Hvem skal få den?',p:'Du kan velge flere. Den som er med i flere av dem får bare én melding.',keys:['audience']},
+    {h:'Når skal den vises?',p:'Valgfritt. La feltene stå tomme for å vise den med en gang.',keys:['pubAt','expireAt']},
+    {h:'Slik sendes den',p:'Sjekk at alt stemmer før du sender.',keys:['push','pinned','hideHome','draft'],sum:true}],
   regular:[
     {h:'Hva slags samling?',p:'En fast samling gjentas hver uke.',keys:['title','cat']},
     {h:'Når er den?',p:'',keys:['day','time']},
@@ -2422,11 +2427,15 @@ function wizStart(dlg,t){
       bx.addEventListener('change',sync);sync();
     }
   }
+  if(t==='posts'){const go=f.querySelector('#wizGo');if(go)go.textContent='Send';const pc=f.querySelector('[name=push]');if(pc)pc.checked=true}
   const kat=k=>{const e=f.elements[k];return e?(e.value||''):''};
   const summary=()=>{
     const fd=new FormData(f),g=k=>String(fd.get(k)||'').trim(),L=[];
     const rad=(a,b)=>b?'<div><span class="small">'+esc(a)+':</span> <b>'+esc(b)+'</b></div>':'';
-    if(t==='events'){
+    if(t==='posts'){
+      const re=f.querySelector('[data-rich]'),pl=re?richPlain(re):'',a=fd.getAll('audience'),hv=[fd.has('push')?'varsel':'',fd.has('pinned')?'festet':'',fd.has('hideHome')?'ikke på Hjem':'',fd.has('draft')?'lagres som utkast':''].filter(Boolean);
+      L.push(rad('Tittel',g('t')),rad('Melding',pl.length>120?pl.slice(0,119)+'…':pl),rad('Til',a.length?a.map(x=>GR_IDS.includes(x)?gName(x):x).join(', '):'Alle'),rad('Vises',g('pubAt')?'fra '+g('pubAt').replace('T',' kl. '):'med en gang'),g('expireAt')?rad('Skjules',g('expireAt').replace('T',' kl. ')):'',rad('I tillegg',hv.length?hv.join(', '):'ingen'))}
+    else if(t==='events'){
       const gr=fd.getAll('groups'),hvem=gr.length?gr.map(gName).join(', '):(fd.has('m')?'Bare medlemmer':'Alle');
       const tid=g('timeSel')==='__annet'?g('time'):g('timeSel'),sted=g('placeSel')==='__annet'?g('place'):g('placeSel');
       L.push(rad('Tittel',g('title')),rad('Kategori',g('cat')),rad('Hvem',hvem),rad('Når',g('start')+(g('end')?' – '+g('end'):'')+(tid?' kl. '+tid:'')),rad('Sted',sted),rad('Taler/hvem',g('who')),rad('Beskrivelse',g('text')))}
@@ -2445,13 +2454,16 @@ function wizStart(dlg,t){
       f.querySelector('#newCat').closest('label').style.display='none'}
     const els=[...stepEl(cur).querySelectorAll('input,select,textarea')];
     for(const el of els){if(el.hidden||!el.willValidate)continue;if(!el.checkValidity()){el.reportValidity();return false}}
+    if(t==='posts'&&cur===0){const re=f.querySelector('[data-rich]');if(!re||!richPlain(re)){feil('Skriv en melding.');return false}}
+    if(t==='posts'&&cur===1&&!state.admin&&!f.querySelector('[name=audience]:checked')){feil('Velg minst én av gruppene du leder.');return false}
+    if(t==='posts'&&cur===1&&state.admin&&!f.querySelector('[name=audience]:checked')){feil('Velg hvem som skal få den.');return false}
     if(t==='events'&&cur===1&&!state.admin&&!f.querySelector('[name=groups]:checked')){feil('Velg minst én av gruppene du leder.');return false}
     if(t==='events'&&cur===1&&state.admin&&f.querySelector('[name=wizWho]:checked').value==='grupper'&&!f.querySelector('[name=groups]:checked')){feil('Velg minst én gruppe, eller velg Alle.');return false}
     if(t==='regular'&&cur===1){const tid=f.elements.timeSel&&f.elements.timeSel.value==='__annet'?f.elements.time.value:(f.elements.timeSel?f.elements.timeSel.value:'');if(!tid){feil('Velg eller skriv inn klokkeslett.');return false}}
     return true};
   $('#wizNext').addEventListener('click',()=>{if(ok())show(cur+1)});
   $('#wizBack').addEventListener('click',()=>show(cur-1));
-  f.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();if(cur<n-1&&ok())show(cur+1)}});
+  f.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'&&!e.target.isContentEditable){e.preventDefault();if(cur<n-1&&ok())show(cur+1)}});
   show(0);
 }
 function editAsk(t,id){
@@ -2468,14 +2480,11 @@ function editAsk(t,id){
 }
 function pubAsk(){
   if(document.querySelector('dialog.pub'))return;
-  state.adm={type:'posts',edit:null,form:false};state.msg='';
-  const dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<h3 style="margin:0 0 4px">Ny melding</h3><p class="small" style="margin:0 0 10px">'+(state.admin?'Velg hvem som skal få den under Målgruppe.':'Meldingen går bare til gruppen du leder.')+'</p><form class="form" id="adm" data-type="posts">'+fields('posts',null)+'<div class="btns"><button class="btn primary" type="submit" style="width:auto">Send</button><button class="btn" type="button" data-pubclose>Avbryt</button></div></form><p class="small" role="status" id="pubMsg" style="margin:8px 0 0"></p>';
-  document.body.appendChild(dlg);
-  const pc=dlg.querySelector('[name=push]');if(pc)pc.checked=true;
-  const iv=setInterval(()=>{const m=$('#pubMsg');if(m)m.textContent=state.msg},300);
-  dlg.addEventListener('click',e=>{if(e.target.closest('[data-pubclose]'))dlg.close()});
+  const dlg=document.createElement('dialog');dlg.className='lp pub';document.body.appendChild(dlg);
+  const iv=setInterval(()=>{const m=$('#pubMsg');if(m&&state.msg)m.textContent=state.msg},300);
   dlg.addEventListener('close',()=>{clearInterval(iv);dlg.remove();state.msg=''});
+  dlg.addEventListener('click',e=>{if(e.target.closest('[data-pubclose]'))dlg.close()});
+  wizStart(dlg,'posts');
   dlg.showModal();
 }
 /* Endre navn på eller slett en kategori. Arrangementer og faste samlinger får nytt navn, eller flyttes til en annen kategori ved sletting. Første endring lagrer kategoriene i databasen. */
