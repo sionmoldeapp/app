@@ -404,9 +404,17 @@ const dkey=w=>w.getFullYear()+'-'+String(w.getMonth()+1).padStart(2,'0')+'-'+Str
 const hhmm=w=>String(w.getHours()).padStart(2,'0')+':'+String(w.getMinutes()).padStart(2,'0');
 const TIDOK=t=>/^[0-9]{1,2}:[0-9]{2}$/.test(t||'');
 /* Neste forekomst av hver fast samling. Unntak (r.ex[dato]): fjernet = hoppes over, avlyst = vises som avlyst (og neste gang vises også), endret = nytt klokkeslett og/eller merknad. */
+/* Faste samlinger kan gå hver uke, bare i partallsuker eller bare i oddetallsuker (ukenummer etter ISO). Feltet weeks styrer det; uten feltet leses «Partallsuker» eller «Oddetallsuker» i merknaden. */
+function isoUke(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())),dag=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-dag);const y0=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y0)/864e5+1)/7)}
+function ukeValg(r){const v=String(r.weeks||'').toLowerCase(),n=String(r.note||'').toLowerCase();
+  if(/partall/.test(v)||(!v&&/partallsuke/.test(n)))return 'partall';
+  if(/oddetall/.test(v)||(!v&&/oddetallsuke/.test(n)))return 'oddetall';
+  return 'alle'}
+const ukeOK=(r,w)=>{const v=ukeValg(r);return v==='alle'||(isoUke(w)%2===0)===(v==='partall')};
+const ukeTekst=r=>{const v=ukeValg(r);return v==='partall'?' i partallsuker':v==='oddetall'?' i oddetallsuker':''};
 function nextFast(){const out=[];
   regular.filter(r=>TIDOK(r.time)).forEach(r=>{const [h,mi]=r.time.split(':').map(Number);let w=new Date(now);w.setHours(h,mi,0,0);w.setDate(w.getDate()+(r.day-w.getDay()+7)%7);if(w<now)w.setDate(w.getDate()+7);
-    for(let i=0;i<10;i++){const k=dkey(w),ex=(r.ex||{})[k];
+    for(let i=0;i<12;i++){if(!ukeOK(r,w)){w=new Date(w);w.setDate(w.getDate()+7);continue}const k=dkey(w),ex=(r.ex||{})[k];
       if(!ex||ex.k!=='fjernet'){const ww=new Date(w);if(ex&&ex.k==='endret'&&TIDOK(ex.time)){const [h2,m2]=ex.time.split(':').map(Number);ww.setHours(h2,m2,0,0)}
         out.push({fast:r,w:ww,ex});if(!ex||ex.k!=='avlyst')break}
       w=new Date(w);w.setDate(w.getDate()+7)}});
@@ -416,7 +424,7 @@ const fastId=(r,w)=>'f_'+r.id+'_'+dkey(w);
 const fastInfo=(r,ex)=>{const e=ex&&ex.k==='endret'?ex:{};return {title:e.title||r.title,place:e.place||'',who:e.who||'',note:e.note||r.note||'',text:e.text||''}};
 function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',inf=fastInfo(r,ex),note=inf.note;
   return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(inf.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${inf.place?' · '+esc(inf.place):''}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'&&TIDOK(ex.time)&&ex.time!==r.time?'<span class="tag avl" style="background:var(--lamp);color:#fff">Endret</span>':'<span class="tag">Fast</span>'}</button>
-   <div class="detail">${inf.text?'<div>'+linkify(esc(inf.text))+'</div>':''}${inf.who?'<div class="small">'+esc(inf.who)+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
+   <div class="detail">${inf.text?'<div>'+linkify(esc(inf.text))+'</div>':''}${inf.who?'<div class="small">'+esc(inf.who)+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}${ukeTekst(r)}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
 function evItem(e){
   if(e.m&&!state.member)return `<div class="item"><div class="locked" style="padding:12px">${dateBox(e)}<div class="grow"><b>${e.t}</b><span class="small">Kun for medlemmer. Logg inn under «Meg».</span></div></div></div>`;
   const open=state.open[e.id],r=state.rsvp[e.id];
@@ -905,12 +913,12 @@ const PLACES=['Kometvegen 7','Åndalsnes','Eidsvåg','Eide','Tingvoll'],TIMES=['
 const FIELDS={
  events:[['title','Tittel','text*'],['start','Startdato','date*'],['end','Sluttdato (bare for flere dager)','date'],['time','Klokkeslett','combo',TIMES,'time'],['place','Sted','combo',PLACES,'text'],['who','Taler eller hvem','text'],['text','Beskrivelse','area'],['cat','Kategori','sel',CATS],['groups','Gruppe (valgfritt). Bare medlemmer i valgte grupper og administratorer ser arrangementet','multi',GR_IDS],['m','Bare for medlemmer','chk'],['remindH','Påminnelse til medlemmene i gruppen (gjelder grupper med automatisk påminnelse)','sel',[24,48,3,1,0]],['hideHome','Ikke vis på Hjem (vises fortsatt i Program)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk']],
  posts:[['t','Tittel','text*'],['b','Melding','rich*'],['audience','Målgruppe','multi',['Alle','Medlem',...GR_IDS]],['pinned','Fest øverst i Nyheter (står først uansett når den ble lagt ut)','chk'],['hideHome','Ikke vis på Hjem (vises fortsatt i Nyheter)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['expireAt','Skjul etter (valgfritt)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk'],['push','Send også som varsel til telefonene (ved planlagt visning sendes det på det tidspunktet)','chk']],
- regular:[['title','Tittel','text*'],['day','Ukedag','sel',[1,2,3,4,5,6,0]],['time','Klokkeslett','combo*',TIMES,'time'],['note','Merknad','text'],['cat','Kategori','sel',CATS]]};
+ regular:[['title','Tittel','text*'],['day','Ukedag','sel',[1,2,3,4,5,6,0]],['time','Klokkeslett','combo*',TIMES,'time'],['weeks','Hvilke uker','sel',['Hver uke','Partallsuker','Oddetallsuker']],['note','Merknad','text'],['cat','Kategori','sel',CATS]]};
 const COL={events:'events',posts:'posts',regular:'regular'};
 const REMIND_OPT={24:'Dagen før (ett døgn før)',48:'To dager før',3:'3 timer før',1:'1 time før',0:'Ingen påminnelse'};
 const TYPES=[['events','Arrangement'],['posts','Nyhet'],['regular','Fast samling']];
 function fields(t,ed,only){return FIELDS[t].filter(f=>(!only||only.includes(f[0]))&&(f[0]!=='push'||(PUSH_URL&&!ed))&&(state.admin||(f[0]!=='m'&&f[0]!=='pinned'))).map(([k,l,ty,o,it])=>{
-  const req=ty.endsWith('*'),b=ty.replace('*',''),v=ed?((k==='pubAt'||k==='expireAt')?(ed[k]?toDT(ed[k]):''):ed[k]):undefined;
+  const req=ty.endsWith('*'),b=ty.replace('*',''),v=ed?((k==='pubAt'||k==='expireAt')?(ed[k]?toDT(ed[k]):''):(k==='weeks'&&!ed.weeks?(ukeValg(ed)==='partall'?'Partallsuker':ukeValg(ed)==='oddetall'?'Oddetallsuker':'Hver uke'):ed[k])):undefined;
   if(b==='combo'){const known=!v||o.includes(v),cur=!ed?o[0]:!v?(req?o[0]:''):known?v:'__annet';
     return `<label class="f">${l}<select name="${k}Sel">${o.map(x=>`<option value="${x}" ${cur===x?'selected':''}>${x}</option>`).join('')}${req?'':`<option value="" ${cur===''?'selected':''}>Ikke oppgitt</option>`}<option value="__annet" ${cur==='__annet'?'selected':''}>Annet</option></select><input name="${k}" type="${it}" value="${known?'':esc(v)}" ${known?'hidden':''}></label>`}
   if(b==='multi'){
@@ -1789,7 +1797,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 20:44';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 20:46';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
@@ -2451,7 +2459,7 @@ const WIZ={
     {h:'Slik sendes den',p:'Sjekk at alt stemmer før du sender.',keys:['push','pinned','hideHome','draft'],sum:true}],
   regular:[
     {h:'Hva slags samling?',p:'En fast samling gjentas hver uke.',keys:['title','cat']},
-    {h:'Når er den?',p:'',keys:['day','time']},
+    {h:'Når er den?',p:'Velg også om den gjelder hver uke eller bare partalls- eller oddetallsuker.',keys:['day','time','weeks']},
     {h:'Se over og opprett',p:'Merknad er valgfritt, for eksempel «Oddetallsuker».',keys:['note'],sum:true}]};
 function wizAsk(){
   if(document.querySelector('dialog.pub'))return;
@@ -2498,7 +2506,7 @@ function wizStart(dlg,t){
       const gr=fd.getAll('groups'),hvem=gr.length?gr.map(gName).join(', '):(fd.has('m')?'Bare medlemmer':'Alle');
       const tid=g('timeSel')==='__annet'?g('time'):g('timeSel'),sted=g('placeSel')==='__annet'?g('place'):g('placeSel');
       L.push(rad('Tittel',g('title')),rad('Kategori',g('cat')),rad('Hvem',hvem),rad('Når',g('start')+(g('end')?' – '+g('end'):'')+(tid?' kl. '+tid:'')),rad('Sted',sted),rad('Taler/hvem',g('who')),rad('Beskrivelse',g('text')))}
-    else{const tid=g('timeSel')==='__annet'?g('time'):g('timeSel');L.push(rad('Tittel',g('title')),rad('Kategori',g('cat')),rad('Når','Hver '+DAYS[+g('day')]+(tid?' kl. '+tid:'')),rad('Merknad',g('note')))}
+    else{const tid=g('timeSel')==='__annet'?g('time'):g('timeSel');L.push(rad('Tittel',g('title')),rad('Kategori',g('cat')),rad('Når','Hver '+DAYS[+g('day')]+(tid?' kl. '+tid:'')),rad('Hvilke uker',g('weeks')),rad('Merknad',g('note')))}
     $('#wizSum').innerHTML=L.join('')};
   const show=i=>{cur=i;f.querySelectorAll('.wizs').forEach(e=>e.style.display=(+e.dataset.i===i)?'grid':'none');
     $('#wizN').textContent='Steg '+(i+1)+' av '+n;$('#wizBar').style.width=((i+1)/n*100)+'%';
