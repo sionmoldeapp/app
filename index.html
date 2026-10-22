@@ -626,7 +626,11 @@ function homeDeler(){
   const fast=nextFast();
   const wk=[...vis.slice(0,4).map(e=>({ev:e,w:e.w})),...fast.map(f=>({fast:f.fast,w:f.w}))].sort((a,b)=>a.w-b.w).slice(0,6);
   let post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
-  {const vv=sisteVarsel();if(vv&&(!post||vv.ms>(post.ms||0)+60000))post=vv}   // et varsel uten nyhet i appen vises også   // alltid den nyeste, også om en eldre er festet i Nyheter
+  {const vv=sisteVarsel();
+    if(vv){
+      const hore=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)&&p.t===vv.t&&String(p.b||'').replace(/s+/g,' ').startsWith(String(vv.b||'').replace(/…$/,'').replace(/s+/g,' ').trim().slice(0,60))).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
+      if(hore)post=hore;   // varselet hører til en melding i appen: vis hele meldingen (varselteksten er avkortet)
+      else if(!post||vv.ms>(post.ms||0)+60000)post=vv}}   // et varsel uten nyhet i appen vises også   // alltid den nyeste, også om en eldre er festet i Nyheter
   return {
    neste:['Neste samling',()=>(n?`<div class="card next"><div class="eyebrow">Neste samling</div><h2>${n.t}</h2>
    <div class="meta">${when(n.w)}${tm(n)}${n.place?' · '+esc(n.place):''}</div>
@@ -1335,6 +1339,7 @@ function hilsenAntall(vs){
   const lt=vs.filter(v=>v.startsWith('lt:')).map(v=>v.slice(3)),gr=vs.filter(v=>v.startsWith('gr:')).map(v=>v.slice(3));
   return u.filter(x=>(x.leder&&lt.includes(ltOf(x)))||gr.some(g=>(x.groups||[]).includes(g)||(x.leads||[]).includes(g))).length}   // hver person telles og får meldingen bare én gang
 const nesteDag=(dow,h,mi)=>{const d=new Date();d.setHours(h,mi,0,0);let add=(dow-d.getDay()+7)%7;if(add===0&&d<=new Date())add=7;d.setDate(d.getDate()+add);return d};
+const kortTekst=t=>t.length>200?t.slice(0,199).trimEnd()+'…':t;
 function hilsenAsk(){
   if(document.querySelector('dialog.pub')||!state.admin)return;
   const maal=hilsenMaal(),dlg=document.createElement('dialog');dlg.className='lp pub';
@@ -1393,11 +1398,11 @@ function hilsenAsk(){
     const mal=alleV?{type:'medlem'}:ltV.length&&grV.length?{type:'blandet',ltypes:ltV,groups:grV}:ltV.length?{type:'ltype',ltypes:ltV}:{type:'grupper',groups:grV};
     const knapp=e.submitter;knapp.disabled=true;const res=[];let schedId='';
     try{
-      if(pu&&fire){try{const ref=await FB.addScheduled({title:tittel.slice(0,100),body:tekst.slice(0,140),tab:'home',malType:mal.type,groups:mal.groups||[],ltypes:mal.ltypes||[],kopi:true,fireAt:fire});schedId=ref.id;res.push('Varselet sendes '+fmtDT(fire)+', og du får en kopi.')}catch(x){res.push('Varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er reglene publisert?')}}
+      if(pu&&fire){try{const ref=await FB.addScheduled({title:tittel.slice(0,100),body:kortTekst(tekst),tab:'home',malType:mal.type,groups:mal.groups||[],ltypes:mal.ltypes||[],kopi:true,fireAt:fire});schedId=ref.id;res.push('Varselet sendes '+fmtDT(fire)+', og du får en kopi.')}catch(x){res.push('Varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er reglene publisert?')}}
       if(ny){
         await FB.add('posts',{t:tittel,b:tekst,audience:grV.length&&!ltV.length?grV:['Medlem'],groups:grV,ltypes:ltV,tag:alleV?'Medlem':vs.map(x=>maal.find(y=>y.v===x).l.replace(/^Bare /,'').replace(/^./,c=>c.toUpperCase())).join(' · '),m:true,hideHome:false,...(fire?{pubAt:fire}:{}),...(schedId?{schedId}:{}),expireAt:(fire||Date.now())+5*864e5});
         res.push(fire?'Legges ut i Nyheter '+fmtDT(fire)+'.':'Lagt ut i Nyheter.')}
-      if(pu&&!fire){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'home',mal,true);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter (inkludert din kopi).':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
+      if(pu&&!fire){try{const r=await FB.sendPush(PUSH_URL,tittel,kortTekst(tekst),'home',mal,true);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter (inkludert din kopi).':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
       dlg.close();await refresh();push(fire?'Pastorens hilsen er planlagt':'Pastorens hilsen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
     catch(er){knapp.disabled=false;msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+').'+(res.length?' '+res.join(' '):''))}});
   dlg.addEventListener('close',()=>dlg.remove());
