@@ -768,7 +768,12 @@ const gLabel=id=>{const g=GROUPS.find(x=>x[0]===id);return g?g[1]+(g[2]?' ('+g[2
 /* Innhold med grupper vises bare for administratorer og medlemmer i minst én av gruppene. Dette er en visning i appen; sikkerheten for «bare medlemmer» ligger i databasen. */
 const postSkjult=p=>{const n=Date.now();return !!p.draft||(p.pubAt>n)||!!(p.expireAt&&p.expireAt<=n)};
 const ltypeSyn=x=>!(x.ltypes&&x.ltypes.length)||effAdmin()||(state.view==='meg'&&state.leder===true&&x.ltypes.includes(state.ltype||'hoved'));
-const canSee=x=>visOK(x)&&ltypeSyn(x)&&(!(x.groups&&x.groups.length)||effAdmin()||effGroups().concat(effLeads()).some(g=>x.groups.includes(g)));
+const grSyn=x=>effGroups().concat(effLeads()).some(g=>x.groups.includes(g));
+const canSee=x=>{
+  if(!visOK(x))return false;
+  const lt=!!(x.ltypes&&x.ltypes.length),gr=!!(x.groups&&x.groups.length);
+  if(lt&&gr)return effAdmin()||(state.view==='meg'&&state.leder===true&&x.ltypes.includes(state.ltype||'hoved'))||grSyn(x);   // valgt både lederkategori og gruppe: nok å høre til én av dem
+  return ltypeSyn(x)&&(!gr||effAdmin()||grSyn(x))};
 /* Gruppeledere (leads på oppføringen i members) kan bare publisere til gruppene de leder. Det håndheves i databasen (firestore.rules) og i varselscriptet. */
 const isLeader=()=>!state.admin&&(state.leads||[]).length>0;
 const myGroupOptions=()=>state.admin?GR_IDS:(state.leads||[]);
@@ -1283,10 +1288,12 @@ function vaktSwap(g,id){
    Legges ut i Nyheter og sendes som varsel (pushmelding) til telefonene. */
 function hilsenMaal(){
   return [{v:'alle',l:'Alle medlemmer'}].concat(LTYPES.map(t=>({v:'lt:'+t[0],l:'Bare '+t[1].toLowerCase()})),[{v:'gr:lederradet',l:'Bare '+gName('lederradet')}])}
-function hilsenAntall(v){
-  if(v==='alle')return members.filter(x=>x.role!=='admin').length;
-  if(v.startsWith('lt:'))return members.filter(x=>x.role!=='admin'&&x.leder&&ltOf(x)===v.slice(3)).length;
-  return members.filter(x=>(x.groups||[]).includes(v.slice(3))||(x.leads||[]).includes(v.slice(3))).length}
+function hilsenAntall(vs){
+  if(typeof vs==='string')vs=[vs];
+  const u=members.filter(x=>x.role!=='admin');
+  if(vs.includes('alle'))return u.length;
+  const lt=vs.filter(v=>v.startsWith('lt:')).map(v=>v.slice(3)),gr=vs.filter(v=>v.startsWith('gr:')).map(v=>v.slice(3));
+  return u.filter(x=>(x.leder&&lt.includes(ltOf(x)))||gr.some(g=>(x.groups||[]).includes(g)||(x.leads||[]).includes(g))).length}   // hver person telles og får meldingen bare én gang
 const nesteDag=(dow,h,mi)=>{const d=new Date();d.setHours(h,mi,0,0);let add=(dow-d.getDay()+7)%7;if(add===0&&d<=new Date())add=7;d.setDate(d.getDate()+add);return d};
 function hilsenAsk(){
   if(document.querySelector('dialog.pub')||!state.admin)return;
@@ -1297,51 +1304,58 @@ function hilsenAsk(){
   dlg.innerHTML='<div class="small" id="hN" style="margin:0 0 6px"></div><div style="height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:12px"><div id="hBar" style="height:100%;background:var(--lamp);width:0;transition:width .25s"></div></div>'
    +'<form class="form" method="dialog" novalidate>'
    +hSteg(0,'Skriv hilsenen','Tittel og melding. Den legges ut i Nyheter og kan sendes som varsel.','<label class="f">Tittel<input id="hT" maxlength="80" value="Pastorens hilsen"></label><label class="f">Melding<textarea id="hB" rows="7" maxlength="3000" placeholder="Skriv hilsenen her …"></textarea></label>')
-   +hSteg(1,'Hvem skal få den?','','<div style="display:grid;gap:8px">'+maal.map((m,i)=>hRad('hMaal',m.v,m.l,' <span class="small">('+hilsenAntall(m.v)+')</span>',i===0)).join('')+'</div>')
+   +hSteg(1,'Hvem skal få den?','Du kan velge flere. Den som er med i flere av dem får bare én melding.','<div style="display:grid;gap:8px" id="hMaalBox">'+maal.map((m,i)=>hRad('hMaal',m.v,m.l,' <span class="small">('+hilsenAntall([m.v])+')</span>',i===0).replace('type="radio"','type="checkbox"')).join('')+'</div><p class="small" id="hAntall" style="margin:0"></p>')
    +hSteg(2,'Når skal den sendes?','','<div style="display:grid;gap:8px">'+NAAR.map(([v,l,d],i)=>hRad('hNaar',v,l,d?' <span class="small">('+esc(kortDato(isoDato(d)))+')</span>':'',i===0)).join('')+'<div id="hEgen" style="display:none;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Dato<input id="hD" type="date" value="'+isoDato(nesteDag(6,12,0))+'"></label><label class="f">Klokkeslett<input id="hK" type="time" value="12:00"></label></div></div>')
    +hSteg(3,'Slik sendes den','Sjekk at alt stemmer før du sender.','<div style="display:grid;gap:8px"><label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hNy" checked style="width:22px;height:22px;flex:none">Legg ut i Nyheter</label>'+(PUSH_URL?'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hPu" checked style="width:22px;height:22px;flex:none">Send som varsel til telefonene</label>':'')+'</div><div id="hSum" class="card" style="background:var(--bg);display:grid;gap:4px;font-size:15px"></div>')
    +'<p class="small" id="hMsg" role="status" style="margin:0"></p>'
    +'<div class="btns" style="margin-top:6px"><button class="btn" type="button" id="hBack">Tilbake</button><button class="btn primary" type="button" id="hNext" style="width:auto">Neste</button><button class="btn primary" value="send" id="hGo" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('change',e=>{if(e.target.name==='hNaar')dlg.querySelector('#hEgen').style.display=e.target.value==='egen'?'grid':'none'});
+  dlg.addEventListener('change',e=>{if(e.target.name!=='hMaal')return;const bx=dlg.querySelector('#hMaalBox'),alle=bx.querySelector('[value=alle]');
+    if(e.target===alle&&alle.checked)bx.querySelectorAll('[name=hMaal]').forEach(x=>{if(x!==alle)x.checked=false});else if(e.target!==alle&&e.target.checked)alle.checked=false;
+    const vs=[...bx.querySelectorAll('[name=hMaal]:checked')].map(x=>x.value);dlg.querySelector('#hAntall').textContent=vs.length?'Til sammen '+hilsenAntall(vs)+' person'+(hilsenAntall(vs)===1?'':'er')+'.':''});
   {const N=4,f=dlg.querySelector('form'),msg0=t=>{dlg.querySelector('#hMsg').textContent=t};let cur=0;
-    const sum=()=>{const v=f.querySelector('[name=hMaal]:checked').value,m=maal.find(x=>x.v===v),naar=f.querySelector('[name=hNaar]:checked').value,nt=NAAR.find(x=>x[0]===naar),dd=f.querySelector('#hD').value,kk=f.querySelector('#hK').value;
+    const valgt=()=>[...f.querySelectorAll('[name=hMaal]:checked')].map(x=>x.value),tekstMaal=vs=>vs.map(v=>maal.find(x=>x.v===v).l.replace(/^Bare /,'')).join(' og ');
+    const sum=()=>{const vs=valgt(),naar=f.querySelector('[name=hNaar]:checked').value,nt=NAAR.find(x=>x[0]===naar),dd=f.querySelector('#hD').value,kk=f.querySelector('#hK').value;
       const rad=(a,b)=>'<div><span class="small">'+esc(a)+':</span> <b>'+esc(b)+'</b></div>',kanal=[f.querySelector('#hNy').checked?'Nyheter':'',f.querySelector('#hPu')&&f.querySelector('#hPu').checked?'varsel':''].filter(Boolean).join(' og ');
-      dlg.querySelector('#hSum').innerHTML=rad('Tittel',f.querySelector('#hT').value.trim())+rad('Til',m.l+' ('+hilsenAntall(v)+')')+rad('Når',naar==='egen'?(dd&&kk?fmtDT(new Date(dd+'T'+kk).getTime()):'velg dato og tid'):nt[1])+rad('Hvordan',kanal||'ikke valgt')};
+      dlg.querySelector('#hSum').innerHTML=rad('Tittel',f.querySelector('#hT').value.trim())+rad('Til',tekstMaal(vs)+' ('+hilsenAntall(vs)+')')+rad('Når',naar==='egen'?(dd&&kk?fmtDT(new Date(dd+'T'+kk).getTime()):'velg dato og tid'):nt[1])+rad('Hvordan',kanal||'ikke valgt')};
     const vis=i=>{cur=i;f.querySelectorAll('.wizs').forEach(e=>e.style.display=(+e.dataset.i===i)?'grid':'none');
       dlg.querySelector('#hN').textContent='Steg '+(i+1)+' av '+N;dlg.querySelector('#hBar').style.width=((i+1)/N*100)+'%';
       dlg.querySelector('#hBack').style.display=i?'':'none';dlg.querySelector('#hNext').style.display=i<N-1?'':'none';dlg.querySelector('#hGo').style.display=i===N-1?'':'none';
       if(i===N-1)sum();msg0('')};
     const ok=()=>{
       if(cur===0&&(!f.querySelector('#hT').value.trim()||!f.querySelector('#hB').value.trim())){msg0('Skriv både tittel og melding.');return false}
+      if(cur===1&&!valgt().length){msg0('Velg minst én mottaker.');return false}
       if(cur===2&&f.querySelector('[name=hNaar]:checked').value==='egen'&&!(f.querySelector('#hD').value&&f.querySelector('#hK').value)){msg0('Velg dato og klokkeslett.');return false}
       return true};
     dlg.querySelector('#hNext').addEventListener('click',()=>{if(ok())vis(cur+1)});
     dlg.querySelector('#hBack').addEventListener('click',()=>vis(cur-1));
     f.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();if(cur<N-1&&ok())vis(cur+1)}});
     f.addEventListener('change',()=>{if(cur===N-1)sum()});
+    f.querySelector('[name=hMaal]').dispatchEvent(new Event('change',{bubbles:true}));
     vis(0)}
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;
     e.preventDefault();
     const msg=t=>{dlg.querySelector('#hMsg').textContent=t};
-    const tittel=dlg.querySelector('#hT').value.trim(),tekst=dlg.querySelector('#hB').value.trim(),v=dlg.querySelector('[name=hMaal]:checked').value,m=maal.find(x=>x.v===v);
+    const tittel=dlg.querySelector('#hT').value.trim(),tekst=dlg.querySelector('#hB').value.trim(),vs=[...dlg.querySelectorAll('[name=hMaal]:checked')].map(x=>x.value);
     const ny=dlg.querySelector('#hNy').checked,pu=!!dlg.querySelector('#hPu')&&dlg.querySelector('#hPu').checked;
     if(!tittel||!tekst){msg('Skriv både tittel og melding.');return}
+    if(!vs.length){msg('Velg minst én mottaker.');return}
+    const ltV=vs.filter(x=>x.startsWith('lt:')).map(x=>x.slice(3)),grV=vs.filter(x=>x.startsWith('gr:')).map(x=>x.slice(3)),alleV=vs.includes('alle'),mTxt=vs.map(x=>maal.find(y=>y.v===x).l.replace(/^Bare /,'')).join(' og ').toLowerCase();
     if(!ny&&!pu){msg('Velg minst én måte å sende på.');return}
-    const n=hilsenAntall(v),naar=dlg.querySelector('[name=hNaar]:checked').value;
+    const n=hilsenAntall(vs),naar=dlg.querySelector('[name=hNaar]:checked').value;
     let fire=0;
     if(naar==='lor')fire=nesteDag(6,12,0).getTime();else if(naar==='son')fire=nesteDag(0,8,0).getTime();
     else if(naar==='egen'){const dd=dlg.querySelector('#hD').value,kk=dlg.querySelector('#hK').value;fire=dd&&kk?new Date(dd+'T'+kk).getTime():0;if(!fire){msg('Velg dato og klokkeslett.');return}}
     if(fire&&fire<Date.now()+120000){msg('Tidspunktet må være frem i tid.');return}
-    if(!await bekreft((fire?'Planlegge «':'Sende «')+tittel+'» til '+m.l.toLowerCase()+' ('+n+' person'+(n===1?'':'er')+')'+(fire?' '+fmtDT(fire):'')+(pu?' og sende varsel':'')+'? Du får selv en kopi av varselet.'))return;
-    const mal=v==='alle'?{type:'medlem'}:v.startsWith('lt:')?{type:'ltype',ltypes:[v.slice(3)]}:{type:'grupper',groups:[v.slice(3)]};
+    if(!await bekreft((fire?'Planlegge «':'Sende «')+tittel+'» til '+mTxt+' ('+n+' person'+(n===1?'':'er')+')'+(fire?' '+fmtDT(fire):'')+(pu?' og sende varsel':'')+'? Du får selv en kopi av varselet.'))return;
+    const mal=alleV?{type:'medlem'}:ltV.length&&grV.length?{type:'blandet',ltypes:ltV,groups:grV}:ltV.length?{type:'ltype',ltypes:ltV}:{type:'grupper',groups:grV};
     const knapp=e.submitter;knapp.disabled=true;const res=[];let schedId='';
     try{
       if(pu&&fire){try{const ref=await FB.addScheduled({title:tittel.slice(0,100),body:tekst.slice(0,140),tab:'news',malType:mal.type,groups:mal.groups||[],ltypes:mal.ltypes||[],kopi:true,fireAt:fire});schedId=ref.id;res.push('Varselet sendes '+fmtDT(fire)+', og du får en kopi.')}catch(x){res.push('Varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er reglene publisert?')}}
       if(ny){
-        const lt=v.startsWith('lt:'),gr=v.startsWith('gr:');
-        await FB.add('posts',{t:tittel,b:tekst,audience:gr?[v.slice(3)]:['Medlem'],groups:gr?[v.slice(3)]:[],ltypes:lt?[v.slice(3)]:[],tag:lt?m.l.replace('Bare ','').replace(/^./,c=>c.toUpperCase()):gr?gName(v.slice(3)):'Medlem',m:true,hideHome:false,...(fire?{pubAt:fire}:{}),...(schedId?{schedId}:{}),expireAt:(fire||Date.now())+5*864e5});
+        await FB.add('posts',{t:tittel,b:tekst,audience:grV.length&&!ltV.length?grV:['Medlem'],groups:grV,ltypes:ltV,tag:alleV?'Medlem':vs.map(x=>maal.find(y=>y.v===x).l.replace(/^Bare /,'').replace(/^./,c=>c.toUpperCase())).join(' · '),m:true,hideHome:false,...(fire?{pubAt:fire}:{}),...(schedId?{schedId}:{}),expireAt:(fire||Date.now())+5*864e5});
         res.push(fire?'Legges ut i Nyheter '+fmtDT(fire)+'.':'Lagt ut i Nyheter.')}
       if(pu&&!fire){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'news',mal,true);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter (inkludert din kopi).':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
       dlg.close();await refresh();push(fire?'Pastorens hilsen er planlagt':'Pastorens hilsen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
@@ -2479,8 +2493,8 @@ let first=true;
     const d=this;d.dataset.lukker='1';
     if(rv!==undefined)d.returnValue=rv;
     const a=d.animate({opacity:[1,0],transform:['none','translateY(10px) scale(.98)']},{duration:180,easing:'ease-in'});
-    const ferdig=()=>{delete d.dataset.lukker;orig.call(d,rv!==undefined?rv:d.returnValue)};
-    a.onfinish=ferdig;a.oncancel=ferdig};
+    let utført=false;const ferdig=()=>{if(utført)return;utført=true;delete d.dataset.lukker;orig.call(d,rv!==undefined?rv:d.returnValue)};
+    a.onfinish=ferdig;a.oncancel=ferdig;setTimeout(ferdig,400)};   // reserve hvis animasjonen ikke får gått ferdig (for eksempel når siden ligger i bakgrunnen)
   document.addEventListener('submit',e=>{
     const f=e.target;if(!f||f.method!=='dialog'||e.defaultPrevented||lite())return;
     const d=f.closest('dialog');if(!d)return;
