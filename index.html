@@ -581,7 +581,7 @@ function lrCard(){
   const rad=(x,grå)=>'<div class="r" style="display:block;'+(grå?'opacity:.55':'')+'"><div style="white-space:pre-wrap">'+esc(x.t)+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'')+' · '+esc(ago({ms:x.ms}))+'</div><div class="btns"><button class="btn" data-lrdone="'+esc(x.id)+'" data-v="'+(grå?'0':'1')+'">'+(grå?'Åpne igjen':'Behandlet')+'</button>'+(mine(x)?'<button class="btn" data-lrdel="'+esc(x.id)+'">Slett</button>':'')+'</div></div>';
   const inn='<p class="small" style="margin:0 0 8px">Skriv inn en sak du vil ta opp i lederrådet. Alle i lederrådet ser den.</p>'
    +'<textarea id="lrT" rows="3" maxlength="600" placeholder="Hva vil du ta opp? …" style="margin-bottom:8px"></textarea>'
-   +'<div class="btns" style="margin:0 0 10px"><button class="btn primary" data-lradd style="width:auto">Legg til sak</button><button class="btn" data-lrrefresh>Oppdater</button>'+(apne.length?'<button class="btn" data-lrcopy>Kopier saklisten</button>':'')+'</div>'
+   +'<div class="btns" style="margin:0 0 10px"><button class="btn primary" data-lradd style="width:auto">Legg til sak</button><button class="btn" data-lrrefresh>Oppdater</button>'+(apne.length?'<button class="btn" data-lrcopy>Kopier saklisten</button>'+(PUSH_URL?'<button class="btn" data-lrmail>'+(effAdmin()?'Send til e-post':'Send til administrator')+'</button>':''):'')+'</div>'
    +(l===undefined?'<p class="small">Henter saker …</p>':'<div class="reg">'+(apne.map(x=>rad(x,false)).join('')||'<p class="small">Ingen saker ennå.</p>')+'</div>'
    +(ferdige.length?'<details class="acc sub" data-acc="lr_ferdige" '+(state.acc.lr_ferdige?'open':'')+' style="margin-top:12px"><summary><h3 style="font-size:17px">Behandlet ('+ferdige.length+')</h3></summary><div class="reg">'+ferdige.map(x=>rad(x,true)).join('')+'</div></details>':''));
   return '<details class="card acc" data-acc="lr" '+(state.acc.lr?'open':'')+'><summary><h2>Saker til lederrådet'+(l?' ('+apne.length+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.lrMsg||'')+'</p></details>'}
@@ -1961,6 +1961,10 @@ document.addEventListener('click',async e=>{
   else if('lradd' in c.dataset){lrAdd()}
   else if('lrrefresh' in c.dataset){state.lr=undefined;keep(()=>{});loadLr()}
   else if('lrcopy' in c.dataset){lrCopy()}
+  else if('lrmail' in c.dataset){c.disabled=true;
+    try{const r=await FB.sendSaker(PUSH_URL);push(r.ok?'Sendt':'Ikke sendt',r.ok?'Saklisten ('+r.antall+') er sendt til '+r.til+'.':r.feil)}
+    catch(er){push('Ikke sendt','Ingen kontakt med tjenesten.')}
+    c.disabled=false}
   else if(c.dataset.lrdone){lrDone(c.dataset.lrdone,c.dataset.v==='1')}
   else if(c.dataset.lrdel){lrDel(c.dataset.lrdel)}
   else if('svopen' in c.dataset){svAsk()}
