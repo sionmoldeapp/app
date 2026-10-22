@@ -830,23 +830,23 @@ function news(){
   <div class="list" id="nyhList">${nyhListe(l)}</div>${sk.length?`<details class="card acc" data-acc="skjulte" ${state.acc.skjulte?'open':''}><summary><h2>Planlagt, utkast og utløpt (${sk.length})</h2></summary><p class="small" style="margin:0 0 8px">Disse vises ikke for medlemmene nå. Bare du ser dem.</p><div class="list">${sk.map(nyhKort).join('')}</div></details>`:''}${kan?'<div class="lpzone"></div>':''}`}
 
 /* ---------- Innlogging og administrasjon ---------- */
-const CATS_DEFAULT=['Møter','Ung','Fellesskap','Stevne','Menighetsmøte','Activled','Lederrådet'];
+const CATS_DEFAULT=['Møter','Ung','Fellesskap','Stevne','Menighetsmøte','Ungdomsleder','Lederrådet'];
 const KAT_NYE=CATS_DEFAULT.slice();
 const CATS=CATS_DEFAULT.slice();   // endres på stedet når administrator har redigert kategoriene (samlingen categories)
-const CAT_LOCKED='Activled';   // styrer hvem som ser innholdet og kan ikke endres eller slettes
+const CAT_LOCKED='Ungdomsleder';   // styrer hvem som ser innholdet og kan ikke endres eller slettes
 function applyCats(l){
-  const n=l&&l.length?l.slice().sort((a,b)=>((a.ord==null?999:a.ord)-(b.ord==null?999:b.ord))||String(a.name).localeCompare(String(b.name))).map(c=>c.name==='Ledersamling'?'Activled':c.name):CATS_DEFAULT.slice();
+  const n=l&&l.length?l.slice().sort((a,b)=>((a.ord==null?999:a.ord)-(b.ord==null?999:b.ord))||String(a.name).localeCompare(String(b.name))).map(c=>(c.name==='Ledersamling'||c.name==='Activled')?'Ungdomsleder':c.name):CATS_DEFAULT.slice();
   if(!n.includes(CAT_LOCKED))n.push(CAT_LOCKED);
   for(let i=n.length-1;i>=0;i--)if(n.indexOf(n[i])!==i)n.splice(i,1);
   CATS.length=0;n.forEach(c=>CATS.push(c));state.catDb=!!(l&&l.length)}
 /* Kategorier: de seks faste + alle nye som er brukt på et arrangement eller en fast samling (lages av administrator i veiviseren, steg 1). */
 const allCats=()=>[...CATS,...new Set([...rawEvents,...regular].map(x=>normCat(x.cat)).filter(c=>c&&!CATS.includes(c)))];   // CATS + eventuelle kategorier som bare finnes på oppføringer
-const normCat=c=>{if(c==='Ledersamling')return 'Activled';   // gammelt navn
+const normCat=c=>{if(c==='Ledersamling'||c==='Activled')return 'Ungdomsleder';   // gamle navn
   const l=CATS;
   if(c==='Møter'&&!l.includes('Møter')&&l.includes('Møte'))return 'Møte';
   if(c==='Møte'&&!l.includes('Møte')&&l.includes('Møter'))return 'Møter';
   return c};
-/* «Activled» (tidligere Ledersamling) er bare for ledere: administratorer, ledere, gruppeledere og medlemmer i gruppene Lederrådet og Ungdomsledere. Andre ser verken kategorien eller arrangementene. */
+/* «Ungdomsleder» (tidligere Ledersamling og Activled) er bare for ungdomsledere: administratorer, ledere i lederkategorien Ungdomsledere, medlemmer i gruppen Ungdomsledere og gruppeledere for Ungdomsledere eller Activ8. Andre ser verken kategorien eller arrangementene. */
 /* Visning: «meg» (mine egne rettigheter), «medlem» (vanlig innlogget medlem uten grupper) eller «besok» (ikke innlogget). Påvirker bare hva som vises som innhold. */
 const canEdit=()=>state.view==='meg'&&(state.admin||isLeader());
 const editOn=()=>state.edit&&canEdit();
@@ -860,10 +860,10 @@ const effLeads=()=>state.view==='meg'?(state.leads||[]):[];
 const effGroups=()=>state.view==='meg'?(state.groups||[]):[];
 const visOK=x=>state.view!=='besok'||!x.m;
 const effLeder=()=>state.view==='meg'&&state.leder===true;
-const LEDERKAT=['Activled','Lederrådet'];   // kategorier som bare ledere ser (navnet avgjør)
+const LEDERKAT=['Ungdomsleder','Lederrådet'];   // kategorier som bare ledere ser (navnet avgjør)
 const lederKat=c=>LEDERKAT.includes(normCat(c));
 const katSyn={   // hvem som ser hver intern kategori
-  'Activled':()=>effAdmin()||effLeder()||effLeads().length>0||effGroups().includes('lederradet')||effGroups().includes('ungdomsledere'),
+  'Ungdomsleder':()=>effAdmin()||(effLeder()&&state.ltype==='ungdom')||effGroups().includes('ungdomsledere')||effLeads().includes('ungdomsledere')||effLeads().includes('activ8'),
   'Lederrådet':()=>effAdmin()||effGroups().includes('lederradet')};
 const canSeeCat=c=>{const f=katSyn[normCat(c)];return f?f():true};
 /* «Vis som gruppeleder» (bare for administrator): vi bytter midlertidig ut rollen i appen med en gruppeleder for de valgte gruppene. Reglene i databasen gjelder fortsatt administratoren. */
@@ -1797,7 +1797,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 20:46';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 20:51';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
@@ -2559,11 +2559,11 @@ async function catSeed(){
   if(state.catDb)return;
   let i=0;for(const c of allCats())await FB.setCatDoc(slug(c),{name:c,ord:i++});
   applyCats(await FB.catsList())}
-/* Bytte til de nye kategoriene: Møter, Ung, Fellesskap, Stevne, Menighetsmøte, Activled og Lederrådet. Arrangementer og faste samlinger flyttes automatisk. */
+/* Bytte til de nye kategoriene: Møter, Ung, Fellesskap, Stevne, Menighetsmøte, Ungdomsleder og Lederrådet. Arrangementer og faste samlinger flyttes automatisk. */
 const katMigrert=()=>KAT_NYE.every(c=>allCats().includes(c));
 const katKart=(c,tittel)=>{
   const k=String(c||''),t=String(tittel||'').toLowerCase();
-  if(k==='Ledersamling'||k==='Activled')return 'Activled';
+  if(k==='Ledersamling'||k==='Activled'||k==='Ungdomsleder')return 'Ungdomsleder';
   if(k==='Lederrådet'||k==='Menighetsmøte')return k;
   if(k==='Ungdom'||k==='Ung')return 'Ung';
   if(/stevne/.test(t))return 'Stevne';
