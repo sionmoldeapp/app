@@ -625,7 +625,8 @@ function homeDeler(){
   const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome), n=vis[0];
   const fast=nextFast();
   const wk=[...vis.slice(0,4).map(e=>({ev:e,w:e.w})),...fast.map(f=>({fast:f.fast,w:f.w}))].sort((a,b)=>a.w-b.w).slice(0,6);
-  const post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];   // alltid den nyeste, også om en eldre er festet i Nyheter
+  let post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
+  {const vv=sisteVarsel();if(vv&&(!post||vv.ms>(post.ms||0)+60000))post=vv}   // et varsel uten nyhet i appen vises også   // alltid den nyeste, også om en eldre er festet i Nyheter
   return {
    neste:['Neste samling',()=>(n?`<div class="card next"><div class="eyebrow">Neste samling</div><h2>${n.t}</h2>
    <div class="meta">${when(n.w)}${tm(n)}${n.place?' · '+esc(n.place):''}</div>
@@ -1838,6 +1839,10 @@ async function refresh(){
   if(aktiv&&window.smBusy)window.smBusy(1);
   try{await load();keep(()=>{})}finally{if(aktiv&&window.smBusy)window.smBusy(-1)}}
 /* Ny melding (varsel mottatt, varselet trykket på, eller appen åpnet igjen etter en stund): hent siste innhold og vis Viktig-kortet på Hjem igjen. */
+function varselLagre(t,b){
+  if(!t&&!b)return;try{localStorage.setItem('sm-varsel',JSON.stringify({id:'varsel'+Date.now(),t:String(t||'Melding'),b:String(b||''),ms:Date.now()}))}catch(e){}}
+function sisteVarsel(){
+  try{const v=JSON.parse(localStorage.getItem('sm-varsel')||'null');return v&&v.ms>Date.now()-3*864e5?v:null}catch(e){return null}}
 function nyMelding(){
   lsSet('sm-viktig-skjult','');Object.keys(state.open).forEach(k=>{if(k.startsWith('v_'))delete state.open[k]});
   if(FB&&!first)refresh().catch(()=>{})}
@@ -2595,7 +2600,7 @@ async function start(){
       const medl=localStorage.getItem('sm-innlogget')==='1';   // sist innlogget: nyhetene kan være andre enn de åpne, så de vises først når alt er lastet
       state.fast=medl;bruk(c.e,medl?[]:c.p,c.g);state.unread=posts.filter(p=>isNew(p)&&!postSkjult(p)).length;if(state.tab==='news')markSeen();first=false;render();splashBort()}}catch(er){first=true}
   FB=await window.fbReady;
-  if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me')keep(()=>{})});FB.onPush(p=>{push((p.notification&&p.notification.title)||'Melding',(p.notification&&p.notification.body)||'');nyMelding()})}
+  if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me')keep(()=>{})});FB.onPush(p=>{const t=(p.notification&&p.notification.title)||'Melding',b=(p.notification&&p.notification.body)||'';push(t,b);varselLagre(t,b);nyMelding()})}
   const go=async u=>{
     state.user=u||null;
     const [adm,mem]=u?await Promise.all([FB.isAdmin(u.email),FB.isMember(u.email)]):[false,false];
@@ -2624,6 +2629,9 @@ async function start(){
 }
 start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});
-  navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='open-tab'&&['home','prog','news','me'].includes(d.tab)){state.tab=d.tab;if(d.tab==='news')markSeen();render();nyMelding()}})}
+  navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type!=='open-tab')return;
+    if(d.title)varselLagre(d.title,d.body);   // varselet som ble trykket på
+    if(['home','prog','news','me'].includes(d.tab)){state.tab=d.tab;if(d.tab==='news')markSeen();render()}
+    nyMelding()})}
 </script>
 </body></html>
