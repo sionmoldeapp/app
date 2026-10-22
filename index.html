@@ -220,7 +220,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .chips.scroll{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 .chips.scroll::-webkit-scrollbar{display:none}
 .catrad{display:flex;align-items:flex-start;gap:6px}
-.catrad .chips.scroll{flex:1;min-width:0;margin:0;padding:2px 0 6px}
+.catrad .chips.scroll{flex:1;min-width:0;margin:0;padding:2px 0 6px;overflow:hidden}
 .catrad .chips.scroll.alle{flex-wrap:wrap;overflow:visible;margin:0;padding:2px 0 6px}
 .catmer{flex:none;width:36px;height:36px;margin-top:0;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}
 .catmer svg{transition:transform .25s ease}
@@ -696,7 +696,13 @@ function pastList(){
 /* Knappen til høyre for kategoriene vises bare når ikke alle får plass på skjermen. Den viser alle kategoriene under hverandre (flere linjer). */
 function catSjekk(){
   const el=document.getElementById('catChips'),b=document.getElementById('catMer');if(!el||!b)return;
-  b.hidden=!state.catAll&&el.scrollWidth<=el.clientWidth+1}
+  el.scrollLeft=0;const ch=[...el.children];ch.forEach(c=>{c.style.display=''});
+  if(state.catAll){b.hidden=false;return}
+  const kant=el.getBoundingClientRect().right+0.5,ut=ch.filter(c=>c.getBoundingClientRect().right>kant);   // kategorier som bare delvis får plass vises ikke før alle åpnes
+  ut.forEach(c=>{c.style.display='none'});
+  b.hidden=!ut.length;
+  if(ut.some(c=>c.getAttribute('aria-pressed')==='true')){state.catAll=true;keep(()=>{})}}   // valgt kategori skal alltid være synlig
+addEventListener('resize',()=>{if(document.getElementById('catChips'))catSjekk()});
 function prog(){
   setTimeout(catSjekk,0);
   const cats=['Alle',...allCats().filter(canSeeCat)];
@@ -1728,7 +1734,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 14:04';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 14:08';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
