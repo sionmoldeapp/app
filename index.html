@@ -2635,7 +2635,10 @@ async function start(){
 }
 start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});hentVarselFraSW();
-  navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type!=='open-tab')return;
+  setInterval(()=>{if(!document.hidden)hentVarselFraSW()},15000);   // reserve: sjekker det lokale varsellageret mens appen er åpen
+  navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};
+    if(d.type==='push'){varselLagre(d.title,d.body);lsSet('sm-viktig-skjult','');keep(()=>{});nyMelding();return}   // varsel kom mens appen var åpen
+    if(d.type!=='open-tab')return;
     if(d.title)varselLagre(d.title,d.body);   // varselet som ble trykket på
     if(['home','prog','news','me'].includes(d.tab)){state.tab=d.tab;if(d.tab==='news')markSeen();render()}
     nyMelding()})}
