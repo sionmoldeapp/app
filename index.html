@@ -588,7 +588,6 @@ function homeDeler(){
    vakter:['Dine vakter',()=>myShiftsCard()],
    bonn:['Forbønn',()=>UI.pr===false?'':prayerCard()],
    viktig:['Viktig',()=>(!state.fast&&UI.vk!==false&&post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
-   nyheter:['Nyheter',()=>UI.nh===true&&!state.fast?nyhHjem():''],
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${wk.map(x=>x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)).join('')}</div></div>`:'')],
    sommer:['Nyhetsbrev Sommerstevne',()=>UI.sv===false?'':svCard()],
    finn:['Finn frem',()=>contactCard()]}}
@@ -667,14 +666,6 @@ function nyhKort(p){
   if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
   const open=!!state.open['p_'+p.id],u=ulest(p),fest=p.pinned&&(effAdmin()||(effLeder()&&state.ltype==='forkynner')),tekst=String(p.b||'').replace(/\s+/g,' ').trim();
   return `<div class="nrad ${open?'open':''} ${u?'ulest':''}"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><button type="button" class="nhode ptitle" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="ndot">${u?'<span class="dot" title="Ulest"></span>':''}</span><span class="ntekst"><b class="ntit">${fest?'📌 ':''}${esc(p.t)}</b>${open?'':`<span class="nprev">${esc(tekst)}</span>`}</span><span class="nmeta">${esc(ago(p))}</span></button>${open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open"><span class="pt">${linkify(esc(p.b))}</span></div>${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:''}</div>`}
-/* Valgfritt kort på Hjem (Innstillinger → Vis på Hjem): den nyeste nyheten som en kompakt rad. Trykk åpner meldingen i Nyheter. */
-function nyhHjem(){
-  const vp=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p))[0],viktigVises=UI.vk!==false&&vp&&lsGet('sm-viktig-skjult')!==String(vp.id);   // samme melding vises ikke to ganger
-  const l=posts.filter(p=>(!p.m||state.member)&&!postSkjult(p)&&!(viktigVises&&p===vp)).slice(0,1);
-  if(!l.length)return '';
-  const rad=p=>{const u=ulest(p),tekst=String(p.b||'').replace(/s+/g,' ').trim();
-    return '<div class="nrad '+(u?'ulest':'')+'"><button type="button" class="nhode ptitle" data-nhopen="'+esc(p.id)+'"><span class="ndot">'+(u?'<span class="dot" title="Ulest"></span>':'')+'</span><span class="ntekst"><b class="ntit">'+esc(p.t)+'</b><span class="nprev">'+esc(tekst)+'</span></span><span class="nmeta">'+esc(ago(p))+'</span></button></div>'};
-  return '<div><div class="hrad" style="align-items:center;margin-bottom:10px"><h2>Nyheter</h2><button type="button" class="btn" data-t="news" style="width:auto">Se alle</button></div><div class="list">'+l.map(rad).join('')+'</div></div>'}
 function nyhGruppe(p){
   if(p.pinned)return 0;
   if(!p.ms)return 3;
@@ -1618,7 +1609,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const UI={fs:1,sv:true,pr:true,nh:false,vk:true};
+const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
 function uiLagre(){try{localStorage.setItem('sm-ui',JSON.stringify(UI))}catch(e){}}
@@ -1629,7 +1620,7 @@ function settingsCard(){
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
   ${state.user?profSub('inpush','Varsler',pushInner()):''}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
-  ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}${bryter('nh','Nyheter','Den nyeste nyheten. Er av til du slår den på.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
+  ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('installer','Slik installerer du appen',installBody())}</details>`}
 function pushInner(){
   if(!state.user)return '';   // varsler er bare for innloggede
@@ -1712,7 +1703,6 @@ const ov=()=>state.tab==='home'?'home':'me';
 const ordKort=v=>v==='home'?homeDeler():ME_KORT;
 function ordRekke(v,kort){
   let lagret=state[ORD[v].felt]||[];if(!lagret.length)try{lagret=JSON.parse(localStorage.getItem(ORD[v].ls)||'[]')}catch(e){}
-  if(v==='home'&&lagret.includes('viktig')&&!lagret.includes('nyheter')){lagret=lagret.slice();lagret.splice(lagret.indexOf('viktig')+1,0,'nyheter')}   // nytt kort: rett under Viktig
   const alle=Object.keys(kort);return [...lagret.filter(k=>alle.includes(k)),...alle.filter(k=>!lagret.includes(k))]}
 function ordSynlige(v){const kort=ordKort(v);return ordRekke(v,kort).map(k=>[k,kort[k][1](),kort[k][0]]).filter(x=>x[1]&&x[1].trim())}
 function ordHtml(v){
@@ -1892,7 +1882,6 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.meup){meFlytt(c.dataset.meup,-1)}
   else if(c.dataset.medown){meFlytt(c.dataset.medown,1)}
   else if(c.dataset.nf!==undefined){state.nf=c.dataset.nf;state.nyhN=NYH_SIDE;keep(()=>{})}
-  else if(c.dataset.nhopen){viktigApne(c.dataset.nhopen)}
   else if(c.dataset.sok){const k=c.dataset.sok,f=SOK[k];state.sok=state.sok||{};const apen=sokApen(k);
     if(apen){const rydd=()=>{state.sok[k]=false;state[f]='';if(k==='past')state.pastN=40;if(k==='nyh')state.nyhN=NYH_SIDE;keep(()=>{})},i=document.getElementById(SOK_ID[k]);if(i){c.classList.remove('on');sokAnim(i,false,rydd)}else rydd()}
     else{state.sok[k]=true;keep(()=>{});const i=document.getElementById(SOK_ID[k]);if(i){sokAnim(i,true);i.focus()}}}
