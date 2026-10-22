@@ -570,7 +570,16 @@ async function lrCopy(){
   try{await navigator.clipboard.writeText(tekst);push('Kopiert','Saklisten er kopiert.')}catch(e){await visTekst('Kopier saklisten:',tekst.replace(/\n/g,' '))}}
 
 /* «Viktig»-kortet på Hjem: rolig kort i samme stil som de andre, med ikon, tid, tittel, to linjer tekst og en pil. Hele kortet åpner meldingen i Nyheter. Kan fjernes med ✕ eller ved å trekke til siden, og kommer tilbake først når det kommer en ny melding. */
+/* Når en melding dukker opp på Hjem første gang, tones den mykt inn og skyver resten ned jevnt i stedet for å sprette inn. */
+const viktigVist={};
+function viktigInn(){
+  const k=document.querySelector('.viktig');if(!k||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const h=k.offsetHeight,cs=getComputedStyle(k);if(!h)return;
+  k.style.overflow='hidden';
+  const a=k.animate([{opacity:0,height:'0px',paddingTop:'0px',paddingBottom:'0px',marginBottom:'-16px'},{opacity:1,height:h+'px',paddingTop:cs.paddingTop,paddingBottom:cs.paddingBottom,marginBottom:'0px'}],{duration:650,easing:'cubic-bezier(.2,.7,.2,1)'});
+  const slutt=()=>{k.style.overflow=''};a.onfinish=slutt;a.oncancel=slutt}
 function viktigKort(p){
+  if(!viktigVist[p.id]){viktigVist[p.id]=1;setTimeout(viktigInn,0)}
   const tekst=String(p.b||'').replace(/\s+/g,' ').trim();
   const open=!!state.open['v_'+p.id];
   return '<div class="viktig'+(open?' open':'')+'" data-viktig="'+esc(p.id)+'" role="button" aria-expanded="'+open+'" tabindex="0" aria-label="Viktig: '+esc(p.t)+'">'
