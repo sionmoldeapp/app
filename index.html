@@ -389,8 +389,9 @@ function meTall(){
   const vakt=Object.keys(state.reqs||{}).reduce((n,g)=>n+(kanStyre(g)?((state.reqs[g]||[]).length):0),0);
   const lr=lrTilgang()?lrNye().length:0;
   return {meld,vakt,lr,sum:meld+vakt+lr}}
+const nyhUlest=()=>posts.filter(p=>ulest(p)&&!postSkjult(p)).length;
 const bdg=n=>n>0?'<span class="bdg" role="status" aria-label="'+n+' å sjekke">'+n+'</span>':'';
-function drawTabs(){$('#tabs').innerHTML=TABS.map(([k,l,i])=>`<button data-t="${k}" ${state.tab===k?'aria-current="page"':''}><svg viewBox="0 0 24 24">${ICON[i]}</svg>${l}${k==='me'&&meTall().sum>0?`<span class="tab-bdg" aria-label="${meTall().sum} å sjekke">${meTall().sum}</span>`:''}</button>`).join('')}
+function drawTabs(){$('#tabs').innerHTML=TABS.map(([k,l,i])=>`<button data-t="${k}" ${state.tab===k?'aria-current="page"':''}><svg viewBox="0 0 24 24">${ICON[i]}</svg>${l}${k==='me'&&meTall().sum>0?`<span class="tab-bdg" aria-label="${meTall().sum} å sjekke">${meTall().sum}</span>`:''}${k==='news'&&nyhUlest()>0?`<span class="tab-bdg" aria-label="${nyhUlest()} uleste nyheter">${nyhUlest()}</span>`:''}</button>`).join('')}
 
 function when(d){const diff=Math.round((new Date(d).setHours(0,0,0,0)-new Date(now).setHours(0,0,0,0))/864e5);
   return diff===0?'I dag':diff===1?'I morgen':cap(DAYS[d.getDay()])}
@@ -1766,7 +1767,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 16:28';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 16:29';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
