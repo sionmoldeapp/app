@@ -253,8 +253,6 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .chips{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:4px}
 .chips.scroll{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 .chips.scroll::-webkit-scrollbar{display:none}
-.mnd-ikon{flex:none;width:52px;height:52px;border-radius:var(--r-m);display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--ikon-a),var(--ikon-b));box-shadow:0 6px 14px rgba(0,0,0,.25)}
-.mnd h2{font-size:var(--t-h)}
 .catrad{display:flex;align-items:flex-start;gap:6px}
 .catrad .chips.scroll{flex:1;min-width:0;margin:0;padding:2px 0 6px;overflow:hidden}
 .catrad .chips.scroll.alle{flex-wrap:wrap;overflow:visible;margin:0;padding:2px 0 6px}
@@ -813,11 +811,13 @@ function dagListe(list){
 function manedsSamlinger(){
   const l=regular.filter(r=>ukeValg(r)==='maned'&&(state.filter==='Alle'||normCat(r.cat)===state.filter));
   if(!l.length)return '';
-  const ikon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2.5 2.5L16 13"/></svg>';
+  const ikon='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2.5 2.5L16 13"/></svg>';
   return l.map(r=>{
     const nav=events.find(e=>(e.w>=new Date())&&String(e.title||'').toLowerCase().includes(String(r.title).toLowerCase())),
-      neste=nav?nesteTid({w:nav.w,time:nav.time}):'Neste dato er ikke satt ennå';
-    return '<div class="card next mnd" style="margin-top:12px;display:flex;gap:14px;align-items:center"><div class="mnd-ikon" aria-hidden="true">'+ikon+'</div><div style="min-width:0;flex:1"><div class="eyebrow">Ca. én gang i måneden</div><h2>'+esc(r.title)+'</h2><div class="meta">'+esc(cap(DAYS[r.day]))+'er kl. '+esc(r.time)+'</div>'+(String(r.note||'').replace(/[, ]*ca[. ]*[eé]n gang i måneden/i,'').trim()?'<div class="meta" style="opacity:.85;margin-top:2px">'+esc(String(r.note).replace(/[, ]*ca[. ]*[eé]n gang i måneden/i,'').trim())+'</div>':'')+'<div class="meta" style="margin-top:6px"><b>'+(nav?'Neste: ':'')+esc(neste)+'</b></div></div></div>'}).join('')}
+      neste=nav?nesteTid({w:nav.w,time:nav.time}):'Neste dato kommer';
+    const notat=String(r.note||'').replace(/[, ]*ca[. ]*[eé]n gang i måneden/i,'').trim();
+    const boks=nav?'<div class="date">'+nav.w.getDate()+'. '+cap(MON[nav.w.getMonth()])+'</div>':'<div class="date" style="display:grid;place-items:center;color:var(--brand)">'+ikon+'</div>';
+    return '<div class="item" style="margin-top:10px"><div style="display:flex;gap:12px;align-items:center;padding:12px">'+boks+'<div class="grow"><b>'+esc(r.title)+'</b><span class="small">'+(nav?'Neste: '+esc(neste):esc(neste))+'</span><span class="small" style="display:block">'+esc(cap(DAYS[r.day]))+'er kl. '+esc(r.time)+(notat?' · '+esc(notat):'')+'</span></div><span class="tag">Månedlig</span></div></div>'}).join('')}
 function progList(){
   const q=(state.q||'').trim();
   const list=[...events.filter(e=>state.filter==='Alle'||normCat(e.cat)===state.filter).map(e=>({ev:e,w:e.w})),...nextFast().filter(f=>state.filter==='Alle'||normCat(f.fast.cat)===state.filter)].filter(x=>progMatch(x,q)).sort((a,b)=>a.w-b.w);
@@ -1902,7 +1902,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 23:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='23.10.2026 kl. 00:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function palKlassisk(){return document.documentElement.dataset.pal==='klassisk'}
