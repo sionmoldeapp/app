@@ -1715,6 +1715,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
+const APP_BYGG='22.10.2026 kl. 13:54';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
@@ -1727,7 +1728,8 @@ function settingsCard(){
   ${profSub('inpush','Varsler',pushInner())}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
-  ${profSub('installer','Slik installerer du appen',installBody())}</details>`}
+  ${profSub('installer','Slik installerer du appen',installBody())}
+  ${profSub('inoppd','Oppdater appen','<p class="small" style="margin:0 0 8px">Versjon: <b>'+APP_BYGG+'</b>. Står det en eldre tid enn sist du fikk beskjed om en endring, har telefonen ikke den nyeste versjonen ennå. Trykk under for å hente den nå.</p><button class="btn" data-oppdater>Hent nyeste versjon</button>')}</details>`}
 function pushInner(){
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
   const on=!!lsGet('sm-push');
@@ -2015,6 +2017,9 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ansedit){ansEditAsk(c.dataset.ansedit)}
   else if(c.dataset.thr){thrAsk(c.dataset.thr)}
   else if('meldrefresh' in c.dataset){state.threads=undefined;keep(()=>{});loadThreads()}
+  else if('oppdater' in c.dataset){c.disabled=true;c.textContent='Henter …';
+    try{const ks=await caches.keys();await Promise.all(ks.filter(k=>k!=='sion-varsel').map(k=>caches.delete(k)));const reg=await navigator.serviceWorker.getRegistration();if(reg){await reg.update();if(reg.waiting)reg.waiting.postMessage({type:'skip'})}}catch(er){}
+    setTimeout(()=>location.reload(),400)}
   else if('lradd' in c.dataset){lrAdd()}
   else if('lrrefresh' in c.dataset){state.lr=undefined;keep(()=>{});loadLr()}
   else if('lrcopy' in c.dataset){lrCopy()}
