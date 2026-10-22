@@ -676,8 +676,8 @@ function nesteTid(n){
   return rel+' · '+cap(DAYS[w.getDay()])+' '+w.getDate()+'. '+MON[w.getMonth()]+(n.time?' kl. '+n.time:'')}
 function homeDeler(){
   const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome),fast=nextFast();
-  /* «Neste samling» er neste søndagsmøte eller neste Happeninger, den som kommer først. */
-  let n=vis.find(e=>normCat(e.cat)==='Happeninger');
+  /* «Neste hovedsamling» er neste søndagsmøte eller neste arrangement i kategoriene Møter, Stevne eller Happeninger, den som kommer først. */
+  let n=vis.find(e=>['Møter','Møte','Stevne','Happeninger'].includes(normCat(e.cat)));
   {const fn=fast.filter(f=>/søndagsmøte/i.test(f.fast.title)&&!(f.ex&&f.ex.k==='avlyst')).sort((x,y)=>x.w-y.w)[0];
     if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:inf.place}}}
   const wk=[...vis.slice(0,5).map(e=>({ev:e,w:e.w,id:e.id})),...fast.map(f=>({fast:f.fast,w:f.w,ex:f.ex,id:fastId(f.fast,f.w)}))].filter(x=>!(n&&x.id===n.id)).sort((a,b)=>a.w-b.w).slice(0,4);
@@ -822,7 +822,8 @@ function news(){
   <div class="list" id="nyhList">${nyhListe(l)}</div>${sk.length?`<details class="card acc" data-acc="skjulte" ${state.acc.skjulte?'open':''}><summary><h2>Planlagt, utkast og utløpt (${sk.length})</h2></summary><p class="small" style="margin:0 0 8px">Disse vises ikke for medlemmene nå. Bare du ser dem.</p><div class="list">${sk.map(nyhKort).join('')}</div></details>`:''}${kan?'<div class="lpzone"></div>':''}`}
 
 /* ---------- Innlogging og administrasjon ---------- */
-const CATS_DEFAULT=['Møte','Samling','Ledersamling','Menighetsmøte','Happeninger','Ungdom'];
+const CATS_DEFAULT=['Møter','Ung','Fellesskap','Stevne','Menighetsmøte','Ledersamling','Lederrådet'];
+const KAT_NYE=CATS_DEFAULT.slice();
 const CATS=CATS_DEFAULT.slice();   // endres på stedet når administrator har redigert kategoriene (samlingen categories)
 const CAT_LOCKED='Ledersamling';   // styrer hvem som ser innholdet og kan ikke endres eller slettes
 function applyCats(l){
@@ -831,7 +832,10 @@ function applyCats(l){
   CATS.length=0;n.forEach(c=>CATS.push(c));state.catDb=!!(l&&l.length)}
 /* Kategorier: de seks faste + alle nye som er brukt på et arrangement eller en fast samling (lages av administrator i veiviseren, steg 1). */
 const allCats=()=>[...CATS,...new Set([...rawEvents,...regular].map(x=>normCat(x.cat)).filter(c=>c&&!CATS.includes(c)))];   // CATS + eventuelle kategorier som bare finnes på oppføringer
-const normCat=c=>c==='Møter'?'Møte':c;
+const normCat=c=>{const l=CATS;
+  if(c==='Møter'&&!l.includes('Møter')&&l.includes('Møte'))return 'Møte';
+  if(c==='Møte'&&!l.includes('Møte')&&l.includes('Møter'))return 'Møter';
+  return c};
 /* «Ledersamling» er bare for ledere: administratorer, gruppeledere og medlemmer i gruppen Lederrådet. Andre ser verken kategorien eller arrangementene. */
 /* Visning: «meg» (mine egne rettigheter), «medlem» (vanlig innlogget medlem uten grupper) eller «besok» (ikke innlogget). Påvirker bare hva som vises som innhold. */
 const canEdit=()=>state.view==='meg'&&(state.admin||isLeader());
@@ -1783,7 +1787,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 20:24';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 20:43';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
@@ -1872,7 +1876,7 @@ const ME_KORT={
   vakter:['Mine vakter',()=>vakterCard()],ansvar:['Ansvarsområder',()=>ansvarCard()],meld:['Beskjeder',()=>meldCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],attester:['Politiattester',()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():''],
-  personvern:['Personvern',()=>personvernCard()]};
+  kategorier:['Nye kategorier',()=>katCard()],personvern:['Personvern',()=>personvernCard()]};
 /* Kortene under Meg og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
 const ORD={me:{felt:'meorder',ls:'sm-meorder'},home:{felt:'homeorder',ls:'sm-homeorder'}};
 const ov=()=>state.tab==='home'?'home':'me';
@@ -2102,6 +2106,7 @@ document.addEventListener('click',async e=>{
     c.disabled=false}
   else if(c.dataset.lrdone){lrDone(c.dataset.lrdone,c.dataset.v==='1')}
   else if(c.dataset.lrdel){lrDel(c.dataset.lrdel)}
+  else if('katmig' in c.dataset){c.disabled=true;await katMigrer();c.disabled=false}
   else if('meresett' in c.dataset){meLagre([]);keep(()=>{})}
   else if('catmer' in c.dataset){keep(()=>{state.catAll=!state.catAll})}
   else if('svx' in c.dataset){const k=c.closest('.svk'),ferdig=()=>{UI.sv=false;uiLagre();keep(()=>{})};
@@ -2544,6 +2549,36 @@ async function catSeed(){
   if(state.catDb)return;
   let i=0;for(const c of allCats())await FB.setCatDoc(slug(c),{name:c,ord:i++});
   applyCats(await FB.catsList())}
+/* Bytte til de nye kategoriene: Møter, Ung, Fellesskap, Stevne, Menighetsmøte, Ledersamling og Lederrådet. Arrangementer og faste samlinger flyttes automatisk. */
+const katMigrert=()=>KAT_NYE.every(c=>allCats().includes(c));
+const katKart=(c,tittel)=>{
+  const k=String(c||''),t=String(tittel||'').toLowerCase();
+  if(k==='Ledersamling'||k==='Lederrådet'||k==='Menighetsmøte')return k;
+  if(k==='Ungdom'||k==='Ung')return 'Ung';
+  if(/stevne/.test(t))return 'Stevne';
+  if(/fellesskap|c-dur|debora|julemesse|torsdagsgruppa/.test(t)||k==='Fellesskap')return 'Fellesskap';
+  if(k==='Stevne')return 'Stevne';
+  return 'Møter'};
+function katCard(){
+  if(!(state.view==='meg'&&state.admin)||katMigrert())return '';
+  const ev=rawEvents.map(e=>({t:e.title,fra:e.cat,til:katKart(e.cat,e.title)})),rg=regular.map(r=>({t:r.title,fra:r.cat,til:katKart(r.cat,r.title)})),alle=[...ev,...rg];
+  return '<details class="card acc" data-acc="katmig" '+(state.acc.katmig?'open':'')+'><summary><h2>Nye kategorier</h2></summary>'
+   +'<p class="small" style="margin:0 0 8px">Bytter til: <b>'+KAT_NYE.join(', ')+'</b>. Arrangementer og faste samlinger flyttes automatisk, og du får et sikkerhetspunkt først.</p>'
+   +'<div class="reg">'+alle.filter(x=>x.fra!==x.til).map(x=>'<div class="r" style="display:block"><b>'+esc(x.t)+'</b><div class="small">'+esc(x.fra||'ingen')+' → '+esc(x.til)+'</div></div>').join('')+'</div>'
+   +'<div class="btns" style="margin-top:10px"><button class="btn primary" data-katmig style="width:auto">Bytt til nye kategorier</button></div></details>'}
+async function katMigrer(){
+  if(!FB||!state.admin)return;
+  if(!await bekreft('Bytte til de nye kategoriene ('+KAT_NYE.join(', ')+')? Arrangementer og faste samlinger flyttes automatisk.',{ok:'Bytt kategorier',fare:false}))return;
+  try{await FB.ensureSnapshot('Før nye kategorier',60e3)}catch(er){if(!await bekreft('Kunne ikke lage et sikkerhetspunkt ('+((er&&er.code)||'feil')+'). Fortsette likevel?'))return}
+  try{
+    for(const e of rawEvents){const n=katKart(e.cat,e.title);if(n!==e.cat)await FB.set('events',e.id,{cat:n})}
+    for(const r of regular){const n=katKart(r.cat,r.title);if(n!==r.cat)await FB.set('regular',r.id,{cat:n})}
+    const gamle=await FB.catsList();
+    for(let i=0;i<KAT_NYE.length;i++)await FB.setCatDoc(slug(KAT_NYE[i]),{name:KAT_NYE[i],ord:i});
+    for(const d of gamle){if(!KAT_NYE.includes(d.name)&&d.id!==slug(d.name||''))await FB.delCatDoc(d.id);else if(!KAT_NYE.includes(d.name))await FB.delCatDoc(d.id)}
+    applyCats(await FB.catsList());state.filter='Alle';state.catAll=false;
+    await refresh();push('Kategoriene er byttet','Nå: '+KAT_NYE.join(', ')+'.')}
+  catch(er){push('Kunne ikke bytte',saveMsg(er&&er.code)+' (Er de nye reglene publisert i Firebase?)')}}
 function catAsk(navn){
   if(!FB||navn===CAT_LOCKED)return;
   const ev=rawEvents.filter(e=>normCat(e.cat)===navn),rg=regular.filter(r=>normCat(r.cat)===navn),n=ev.length+rg.length;
@@ -2555,7 +2590,7 @@ function catAsk(navn){
    +'<div class="btns col"><button class="btn danger" value="slett">Slett kategorien</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('close',async()=>{
-    const rv=dlg.returnValue,nytt=(dlg.querySelector('#cN').value||'').trim().replace(/\s+/g,' '),til=(dlg.querySelector('#catTo')||{}).value||'Møte';dlg.remove();
+    const rv=dlg.returnValue,nytt=(dlg.querySelector('#cN').value||'').trim().replace(/\s+/g,' '),til=(dlg.querySelector('#catTo')||{}).value||'Møter';dlg.remove();
     if(rv!=='navn'&&rv!=='slett')return;
     try{
       if(rv==='navn'){
