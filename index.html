@@ -1392,11 +1392,11 @@ function hilsenAsk(){
     const mal=alleV?{type:'medlem'}:ltV.length&&grV.length?{type:'blandet',ltypes:ltV,groups:grV}:ltV.length?{type:'ltype',ltypes:ltV}:{type:'grupper',groups:grV};
     const knapp=e.submitter;knapp.disabled=true;const res=[];let schedId='';
     try{
-      if(pu&&fire){try{const ref=await FB.addScheduled({title:tittel.slice(0,100),body:tekst.slice(0,140),tab:'news',malType:mal.type,groups:mal.groups||[],ltypes:mal.ltypes||[],kopi:true,fireAt:fire});schedId=ref.id;res.push('Varselet sendes '+fmtDT(fire)+', og du får en kopi.')}catch(x){res.push('Varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er reglene publisert?')}}
+      if(pu&&fire){try{const ref=await FB.addScheduled({title:tittel.slice(0,100),body:tekst.slice(0,140),tab:'home',malType:mal.type,groups:mal.groups||[],ltypes:mal.ltypes||[],kopi:true,fireAt:fire});schedId=ref.id;res.push('Varselet sendes '+fmtDT(fire)+', og du får en kopi.')}catch(x){res.push('Varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er reglene publisert?')}}
       if(ny){
         await FB.add('posts',{t:tittel,b:tekst,audience:grV.length&&!ltV.length?grV:['Medlem'],groups:grV,ltypes:ltV,tag:alleV?'Medlem':vs.map(x=>maal.find(y=>y.v===x).l.replace(/^Bare /,'').replace(/^./,c=>c.toUpperCase())).join(' · '),m:true,hideHome:false,...(fire?{pubAt:fire}:{}),...(schedId?{schedId}:{}),expireAt:(fire||Date.now())+5*864e5});
         res.push(fire?'Legges ut i Nyheter '+fmtDT(fire)+'.':'Lagt ut i Nyheter.')}
-      if(pu&&!fire){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'news',mal,true);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter (inkludert din kopi).':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
+      if(pu&&!fire){try{const r=await FB.sendPush(PUSH_URL,tittel,tekst.slice(0,140),'home',mal,true);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter (inkludert din kopi).':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
       dlg.close();await refresh();push(fire?'Pastorens hilsen er planlagt':'Pastorens hilsen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
     catch(er){knapp.disabled=false;msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+').'+(res.length?' '+res.join(' '):''))}});
   dlg.addEventListener('close',()=>dlg.remove());
@@ -1837,6 +1837,13 @@ async function refresh(){
   const aktiv=busyN>0||busyRm;   // rett etter lagring/sletting: hold sirkelen til listene er oppdatert
   if(aktiv&&window.smBusy)window.smBusy(1);
   try{await load();keep(()=>{})}finally{if(aktiv&&window.smBusy)window.smBusy(-1)}}
+/* Ny melding (varsel mottatt, varselet trykket på, eller appen åpnet igjen etter en stund): hent siste innhold og vis Viktig-kortet på Hjem igjen. */
+function nyMelding(){
+  lsSet('sm-viktig-skjult','');Object.keys(state.open).forEach(k=>{if(k.startsWith('v_'))delete state.open[k]});
+  if(FB&&!first)refresh().catch(()=>{})}
+{ let borte=0;
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){borte=Date.now();return}
+    if(borte&&Date.now()-borte>60000&&!first)nyMelding();borte=0}) }
 const authMsg=c=>({'auth/invalid-credential':'Feil e-post eller passord.','auth/invalid-email':'Ugyldig e-postadresse.','auth/user-disabled':'Brukeren er sperret.','auth/too-many-requests':'For mange forsøk. Vent litt og prøv igjen.','auth/network-request-failed':'Ingen nettforbindelse.','auth/weak-password':'Passordet er for svakt. Bruk minst 8 tegn.','auth/requires-recent-login':'Logg ut og inn igjen, og prøv på nytt.'}[c]||'Noe gikk galt. Prøv igjen.');
 const saveMsg=c=>c==='permission-denied'?'Du har ikke tilgang til å lagre.':'Kunne ikke lagre ('+(c||'ukjent feil')+').';
 
@@ -2248,8 +2255,8 @@ document.addEventListener('submit',async e=>{
       {const pd=document.querySelector('dialog.pub');if(pd){pd.close();push('Lagret',isEdit?'Endringen er lagret.':t==='posts'?'Nyheten er lagt ut.':'Lagt til i programmet.')}}
       if(wantPush&&!isEdit){
         const mal=d.groups&&d.groups.length?{type:'grupper',groups:d.groups}:d.m?{type:'medlem'}:{type:'alle'};
-        if(d.pubAt>Date.now()){try{await FB.addScheduled({title:d.t.slice(0,60),body:String(d.b||'').slice(0,140),tab:'news',malType:mal.type,groups:mal.groups||[],fireAt:d.pubAt});state.msg='Lagret. Varselet er planlagt til '+fmtDT(d.pubAt)+' ('+malTekst(mal)+').'}catch(x){state.msg='Lagret, men varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er de nye reglene publisert?'}}
-        else try{const r=await FB.sendPush(PUSH_URL,d.t,String(d.b||'').slice(0,140),'news',mal);state.msg='Lagret. '+(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter ('+malTekst(mal)+').':'Varsel ikke sendt: '+r.feil)}catch(x){state.msg='Lagret. Varsel kunne ikke sendes (ingen kontakt med varseltjenesten).'}
+        if(d.pubAt>Date.now()){try{await FB.addScheduled({title:d.t.slice(0,60),body:String(d.b||'').slice(0,140),tab:'home',malType:mal.type,groups:mal.groups||[],fireAt:d.pubAt});state.msg='Lagret. Varselet er planlagt til '+fmtDT(d.pubAt)+' ('+malTekst(mal)+').'}catch(x){state.msg='Lagret, men varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er de nye reglene publisert?'}}
+        else try{const r=await FB.sendPush(PUSH_URL,d.t,String(d.b||'').slice(0,140),'home',mal);state.msg='Lagret. '+(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter ('+malTekst(mal)+').':'Varsel ikke sendt: '+r.feil)}catch(x){state.msg='Lagret. Varsel kunne ikke sendes (ingen kontakt med varseltjenesten).'}
       }
     }catch(er){state.msg=saveMsg(er.code);keep(()=>{});return}
     await refresh()}
@@ -2588,7 +2595,7 @@ async function start(){
       const medl=localStorage.getItem('sm-innlogget')==='1';   // sist innlogget: nyhetene kan være andre enn de åpne, så de vises først når alt er lastet
       state.fast=medl;bruk(c.e,medl?[]:c.p,c.g);state.unread=posts.filter(p=>isNew(p)&&!postSkjult(p)).length;if(state.tab==='news')markSeen();first=false;render();splashBort()}}catch(er){first=true}
   FB=await window.fbReady;
-  if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me')keep(()=>{})});FB.onPush(p=>push((p.notification&&p.notification.title)||'Melding',(p.notification&&p.notification.body)||''))}
+  if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me')keep(()=>{})});FB.onPush(p=>{push((p.notification&&p.notification.title)||'Melding',(p.notification&&p.notification.body)||'');nyMelding()})}
   const go=async u=>{
     state.user=u||null;
     const [adm,mem]=u?await Promise.all([FB.isAdmin(u.email),FB.isMember(u.email)]):[false,false];
@@ -2617,6 +2624,6 @@ async function start(){
 }
 start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});
-  navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='open-tab'&&['home','prog','news','me'].includes(d.tab)){state.tab=d.tab;if(d.tab==='news')markSeen();render()}})}
+  navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='open-tab'&&['home','prog','news','me'].includes(d.tab)){state.tab=d.tab;if(d.tab==='news')markSeen();render();nyMelding()}})}
 </script>
 </body></html>
