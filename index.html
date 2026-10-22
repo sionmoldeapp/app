@@ -1,5 +1,5 @@
 <!doctype html><html lang="nb"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#c9e1fb"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-180.png"><title>Sion Molde</title>
-<script>try{var t=localStorage.getItem('sm-theme');if(t)document.documentElement.dataset.theme=t;window.PAL_BG={"klassisk":["#c9e1fb","#0b2540"],"premium":["#f6f4ef","#0a1b2e"],"kobber":["#f5f2ec","#0a2427"],"grafitt":["#f5f5f7","#111418"],"skog":["#f3f4ee","#0d1f18"],"vin":["#f7f2f0","#1a0f14"],"iphone":["#f2f2f7","#000000"],"android":["#f1f6f3","#071f2b"],"rosa":["#fff1f5","#1f0f18"],"gutta":["#eef1f5","#090c12"]};var pv=localStorage.getItem('sm-pal');if(!PAL_BG[pv])pv='premium';document.documentElement.dataset.pal=pv;var sv=localStorage.getItem('sm-stil');if(sv!=='ios'&&sv!=='android')sv='standard';document.documentElement.dataset.stil=sv;var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.querySelector('meta[name=theme-color]').content=PAL_BG[pv][d?1:0]}catch(e){}</script>
+<script>try{var t=localStorage.getItem('sm-theme');if(t)document.documentElement.dataset.theme=t;window.PAL_BG={"klassisk":["#c9e1fb","#0b2540"],"premium":["#f6f4ef","#0a1b2e"],"kobber":["#f5f2ec","#0a2427"],"grafitt":["#f5f5f7","#111418"],"skog":["#f3f4ee","#0d1f18"],"vin":["#f7f2f0","#1a0f14"],"iphone":["#f2f2f7","#000000"],"android":["#f1f6f3","#071f2b"],"rosa":["#fff1f5","#1f0f18"],"gutta":["#eef1f5","#090c12"],"jul":["#fbf6ef","#0f1f17"],"solnedgang":["#fff4ea","#1b0f1e"],"shrek":["#eef2dc","#141b0b"]};var pv=localStorage.getItem('sm-pal');if(!PAL_BG[pv])pv='premium';document.documentElement.dataset.pal=pv;var sv=localStorage.getItem('sm-stil');if(sv!=='ios'&&sv!=='android')sv='standard';document.documentElement.dataset.stil=sv;var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.querySelector('meta[name=theme-color]').content=PAL_BG[pv][d?1:0]}catch(e){}</script>
 <link rel="stylesheet" href="fonts.css">
 <style>
 /* Layout: mobilapp i smal kolonne, fast fanelinje nederst, innhold bytter per fane */
@@ -264,6 +264,70 @@ html[data-stil="ios"] dialog{box-shadow:0 10px 40px rgba(0,0,0,.28)}
 html[data-stil="android"] .btn,html[data-stil="android"] .chip,html[data-stil="android"] nav.tabs button,html[data-stil="android"] .item>button,html[data-stil="android"] .nhero-b,html[data-stil="android"] .card.next[data-t]{position:relative;overflow:hidden}
 .ripple{position:absolute;border-radius:50%;background:currentColor;opacity:.2;transform:scale(0);pointer-events:none;animation:ripple .55s var(--ease) forwards}
 @keyframes ripple{to{transform:scale(1);opacity:0}}
+/* Spesialpaletter: Julefarger, Orange sunset og Shrek, lys og mørk. */
+:root[data-pal="jul"]{
+  --bg:#fbf6ef; --surface:#ffffff; --ink:#2a1a1a; --muted:#7a5f5f; --line:#ecdcd0;
+  --brand:#b3202a; --brand-ink:#ffffff; --lamp:#1f6b3f; --lamp-soft:#e3f3e8;
+  --ok:#1f6b3f; --ok-soft:#e3f3e8; --chip:#f6e4de;
+  --lamp-ink:#fff; --lamp-glow:rgba(31,107,63,.22);
+  --shadow-card:0 1px 2px rgba(28,42,58,.05),0 8px 22px rgba(28,42,58,.06); --shadow-pop:0 10px 26px rgba(28,42,58,.14);
+  --ikon-a:#d63a45; --ikon-b:#b3202a; --hero-a:#c42a35; --hero-b:#7a1219; --hero-dot:#ffd54a; --hero-link:#ffe6e0}
+@media (prefers-color-scheme:dark){:root[data-pal="jul"]:not([data-theme="light"]){
+  --bg:#0f1f17; --surface:#183326; --ink:#fbf3ea; --muted:#b5c9b9; --line:#2b5240;
+  --brand:#e5484d; --brand-ink:#ffffff; --lamp:#f2c94c; --lamp-soft:#3a3112;
+  --ok:#7fd8a0; --ok-soft:#14382a; --chip:#204535;
+  --lamp-ink:#1f1700; --lamp-glow:rgba(242,201,76,.26);
+  --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28); --shadow-pop:0 10px 26px rgba(0,0,0,.45);
+  --ikon-a:#e5484d; --ikon-b:#b3202a; --hero-a:#c42a35; --hero-b:#4a0d12; --hero-dot:#f2c94c; --hero-link:#ffe6e0; color-scheme:dark}}
+:root[data-pal="jul"][data-theme="dark"]{
+  --bg:#0f1f17; --surface:#183326; --ink:#fbf3ea; --muted:#b5c9b9; --line:#2b5240;
+  --brand:#e5484d; --brand-ink:#ffffff; --lamp:#f2c94c; --lamp-soft:#3a3112;
+  --ok:#7fd8a0; --ok-soft:#14382a; --chip:#204535;
+  --lamp-ink:#1f1700; --lamp-glow:rgba(242,201,76,.26);
+  --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28); --shadow-pop:0 10px 26px rgba(0,0,0,.45);
+  --ikon-a:#e5484d; --ikon-b:#b3202a; --hero-a:#c42a35; --hero-b:#4a0d12; --hero-dot:#f2c94c; --hero-link:#ffe6e0; color-scheme:dark}
+:root[data-pal="solnedgang"]{
+  --bg:#fff4ea; --surface:#ffffff; --ink:#3a1d12; --muted:#85563f; --line:#fad9c1;
+  --brand:#dd4f0a; --brand-ink:#ffffff; --lamp:#b02a6b; --lamp-soft:#f9e3ee;
+  --ok:#2f7f6a; --ok-soft:#e1f3ee; --chip:#fde6d3;
+  --lamp-ink:#fff; --lamp-glow:rgba(176,42,107,.22);
+  --shadow-card:0 1px 2px rgba(28,42,58,.05),0 8px 22px rgba(28,42,58,.06); --shadow-pop:0 10px 26px rgba(28,42,58,.14);
+  --ikon-a:#ff8a3d; --ikon-b:#dd4f0a; --hero-a:#f2762a; --hero-b:#b02a6b; --hero-dot:#ffd166; --hero-link:#ffe8d6}
+@media (prefers-color-scheme:dark){:root[data-pal="solnedgang"]:not([data-theme="light"]){
+  --bg:#1b0f1e; --surface:#2e1a30; --ink:#fff1e6; --muted:#d1a8b5; --line:#4c2a48;
+  --brand:#ff8a3d; --brand-ink:#2a0f08; --lamp:#ff7eb3; --lamp-soft:#3a1530;
+  --ok:#7fd8c0; --ok-soft:#173a33; --chip:#3d2140;
+  --lamp-ink:#2a0a18; --lamp-glow:rgba(255,126,179,.26);
+  --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28); --shadow-pop:0 10px 26px rgba(0,0,0,.45);
+  --ikon-a:#ff9a52; --ikon-b:#e8590c; --hero-a:#f2762a; --hero-b:#5a1a5a; --hero-dot:#ffd166; --hero-link:#ffe8d6; color-scheme:dark}}
+:root[data-pal="solnedgang"][data-theme="dark"]{
+  --bg:#1b0f1e; --surface:#2e1a30; --ink:#fff1e6; --muted:#d1a8b5; --line:#4c2a48;
+  --brand:#ff8a3d; --brand-ink:#2a0f08; --lamp:#ff7eb3; --lamp-soft:#3a1530;
+  --ok:#7fd8c0; --ok-soft:#173a33; --chip:#3d2140;
+  --lamp-ink:#2a0a18; --lamp-glow:rgba(255,126,179,.26);
+  --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28); --shadow-pop:0 10px 26px rgba(0,0,0,.45);
+  --ikon-a:#ff9a52; --ikon-b:#e8590c; --hero-a:#f2762a; --hero-b:#5a1a5a; --hero-dot:#ffd166; --hero-link:#ffe8d6; color-scheme:dark}
+:root[data-pal="shrek"]{
+  --bg:#eef2dc; --surface:#ffffff; --ink:#2b3318; --muted:#5f6c38; --line:#d6dfb0;
+  --brand:#4f7d12; --brand-ink:#ffffff; --lamp:#8a5a2b; --lamp-soft:#f1e6d6;
+  --ok:#3e7d1e; --ok-soft:#e4f1d3; --chip:#e3ebc2;
+  --lamp-ink:#fff; --lamp-glow:rgba(138,90,43,.22);
+  --shadow-card:0 1px 2px rgba(28,42,58,.05),0 8px 22px rgba(28,42,58,.06); --shadow-pop:0 10px 26px rgba(28,42,58,.14);
+  --ikon-a:#7fb62c; --ikon-b:#4f7d12; --hero-a:#6aa31f; --hero-b:#33500c; --hero-dot:#e6d86a; --hero-link:#ecf5c8}
+@media (prefers-color-scheme:dark){:root[data-pal="shrek"]:not([data-theme="light"]){
+  --bg:#141b0b; --surface:#212c12; --ink:#eef5d8; --muted:#aebb86; --line:#38491d;
+  --brand:#9bd13a; --brand-ink:#17220a; --lamp:#d6a25a; --lamp-soft:#3a2b12;
+  --ok:#b5e05b; --ok-soft:#25380f; --chip:#2c3b17;
+  --lamp-ink:#1f1405; --lamp-glow:rgba(214,162,90,.26);
+  --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28); --shadow-pop:0 10px 26px rgba(0,0,0,.45);
+  --ikon-a:#9bd13a; --ikon-b:#5f8f1f; --hero-a:#6aa31f; --hero-b:#1f3008; --hero-dot:#e6d86a; --hero-link:#e2f1b8; color-scheme:dark}}
+:root[data-pal="shrek"][data-theme="dark"]{
+  --bg:#141b0b; --surface:#212c12; --ink:#eef5d8; --muted:#aebb86; --line:#38491d;
+  --brand:#9bd13a; --brand-ink:#17220a; --lamp:#d6a25a; --lamp-soft:#3a2b12;
+  --ok:#b5e05b; --ok-soft:#25380f; --chip:#2c3b17;
+  --lamp-ink:#1f1405; --lamp-glow:rgba(214,162,90,.26);
+  --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28); --shadow-pop:0 10px 26px rgba(0,0,0,.45);
+  --ikon-a:#9bd13a; --ikon-b:#5f8f1f; --hero-a:#6aa31f; --hero-b:#1f3008; --hero-dot:#e6d86a; --hero-link:#e2f1b8; color-scheme:dark}
 .palrutenett{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .palbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);font-size:var(--t-m);font-weight:600;line-height:1.2;transition:border-color var(--d-med) var(--ease),box-shadow var(--d-med) var(--ease)}
 .palbtn[aria-pressed="true"]{border-color:var(--lamp);box-shadow:0 0 0 2px var(--lamp-glow)}
@@ -2135,10 +2199,10 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='23.10.2026 kl. 09:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='23.10.2026 kl. 10:05';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
-const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"]];
+const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
 function stilNa(){return document.documentElement.dataset.stil||'standard'}
 function setStil(v){document.documentElement.dataset.stil=v;try{localStorage.setItem('sm-stil',v)}catch(e){}}
 function nullstillUtseende(){setStil('standard');setPal('premium')}
