@@ -218,6 +218,19 @@
   --lamp-ink:#1a0d00; --lamp-glow:rgba(255,138,31,.26);
   --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28); --shadow-pop:0 10px 26px rgba(0,0,0,.45);
   --ikon-a:#4d7cff; --ikon-b:#1a3fd6; --hero-a:#2b5cff; --hero-b:#0a1a66; --hero-dot:#ffb703; --hero-link:#cddbff; color-scheme:dark}
+/* Tomme tilstander, pull-to-refresh og store trykkflater (minst 44 px på berøringsskjermer) */
+.tom{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:28px 16px;color:var(--muted)}
+.tom-ikon{width:56px;height:56px;border-radius:50%;background:var(--chip);color:var(--brand);display:grid;place-items:center;margin-bottom:8px}
+.tom b{color:var(--ink);font-size:var(--t-b);font-weight:600}
+.tom span{font-size:var(--t-m);max-width:30ch;line-height:1.4}
+body{overscroll-behavior-y:contain}
+#ptr{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,0);width:38px;height:38px;border-radius:50%;background:var(--surface);color:var(--brand);box-shadow:var(--shadow-pop);display:grid;place-items:center;opacity:0;z-index:30;pointer-events:none;transition:opacity var(--d-med) var(--ease)}
+#ptr.snurr svg{animation:snurr .8s linear infinite}
+@media (pointer:coarse){
+  .btn,.chip{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  .vik-x{position:relative}.vik-x::after{content:'';position:absolute;inset:-8px}
+  .tg::before{content:'';position:absolute;inset:-8px 0}
+}
 .palrutenett{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .palbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);font-size:var(--t-m);font-weight:600;line-height:1.2;transition:border-color var(--d-med) var(--ease),box-shadow var(--d-med) var(--ease)}
 .palbtn[aria-pressed="true"]{border-color:var(--lamp);box-shadow:0 0 0 2px var(--lamp-glow)}
@@ -1000,7 +1013,7 @@ function progList(){
   let last='',out='';
   list.forEach(x=>{const e=x.ev||{w:x.w};const k=when(e.w)+' '+e.w.getDate()+'. '+MON[e.w.getMonth()]+(e.w.getFullYear()!==now.getFullYear()?' '+e.w.getFullYear():'');
     if(k!==last){out+=`<div class="day">${k}</div>`;last=k}out+=x.ev?evItem(x.ev):fastItem(x.fast,x.w,x.ex)});
-  return out||(q?'<p class="small">Ingen treff på «'+esc(q)+'».</p>':'<p class="small">Ingen oppføringer her ennå.</p>')}
+  return out||(q?tom('sok','Ingen treff','Prøv et annet søkeord eller en annen kategori.'):tom('kal','Ingen samlinger her ennå','Se tilbake senere. Nye samlinger dukker opp her.'))}
 /* Tidligere arrangementer: alle som er over, nyeste først, med søk. Medlemsarrangementer vises bare for innloggede. */
 function pastEvents(){
   return rawEvents.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)&&!(x.m&&!state.member))
@@ -1011,9 +1024,18 @@ function pastItem(e){
   return `<div class="item ${open?'open':''}"><button data-ev="x${esc(e.id)}" aria-expanded="${!!open}">${dateBox(e)}
    <div class="grow"><b>${e.t}</b><span class="small">${cap(DAYS[e.w.getDay()])} ${e.w.getDate()}. ${MON[e.w.getMonth()]}${yr}${tm(e)}${e.place?' · '+esc(e.place):''}</span></div><span class="tag">${esc(normCat(e.cat))}</span></button>
    <div class="detail">${e.d?'<div>'+e.d+'</div>':''}${e.who?'<div class="small">'+esc(e.who)+'</div>':''}${!e.d&&!e.who?'<div class="small">Ingen flere opplysninger.</div>':''}</div></div>`}
+const TOM_IKON={
+  nyhet:'<path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM18 8h2a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2M8 8h6M8 12h6M8 16h4"/>',
+  sok:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  ok:'<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/>',
+  kal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  folk:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c1.9.6 3.2 2.3 3.5 5.2"/>',
+  prat:'<path d="M4 5h16v11H9l-5 4z"/>'};
+/* Pen tom side: ikon, tittel og en vennlig setning */
+function tom(ikon,tittel,tekst){return '<div class="tom" role="status"><div class="tom-ikon" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(TOM_IKON[ikon]||TOM_IKON.nyhet)+'</svg></div><b>'+tittel+'</b>'+(tekst?'<span>'+tekst+'</span>':'')+'</div>'}
 function pastList(){
   const q=(state.pq||'').trim(),n=state.pastN||40,alle=pastEvents().filter(e=>progMatch({ev:e,w:e.w},q)),vis=alle.slice(0,n);
-  return (vis.map(pastItem).join('')||(q?'<p class="small">Ingen treff på «'+esc(q)+'».</p>':'<p class="small">Ingen tidligere arrangementer ennå.</p>'))
+  return (vis.map(pastItem).join('')||(q?tom('sok','Ingen treff','Prøv et annet søkeord.'):tom('kal','Ingen tidligere arrangementer','Når samlinger er over, havner de her.')))
     +(alle.length>n?'<button class="btn" data-pastmore style="margin-top:8px">Vis flere ('+(alle.length-n)+')</button>':'')}
 /* Knappen til høyre for kategoriene vises bare når ikke alle får plass på skjermen. Den viser alle kategoriene under hverandre (flere linjer). */
 function catSjekk(){
@@ -1092,7 +1114,7 @@ function nyhFiltrert(l){
     return true})}
 function nyhListe(l){
   const alle=nyhFiltrert(l),søk=!!(state.nyq||'').trim(),n=søk?alle.length:(state.nyhN||NYH_SIDE),vis=alle.slice(0,n);
-  if(!vis.length)return '<p class="small">'+(søk?'Ingen treff på «'+esc(state.nyq)+'».':(state.nf==='Uleste'?'Du har lest alt.':'Ingen nyheter ennå.'))+'</p>';
+  if(!vis.length)return søk?tom('sok','Ingen treff','Prøv et annet søkeord.'):state.nf==='Uleste'?tom('ok','Du har lest alt','Ingen nye nyheter akkurat nå.'):tom('nyhet','Ingen nyheter ennå','Nye meldinger fra menigheten vises her.');
   let ut='',sist=-1,rest=vis;
   if(!søk&&(state.nf||'Alle')==='Alle'&&!(vis[0].m&&!state.member)){ut+=nyhKort(vis[0],true);rest=vis.slice(1)}   // den nyeste står som en stor hovedsak
   rest.forEach(p=>{const g=nyhGruppe(p);if(g!==sist){ut+='<div class="day">'+NYH_TITLER[g]+'</div>';sist=g}ut+=nyhKort(p)});
@@ -1653,7 +1675,7 @@ function gruppeVakter(g,idag){
   return '<details class="acc sub" data-acc="vk_'+g+'" '+(state.acc['vk_'+g]?'open':'')+'><summary><h3 style="font-size:var(--t-l)">'+esc(gName(g))+' ('+l.length+')</h3></summary>'
    +(styr?'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-vknew="'+esc(g)+'" style="width:auto">+ Legg til vakter</button></div>':'')
    +(styr&&rq.length?'<h4 style="margin:6px 0">Byttebeskjeder ('+rq.length+')</h4><div class="reg">'+rq.map(r=>'<div class="r"><div class="grow"><b>'+esc(r.fromName||r.from)+'</b> vil bytte '+esc(kortDato(r.date))+(r.role?' ('+esc(r.role)+')':'')+(r.text?'<span class="small">'+esc(r.text)+'</span>':'')+'<a class="small" href="mailto:'+esc(r.from)+'">'+esc(r.from)+'</a></div><button class="btn" data-vkreqdel="'+esc(g)+'|'+esc(r.id)+'">Ferdig</button></div>').join('')+'</div>':'')
-   +'<div class="reg">'+(l.map(rad).join('')||'<p class="small">Ingen kommende vakter.</p>')+'</div></details>'}
+   +'<div class="reg">'+(l.map(rad).join('')||tom('kal','Ingen kommende vakter','Du har ingen vakter akkurat nå.'))+'</div></details>'}
 const vaktId=(date,role)=>date+'_'+(slug(role||'')||'vakt');
 function vaktPersoner(g,valgt){
   const folk=gruppeFolk(g).slice().sort((a,b)=>navnAv(a).localeCompare(navnAv(b)));
@@ -1872,14 +1894,14 @@ function ansvarCard(){
   if(l===undefined)inn='<p class="small">Henter ansvarsområder …</p>';
   else inn='<p class="small" style="margin:0 0 8px">Hvem som har ansvar for hva i menigheten. Trykk «Send beskjed» for å skrive til de ansvarlige her i appen, og de kan svare deg under Beskjeder.</p>'
     +(red?'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-ansnew style="width:auto">+ Nytt ansvarsområde</button></div>':'')
-    +'<div class="reg">'+(l.length?l.map(r=>ansRad(r,red)).join(''):'<p class="small">Ingen ansvarsområder er lagt inn ennå.'+(state.admin?' Slå på redigering (blyanten) for å legge inn.':'')+'</p>')+'</div>';
+    +'<div class="reg">'+(l.length?l.map(r=>ansRad(r,red)).join(''):tom('folk','Ingen ansvarsområder ennå',state.admin?'Slå på redigering (blyanten) for å legge inn.':''))+'</div>';
   return '<details class="card acc" data-acc="ansvar" '+(state.acc.ansvar?'open':'')+'><summary><h2>Ansvarsområder</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.ansMsg||'')+'</p></details>'}
 function meldCard(){
   if(!state.user||!state.member)return '';
   const l=state.threads,meg=meEmail(),nye=l?l.filter(t=>(t.unread||[]).includes(meg)).length:0;let inn;
   if(l===undefined)inn='<p class="small">Henter beskjeder …</p>';
   else inn='<div class="btns" style="margin:0 0 8px"><button class="btn" data-meldrefresh>Oppdater</button></div><div class="reg">'+(l.length?l.map(t=>{const ny=(t.unread||[]).includes(meg);
-    return '<div class="r"><button type="button" data-thr="'+esc(t.id)+'" style="display:flex;width:100%;gap:8px;align-items:center;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><span class="grow"><b>'+esc(t.roleName)+'</b> <span class="small">'+(t.from===meg?'· Til de ansvarlige':'· Fra '+esc(t.fromName))+'</span><span class="small" style="display:block">'+esc(t.last||'')+' · '+esc(ago({ms:t.ms}))+'</span></span>'+(ny?'<span class="tag" style="background:var(--lamp);color:var(--lamp-ink)">Ny</span>':'')+'</button></div>'}).join(''):'<p class="small">Ingen beskjeder ennå. Send en fra Ansvarsområder.</p>')+'</div>';
+    return '<div class="r"><button type="button" data-thr="'+esc(t.id)+'" style="display:flex;width:100%;gap:8px;align-items:center;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><span class="grow"><b>'+esc(t.roleName)+'</b> <span class="small">'+(t.from===meg?'· Til de ansvarlige':'· Fra '+esc(t.fromName))+'</span><span class="small" style="display:block">'+esc(t.last||'')+' · '+esc(ago({ms:t.ms}))+'</span></span>'+(ny?'<span class="tag" style="background:var(--lamp);color:var(--lamp-ink)">Ny</span>':'')+'</button></div>'}).join(''):tom('prat','Ingen beskjeder ennå','Send en fra Ansvarsområder.'))+'</div>';
   return '<details class="card acc" data-acc="meld" '+(state.acc.meld?'open':'')+'><summary><h2>Beskjeder'+bdg(nye)+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.meldMsg||'')+'</p></details>'}
 const nyBeskjedNavn=()=>(state.profile&&state.profile.name)||lsGet('sm-navn')||meEmail().split('@')[0];
 function ansMsgAsk(roleId){
@@ -2078,7 +2100,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='23.10.2026 kl. 01:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='23.10.2026 kl. 02:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"]];
@@ -2248,7 +2270,7 @@ function visTekst(tittel,tekst){
     dlg.querySelector('.bmsg').textContent=tittel;const i=dlg.querySelector('.btekst');i.value=tekst;i.addEventListener('focus',()=>i.select());
     dlg.addEventListener('close',()=>{dlg.remove();res()});document.body.appendChild(dlg);dlg.showModal();i.focus();i.select()})}
 let pt;
-function push(t,b){$('#pushT').textContent=t;$('#pushB').textContent=b;$('#push').classList.add('show');clearTimeout(pt);pt=setTimeout(()=>$('#push').classList.remove('show'),5000)}
+function push(t,b){try{if(!matchMedia('(prefers-reduced-motion:reduce)').matches&&navigator.vibrate)navigator.vibrate(8)}catch(e){}$('#pushT').textContent=t;$('#pushB').textContent=b;$('#push').classList.add('show');clearTimeout(pt);pt=setTimeout(()=>$('#push').classList.remove('show'),5000)}
 /* Meldingsboksen kan sveipes bort (opp eller til siden) eller trykkes bort. */
 {const pb=$('#push');let sx=0,sy=0,dx=0,dy=0,on=false,moved=false;
   const hide=()=>{pb.classList.remove('drag','show');pb.style.transform='';pb.style.opacity=''};
@@ -2260,6 +2282,15 @@ function push(t,b){$('#pushT').textContent=t;$('#pushB').textContent=b;$('#push'
   pb.addEventListener('pointerup',end);pb.addEventListener('pointercancel',end)}
 function keep(fn){const y=scrollY;fn();if(first)return;   // ikke tegn siden på nytt før innholdet er lastet første gang (ellers vises «Ingen planlagt» et øyeblikk)
   $('#view').innerHTML=viewBanner()+VIEWS[state.tab]();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
+/* Dra ned fra toppen for å hente siste innhold (ikke oftere enn hvert 10. sekund, for å spare lesinger i databasen) */
+(function(){let el,y0=null,d=0,sist=0;
+  function mk(){if(el)return;el=document.createElement('div');el.id='ptr';el.setAttribute('aria-hidden','true');el.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v10M7 11l5 5 5-5"/></svg>';document.body.appendChild(el)}
+  addEventListener('touchstart',e=>{if(window.scrollY>0||e.touches.length!==1||document.querySelector('dialog[open]')||e.target.closest&&e.target.closest('input,textarea,[contenteditable]')){y0=null;return}y0=e.touches[0].clientY;d=0;mk()},{passive:true});
+  addEventListener('touchmove',e=>{if(y0===null)return;d=e.touches[0].clientY-y0;if(d<=0||window.scrollY>0){el.style.opacity=0;return}const p=Math.min(d/90,1);el.style.opacity=p;el.style.transform='translate(-50%,'+Math.round(Math.min(d,90)*.5)+'px) rotate('+Math.round(p*180)+'deg)'},{passive:true});
+  addEventListener('touchend',async()=>{if(y0===null)return;const klar=d>=90&&Date.now()-sist>10000;y0=null;if(!klar){el.style.opacity=0;el.style.transform='translate(-50%,0)';return}
+    sist=Date.now();el.style.transform='translate(-50%,46px)';el.style.opacity=1;el.classList.add('snurr');try{navigator.vibrate&&navigator.vibrate(8)}catch(x){}
+    try{await refresh()}catch(x){}el.classList.remove('snurr');el.style.opacity=0;el.style.transform='translate(-50%,0)'});
+})();
 async function refresh(){
   const aktiv=busyN>0||busyRm;   // rett etter lagring/sletting: hold sirkelen til listene er oppdatert
   if(aktiv&&window.smBusy)window.smBusy(1);
