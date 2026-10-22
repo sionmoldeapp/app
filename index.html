@@ -9,6 +9,7 @@
   --ok:#1f6f8f; --ok-soft:#dbeefa; --chip:#cfe3fa;
   --lamp-ink:#fff; --lamp-glow:rgba(240,165,83,.22); --shadow-card:none; --shadow-pop:0 8px 22px rgba(5,20,40,.16);
   --ikon-a:#3f8ad6; --ikon-b:#17406f; --hero-a:#1f62ad; --hero-b:#0d2f52; --hero-dot:#ffb454; --hero-link:#bfe0ff;
+  --ease:cubic-bezier(.2,.8,.2,1); --d-fast:.15s; --d-med:.25s; --d-slow:.4s;
   --r-s:12px; --r-m:14px; --r-l:18px; --r-pill:99px;
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px;
   --t-xs:12px; --t-s:13px; --t-m:14px; --t-b:16px; --t-l:18px; --t-xl:22px; --t-h:26px;
@@ -48,7 +49,7 @@
   --ikon-a:#35679c; --ikon-b:#14304f; --hero-a:#1b3a5c; --hero-b:#0b1c2f; --hero-dot:#dcbc80; --hero-link:#d3e0ef; color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}   /* ingen firkantet trykkmarkering fra telefonen; vi har egen trykkfølelse under */
 .item>button:active,details.acc>summary:active{background:rgba(127,160,200,.14)}
-details.acc>summary{transition:background .18s ease;border-radius:var(--r-s)}
+details.acc>summary{transition:background var(--d-med) var(--ease);border-radius:var(--r-s)}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:var(--t-b);line-height:1.45;margin:0}
 button{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
@@ -74,12 +75,14 @@ header.top.scrolled .logo-mark{transform:scale(.86)}
   .logo-mark.hopp img{animation:logoHopp .5s cubic-bezier(.2,1.4,.4,1)}
   @keyframes logoHopp{0%{transform:scale(1)}35%{transform:scale(1.22) rotate(-6deg)}70%{transform:scale(.94) rotate(3deg)}100%{transform:scale(1)}}
   /* Vinduer (dialoger) kommer mykt til syne: bakgrunnen tones inn, og selve vinduet glir litt opp og tones inn */
-  dialog[open]{animation:dialogInn .34s cubic-bezier(.2,.8,.2,1) both}
-  dialog[open]::backdrop{animation:bakInn .3s ease both}
+  dialog[open]{animation:dialogInn var(--d-med) var(--ease) both}
+  dialog[open]::backdrop{animation:bakInn var(--d-med) ease both}
   @keyframes dialogInn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
   @keyframes bakInn{from{opacity:0}to{opacity:1}}
-  .btn,.chip,.tabs button,.tg{transition:transform .14s ease,background .2s ease,box-shadow .2s ease}
+  .btn,.chip,.tabs button,.tg{transition:transform var(--d-fast) var(--ease),background var(--d-med) var(--ease),box-shadow var(--d-med) var(--ease),color var(--d-med) var(--ease)}
   .btn:active,.chip:active,.tabs button:active{transform:scale(.95)}
+  .item>button:active,.nhero-b:active,.card.next[data-t]:active,.nrad>button:active{transform:scale(.985)}
+  .nhero-b,.card.next[data-t],.nrad>button{transition:transform var(--d-fast) var(--ease)}
 }
 .logo-mark img{width:100%;height:100%;object-fit:contain;display:block;content:url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");background-color:var(--ink);-webkit-mask:url(logo-512.png) center/contain no-repeat;mask:url(logo-512.png) center/contain no-repeat}
 /* Oppstartsskjerm: logoen pulserer mens innholdet lastes */
@@ -90,6 +93,10 @@ header.top.scrolled .logo-mark{transform:scale(.86)}
 #view.fadeinn{animation:sideInn .55s ease both}
 @keyframes sideInn{from{opacity:0}to{opacity:1}}
 .splash-ring{position:absolute;top:calc(50% - 118px - var(--opp));left:calc(50% - 118px);width:236px;height:236px;border-radius:50%;border:3px solid rgba(255,255,255,.22);border-top-color:#fff;animation:snurr 1.1s linear infinite,ringInn .6s ease both}
+.skel{display:block;border-radius:var(--r-s);background:linear-gradient(100deg,var(--chip) 30%,color-mix(in srgb,var(--chip) 55%,var(--surface)) 50%,var(--chip) 70%) 120% 0/300% 100%;min-height:14px}
+@media (prefers-reduced-motion:no-preference){.skel{animation:skel 1.4s ease-in-out infinite}}
+@keyframes skel{to{background-position:-80% 0}}
+.skel-kort{background:var(--surface);border-radius:var(--r-m);padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3);box-shadow:var(--shadow-card)}
 @keyframes splashPuls{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.93);opacity:.8}}   /* starter i full størrelse, som et stille ikon, og pulserer derfra */
 @keyframes ringInn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.splash img{animation:none}.splash-ring{animation:snurr 3s linear infinite}.splash{transition-duration:.01s}#view.fadeinn{animation:none}}
@@ -171,7 +178,7 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .list{display:flex;flex-direction:column;gap:10px}
 .item{background:var(--surface);border:0;border-radius:var(--r-m);overflow:hidden}
 .item>button{all:unset;display:flex;gap:12px;align-items:center;padding:12px;width:100%;box-sizing:border-box;cursor:pointer}
-.item>button{transition:background .18s ease;border-radius:var(--r-s)}
+.item>button{transition:background var(--d-med) var(--ease),transform var(--d-fast) var(--ease);border-radius:var(--r-s)}
 /* Lukkede hendelser har lik høyde: tittel og info får én linje hver (med ...), og alt vises når raden åpnes. */
 .item>button{min-height:76px}
 .item:not(.open)>button .grow b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -915,7 +922,7 @@ function nyhListe(l){
   rest.forEach(p=>{const g=nyhGruppe(p);if(g!==sist){ut+='<div class="day">'+NYH_TITLER[g]+'</div>';sist=g}ut+=nyhKort(p)});
   return ut+(alle.length>n?'<button class="btn" data-nyhmore style="margin-top:4px">Vis eldre ('+(alle.length-n)+')</button>':'')}
 function news(){
-  if(state.fast)return '<h1>Nyheter</h1><p class="small">Laster …</p>';
+  if(state.fast)return '<h1>Nyheter</h1><div role="status" aria-label="Laster" style="display:grid;gap:10px">'+'<div class="skel-kort" aria-hidden="true"><span class="skel" style="width:40%;height:12px"></span><span class="skel" style="width:85%;height:18px"></span><span class="skel" style="width:65%;height:14px"></span></div>'+'<div class="skel-kort" aria-hidden="true"><span class="skel" style="width:40%;height:12px"></span><span class="skel" style="width:85%;height:18px"></span><span class="skel" style="width:65%;height:14px"></span></div>'+'<div class="skel-kort" aria-hidden="true"><span class="skel" style="width:40%;height:12px"></span><span class="skel" style="width:85%;height:18px"></span><span class="skel" style="width:65%;height:14px"></span></div>'+'</div>';
   const sk=state.admin&&state.view==='meg'?posts.filter(postSkjult):[];
   const l=posts.filter(p=>!sk.includes(p));
   const kan=editOn(),nU=l.filter(ulest).length,ett=[];
@@ -1895,7 +1902,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 23:25';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 23:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function palKlassisk(){return document.documentElement.dataset.pal==='klassisk'}
@@ -1966,7 +1973,7 @@ function snapCard(){
   <button class="btn" data-filerestore>Gjenopprett fra fil</button></details>`}
 
 function loginCard(){
-  if(state.authVent&&!state.user)return '<div class="card"><h2>Innlogging</h2><p class="small" role="status" style="margin:8px 0 0">Logger inn …</p></div>';
+  if(state.authVent&&!state.user)return '<div class="card"><h2>Innlogging</h2><div role="status" aria-label="Logger inn" style="display:grid;gap:10px;margin-top:12px"><span class="skel" style="width:60%;height:14px"></span><span class="skel" style="width:100%;height:42px"></span><span class="skel" style="width:100%;height:42px"></span></div></div>';
   if(state.user)return `<div class="card"><div class="row"><div class="grow"><b>${state.admin?'Innlogget som administrator':state.leder||isLeader()?'Innlogget som '+[state.leder?'leder':'',isLeader()?'gruppeleder':''].filter(Boolean).join(' og '):state.member?'Innlogget som medlem':'Innlogget, men ikke på medlemslisten'}</b><div class="small">${esc(state.user.email)}</div></div>
    <button class="btn" data-logout>Logg ut</button></div>
    <details style="margin-top:12px"${state.pwMsg?' open':''}><summary style="cursor:pointer;font-weight:600">Endre passord</summary>
