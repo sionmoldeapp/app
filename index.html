@@ -8,7 +8,7 @@
   --brand:#0f3a5f; --brand-ink:#ffffff; --lamp:#d9822b; --lamp-soft:#fdf0dd;
   --ok:#1f6f8f; --ok-soft:#dbeefa; --chip:#cfe3fa;
   --lamp-ink:#fff; --lamp-glow:rgba(240,165,83,.22); --shadow-card:none; --shadow-pop:0 8px 22px rgba(5,20,40,.16);
-  --ikon-a:#3f8ad6; --ikon-b:#17406f;
+  --ikon-a:#3f8ad6; --ikon-b:#17406f; --hero-a:#1f62ad; --hero-b:#0d2f52; --hero-dot:#ffb454; --hero-link:#bfe0ff;
   --r-s:12px; --r-m:14px; --r-l:18px; --r-pill:99px;
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px;
   --t-xs:12px; --t-s:13px; --t-m:14px; --t-b:16px; --t-l:18px; --t-xl:22px; --t-h:26px;
@@ -31,21 +31,21 @@
   --ok:#2d6a74; --ok-soft:#e3eef0; --chip:#ece7db;
   --lamp-ink:#fff; --lamp-glow:rgba(150,114,58,.22);
   --shadow-card:0 1px 2px rgba(28,42,58,.05),0 8px 22px rgba(28,42,58,.06); --shadow-pop:0 10px 26px rgba(28,42,58,.14);
-  --ikon-a:#2b5486; --ikon-b:#14304f}
+  --ikon-a:#2b5486; --ikon-b:#14304f; --hero-a:#1e4269; --hero-b:#0d2238; --hero-dot:#dcbc80; --hero-link:#d3e0ef}
 @media (prefers-color-scheme:dark){:root[data-pal="premium"]:not([data-theme="light"]){
   --bg:#0a1b2e; --surface:#12283f; --ink:#eef1f5; --muted:#9fb0c3; --line:#243b55;
   --brand:#a9c1de; --brand-ink:#0a1b2e; --lamp:#d4b378; --lamp-soft:#2f2818;
   --ok:#8cc7d0; --ok-soft:#173a45; --chip:#1c3550;
   --lamp-ink:#1a1305; --lamp-glow:rgba(212,179,120,.26);
   --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28); --shadow-pop:0 10px 26px rgba(0,0,0,.45);
-  --ikon-a:#35679c; --ikon-b:#14304f; color-scheme:dark}}
+  --ikon-a:#35679c; --ikon-b:#14304f; --hero-a:#1b3a5c; --hero-b:#0b1c2f; --hero-dot:#dcbc80; --hero-link:#d3e0ef; color-scheme:dark}}
 :root[data-pal="premium"][data-theme="dark"]{
   --bg:#0a1b2e; --surface:#12283f; --ink:#eef1f5; --muted:#9fb0c3; --line:#243b55;
   --brand:#a9c1de; --brand-ink:#0a1b2e; --lamp:#d4b378; --lamp-soft:#2f2818;
   --ok:#8cc7d0; --ok-soft:#173a45; --chip:#1c3550;
   --lamp-ink:#1a1305; --lamp-glow:rgba(212,179,120,.26);
   --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28); --shadow-pop:0 10px 26px rgba(0,0,0,.45);
-  --ikon-a:#35679c; --ikon-b:#14304f; color-scheme:dark}
+  --ikon-a:#35679c; --ikon-b:#14304f; --hero-a:#1b3a5c; --hero-b:#0b1c2f; --hero-dot:#dcbc80; --hero-link:#d3e0ef; color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}   /* ingen firkantet trykkmarkering fra telefonen; vi har egen trykkfølelse under */
 .item>button:active,details.acc>summary:active{background:rgba(127,160,200,.14)}
 details.acc>summary{transition:background .18s ease;border-radius:var(--r-s)}
@@ -284,16 +284,16 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .ndetalj{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
 .nikon{flex:none;width:40px;height:40px;border-radius:var(--r-s);background:var(--chip);color:var(--ink);display:grid;place-items:center;position:relative}
 .nikon .dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border:2px solid var(--surface)}
-.nhero{background:linear-gradient(135deg,#1f62ad 0%,#0d2f52 100%);color:#fff;border-radius:var(--r-l);overflow:hidden;box-shadow:0 10px 24px rgba(5,25,50,.22)}
+.nhero{background:linear-gradient(135deg,var(--hero-a) 0%,var(--hero-b) 100%);color:#fff;border-radius:var(--r-l);overflow:hidden;box-shadow:0 10px 24px rgba(5,25,50,.22)}
 .nhero-b{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:7px;padding:18px;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .nhero-ey{font-size:var(--t-xs);letter-spacing:.08em;text-transform:uppercase;opacity:.88;display:flex;gap:7px;align-items:center}
-.nhero-ey .dot{background:#ffb454;width:9px;height:9px}
+.nhero-ey .dot{background:var(--hero-dot);width:9px;height:9px}
 .nhero-t{font-family:var(--f-display);font-size:30px;text-transform:uppercase;line-height:1.02;letter-spacing:.01em}
 .nhero-p{font-size:var(--t-m);line-height:1.45;opacity:.92;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .nhero-mer{font-weight:600;font-size:var(--t-m);margin-top:2px}
 .nhero .ndetalj{padding:0 18px 18px;color:#fff}
 .nhero .pbody{color:#fff;font-size:var(--t-b)}
-.nhero .pbody a,.nhero .pbody .pt a{color:#bfe0ff}
+.nhero .pbody a,.nhero .pbody .pt a{color:var(--hero-link)}
 .nhero .small{color:rgba(255,255,255,.78)}
 .nhero .tag{background:rgba(255,255,255,.18);color:#fff}
 .nhero .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
@@ -1895,7 +1895,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 23:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 23:25';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function palKlassisk(){return document.documentElement.dataset.pal==='klassisk'}
