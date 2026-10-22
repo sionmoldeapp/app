@@ -107,6 +107,12 @@ h3{font-size:22px;line-height:1.1}
 .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)}
 .next h2{font-size:34px;margin:4px 0 6px}
 .next .meta{opacity:.9;font-size:15px}
+.svk{display:grid;gap:12px}
+.svk-topp{display:flex;gap:12px;align-items:center}
+.svk-ikon{flex:none;width:44px;height:44px;border-radius:13px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#f4b45f,#d27a22);box-shadow:0 4px 10px rgba(160,90,10,.25)}
+.svk-tekst{min-width:0}
+.svk-tekst h2{font-size:24px;margin:0}
+.svk-tekst .eyebrow{margin:0 0 2px}
 .viktig{position:relative;display:flex;gap:12px;align-items:center;background:var(--surface);border:0;border-radius:14px;padding:14px;cursor:pointer;touch-action:pan-y;-webkit-user-select:none;user-select:none}
 .vik-ikon{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#3f8ad6,#17406f);box-shadow:0 4px 10px rgba(10,40,80,.22)}
 .vik-innhold{flex:1;min-width:0}
@@ -441,11 +447,28 @@ async function setRsvp(id,on,navn,kontakt){
 }
 
 /* Sommerstevne: åpent kort til brukeren har meldt seg på (husket på enheten), deretter et lukket kort «Sommerstevne nyhetsbrev» som kan åpnes. */
+/* Sommerstevne-kortet på Hjem: kort og rolig. «Meld meg på» åpner et vindu der e-posten legges inn. */
 function svCard(){
-  const done=!!lsGet('sm-sv'),body=`<p class="small" style="margin:6px 0 12px">Neste sommerstevne er <b>22.–27. juni 2027</b>. ${done?'Du er påmeldt nyhetsbrevet. Legg inn en annen e-post hvis noen flere vil ha info.':'Legg igjen e-posten din for å få mer info.'}</p>
-  <form class="form" id="sv"><label class="f">E-post<input id="svE" type="email" autocomplete="email" required value="${esc(state.svE)}"></label><button class="btn primary" type="submit">Meld meg på</button></form>
-  <p class="small" role="status" style="margin:8px 0 0">${esc(state.sv)}</p><p class="small" style="margin:6px 0 0">E-posten brukes bare til informasjon om sommerstevnet.</p>`;
-  return `<details class="card acc" data-acc="sv" ${state.acc.sv?'open':''}><summary><h2>Nyhetsbrev Sommerstevne</h2></summary>${body}</details>`}   // lukket til man trykker på kortet
+  const done=!!lsGet('sm-sv');
+  return '<div class="card svk"><div class="svk-topp"><div class="svk-ikon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg></div>'
+   +'<div class="svk-tekst"><div class="eyebrow">Nyhetsbrev</div><h2>Sommerstevne 2027</h2><div class="small">22.–27. juni 2027'+(done?' · Du er påmeldt':'')+'</div></div></div>'
+   +'<button type="button" class="btn primary" data-svopen>'+(done?'Meld på en annen e-post':'Meld meg på')+'</button>'
+   +(state.sv?'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.sv)+'</p>':'')+'</div>'}
+function svAsk(){
+  if(document.querySelector('dialog.pub'))return;
+  const dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Nyhetsbrev Sommerstevne</h3><p class="small" style="margin:0">Legg igjen e-posten din for å få info om sommerstevnet 22.–27. juni 2027. Den brukes bare til informasjon om stevnet.</p>'
+   +'<label class="f">E-post<input id="svE" type="email" autocomplete="email" required value="'+esc(state.svE||'')+'"></label><p class="small" id="svMsg" role="status" style="margin:0"></p>'
+   +'<div class="btns"><button class="btn primary" value="send" style="width:auto">Meld meg på</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
+    const m=dlg.querySelector('#svE').value.trim().toLowerCase(),msg=t=>{dlg.querySelector('#svMsg').textContent=t};
+    if(!m||!dlg.querySelector('#svE').checkValidity()){msg('Skriv en gyldig e-postadresse.');return}
+    e.submitter.disabled=true;
+    try{await fetch(SV_URL,{method:'POST',mode:'no-cors',body:new URLSearchParams({[SV_ENTRY]:m})});lsSet('sm-sv','1');state.svE='';state.sv='';dlg.close();keep(()=>{});push('Takk!','Du får info om sommerstevnet.')}
+    catch(er){e.submitter.disabled=false;state.svE=m;msg('Kunne ikke melde på. Sjekk nettforbindelsen og prøv igjen.')}});
+  dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();setTimeout(()=>{const i=dlg.querySelector('#svE');if(i)i.focus()},120)}
 
 /* Små hjelpere for medlemmene: kart, forbønner og redigerbar kontaktinfo. */
 const kartUrl=p=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p+', Møre og Romsdal');
@@ -1923,6 +1946,7 @@ document.addEventListener('click',async e=>{
   else if('lrcopy' in c.dataset){lrCopy()}
   else if(c.dataset.lrdone){lrDone(c.dataset.lrdone,c.dataset.v==='1')}
   else if(c.dataset.lrdel){lrDel(c.dataset.lrdel)}
+  else if('svopen' in c.dataset){svAsk()}
   else if('prnew' in c.dataset){prayAsk()}
   else if('prrefresh' in c.dataset){state.prayers=undefined;keep(()=>{});loadPrayers()}
   else if('prcopy' in c.dataset){prayCopy()}
