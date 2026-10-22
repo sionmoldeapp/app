@@ -1,5 +1,5 @@
 <!doctype html><html lang="nb"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#c9e1fb"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-180.png"><title>Sion Molde</title>
-<script>try{var t=localStorage.getItem('sm-theme');if(t)document.documentElement.dataset.theme=t;window.PAL_BG={"klassisk":["#c9e1fb","#0b2540"],"premium":["#f6f4ef","#0a1b2e"],"kobber":["#f5f2ec","#0a2427"],"grafitt":["#f5f5f7","#111418"],"skog":["#f3f4ee","#0d1f18"],"vin":["#f7f2f0","#1a0f14"],"iphone":["#f2f2f7","#000000"],"android":["#f1f6f3","#071f2b"],"rosa":["#fff1f5","#1f0f18"],"gutta":["#eef1f5","#090c12"]};var pv=localStorage.getItem('sm-pal');if(!PAL_BG[pv])pv='premium';document.documentElement.dataset.pal=pv;var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.querySelector('meta[name=theme-color]').content=PAL_BG[pv][d?1:0]}catch(e){}</script>
+<script>try{var t=localStorage.getItem('sm-theme');if(t)document.documentElement.dataset.theme=t;window.PAL_BG={"klassisk":["#c9e1fb","#0b2540"],"premium":["#f6f4ef","#0a1b2e"],"kobber":["#f5f2ec","#0a2427"],"grafitt":["#f5f5f7","#111418"],"skog":["#f3f4ee","#0d1f18"],"vin":["#f7f2f0","#1a0f14"],"iphone":["#f2f2f7","#000000"],"android":["#f1f6f3","#071f2b"],"rosa":["#fff1f5","#1f0f18"],"gutta":["#eef1f5","#090c12"]};var pv=localStorage.getItem('sm-pal');if(!PAL_BG[pv])pv='premium';document.documentElement.dataset.pal=pv;var sv=localStorage.getItem('sm-stil');if(sv!=='ios'&&sv!=='android')sv='standard';document.documentElement.dataset.stil=sv;var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.querySelector('meta[name=theme-color]').content=PAL_BG[pv][d?1:0]}catch(e){}</script>
 <link rel="stylesheet" href="fonts.css">
 <style>
 /* Layout: mobilapp i smal kolonne, fast fanelinje nederst, innhold bytter per fane */
@@ -231,6 +231,39 @@ body{overscroll-behavior-y:contain}
   .vik-x{position:relative}.vik-x::after{content:'';position:absolute;inset:-2px}
   .tg::before{content:'';position:absolute;inset:-8px 0}
 }
+/* Stil (data-stil): standard, ios (iPhone-preget) og android (Android-preget). Gjelder skrift, former, trykk-respons, bevegelse og faner. Farger velges separat (data-pal). */
+html[data-stil="ios"][data-stil="ios"]:root{--f-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',system-ui,'Poppins',sans-serif;--f-display:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,'Poppins',sans-serif;--r-s:10px;--r-m:14px;--r-l:20px;--ease:cubic-bezier(.32,.72,0,1);--d-fast:.2s;--d-med:.35s;--d-slow:.5s;--shadow-card:none}
+html[data-stil="android"][data-stil="android"]:root{--f-body:Roboto,'Google Sans','Segoe UI',system-ui,'Poppins',sans-serif;--f-display:'Google Sans',Roboto,system-ui,'Poppins',sans-serif;--r-s:12px;--r-m:16px;--r-l:28px;--ease:cubic-bezier(.2,0,0,1);--d-fast:.1s;--d-med:.25s;--d-slow:.4s;--shadow-card:0 1px 2px rgba(0,0,0,.14),0 1px 3px 1px rgba(0,0,0,.08)}
+html[data-stil="ios"] h1,html[data-stil="ios"] h2,html[data-stil="ios"] h3,html[data-stil="ios"] .nhero-t,html[data-stil="ios"] .logo b,
+html[data-stil="android"] h1,html[data-stil="android"] h2,html[data-stil="android"] h3,html[data-stil="android"] .nhero-t,html[data-stil="android"] .logo b{text-transform:none;font-weight:700;letter-spacing:-.01em}
+html[data-stil="ios"] h1{font-size:34px}html[data-stil="android"] h1{font-size:32px;font-weight:500}
+html[data-stil="ios"] h2,html[data-stil="android"] h2{font-size:22px;line-height:1.15}
+html[data-stil="android"] h2,html[data-stil="android"] h3,html[data-stil="android"] .logo b{font-weight:500}
+html[data-stil="ios"] .nhero-t,html[data-stil="android"] .nhero-t{font-size:24px;line-height:1.15}
+html[data-stil="ios"] .logo b,html[data-stil="android"] .logo b{font-size:var(--t-l)}
+html[data-stil="ios"] .item>button:active,html[data-stil="ios"] .nhero-b:active,html[data-stil="ios"] .card.next[data-t]:active,html[data-stil="ios"] .nrad>button:active,html[data-stil="ios"] .btn:active,html[data-stil="ios"] .chip:active,html[data-stil="ios"] .tabs button:active{transform:none;opacity:.55}
+html[data-stil="android"] .item>button:active,html[data-stil="android"] .nhero-b:active,html[data-stil="android"] .card.next[data-t]:active,html[data-stil="android"] .nrad>button:active,html[data-stil="android"] .btn:active,html[data-stil="android"] .chip:active,html[data-stil="android"] .tabs button:active{transform:none}
+html[data-stil="ios"] nav.tabs{background:color-mix(in srgb,var(--surface) 78%,transparent);-webkit-backdrop-filter:saturate(1.8) blur(22px);backdrop-filter:saturate(1.8) blur(22px)}
+html[data-stil="ios"] nav.tabs button[aria-current="page"]{background:none;color:var(--brand)}
+html[data-stil="ios"] nav.tabs button{font-weight:500}
+html[data-stil="android"] nav.tabs button[aria-current="page"]{background:none;color:var(--ink)}
+html[data-stil="android"] nav.tabs button[aria-current="page"] svg{box-sizing:content-box;padding:4px 18px;margin:-4px 0;border-radius:16px;background:color-mix(in srgb,var(--brand) 22%,transparent);width:24px;height:24px}
+html[data-stil="android"] nav.tabs button{gap:6px}
+html[data-stil="android"] .chip{border-radius:8px}
+html[data-stil="ios"] .tg{width:51px;height:31px;border-radius:99px}
+html[data-stil="ios"] .tg::after{top:2px;left:2px;width:27px;height:27px;box-shadow:0 2px 4px rgba(0,0,0,.25)}
+html[data-stil="ios"] .tg[aria-checked="true"]{background:#34c759}
+html[data-stil="ios"] .tg[aria-checked="true"]::after{transform:translateX(20px)}
+html[data-stil="android"] .tg{width:52px;height:32px;border-radius:99px;background:var(--line)}
+html[data-stil="android"] .tg::after{top:8px;left:8px;width:16px;height:16px;background:var(--muted);transition:all var(--d-med) var(--ease)}
+html[data-stil="android"] .tg[aria-checked="true"]::after{top:4px;left:4px;width:24px;height:24px;background:var(--brand-ink);transform:translateX(20px)}
+html[data-stil="ios"] dialog{box-shadow:0 10px 40px rgba(0,0,0,.28)}
+@keyframes dialogIos{from{opacity:0;transform:scale(1.07)}to{opacity:1;transform:none}}
+@keyframes dialogAnd{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:no-preference){html[data-stil="ios"] dialog[open]{animation-name:dialogIos}html[data-stil="android"] dialog[open]{animation-name:dialogAnd}}
+html[data-stil="android"] .btn,html[data-stil="android"] .chip,html[data-stil="android"] nav.tabs button,html[data-stil="android"] .item>button,html[data-stil="android"] .nhero-b,html[data-stil="android"] .card.next[data-t]{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;background:currentColor;opacity:.2;transform:scale(0);pointer-events:none;animation:ripple .55s var(--ease) forwards}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
 .palrutenett{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .palbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);font-size:var(--t-m);font-weight:600;line-height:1.2;transition:border-color var(--d-med) var(--ease),box-shadow var(--d-med) var(--ease)}
 .palbtn[aria-pressed="true"]{border-color:var(--lamp);box-shadow:0 0 0 2px var(--lamp-glow)}
@@ -2102,10 +2135,17 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='23.10.2026 kl. 08:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='23.10.2026 kl. 09:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"]];
+function stilNa(){return document.documentElement.dataset.stil||'standard'}
+function setStil(v){document.documentElement.dataset.stil=v;try{localStorage.setItem('sm-stil',v)}catch(e){}}
+function nullstillUtseende(){setStil('standard');setPal('premium')}
+{ document.addEventListener('pointerdown',e=>{if(stilNa()!=='android'||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+    const k=e.target.closest&&e.target.closest('.btn,.chip,nav.tabs button,.item>button,.nhero-b,.card.next[data-t]');if(!k)return;
+    const r=k.getBoundingClientRect(),d=Math.max(r.width,r.height)*2.2,sp=document.createElement('span');sp.className='ripple';
+    sp.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(e.clientX-r.left-d/2)+'px;top:'+(e.clientY-r.top-d/2)+'px';k.appendChild(sp);sp.addEventListener('animationend',()=>sp.remove());setTimeout(()=>sp.remove(),900)},{passive:true}) }
 function palNa(){return document.documentElement.dataset.pal||'premium'}
 function setPal(p){document.documentElement.dataset.pal=p;try{localStorage.setItem('sm-pal',p)}catch(e){}themeIcon()}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
@@ -2116,7 +2156,7 @@ function settingsCard(){
   const H=t=>`<h3 style="margin:14px 0 6px;font-size:var(--t-l)">${t}</h3>`;
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
   ${profSub('inpush','Varsler',pushInner())}
-  ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk på en palett for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><div class="palrutenett" role="group" aria-label="Fargepalett">${PALETTER.map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div>`)}
+  ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${PALETTER.map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div><p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('installer','Slik installerer du appen',installBody())}
@@ -2480,6 +2520,8 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.af){state.af=c.dataset.af;state.sel={};keep(()=>{})}
   else if(c.dataset.f){state.filter=c.dataset.f;keep(()=>{})}
   else if(c.dataset.ui){keep(()=>{UI[c.dataset.ui]=UI[c.dataset.ui]===false;if(c.dataset.ui==='vk'&&UI.vk)lsSet('sm-viktig-skjult','');uiLagre()})}
+  else if(c.dataset.stil){setStil(c.dataset.stil);keep(()=>{})}
+  else if('utsvReset' in c.dataset){nullstillUtseende();keep(()=>{})}
   else if(c.dataset.pal){setPal(c.dataset.pal);keep(()=>{})}
   else if(c.dataset.fs){UI.fs=+c.dataset.fs;uiLagre();applyFs();keep(()=>{})}
   else if(c.dataset.pref){keep(()=>{state.prefs[c.dataset.pref]=!state.prefs[c.dataset.pref];save()})}
@@ -3119,7 +3161,7 @@ function fadeRender(){
   const v=$('#view');
   if(matchMedia('(prefers-reduced-motion:reduce)').matches){render();return}
   clearTimeout(fadeT);drawTabs();v.classList.remove('fadeinn');v.style.transition='opacity .16s ease';v.style.opacity='0';
-  fadeT=setTimeout(()=>{render();v.style.transition='opacity .3s ease';v.style.opacity='1';setTimeout(()=>{v.style.transition='';v.style.opacity=''},330)},160)}
+  fadeT=setTimeout(()=>{render();const st=document.documentElement.dataset.stil;if(st==='ios'||st==='android'){try{v.animate([{transform:st==='ios'?'translateX(18px)':'scale(.96)'},{transform:'none'}],{duration:st==='ios'?380:300,easing:'cubic-bezier(.2,.8,.2,1)'})}catch(x){}}v.style.transition='opacity .3s ease';v.style.opacity='1';setTimeout(()=>{v.style.transition='';v.style.opacity=''},330)},160)}
 /* Oppstartsskjermen (logoen) tones ut og siden tones inn når første innlasting er ferdig. */
 function splashBort(){
   const sp=document.getElementById('splash');if(!sp||sp.dataset.bort)return;sp.dataset.bort='1';
