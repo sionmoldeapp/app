@@ -641,7 +641,7 @@ function homeDeler(){
   /* «Neste samling» er neste søndagsmøte eller neste Happeninger, den som kommer først. */
   let n=vis.find(e=>normCat(e.cat)==='Happeninger');
   {const fn=fast.filter(f=>/søndagsmøte/i.test(f.fast.title)&&!(f.ex&&f.ex.k==='avlyst')).sort((x,y)=>x.w-y.w)[0];
-    if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:[inf.place,inf.note].filter(Boolean).join(' · ')}}}
+    if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:inf.place}}}
   const wk=[...vis.slice(0,4).map(e=>({ev:e,w:e.w})),...fast.map(f=>({fast:f.fast,w:f.w}))].sort((a,b)=>a.w-b.w).slice(0,6);
   let post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
   {const vv=sisteVarsel();
@@ -650,10 +650,9 @@ function homeDeler(){
       if(hore)post=hore;   // varselet hører til en melding i appen: vis hele meldingen (varselteksten er avkortet)
       else if(!post||vv.ms>(post.ms||0)+60000)post=vv}}   // et varsel uten nyhet i appen vises også   // alltid den nyeste, også om en eldre er festet i Nyheter
   return {
-   neste:['Neste samling',()=>(n?`<div class="card next"><div class="eyebrow">Neste samling</div><h2>${n.t}</h2>
-   <div class="meta">${when(n.w)}${tm(n)}${n.place?' · '+esc(n.place):''}</div>
-   <div class="btns" style="margin-top:12px"><button class="btn" style="color:var(--ink)" data-rsvp="${n.id}" data-stay="1">${state.rsvp[n.id]?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(n.id).replace('<button class="btn','<button style="color:var(--ink)" class="btn')}</div></div>`
-  :`<div class="card next"><div class="eyebrow">Neste samling</div><h2>Ingen planlagt</h2><div class="meta">Se faste samlinger under Program.</div></div>`)],
+   neste:['Neste hendelse',()=>(n?`<div class="card next" data-t="prog" role="link" tabindex="0" style="cursor:pointer"><div class="eyebrow">Neste hendelse</div><h2>${n.t}</h2>
+   <div class="meta">${when(n.w)}${tm(n)}</div></div>`
+  :`<div class="card next" data-t="prog"><div class="eyebrow">Neste hendelse</div><h2>Ingen planlagt</h2><div class="meta">Se Program.</div></div>`)],
    velkomst:['Kom i gang',()=>welcomeCard()],
    besok:['Logg inn for å få mer',()=>visitorCard()],
    vakter:['Dine vakter',()=>myShiftsCard()],
@@ -1738,7 +1737,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 14:12';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 15:32';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
@@ -2684,6 +2683,10 @@ function viktigApne(id){
   document.addEventListener('pointerup',slipp);document.addEventListener('pointercancel',slipp);
   document.addEventListener('click',e=>{const v=e.target.closest('.viktig');if(!v||e.target.closest('.vik-x,a'))return;if(sperr){e.preventDefault();e.stopPropagation();return}viktigVis(v.dataset.viktig)},true);
   document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('viktig')){e.preventDefault();viktigVis(e.target.dataset.viktig)}}) }
+/* Kortet «Neste hendelse» på Hjem åpner Program når man trykker på det. */
+{ const til=k=>{if(state.reorder)return;state.tab=k.dataset.t;fadeRender()};
+  document.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest('.card.next[data-t]');if(k)til(k)});
+  document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('next')&&e.target.dataset.t){e.preventDefault();til(e.target)}}) }
 /* Skifte mellom Hjem, Program, Nyheter og Meg: innholdet tones ut og det nye tones inn. */
 let fadeT=null;
 function fadeRender(){
