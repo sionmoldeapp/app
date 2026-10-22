@@ -1841,14 +1841,20 @@ async function refresh(){
 /* Ny melding (varsel mottatt, varselet trykket på, eller appen åpnet igjen etter en stund): hent siste innhold og vis Viktig-kortet på Hjem igjen. */
 function varselLagre(t,b){
   if(!t&&!b)return;try{localStorage.setItem('sm-varsel',JSON.stringify({id:'varsel'+Date.now(),t:String(t||'Melding'),b:String(b||''),ms:Date.now()}))}catch(e){}}
+/* Varsler som kom mens appen var lukket, ligger i en liten hurtigbuffer som varseltjenesten (sw.js) fyller. Hentes ved oppstart og når appen kommer tilbake. */
+async function hentVarselFraSW(){
+  try{if(!window.caches)return;const ca=await caches.open('sion-varsel'),r=await ca.match(new URL('varsel.json',location.href).href);if(!r)return;
+    const v=await r.json(),lok=sisteVarsel();
+    if(v&&v.ms&&(!lok||v.ms>lok.ms)){localStorage.setItem('sm-varsel',JSON.stringify({id:'varsel'+v.ms,t:v.t,b:v.b,ms:v.ms}));keep(()=>{})}}catch(e){}}
 function sisteVarsel(){
   try{const v=JSON.parse(localStorage.getItem('sm-varsel')||'null');return v&&v.ms>Date.now()-3*864e5?v:null}catch(e){return null}}
 function nyMelding(){
+  hentVarselFraSW();
   lsSet('sm-viktig-skjult','');Object.keys(state.open).forEach(k=>{if(k.startsWith('v_'))delete state.open[k]});
   if(FB&&!first)refresh().catch(()=>{})}
 { let borte=0;
   document.addEventListener('visibilitychange',()=>{if(document.hidden){borte=Date.now();return}
-    if(borte&&Date.now()-borte>60000&&!first)nyMelding();borte=0}) }
+    if(borte&&Date.now()-borte>60000&&!first)nyMelding();borte=0;hentVarselFraSW()}) }
 const authMsg=c=>({'auth/invalid-credential':'Feil e-post eller passord.','auth/invalid-email':'Ugyldig e-postadresse.','auth/user-disabled':'Brukeren er sperret.','auth/too-many-requests':'For mange forsøk. Vent litt og prøv igjen.','auth/network-request-failed':'Ingen nettforbindelse.','auth/weak-password':'Passordet er for svakt. Bruk minst 8 tegn.','auth/requires-recent-login':'Logg ut og inn igjen, og prøv på nytt.'}[c]||'Noe gikk galt. Prøv igjen.');
 const saveMsg=c=>c==='permission-denied'?'Du har ikke tilgang til å lagre.':'Kunne ikke lagre ('+(c||'ukjent feil')+').';
 
@@ -2628,7 +2634,7 @@ async function start(){
   else{await load();state.fast=false;first=false;render();splashBort()}
 }
 start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()});
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});hentVarselFraSW();
   navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type!=='open-tab')return;
     if(d.title)varselLagre(d.title,d.body);   // varselet som ble trykket på
     if(['home','prog','news','me'].includes(d.tab)){state.tab=d.tab;if(d.tab==='news')markSeen();render()}
