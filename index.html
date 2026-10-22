@@ -386,9 +386,11 @@ function nextFast(){const out=[];
       w=new Date(w);w.setDate(w.getDate()+7)}});
   return out}
 const fastId=(r,w)=>'f_'+r.id+'_'+dkey(w);
-function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',note=ex&&ex.k==='endret'&&ex.note?ex.note:r.note;
-  return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(r.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'?'<span class="tag avl" style="background:var(--lamp);color:#fff">Endret</span>':'<span class="tag">Fast</span>'}</button>
-   <div class="detail"><div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
+/* Enkeltdato på en fast samling kan ha egen tittel, tid, sted, taler, merknad og beskrivelse (ex[dato] med k:'endret'). */
+const fastInfo=(r,ex)=>{const e=ex&&ex.k==='endret'?ex:{};return {title:e.title||r.title,place:e.place||'',who:e.who||'',note:e.note||r.note||'',text:e.text||''}};
+function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',inf=fastInfo(r,ex),note=inf.note;
+  return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(inf.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${inf.place?' · '+esc(inf.place):''}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'?'<span class="tag avl" style="background:var(--lamp);color:#fff">Endret</span>':'<span class="tag">Fast</span>'}</button>
+   <div class="detail">${inf.text?'<div>'+linkify(esc(inf.text))+'</div>':''}${inf.who?'<div class="small">'+esc(inf.who)+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
 function evItem(e){
   if(e.m&&!state.member)return `<div class="item"><div class="locked" style="padding:12px">${dateBox(e)}<div class="grow"><b>${e.t}</b><span class="small">Kun for medlemmer. Logg inn under «Meg».</span></div></div></div>`;
   const open=state.open[e.id],r=state.rsvp[e.id];
@@ -625,10 +627,11 @@ function viktigKort(p){
    +'<div class="vik-tittel">'+esc(p.t)+'</div><div class="vik-tekst'+(p.bh?' rt':'')+'">'+(open?richVis(p):esc(tekst))+'</div></div>'
    +'<svg class="vik-pil" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>'}
 function homeDeler(){
-  const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome);let n=vis[0];
-  const fast=nextFast();
-  {const fn=fast.filter(f=>!(f.ex&&f.ex.k==='avlyst')).sort((x,y)=>x.w-y.w)[0];   // «Neste samling» er den som kommer først, også om det er en fast samling
-    if(fn&&(!n||fn.w<n.w)){const nt=fn.ex&&fn.ex.k==='endret'&&fn.ex.note?fn.ex.note:fn.fast.note;n={id:fastId(fn.fast,fn.w),t:esc(fn.fast.title),w:fn.w,time:hhmm(fn.w),place:nt||''}}}
+  const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome),fast=nextFast();
+  /* «Neste samling» er neste søndagsmøte eller neste Happeninger, den som kommer først. */
+  let n=vis.find(e=>normCat(e.cat)==='Happeninger');
+  {const fn=fast.filter(f=>/søndagsmøte/i.test(f.fast.title)&&!(f.ex&&f.ex.k==='avlyst')).sort((x,y)=>x.w-y.w)[0];
+    if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:[inf.place,inf.note].filter(Boolean).join(' · ')}}}
   const wk=[...vis.slice(0,4).map(e=>({ev:e,w:e.w})),...fast.map(f=>({fast:f.fast,w:f.w}))].sort((a,b)=>a.w-b.w).slice(0,6);
   let post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
   {const vv=sisteVarsel();
@@ -2492,14 +2495,14 @@ function fastAsk(id,dato){
   dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">'+esc(r.title)+'</h3><p class="small" style="margin:0">'+esc(dn)+' kl. '+esc(r.time)+(stat?'<br><b>'+esc(stat)+'</b>':'')+'</p>'
    +(PUSH_URL?'<label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="lpPush" style="width:22px;height:22px;flex:none">Send varsel til alle (gjelder avlys og endre)</label><div id="lpMsg" style="display:none;gap:8px"><label class="f">Varseltittel<input id="lpPT" maxlength="60"></label><label class="f">Varseltekst<textarea id="lpPB" rows="3" maxlength="140"></textarea></label><span class="small">Standardteksten settes inn automatisk. Skriv over den hvis du vil si noe annet.</span></div>':'')
    +'<div class="btns col">'+(ex&&ex.k!=='fjernet'?'<button class="btn" value="angre">Angre ('+(ex.k==='avlyst'?'avlysning':'endring')+')</button>':'')+(ex&&ex.k==='avlyst'?'':'<button class="btn" value="avlys">Merk denne gangen som avlyst</button>')+'<button class="btn" value="fjern">Fjern bare denne gangen</button></div>'
-   +'<details><summary style="cursor:pointer;font-weight:600">Endre denne gangen</summary><div style="display:grid;gap:8px;margin-top:8px"><label class="f">Nytt klokkeslett<input id="lpTime" type="time"></label><label class="f">Ny merknad<input id="lpNote" type="text" maxlength="100"></label><button class="btn" value="endre">Lagre</button></div></details>'
+   +'<details'+(ex&&ex.k==='endret'?' open':'')+'><summary style="cursor:pointer;font-weight:600">Endre denne gangen</summary><p class="small" style="margin:6px 0 0">Gjelder bare '+esc(dn)+'. Resten av ukene er uendret.</p><div style="display:grid;gap:8px;margin-top:8px"><label class="f">Tittel<input id="lpTitle" type="text" maxlength="80" value="'+esc((ex&&ex.title)||r.title)+'"></label><label class="f">Klokkeslett<input id="lpTime" type="time" value="'+esc((ex&&ex.time)||r.time)+'"></label><label class="f">Sted<input id="lpPlace" type="text" maxlength="80" list="lpSted" value="'+esc((ex&&ex.place)||'')+'"><datalist id="lpSted">'+PLACES.map(p=>'<option value="'+esc(p)+'">').join('')+'</datalist></label><label class="f">Hvem taler eller hvem er med<input id="lpWho" type="text" maxlength="100" value="'+esc((ex&&ex.who)||'')+'"></label><label class="f">Merknad<input id="lpNote" type="text" maxlength="100" value="'+esc((ex&&ex.note)||r.note||'')+'"></label><label class="f">Beskrivelse<textarea id="lpText" rows="3" maxlength="600">'+esc((ex&&ex.text)||'')+'</textarea></label><button class="btn" value="endre">Lagre endringene</button></div></details>'
    +'<div class="btns col"><button class="btn" value="rediger">Endre hele den faste samlingen</button><button class="btn danger" value="slettalle">Slett hele den faste samlingen</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   const defs=(rv,tid,nt)=>rv==='endre'?['Endret: '+r.title,dn+(TIDOK(tid)?', nå kl. '+tid:'')+(nt?'. '+nt:'')]:['Avlyst: '+r.title,dn+' kl. '+r.time+' er avlyst.'];
   const pt=dlg.querySelector('#lpPT'),pb=dlg.querySelector('#lpPB'),pc=dlg.querySelector('#lpPush');let dirty=false;
   if(pc){const d0=defs('avlys');pt.value=d0[0];pb.value=d0[1];pc.addEventListener('change',()=>{dlg.querySelector('#lpMsg').style.display=pc.checked?'grid':'none'});[pt,pb].forEach(i=>i.addEventListener('input',()=>{dirty=true}))}
   dlg.addEventListener('close',async()=>{
-    const rv=dlg.returnValue,send=!!(dlg.querySelector('#lpPush')&&dlg.querySelector('#lpPush').checked),time=dlg.querySelector('#lpTime').value.trim(),note=dlg.querySelector('#lpNote').value.trim();dlg.remove();
+    const rv=dlg.returnValue,send=!!(dlg.querySelector('#lpPush')&&dlg.querySelector('#lpPush').checked),time=dlg.querySelector('#lpTime').value.trim(),note=dlg.querySelector('#lpNote').value.trim(),ny={title:dlg.querySelector('#lpTitle').value.trim(),place:dlg.querySelector('#lpPlace').value.trim(),who:dlg.querySelector('#lpWho').value.trim(),text:dlg.querySelector('#lpText').value.trim()};dlg.remove();
     try{
       if(rv==='rediger'){state.adm={type:'regular',edit:id,form:true};state.tab='me';state.acc.adm=true;state.msg='';render();setTimeout(()=>{const f=$('#adm');if(f)f.scrollIntoView({block:'start'})},80);return}
       if(rv==='slettalle'){
@@ -2510,7 +2513,10 @@ function fastAsk(id,dato){
       if(rv==='avlys')nx[dato]={k:'avlyst'};
       else if(rv==='angre')delete nx[dato];
       else if(rv==='fjern')nx[dato]={k:'fjernet'};
-      else if(rv==='endre'){if(!TIDOK(time)&&!note){push('Fyll ut','Skriv nytt klokkeslett eller en merknad.');return}nx[dato]={k:'endret',...(TIDOK(time)?{time}:{}),...(note?{note}:{})}}
+      else if(rv==='endre'){
+        const e1={...(ny.title&&ny.title!==r.title?{title:ny.title}:{}),...(TIDOK(time)&&time!==r.time?{time}:{}),...(ny.place?{place:ny.place}:{}),...(ny.who?{who:ny.who}:{}),...(note&&note!==(r.note||'')?{note}:{}),...(ny.text?{text:ny.text}:{})};
+        if(!Object.keys(e1).length){push('Ingen endringer','Endre minst ett felt, eller velg Angre for å gå tilbake til slik den vanligvis er.');return}
+        nx[dato]={k:'endret',...e1}}
       else return;
       await FB.setFastEx(id,nx);
       let tillegg='';
