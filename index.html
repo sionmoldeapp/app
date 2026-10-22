@@ -1690,7 +1690,7 @@ function pushAdmin(){
   <p class="small" style="margin:0 0 10px">Skriv ikke noe sensitivt, for varselet kan vises på låst skjerm. Varsler til medlemmer og grupper når bare dem som er innlogget og har slått på varsler.</p>
   <form class="form" id="pushsend"><label class="f">Tittel<input id="psT" maxlength="60" required value="${esc(state.psT)}"></label>
   <label class="f">Tekst<textarea id="psB" rows="3" maxlength="500">${esc(state.psB)}</textarea></label>
-  <p class="small" style="margin:-4px 0 0">Varselet viser de første 140 tegnene. Hele teksten ligger i Nyheter.</p>
+  <p class="small" style="margin:-4px 0 0">Varselet kan vise opptil 200 tegn. Hele teksten ligger i appen.</p>
   <label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="psNews" style="width:auto" ${state.psNews?'checked':''}>Legg også ut som nyhet i appen</label>
   <label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="psHide" style="width:auto" ${state.psHide?'checked':''}>Ikke vis nyheten på Hjem (vises i Nyheter)</label>
   ${state.admin?`<label class="f">Hvem skal få varselet?<select id="psMal">${[['alle','Alle som har slått på varsler'],['medlem','Bare medlemmer'],['grupper','Valgte grupper']].map(([v,l])=>`<option value="${v}" ${state.psMal===v?'selected':''}>${l}</option>`).join('')}</select></label>`:'<p class="small" style="margin:0">Du kan sende til gruppene du leder.</p>'}
@@ -2269,13 +2269,13 @@ document.addEventListener('submit',async e=>{
     const isEdit=!!state.adm.edit;
     try{
       if(state.adm.edit)await FB.set(COL[t],state.adm.edit,d);else await FB.add(COL[t],d);
-      if(isEdit&&t==='posts'){const po=posts.find(x=>String(x.id)===String(state.adm.edit));if(po&&po.schedId){try{await FB.updScheduled(po.schedId,{...(d.pubAt?{fireAt:d.pubAt}:{}),title:String(d.t).slice(0,100),body:String(d.b).slice(0,140)})}catch(x){}}}
+      if(isEdit&&t==='posts'){const po=posts.find(x=>String(x.id)===String(state.adm.edit));if(po&&po.schedId){try{await FB.updScheduled(po.schedId,{...(d.pubAt?{fireAt:d.pubAt}:{}),title:String(d.t).slice(0,100),body:kortTekst(String(d.b))})}catch(x){}}}
       state.msg='Lagret.';state.adm.edit=null;state.adm.form=false;usingFb=true;
       {const pd=document.querySelector('dialog.pub');if(pd){pd.close();push('Lagret',isEdit?'Endringen er lagret.':t==='posts'?'Nyheten er lagt ut.':'Lagt til i programmet.')}}
       if(wantPush&&!isEdit){
         const mal=d.groups&&d.groups.length?{type:'grupper',groups:d.groups}:d.m?{type:'medlem'}:{type:'alle'};
-        if(d.pubAt>Date.now()){try{await FB.addScheduled({title:d.t.slice(0,60),body:String(d.b||'').slice(0,140),tab:'home',malType:mal.type,groups:mal.groups||[],fireAt:d.pubAt});state.msg='Lagret. Varselet er planlagt til '+fmtDT(d.pubAt)+' ('+malTekst(mal)+').'}catch(x){state.msg='Lagret, men varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er de nye reglene publisert?'}}
-        else try{const r=await FB.sendPush(PUSH_URL,d.t,String(d.b||'').slice(0,140),'home',mal);state.msg='Lagret. '+(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter ('+malTekst(mal)+').':'Varsel ikke sendt: '+r.feil)}catch(x){state.msg='Lagret. Varsel kunne ikke sendes (ingen kontakt med varseltjenesten).'}
+        if(d.pubAt>Date.now()){try{await FB.addScheduled({title:d.t.slice(0,60),body:kortTekst(String(d.b||'')),tab:'home',malType:mal.type,groups:mal.groups||[],fireAt:d.pubAt});state.msg='Lagret. Varselet er planlagt til '+fmtDT(d.pubAt)+' ('+malTekst(mal)+').'}catch(x){state.msg='Lagret, men varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er de nye reglene publisert?'}}
+        else try{const r=await FB.sendPush(PUSH_URL,d.t,kortTekst(String(d.b||'')),'home',mal);state.msg='Lagret. '+(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter ('+malTekst(mal)+').':'Varsel ikke sendt: '+r.feil)}catch(x){state.msg='Lagret. Varsel kunne ikke sendes (ingen kontakt med varseltjenesten).'}
       }
     }catch(er){state.msg=saveMsg(er.code);keep(()=>{});return}
     await refresh()}
@@ -2477,7 +2477,7 @@ function lpAsk(key){
   const x=(col==='posts'?posts:rawEvents).find(a=>String(a.id)===id);if(!x||!FB)return;
   const tittel=col==='posts'?x.t:x.title,dlg=document.createElement('dialog');dlg.className='lp';
   const mal=col==='posts'?((x.groups||[]).length?{type:'grupper',groups:x.groups}:x.m?{type:'medlem'}:{type:'alle'}):null;
-  const pv=col==='posts'&&PUSH_URL?'<div style="display:grid;gap:8px"><b>Send påminnelse</b><span class="small">Nytt varsel til samme målgruppe som nyheten ('+esc(malTekst(mal))+'). Du kan endre teksten.</span><label class="f">Varseltittel<input id="lpPT" maxlength="60" value="'+esc(('Påminnelse: '+x.t).slice(0,60))+'"></label><label class="f">Varseltekst<textarea id="lpPB" rows="3" maxlength="140">'+esc(String(x.b||'').slice(0,140))+'</textarea></label><button class="btn primary" value="varsel" style="width:auto">Send påminnelse</button></div><hr style="border:0;border-top:1px solid var(--line);width:100%">':'';
+  const pv=col==='posts'&&PUSH_URL?'<div style="display:grid;gap:8px"><b>Send påminnelse</b><span class="small">Nytt varsel til samme målgruppe som nyheten ('+esc(malTekst(mal))+'). Du kan endre teksten.</span><label class="f">Varseltittel<input id="lpPT" maxlength="60" value="'+esc(('Påminnelse: '+x.t).slice(0,60))+'"></label><label class="f">Varseltekst<textarea id="lpPB" rows="4" maxlength="200">'+esc(kortTekst(String(x.b||'').replace(/[ 	]+/g,' ').trim()))+'</textarea></label><button class="btn primary" value="varsel" style="width:auto">Send påminnelse</button></div><hr style="border:0;border-top:1px solid var(--line);width:100%">':'';
   dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">'+(col==='posts'?'«'+esc(tittel)+'»':'Slette «'+esc(tittel)+'»?')+'</h3>'+pv+'<h3 style="margin:0;font-size:17px">'+(col==='posts'?'Slette nyheten?':'')+'</h3><p class="small" style="margin:0">'+(col==='posts'?'Nyheten':'Arrangementet')+' fjernes for alle. Du kan rulle tilbake under Meg → Sikkerhetskopi og tilbakerulling.</p><div class="btns"><button class="btn" value="rediger">Rediger</button><button class="btn danger" value="slett">Slett</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('close',async()=>{const rv=dlg.returnValue,ok=rv==='slett',pt0=dlg.querySelector('#lpPT'),pb0=dlg.querySelector('#lpPB'),tt=pt0?pt0.value.trim():'',bb=pb0?pb0.value.trim():'';dlg.remove();
