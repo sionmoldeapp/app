@@ -586,7 +586,7 @@ function homeDeler(){
   return {
    neste:['Neste samling',()=>(n?`<div class="card next"><div class="eyebrow">Neste samling</div><h2>${n.t}</h2>
    <div class="meta">${when(n.w)}${tm(n)}${n.place?' · '+esc(n.place):''}</div>
-   <div class="btns" style="margin-top:12px"><button class="btn" style="color:var(--ink)" data-rsvp="${n.id}" data-stay="1">${state.rsvp[n.id]?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(n.id).replace('<button class="btn','<button style="color:var(--ink)" class="btn')}</div>${counts[n.id]>0?`<div class="meta" style="margin-top:8px">${counts[n.id]} kommer</div>`:''}</div>`
+   <div class="btns" style="margin-top:12px"><button class="btn" style="color:var(--ink)" data-rsvp="${n.id}" data-stay="1">${state.rsvp[n.id]?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(n.id).replace('<button class="btn','<button style="color:var(--ink)" class="btn')}</div></div>`
   :`<div class="card next"><div class="eyebrow">Neste samling</div><h2>Ingen planlagt</h2><div class="meta">Se faste samlinger under Program.</div></div>`)],
    velkomst:['Kom i gang',()=>welcomeCard()],
    besok:['Logg inn for å få mer',()=>visitorCard()],
