@@ -1291,21 +1291,36 @@ const nesteDag=(dow,h,mi)=>{const d=new Date();d.setHours(h,mi,0,0);let add=(dow
 function hilsenAsk(){
   if(document.querySelector('dialog.pub')||!state.admin)return;
   const maal=hilsenMaal(),dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">Pastorens hilsen</h3>'
-   +'<label class="f">Tittel<input id="hT" maxlength="80" value="Pastorens hilsen"></label>'
-   +'<label class="f">Melding<textarea id="hB" rows="7" maxlength="3000" placeholder="Skriv hilsenen her …"></textarea></label>'
-   +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Hvem skal få den?</legend><div style="display:grid;gap:6px">'
-   +maal.map((m,i)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="hMaal" value="'+esc(m.v)+'" '+(i===0?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(m.l)+' <span class="small">('+hilsenAntall(m.v)+')</span></label>').join('')+'</div></fieldset>'
-   +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Når skal den sendes?</legend><div style="display:grid;gap:6px">'
-   +[['na','Send med en gang',null],['lor','Lørdag kl. 12:00',nesteDag(6,12,0)],['son','Søndag kl. 08:00',nesteDag(0,8,0)],['egen','Velg selv',null]].map(([v,l,d],i)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="hNaar" value="'+v+'" '+(i===0?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(l)+(d?' <span class="small">('+esc(kortDato(isoDato(d)))+')</span>':'')+'</label>').join('')
-   +'<div id="hEgen" style="display:none;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Dato<input id="hD" type="date" value="'+isoDato(nesteDag(6,12,0))+'"></label><label class="f">Klokkeslett<input id="hK" type="time" value="12:00"></label></div></div></fieldset>'
-   +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">Slik sendes den</legend><div style="display:grid;gap:6px">'
-   +'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hNy" checked style="width:22px;height:22px;flex:none">Legg ut i Nyheter</label>'
-   +(PUSH_URL?'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hPu" checked style="width:22px;height:22px;flex:none">Send som varsel til telefonene</label>':'')
-   +'</div></fieldset><p class="small" id="hMsg" role="status" style="margin:0"></p>'
-   +'<div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  const hRad=(navn,v,l,x,chk)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="'+navn+'" value="'+esc(v)+'" '+(chk?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(l)+(x||'')+'</label>';
+  const hSteg=(i,h,p,inn)=>'<div class="wizs" data-i="'+i+'" style="display:none;gap:12px"><div><h3 style="margin:0">'+h+'</h3>'+(p?'<p class="small" style="margin:4px 0 0">'+p+'</p>':'')+'</div>'+inn+'</div>';
+  const NAAR=[['na','Send med en gang',null],['lor','Lørdag kl. 12:00',nesteDag(6,12,0)],['son','Søndag kl. 08:00',nesteDag(0,8,0)],['egen','Velg selv',null]];
+  dlg.innerHTML='<div class="small" id="hN" style="margin:0 0 6px"></div><div style="height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:12px"><div id="hBar" style="height:100%;background:var(--lamp);width:0;transition:width .25s"></div></div>'
+   +'<form class="form" method="dialog" novalidate>'
+   +hSteg(0,'Skriv hilsenen','Tittel og melding. Den legges ut i Nyheter og kan sendes som varsel.','<label class="f">Tittel<input id="hT" maxlength="80" value="Pastorens hilsen"></label><label class="f">Melding<textarea id="hB" rows="7" maxlength="3000" placeholder="Skriv hilsenen her …"></textarea></label>')
+   +hSteg(1,'Hvem skal få den?','','<div style="display:grid;gap:8px">'+maal.map((m,i)=>hRad('hMaal',m.v,m.l,' <span class="small">('+hilsenAntall(m.v)+')</span>',i===0)).join('')+'</div>')
+   +hSteg(2,'Når skal den sendes?','','<div style="display:grid;gap:8px">'+NAAR.map(([v,l,d],i)=>hRad('hNaar',v,l,d?' <span class="small">('+esc(kortDato(isoDato(d)))+')</span>':'',i===0)).join('')+'<div id="hEgen" style="display:none;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Dato<input id="hD" type="date" value="'+isoDato(nesteDag(6,12,0))+'"></label><label class="f">Klokkeslett<input id="hK" type="time" value="12:00"></label></div></div>')
+   +hSteg(3,'Slik sendes den','Sjekk at alt stemmer før du sender.','<div style="display:grid;gap:8px"><label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hNy" checked style="width:22px;height:22px;flex:none">Legg ut i Nyheter</label>'+(PUSH_URL?'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hPu" checked style="width:22px;height:22px;flex:none">Send som varsel til telefonene</label>':'')+'</div><div id="hSum" class="card" style="background:var(--bg);display:grid;gap:4px;font-size:15px"></div>')
+   +'<p class="small" id="hMsg" role="status" style="margin:0"></p>'
+   +'<div class="btns" style="margin-top:6px"><button class="btn" type="button" id="hBack">Tilbake</button><button class="btn primary" type="button" id="hNext" style="width:auto">Neste</button><button class="btn primary" value="send" id="hGo" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('change',e=>{if(e.target.name==='hNaar')dlg.querySelector('#hEgen').style.display=e.target.value==='egen'?'grid':'none'});
+  {const N=4,f=dlg.querySelector('form'),msg0=t=>{dlg.querySelector('#hMsg').textContent=t};let cur=0;
+    const sum=()=>{const v=f.querySelector('[name=hMaal]:checked').value,m=maal.find(x=>x.v===v),naar=f.querySelector('[name=hNaar]:checked').value,nt=NAAR.find(x=>x[0]===naar),dd=f.querySelector('#hD').value,kk=f.querySelector('#hK').value;
+      const rad=(a,b)=>'<div><span class="small">'+esc(a)+':</span> <b>'+esc(b)+'</b></div>',kanal=[f.querySelector('#hNy').checked?'Nyheter':'',f.querySelector('#hPu')&&f.querySelector('#hPu').checked?'varsel':''].filter(Boolean).join(' og ');
+      dlg.querySelector('#hSum').innerHTML=rad('Tittel',f.querySelector('#hT').value.trim())+rad('Til',m.l+' ('+hilsenAntall(v)+')')+rad('Når',naar==='egen'?(dd&&kk?fmtDT(new Date(dd+'T'+kk).getTime()):'velg dato og tid'):nt[1])+rad('Hvordan',kanal||'ikke valgt')};
+    const vis=i=>{cur=i;f.querySelectorAll('.wizs').forEach(e=>e.style.display=(+e.dataset.i===i)?'grid':'none');
+      dlg.querySelector('#hN').textContent='Steg '+(i+1)+' av '+N;dlg.querySelector('#hBar').style.width=((i+1)/N*100)+'%';
+      dlg.querySelector('#hBack').style.display=i?'':'none';dlg.querySelector('#hNext').style.display=i<N-1?'':'none';dlg.querySelector('#hGo').style.display=i===N-1?'':'none';
+      if(i===N-1)sum();msg0('')};
+    const ok=()=>{
+      if(cur===0&&(!f.querySelector('#hT').value.trim()||!f.querySelector('#hB').value.trim())){msg0('Skriv både tittel og melding.');return false}
+      if(cur===2&&f.querySelector('[name=hNaar]:checked').value==='egen'&&!(f.querySelector('#hD').value&&f.querySelector('#hK').value)){msg0('Velg dato og klokkeslett.');return false}
+      return true};
+    dlg.querySelector('#hNext').addEventListener('click',()=>{if(ok())vis(cur+1)});
+    dlg.querySelector('#hBack').addEventListener('click',()=>vis(cur-1));
+    f.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();if(cur<N-1&&ok())vis(cur+1)}});
+    f.addEventListener('change',()=>{if(cur===N-1)sum()});
+    vis(0)}
   dlg.querySelector('form').addEventListener('submit',async e=>{
     if(!e.submitter||e.submitter.value!=='send')return;
     e.preventDefault();
