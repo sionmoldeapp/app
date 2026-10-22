@@ -666,9 +666,9 @@ function viktigKort(p){
   if(!viktigVist[p.id]){viktigVist[p.id]=1;setTimeout(viktigInn,0)}
   const tekst=String(p.b||'').replace(/\s+/g,' ').trim();
   const open=!!state.open['v_'+p.id];
-  return '<div class="viktig'+(open?' open':'')+'" data-viktig="'+esc(p.id)+'" role="button" aria-expanded="'+open+'" tabindex="0" aria-label="Viktig: '+esc(p.t)+'">'
+  return '<div class="viktig'+(open?' open':'')+'" data-viktig="'+esc(p.id)+'" role="button" aria-expanded="'+open+'" tabindex="0" aria-label="Nyhet: '+esc(p.t)+'">'
    +'<div class="vik-ikon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div>'
-   +'<div class="vik-innhold"><div class="vik-meta"><span><b>Viktig</b>'+(ago(p)?' · '+esc(ago(p)):'')+'</span><button type="button" class="vik-x" data-viktigx="'+esc(p.id)+'" aria-label="Skjul meldingen">✕</button></div>'
+   +'<div class="vik-innhold"><div class="vik-meta"><span><b>Nyheter</b>'+(ago(p)?' · '+esc(ago(p)):'')+'</span><button type="button" class="vik-x" data-viktigx="'+esc(p.id)+'" aria-label="Skjul meldingen">✕</button></div>'
    +'<div class="vik-tittel">'+esc(p.t)+'</div><div class="vik-tekst'+(p.bh?' rt':'')+'">'+(open?richVis(p):esc(tekst))+'</div></div>'
    +'<svg class="vik-pil" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>'}
 /* Linjen på «Neste hovedsamling»: hvor lenge til, dag og dato og klokkeslett, for eksempel «Om 3 dager · Søndag 25. okt kl. 12:00». */
@@ -684,18 +684,13 @@ function homeDeler(){
     if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:inf.place}}}
   const wk=[...vis.slice(0,5).map(e=>({ev:e,w:e.w,id:e.id})),...fast.map(f=>({fast:f.fast,w:f.w,ex:f.ex,id:fastId(f.fast,f.w)}))].filter(x=>!(n&&x.id===n.id)).sort((a,b)=>a.w-b.w).slice(0,4);
   let post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
-  {const vv=sisteVarsel();
-    if(vv){
-      const hore=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)&&p.t===vv.t&&String(p.b||'').replace(/\s+/g,' ').startsWith(String(vv.b||'').replace(/…$/,'').replace(/\s+/g,' ').trim().slice(0,60))).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
-      if(hore)post=hore;   // varselet hører til en melding i appen: vis hele meldingen (varselteksten er avkortet)
-      else if(!post||vv.ms>(post.ms||0)+60000)post=vv}}   // et varsel uten nyhet i appen vises også   // alltid den nyeste, også om en eldre er festet i Nyheter
   return {
    neste:['Neste hovedsamling',()=>(n?`<div class="card next" data-t="prog" role="link" tabindex="0" style="cursor:pointer"><div class="eyebrow">Neste hovedsamling</div><h2>${n.t}</h2>
    <div class="meta">${nesteTid(n)}</div></div>`
   :`<div class="card next" data-t="prog"><div class="eyebrow">Neste hovedsamling</div><h2>Ingen planlagt</h2><div class="meta">Se Program.</div></div>`)],
    velkomst:['Kom i gang',()=>welcomeCard()],
    besok:['Logg inn for å få mer',()=>visitorCard()],
-   viktig:['Viktig',()=>((!state.fast||String(post&&post.id).startsWith('varsel'))&&UI.vk!==false&&post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
+   viktig:['Nyheter',()=>((!state.fast||String(post&&post.id).startsWith('varsel'))&&UI.vk!==false&&post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
    vakter:['Dine vakter',()=>myShiftsCard()],
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${dagListe(wk)}</div><button type="button" class="btn" data-t="prog" style="margin-top:10px">Se hele programmet</button></div>`:'')],
    sommer:['Nyhetsbrev Sommerstevne',()=>UI.sv===false?'':svCard()],
@@ -1790,7 +1785,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 20:12';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 20:16';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
