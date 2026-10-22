@@ -130,6 +130,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin() && (
         (id == 'contact' && request.resource.data.keys().hasOnly(['address', 'hours', 'phone', 'email']))
+        || (id == 'giving' && request.resource.data.keys().hasOnly(['konto', 'bank', 'vipps', 'giro', 'annet'])
+            && request.resource.data.konto is string && request.resource.data.konto.size() <= 40
+            && request.resource.data.annet is string && request.resource.data.annet.size() <= 800
+            && request.resource.data.giro is string && request.resource.data.giro.size() <= 400)
         || (id == 'personvern' && request.resource.data.keys().hasOnly(['text', 'updated'])
             && request.resource.data.text is string && request.resource.data.text.size() <= 20000
             && request.resource.data.updated is string && request.resource.data.updated.size() <= 10));

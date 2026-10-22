@@ -364,10 +364,11 @@ async function pushTall(){   // leser alle varselkoder, så resultatet gjenbruke
 async function load(){
   // Alle forespørslene sendes samtidig (tidligere én og én, og det tok mange sekunder).
   const ok=p=>p.catch(()=>null);
-  const [gr,ca,ko,pv,lt,fr]=await Promise.all([FB?ok(FB.groupsList()):null,FB?ok(FB.catsList()):null,FB?ok(FB.getContact()):null,FB&&state.user?ok(FB.getPrivacy()):null,FB&&state.admin?ok(FB.ltypesList()):null,fetchAll()]);
+  const [gr,ca,ko,gv,pv,lt,fr]=await Promise.all([FB?ok(FB.groupsList()):null,FB?ok(FB.catsList()):null,FB?ok(FB.getContact()):null,FB?ok(FB.getGiving()):null,FB&&state.user?ok(FB.getPrivacy()):null,FB&&state.admin?ok(FB.ltypesList()):null,fetchAll()]);
   if(gr)applyGroups(gr);
   if(ca)applyCats(ca);
   if(ko)state.contact=ko;
+  if(gv)state.giving=gv;
   if(FB&&state.user)state.pv=pv;
   if(lt)applyLtypes(lt);
   bruk(...fr);
@@ -532,6 +533,35 @@ function svAsk(){
 const kartUrl=p=>'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p+', Møre og Romsdal');
 
 const CONTACT_DEF={address:'Kometvegen 7, 6419 Molde',hours:'tirsdag–torsdag kl. 10–16',phone:'71 25 10 29',email:'post@sionmolde.no'};
+/* Givertjeneste: kontonummer, Vipps, Avtalegiro og annen økonomiinformasjon. Administrator endrer (blyanten → Endre). Tomme felt skjules. */
+const GIVING_DEF={konto:'9536 06 40400',bank:'Handelsbanken',vipps:'100349',giro:'',annet:'Brukes til tiende og gaver.'};
+function givingCard(){
+  const g={...GIVING_DEF,...(state.giving||{})},rad=(navn,verdi,kopi)=>'<div class="r" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap"><div class="grow"><span class="small">'+esc(navn)+'</span><b style="display:block;font-size:18px;letter-spacing:.02em">'+esc(verdi)+'</b></div>'+(kopi?'<button type="button" class="btn" data-kopier="'+esc(kopi)+'">Kopier</button>':'')+'</div>',R=[];
+  if(g.konto)R.push(rad('Kontonummer'+(g.bank?' ('+g.bank+')':''),g.konto,g.konto.replace(/ /g,'')));
+  if(g.vipps)R.push(rad('Vipps',g.vipps,g.vipps.replace(/ /g,'')));
+  if(g.giro)R.push('<div class="r" style="display:block"><span class="small">Avtalegiro</span><div style="white-space:pre-line">'+linkify(esc(g.giro))+'</div></div>');
+  if(g.annet)R.push('<div class="r" style="display:block"><div class="small" style="white-space:pre-line">'+linkify(esc(g.annet))+'</div></div>');
+  if(!R.length&&!(state.admin&&editOn()))return '';
+  return '<details class="card acc" data-acc="gi" '+(state.acc.gi?'open':'')+'><summary><h2>Givertjeneste</h2></summary><div class="reg">'+R.join('')+'</div>'+(state.admin&&editOn()?'<div class="btns" style="margin-top:10px"><button class="btn" data-givingedit>Endre</button></div>':'')+'</details>'}
+function givingAsk(){
+  if(!state.admin||document.querySelector('dialog.pub'))return;
+  const g={...GIVING_DEF,...(state.giving||{})},dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Givertjeneste</h3><p class="small" style="margin:0">Dette vises for alle på Hjem. Tomt felt skjules.</p>'
+   +'<label class="f">Kontonummer<input id="gK" inputmode="numeric" maxlength="40" value="'+esc(g.konto||'')+'"></label>'
+   +'<label class="f">Bank<input id="gB" maxlength="40" value="'+esc(g.bank||'')+'"></label>'
+   +'<label class="f">Vippsnummer<input id="gV" inputmode="numeric" maxlength="20" value="'+esc(g.vipps||'')+'"></label>'
+   +'<label class="f">Avtalegiro<textarea id="gG" rows="3" maxlength="400" placeholder="For eksempel hvordan man setter opp fast giro">'+esc(g.giro||'')+'</textarea></label>'
+   +'<label class="f">Annen informasjon om økonomi<textarea id="gA" rows="3" maxlength="800">'+esc(g.annet||'')+'</textarea></label>'
+   +'<p class="small" id="gMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='lagre')return;e.preventDefault();
+    const d={konto:dlg.querySelector('#gK').value.trim(),bank:dlg.querySelector('#gB').value.trim(),vipps:dlg.querySelector('#gV').value.trim(),giro:dlg.querySelector('#gG').value.trim(),annet:dlg.querySelector('#gA').value.trim()};
+    try{await FB.setGiving(d);state.giving=d;dlg.close();state.acc.gi=true;keep(()=>{});push('Lagret','Givertjenesten er oppdatert.')}
+    catch(er){dlg.querySelector('#gMsg').textContent='Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
+  dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+async function kopierTekst(t){
+  try{await navigator.clipboard.writeText(t);push('Kopiert',t)}catch(e){await visTekst('Kopier:',t)}}
 function contactCard(){
   const c={...CONTACT_DEF,...(state.contact||{})},tel=String(c.phone||'').replace(/[^0-9+]/g,''),R=[];
   if(c.address)R.push('Adresse: <a href="'+esc(kartUrl(c.address))+'" target="_blank" rel="noopener">'+esc(c.address)+'</a>');
@@ -720,6 +750,7 @@ function homeDeler(){
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${dagListe(wk)}</div><button type="button" class="btn" data-t="prog" style="margin-top:10px">Se hele programmet</button></div>`:'')],
    sommer:['Nyhetsbrev Sommerstevne',()=>UI.sv===false?'':svCard()],
    bonn:['Forbønn',()=>UI.pr===false?'':prayerCard()],
+   gi:['Givertjeneste',()=>givingCard()],
    finn:['Finn frem',()=>contactCard()]}}
 function home(){
   const fornavn=state.user?String((state.profile&&state.profile.name)||lsGet('sm-navn')||'').trim().split(/ +/)[0]:'';
@@ -1829,7 +1860,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 22:01';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 22:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
@@ -2166,6 +2197,8 @@ document.addEventListener('click',async e=>{
     c.disabled=false}
   else if(c.dataset.prdel){prayDel(c.dataset.prdel)}
   else if('contactedit' in c.dataset){contactAsk()}
+  else if('givingedit' in c.dataset){givingAsk()}
+  else if(c.dataset.kopier){kopierTekst(c.dataset.kopier)}
   else if('pvedit' in c.dataset){pvAsk()}
   else if(c.dataset.atedit){atAsk(c.dataset.atedit)}
   else if('atsave' in c.dataset){
