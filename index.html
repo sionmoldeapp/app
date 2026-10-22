@@ -252,7 +252,22 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .nrad:not(.ulest) .ntit{font-weight:500}
 .nprev{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .nmeta{flex:none;font-size:12px;color:var(--muted);align-self:flex-start;margin-top:2px}
-.ndetalj{padding:0 14px 14px 33px;display:flex;flex-direction:column;gap:8px}
+.ndetalj{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
+.nikon{flex:none;width:40px;height:40px;border-radius:12px;background:var(--chip);color:var(--ink);display:grid;place-items:center;position:relative}
+.nikon .dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border:2px solid var(--surface)}
+.nhero{background:linear-gradient(135deg,#1f62ad 0%,#0d2f52 100%);color:#fff;border-radius:18px;overflow:hidden;box-shadow:0 10px 24px rgba(5,25,50,.22)}
+.nhero-b{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:7px;padding:18px;width:100%;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.nhero-ey{font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.88;display:flex;gap:7px;align-items:center}
+.nhero-ey .dot{background:#ffb454;width:9px;height:9px}
+.nhero-t{font-family:var(--f-display);font-size:30px;text-transform:uppercase;line-height:1.02;letter-spacing:.01em}
+.nhero-p{font-size:14px;line-height:1.45;opacity:.92;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.nhero-mer{font-weight:600;font-size:14px;margin-top:2px}
+.nhero .ndetalj{padding:0 18px 18px;color:#fff}
+.nhero .pbody{color:#fff;font-size:15px}
+.nhero .pbody a,.nhero .pbody .pt a{color:#bfe0ff}
+.nhero .small{color:rgba(255,255,255,.78)}
+.nhero .tag{background:rgba(255,255,255,.18);color:#fff}
+.nhero .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
 .ndetalj .head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .nrad.open .ntit{white-space:normal}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--lamp);flex:none}
@@ -802,10 +817,17 @@ const lagreLest=()=>{try{localStorage.setItem('sm-lest',JSON.stringify(lest))}ca
 const markLest=id=>{if(!lest[id]){lest[id]=1;lagreLest()}};
 const ulest=p=>!!(p.ms&&p.ms>lestFra&&!lest[p.id]&&!(p.m&&!state.member));
 const postEtiketter=p=>p.groups&&p.groups.length?p.groups.map(gName):(p.audience&&p.audience.length?p.audience:[p.tag||'Alle']);
-function nyhKort(p){
+/* Ikon på nyhetsraden: hjerte for hilsener, ellers en avis. */
+const nyhIkon=p=>/hilsen/i.test(p.t)
+  ?'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>'
+  :'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2M8 9h6M8 13h6"/></svg>';
+function nyhKort(p,hero){
   if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
   const open=!!state.open['p_'+p.id],u=ulest(p),fest=p.pinned&&(effAdmin()||(effLeder()&&state.ltype==='forkynner')),tekst=String(p.b||'').replace(/\s+/g,' ').trim();
-  return `<div class="nrad ${open?'open':''} ${u?'ulest':''}"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><button type="button" class="nhode ptitle" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="ndot">${u?'<span class="dot" title="Ulest"></span>':''}</span><span class="ntekst"><b class="ntit">${fest?'📌 ':''}${esc(p.t)}</b>${open?'':`<span class="nprev">${esc(tekst)}</span>`}</span><span class="nmeta">${esc(ago(p))}</span></button>${open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open"><span class="pt${p.bh?' rt':''}">${richVis(p)}</span></div>${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:''}</div>`}
+  const detalj=open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open"><span class="pt${p.bh?' rt':''}">${richVis(p)}</span></div>${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:'';
+  const lp=state.admin&&editOn()?` data-lp="posts:${p.id}"`:'';
+  if(hero)return `<div class="nhero ${open?'open':''}"${lp}><button type="button" class="nhero-b" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="nhero-ey">${u?'<span class="dot" title="Ulest"></span>':''}Siste nytt · ${esc(ago(p))}</span><span class="nhero-t">${fest?'📌 ':''}${esc(p.t)}</span>${open?'':`<span class="nhero-p">${esc(tekst)}</span><span class="nhero-mer">Les mer ›</span>`}</button>${detalj}</div>`;
+  return `<div class="nrad ${open?'open':''} ${u?'ulest':''}"${lp}><button type="button" class="nhode ptitle" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="nikon">${nyhIkon(p)}${u?'<span class="dot" title="Ulest"></span>':''}</span><span class="ntekst"><b class="ntit">${fest?'📌 ':''}${esc(p.t)}</b>${open?'':`<span class="nprev">${esc(tekst)}</span>`}</span><span class="nmeta">${esc(ago(p))}</span></button>${detalj}</div>`}
 function nyhGruppe(p){
   if(p.pinned)return 0;
   if(!p.ms)return 3;
@@ -822,8 +844,9 @@ function nyhFiltrert(l){
 function nyhListe(l){
   const alle=nyhFiltrert(l),søk=!!(state.nyq||'').trim(),n=søk?alle.length:(state.nyhN||NYH_SIDE),vis=alle.slice(0,n);
   if(!vis.length)return '<p class="small">'+(søk?'Ingen treff på «'+esc(state.nyq)+'».':(state.nf==='Uleste'?'Du har lest alt.':'Ingen nyheter ennå.'))+'</p>';
-  let ut='',sist=-1;
-  vis.forEach(p=>{const g=nyhGruppe(p);if(g!==sist){ut+='<div class="day">'+NYH_TITLER[g]+'</div>';sist=g}ut+=nyhKort(p)});
+  let ut='',sist=-1,rest=vis;
+  if(!søk&&(state.nf||'Alle')==='Alle'&&!(vis[0].m&&!state.member)){ut+=nyhKort(vis[0],true);rest=vis.slice(1)}   // den nyeste står som en stor hovedsak
+  rest.forEach(p=>{const g=nyhGruppe(p);if(g!==sist){ut+='<div class="day">'+NYH_TITLER[g]+'</div>';sist=g}ut+=nyhKort(p)});
   return ut+(alle.length>n?'<button class="btn" data-nyhmore style="margin-top:4px">Vis eldre ('+(alle.length-n)+')</button>':'')}
 function news(){
   if(state.fast)return '<h1>Nyheter</h1><p class="small">Laster …</p>';
@@ -1806,7 +1829,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='22.10.2026 kl. 21:52';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='22.10.2026 kl. 22:01';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
