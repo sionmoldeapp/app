@@ -195,6 +195,9 @@ textarea{resize:none;padding-bottom:36px;min-height:70px}
 .ned{min-height:140px;height:260px;max-height:80vh;overflow:auto;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);line-height:1.5;outline:none;font-family:inherit;font-size:16px}
 .ned:focus{border-color:var(--lamp)}
 .ned{padding-bottom:36px}
+.rt font[size="2"]{font-size:.85em}.rt font[size="3"]{font-size:1em}.rt font[size="4"]{font-size:1.2em}.rt font[size="5"]{font-size:1.4em}.rt font[size="6"]{font-size:1.8em}
+.pbody .pt.rt,.viktig.open .vik-tekst.rt{white-space:normal}
+.ned.rt-ed{height:200px}
 .ned font[size="2"]{font-size:.85em}.ned font[size="3"]{font-size:1em}.ned font[size="4"]{font-size:1.2em}.ned font[size="5"]{font-size:1.4em}.ned font[size="6"]{font-size:1.8em}
 dialog.lp::backdrop{background:rgba(5,20,40,.55)}
 dialog.pub{max-height:88vh;overflow:auto;width:min(94vw,440px)}
@@ -619,7 +622,7 @@ function viktigKort(p){
   return '<div class="viktig'+(open?' open':'')+'" data-viktig="'+esc(p.id)+'" role="button" aria-expanded="'+open+'" tabindex="0" aria-label="Viktig: '+esc(p.t)+'">'
    +'<div class="vik-ikon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div>'
    +'<div class="vik-innhold"><div class="vik-meta"><span><b>Viktig</b>'+(ago(p)?' · '+esc(ago(p)):'')+'</span><button type="button" class="vik-x" data-viktigx="'+esc(p.id)+'" aria-label="Skjul meldingen">✕</button></div>'
-   +'<div class="vik-tittel">'+esc(p.t)+'</div><div class="vik-tekst">'+(open?linkify(esc(String(p.b||''))):esc(tekst))+'</div></div>'
+   +'<div class="vik-tittel">'+esc(p.t)+'</div><div class="vik-tekst'+(p.bh?' rt':'')+'">'+(open?richVis(p):esc(tekst))+'</div></div>'
    +'<svg class="vik-pil" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>'}
 function homeDeler(){
   const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome), n=vis[0];
@@ -628,7 +631,7 @@ function homeDeler(){
   let post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
   {const vv=sisteVarsel();
     if(vv){
-      const hore=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)&&p.t===vv.t&&String(p.b||'').replace(/s+/g,' ').startsWith(String(vv.b||'').replace(/…$/,'').replace(/s+/g,' ').trim().slice(0,60))).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
+      const hore=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)&&p.t===vv.t&&String(p.b||'').replace(/\s+/g,' ').startsWith(String(vv.b||'').replace(/…$/,'').replace(/\s+/g,' ').trim().slice(0,60))).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
       if(hore)post=hore;   // varselet hører til en melding i appen: vis hele meldingen (varselteksten er avkortet)
       else if(!post||vv.ms>(post.ms||0)+60000)post=vv}}   // et varsel uten nyhet i appen vises også   // alltid den nyeste, også om en eldre er festet i Nyheter
   return {
@@ -718,7 +721,7 @@ const postEtiketter=p=>p.groups&&p.groups.length?p.groups.map(gName):(p.audience
 function nyhKort(p){
   if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
   const open=!!state.open['p_'+p.id],u=ulest(p),fest=p.pinned&&(effAdmin()||(effLeder()&&state.ltype==='forkynner')),tekst=String(p.b||'').replace(/\s+/g,' ').trim();
-  return `<div class="nrad ${open?'open':''} ${u?'ulest':''}"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><button type="button" class="nhode ptitle" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="ndot">${u?'<span class="dot" title="Ulest"></span>':''}</span><span class="ntekst"><b class="ntit">${fest?'📌 ':''}${esc(p.t)}</b>${open?'':`<span class="nprev">${esc(tekst)}</span>`}</span><span class="nmeta">${esc(ago(p))}</span></button>${open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open"><span class="pt">${linkify(esc(p.b))}</span></div>${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:''}</div>`}
+  return `<div class="nrad ${open?'open':''} ${u?'ulest':''}"${state.admin&&editOn()?` data-lp="posts:${p.id}"`:''}><button type="button" class="nhode ptitle" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="ndot">${u?'<span class="dot" title="Ulest"></span>':''}</span><span class="ntekst"><b class="ntit">${fest?'📌 ':''}${esc(p.t)}</b>${open?'':`<span class="nprev">${esc(tekst)}</span>`}</span><span class="nmeta">${esc(ago(p))}</span></button>${open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open"><span class="pt${p.bh?' rt':''}">${richVis(p)}</span></div>${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:''}</div>`}
 function nyhGruppe(p){
   if(p.pinned)return 0;
   if(!p.ms)return 3;
@@ -828,7 +831,7 @@ const PLACES=['Kometvegen 7','Åndalsnes','Eidsvåg','Eide','Tingvoll'],TIMES=['
 /* [felt, etikett, type, valg, type på feltet for «Annet»]. Stjerne etter typen betyr obligatorisk. */
 const FIELDS={
  events:[['title','Tittel','text*'],['start','Startdato','date*'],['end','Sluttdato (bare for flere dager)','date'],['time','Klokkeslett','combo',TIMES,'time'],['place','Sted','combo',PLACES,'text'],['who','Taler eller hvem','text'],['text','Beskrivelse','area'],['cat','Kategori','sel',CATS],['groups','Gruppe (valgfritt). Bare medlemmer i valgte grupper og administratorer ser arrangementet','multi',GR_IDS],['m','Bare for medlemmer','chk'],['remindH','Påminnelse til medlemmene i gruppen (gjelder grupper med automatisk påminnelse)','sel',[24,48,3,1,0]],['hideHome','Ikke vis på Hjem (vises fortsatt i Program)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk']],
- posts:[['t','Tittel','text*'],['b','Melding','area*'],['audience','Målgruppe','multi',['Alle','Medlem',...GR_IDS]],['pinned','Fest øverst i Nyheter (står først uansett når den ble lagt ut)','chk'],['hideHome','Ikke vis på Hjem (vises fortsatt i Nyheter)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['expireAt','Skjul etter (valgfritt)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk'],['push','Send også som varsel til telefonene (ved planlagt visning sendes det på det tidspunktet)','chk']],
+ posts:[['t','Tittel','text*'],['b','Melding','rich*'],['audience','Målgruppe','multi',['Alle','Medlem',...GR_IDS]],['pinned','Fest øverst i Nyheter (står først uansett når den ble lagt ut)','chk'],['hideHome','Ikke vis på Hjem (vises fortsatt i Nyheter)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['expireAt','Skjul etter (valgfritt)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk'],['push','Send også som varsel til telefonene (ved planlagt visning sendes det på det tidspunktet)','chk']],
  regular:[['title','Tittel','text*'],['day','Ukedag','sel',[1,2,3,4,5,6,0]],['time','Klokkeslett','combo*',TIMES,'time'],['note','Merknad','text'],['cat','Kategori','sel',CATS]]};
 const COL={events:'events',posts:'posts',regular:'regular'};
 const REMIND_OPT={24:'Dagen før (ett døgn før)',48:'To dager før',3:'3 timer før',1:'1 time før',0:'Ingen påminnelse'};
@@ -843,6 +846,7 @@ function fields(t,ed,only){return FIELDS[t].filter(f=>(!only||only.includes(f[0]
     const nm=x=>x==='Alle'?'Alle (åpen for alle)':x==='Medlem'?'Bare medlemmer (innloggede)':gLabel(x);
     const tips=!state.admin?'Velg minst én av gruppene du leder. Bare medlemmer i gruppene og administratorer ser innholdet.':isAud?'Velger du ingenting, blir nyheten åpen for alle. «Bare medlemmer» krever innlogging. Velger du grupper, er det bare medlemmer i de gruppene (og administratorer) som ser nyheten.':'Velger du ingen grupper, gjelder arrangementet alle.';
     return `<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:14px;margin-bottom:4px">${l}</legend>${(state.admin?(isAud?['Alle','Medlem',...GR_IDS]:GR_IDS):myGroupOptions()).map(x=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="${k}" value="${x}" style="width:22px;height:22px;flex:none" ${cur.includes(x)?'checked':''}>${esc(nm(x))}</label>`).join('')}<span class="small">${tips}</span></fieldset>`}
+  if(b==='rich')return richBox('',richFra(ed),l);
   if(b==='area')return `<label class="f">${l}<textarea name="${k}" rows="3" ${req?'required':''}>${esc(v)}</textarea></label>`;
   if(b==='sel')return `<label class="f">${l}<select name="${k}">${(k==='cat'?allCats():o).map(x=>`<option value="${x}" ${String(v==null?o[0]:(k==='cat'?normCat(v):v))===String(x)?'selected':''}>${k==='day'?cap(DAYS[x]):k==='remindH'?REMIND_OPT[x]:x}</option>`).join('')}</select></label>`;
   if(b==='chk')return `<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="${k}" style="width:auto" ${v?'checked':''}>${l}</label>`;
@@ -1087,6 +1091,48 @@ function sanitizeNote(html){
     walk(c)})};
   walk(t.content);
   return t.innerHTML.slice(0,19000)}
+/* Rik tekst (fet, kursiv og tekststørrelse) til nyheter og Pastorens hilsen, med samme verktøy og rensing som møtenotatene.
+   En melding lagres som ren tekst (b: søk, varsel, forhåndsvisning) og som renset HTML (bh: visningen). */
+const RT_TRINN=[2,3,5,6];
+function richBox(id,html,label){
+  return '<div class="f rt-wrap" role="group" aria-label="'+esc(label)+'"><span style="font-weight:600;font-size:14px">'+esc(label)+'</span>'
+   +'<div class="ntools" role="toolbar" aria-label="Tekstverktøy"><button type="button" class="btn" data-rcmd="bold" aria-label="Fet"><b>B</b></button><button type="button" class="btn" data-rcmd="italic" aria-label="Kursiv"><i>I</i></button>'
+   +'<span class="nsep"></span><button type="button" class="btn" data-rsize="-1" aria-label="Mindre tekst" style="font-size:13px;font-weight:700">A</button><input type="range" class="nslide rt-slide" min="0" max="3" step="1" value="1" aria-label="Tekststørrelse: dra til høyre for større og til venstre for mindre"><button type="button" class="btn" data-rsize="1" aria-label="Større tekst" style="font-size:22px;font-weight:700;line-height:1">A</button></div>'
+   +'<div class="ned rt-ed" data-rich '+(id?'id="'+id+'" ':'')+'contenteditable="true" role="textbox" aria-multiline="true" aria-label="'+esc(label)+'">'+html+'</div></div>'}
+const richFra=p=>p&&p.bh?sanitizeNote(p.bh):esc(String(p&&p.b||'')).replace(/\n/g,'<br>');
+const richPlain=el=>noteLinjer(el.innerHTML),richHtml=el=>sanitizeNote(el.innerHTML);
+function richLinks(html){
+  const t=document.createElement('template');t.innerHTML=html;
+  const w=document.createTreeWalker(t.content,NodeFilter.SHOW_TEXT),l=[];while(w.nextNode())l.push(w.currentNode);
+  l.forEach(n=>{const e=esc(n.textContent),h=linkify(e);if(h!==e){const x=document.createElement('template');x.innerHTML=h;n.replaceWith(x.content)}});
+  return t.innerHTML}
+const richVis=p=>p.bh?richLinks(sanitizeNote(p.bh)):linkify(esc(String(p.b||'')));
+{ const rng=new WeakMap(),el0=n=>n&&(n.nodeType===1?n:n.parentElement);
+  const trinn=()=>{let v=parseInt(document.queryCommandValue('fontSize'),10);if(!(v>=1&&v<=7))v=3;const i=RT_TRINN.findIndex(x=>x>=v);return i<0?3:i};
+  const sync=()=>{
+    const sl=getSelection();if(!sl.rangeCount)return;const e=el0(sl.anchorNode),ed=e&&e.closest&&e.closest('[data-rich]');if(!ed)return;
+    const w=ed.closest('.rt-wrap');try{rng.set(w,sl.getRangeAt(0).cloneRange())}catch(x){}
+    ['bold','italic'].forEach(c=>{let on=false;try{on=document.queryCommandState(c)}catch(x){}const b=w.querySelector('[data-rcmd='+c+']');if(b){b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))}});
+    const gl=w.querySelector('.rt-slide');if(gl&&!w.dataset.drar&&document.activeElement!==gl)gl.value=String(trinn())};
+  document.addEventListener('selectionchange',sync);
+  document.addEventListener('focusin',e=>{if(e.target.closest&&e.target.closest('[data-rich]')){try{document.execCommand('styleWithCSS',false,false)}catch(x){}}});
+  document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('.rt-wrap .ntools button'))e.preventDefault()});
+  document.addEventListener('click',e=>{
+    const c=e.target.closest&&e.target.closest('[data-rcmd]'),z=e.target.closest&&e.target.closest('[data-rsize]');if(!c&&!z)return;
+    const w=(c||z).closest('.rt-wrap'),ed=w.querySelector('[data-rich]');ed.focus();
+    if(c)document.execCommand(c.dataset.rcmd,false,null);
+    else{const n=Math.max(0,Math.min(3,trinn()+parseInt(z.dataset.rsize,10)));document.execCommand('fontSize',false,String(RT_TRINN[n]))}
+    sync()});
+  ['pointerdown','touchstart','mousedown'].forEach(n=>document.addEventListener(n,e=>{const g=e.target.closest&&e.target.closest('.rt-slide');if(g)g.closest('.rt-wrap').dataset.drar='1'},true));
+  ['pointerup','pointercancel','touchend','touchcancel','mouseup'].forEach(n=>document.addEventListener(n,()=>{setTimeout(()=>{document.querySelectorAll('.rt-wrap[data-drar]').forEach(w=>delete w.dataset.drar)},250)}));
+  document.addEventListener('input',e=>{
+    const g=e.target.closest&&e.target.closest('.rt-slide');if(!g)return;
+    const w=g.closest('.rt-wrap'),ed=w.querySelector('[data-rich]'),r=rng.get(w);
+    if(r){const sl=getSelection();sl.removeAllRanges();sl.addRange(r)}
+    ed.focus({preventScroll:true});document.execCommand('fontSize',false,String(RT_TRINN[+g.value]));
+    try{const sl=getSelection();if(sl.rangeCount)rng.set(w,sl.getRangeAt(0).cloneRange())}catch(x){}});
+  document.addEventListener('paste',e=>{if(e.target.closest&&e.target.closest('[data-rich]')){e.preventDefault();const t=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,t)}});
+  document.addEventListener('drop',e=>{if(e.target.closest&&e.target.closest('[data-rich]'))e.preventDefault()}) }
 const noteLinjer=h=>{const d=document.createElement('div');d.innerHTML=sanitizeNote(h).replace(/<br\s*\/?>/gi,'\n').replace(/<(div|p)(\s[^>]*)?>/gi,'\n$&').replace(/<\/(div|p)>/gi,'\n');return (d.textContent||'').split('\n').map(x=>x.replace(/\s+/g,' ').trim()).join('\n').replace(/\n{3,}/g,'\n\n').trim()};
 const noteText=h=>{const d=document.createElement('div');d.innerHTML=sanitizeNote(h);return (d.innerText||d.textContent||'').replace(/\s+/g,' ').trim()};
 function notesCard(){
@@ -1349,7 +1395,7 @@ function hilsenAsk(){
   const NAAR=[['na','Send med en gang',null],['lor','Lørdag kl. 12:00',nesteDag(6,12,0)],['son','Søndag kl. 08:00',nesteDag(0,8,0)],['egen','Velg selv',null]];
   dlg.innerHTML='<div class="small" id="hN" style="margin:0 0 6px"></div><div style="height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:12px"><div id="hBar" style="height:100%;background:var(--lamp);width:0;transition:width .25s"></div></div>'
    +'<form class="form" method="dialog" novalidate>'
-   +hSteg(0,'Skriv hilsenen','Tittel og melding. Den legges ut i Nyheter og kan sendes som varsel.','<label class="f">Tittel<input id="hT" maxlength="80" value="Pastorens hilsen"></label><label class="f">Melding<textarea id="hB" rows="7" maxlength="3000" placeholder="Skriv hilsenen her …"></textarea></label>')
+   +hSteg(0,'Skriv hilsenen','Tittel og melding. Den legges ut i Nyheter og kan sendes som varsel.','<label class="f">Tittel<input id="hT" maxlength="80" value="Pastorens hilsen"></label>'+richBox('hB','','Melding')+'')
    +hSteg(1,'Hvem skal få den?','Du kan velge flere. Den som er med i flere av dem får bare én melding.','<div style="display:grid;gap:8px" id="hMaalBox">'+maal.map((m,i)=>hRad('hMaal',m.v,m.l,' <span class="small">('+hilsenAntall([m.v])+')</span>',i===0).replace('type="radio"','type="checkbox"')).join('')+'</div><p class="small" id="hAntall" style="margin:0"></p>')
    +hSteg(2,'Når skal den sendes?','','<div style="display:grid;gap:8px">'+NAAR.map(([v,l,d],i)=>hRad('hNaar',v,l,d?' <span class="small">('+esc(kortDato(isoDato(d)))+')</span>':'',i===0)).join('')+'<div id="hEgen" style="display:none;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Dato<input id="hD" type="date" value="'+isoDato(nesteDag(6,12,0))+'"></label><label class="f">Klokkeslett<input id="hK" type="time" value="12:00"></label></div></div>')
    +hSteg(3,'Slik sendes den','Sjekk at alt stemmer før du sender.','<div style="display:grid;gap:8px"><label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hNy" checked style="width:22px;height:22px;flex:none">Legg ut i Nyheter</label>'+(PUSH_URL?'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hPu" checked style="width:22px;height:22px;flex:none">Send som varsel til telefonene</label>':'')+'</div><div id="hSum" class="card" style="background:var(--bg);display:grid;gap:4px;font-size:15px"></div>')
@@ -1370,13 +1416,13 @@ function hilsenAsk(){
       dlg.querySelector('#hBack').style.display=i?'':'none';dlg.querySelector('#hNext').style.display=i<N-1?'':'none';dlg.querySelector('#hGo').style.display=i===N-1?'':'none';
       if(i===N-1)sum();msg0('')};
     const ok=()=>{
-      if(cur===0&&(!f.querySelector('#hT').value.trim()||!f.querySelector('#hB').value.trim())){msg0('Skriv både tittel og melding.');return false}
+      if(cur===0&&(!f.querySelector('#hT').value.trim()||!richPlain(f.querySelector('#hB')))){msg0('Skriv både tittel og melding.');return false}
       if(cur===1&&!valgt().length){msg0('Velg minst én mottaker.');return false}
       if(cur===2&&f.querySelector('[name=hNaar]:checked').value==='egen'&&!(f.querySelector('#hD').value&&f.querySelector('#hK').value)){msg0('Velg dato og klokkeslett.');return false}
       return true};
     dlg.querySelector('#hNext').addEventListener('click',()=>{if(ok())vis(cur+1)});
     dlg.querySelector('#hBack').addEventListener('click',()=>vis(cur-1));
-    f.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'){e.preventDefault();if(cur<N-1&&ok())vis(cur+1)}});
+    f.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName!=='TEXTAREA'&&!e.target.isContentEditable){e.preventDefault();if(cur<N-1&&ok())vis(cur+1)}});
     f.addEventListener('change',()=>{if(cur===N-1)sum()});
     f.querySelector('[name=hMaal]').dispatchEvent(new Event('change',{bubbles:true}));
     vis(0)}
@@ -1384,7 +1430,7 @@ function hilsenAsk(){
     if(!e.submitter||e.submitter.value!=='send')return;
     e.preventDefault();
     const msg=t=>{dlg.querySelector('#hMsg').textContent=t};
-    const tittel=dlg.querySelector('#hT').value.trim(),tekst=dlg.querySelector('#hB').value.trim(),vs=[...dlg.querySelectorAll('[name=hMaal]:checked')].map(x=>x.value);
+    const tittel=dlg.querySelector('#hT').value.trim(),tekst=richPlain(dlg.querySelector('#hB')).slice(0,3000),vs=[...dlg.querySelectorAll('[name=hMaal]:checked')].map(x=>x.value);
     const ny=dlg.querySelector('#hNy').checked,pu=!!dlg.querySelector('#hPu')&&dlg.querySelector('#hPu').checked;
     if(!tittel||!tekst){msg('Skriv både tittel og melding.');return}
     if(!vs.length){msg('Velg minst én mottaker.');return}
@@ -1401,7 +1447,7 @@ function hilsenAsk(){
     try{
       if(pu&&fire){try{const ref=await FB.addScheduled({title:tittel.slice(0,100),body:kortTekst(tekst),tab:'home',malType:mal.type,groups:mal.groups||[],ltypes:mal.ltypes||[],kopi:true,fireAt:fire});schedId=ref.id;res.push('Varselet sendes '+fmtDT(fire)+', og du får en kopi.')}catch(x){res.push('Varselet kunne ikke planlegges ('+((x&&x.code)||'feil')+'). Er reglene publisert?')}}
       if(ny){
-        await FB.add('posts',{t:tittel,b:tekst,audience:grV.length&&!ltV.length?grV:['Medlem'],groups:grV,ltypes:ltV,tag:alleV?'Medlem':vs.map(x=>maal.find(y=>y.v===x).l.replace(/^Bare /,'').replace(/^./,c=>c.toUpperCase())).join(' · '),m:true,hideHome:false,...(fire?{pubAt:fire}:{}),...(schedId?{schedId}:{}),expireAt:(fire||Date.now())+5*864e5});
+        await FB.add('posts',{t:tittel,b:tekst,bh:richHtml(dlg.querySelector('#hB')),audience:grV.length&&!ltV.length?grV:['Medlem'],groups:grV,ltypes:ltV,tag:alleV?'Medlem':vs.map(x=>maal.find(y=>y.v===x).l.replace(/^Bare /,'').replace(/^./,c=>c.toUpperCase())).join(' · '),m:true,hideHome:false,...(fire?{pubAt:fire}:{}),...(schedId?{schedId}:{}),expireAt:(fire||Date.now())+5*864e5});
         res.push(fire?'Legges ut i Nyheter '+fmtDT(fire)+'.':'Lagt ut i Nyheter.')}
       if(pu&&!fire){try{const r=await FB.sendPush(PUSH_URL,tittel,kortTekst(tekst),'home',mal,true);res.push(r.ok?'Varsel sendt til '+r.sendt+' av '+r.enheter+' enheter (inkludert din kopi).':'Varsel ikke sendt: '+r.feil)}catch(x){res.push('Varselet kunne ikke sendes.')}}
       dlg.close();await refresh();push(fire?'Pastorens hilsen er planlagt':'Pastorens hilsen er sendt',res.join(' '));state.hilsenMsg=res.join(' ')}
@@ -2249,6 +2295,7 @@ document.addEventListener('submit',async e=>{
   else if(f.id==='adm'){e.preventDefault();
     const t=f.dataset.type,fd=new FormData(f),d={};
     FIELDS[t].forEach(([k,,ty])=>{const b=ty.replace('*','');d[k]=b==='multi'?fd.getAll(k):b==='combo'?(fd.get(k+'Sel')==='__annet'?String(fd.get(k)||'').trim():fd.get(k+'Sel')):b==='chk'?fd.has(k):(k==='day'||k==='remindH')?+fd.get(k):String(fd.get(k)||'').trim()});
+    if(t==='posts'){const re=f.querySelector('[data-rich]');if(re){d.bh=richHtml(re);d.b=richPlain(re).slice(0,3000);if(!d.b){keep(()=>state.msg='Skriv en melding.');return}}}
     const wantPush=t==='posts'&&!!d.push&&!d.draft;if(t==='posts')delete d.push;
     if('pubAt' in d)d.pubAt=d.pubAt?new Date(d.pubAt).getTime():0;
     if('expireAt' in d)d.expireAt=d.expireAt?new Date(d.expireAt).getTime():0;
@@ -2355,7 +2402,7 @@ function wizStart(dlg,t){
   const feil=m=>{state.msg=m;$('#pubMsg').textContent=m};
   const ok=()=>{
     const cs=f.querySelector('select[name=cat]');
-    if(cur===0&&cs&&cs.value==='__ny'){const nm=f.querySelector('#newCat').value.trim().replace(/s+/g,' ');if(!nm){feil('Skriv navn på den nye kategorien.');return false}
+    if(cur===0&&cs&&cs.value==='__ny'){const nm=f.querySelector('#newCat').value.trim().replace(/\s+/g,' ');if(!nm){feil('Skriv navn på den nye kategorien.');return false}
       const fin=allCats().find(c=>c.toLowerCase()===nm.toLowerCase());
       if(fin)cs.value=fin;else{const op=document.createElement('option');op.value=op.textContent=nm;cs.insertBefore(op,cs.querySelector('[value=__ny]'));cs.value=nm}
       f.querySelector('#newCat').closest('label').style.display='none'}
