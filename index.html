@@ -1339,7 +1339,8 @@ function hilsenAntall(vs){
   const lt=vs.filter(v=>v.startsWith('lt:')).map(v=>v.slice(3)),gr=vs.filter(v=>v.startsWith('gr:')).map(v=>v.slice(3));
   return u.filter(x=>(x.leder&&lt.includes(ltOf(x)))||gr.some(g=>(x.groups||[]).includes(g)||(x.leads||[]).includes(g))).length}   // hver person telles og får meldingen bare én gang
 const nesteDag=(dow,h,mi)=>{const d=new Date();d.setHours(h,mi,0,0);let add=(dow-d.getDay()+7)%7;if(add===0&&d<=new Date())add=7;d.setDate(d.getDate()+add);return d};
-const kortTekst=t=>t.length>200?t.slice(0,199).trimEnd()+'…':t;
+const VARSEL_MAKS=1000;   // samme grense som i varsel-script.gs (v31)
+const kortTekst=t=>t.length>VARSEL_MAKS?t.slice(0,VARSEL_MAKS-1).trimEnd()+'…':t;
 function hilsenAsk(){
   if(document.querySelector('dialog.pub')||!state.admin)return;
   const maal=hilsenMaal(),dlg=document.createElement('dialog');dlg.className='lp pub';
@@ -1689,8 +1690,8 @@ function pushAdmin(){
   return `<details class="card acc" data-acc="sendvarsel" ${state.acc.sendvarsel?'open':''}><summary><h2>Send varsel</h2></summary>
   <p class="small" style="margin:0 0 10px">Skriv ikke noe sensitivt, for varselet kan vises på låst skjerm. Varsler til medlemmer og grupper når bare dem som er innlogget og har slått på varsler.</p>
   <form class="form" id="pushsend"><label class="f">Tittel<input id="psT" maxlength="60" required value="${esc(state.psT)}"></label>
-  <label class="f">Tekst<textarea id="psB" rows="3" maxlength="500">${esc(state.psB)}</textarea></label>
-  <p class="small" style="margin:-4px 0 0">Varselet kan vise opptil 200 tegn. Hele teksten ligger i appen.</p>
+  <label class="f">Tekst<textarea id="psB" rows="4" maxlength="1000">${esc(state.psB)}</textarea></label>
+  <p class="small" style="margin:-4px 0 0">Varselet kan ha opptil 1000 tegn. På telefonen vises først begynnelsen, og resten ser du når varselet utvides.</p>
   <label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="psNews" style="width:auto" ${state.psNews?'checked':''}>Legg også ut som nyhet i appen</label>
   <label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="psHide" style="width:auto" ${state.psHide?'checked':''}>Ikke vis nyheten på Hjem (vises i Nyheter)</label>
   ${state.admin?`<label class="f">Hvem skal få varselet?<select id="psMal">${[['alle','Alle som har slått på varsler'],['medlem','Bare medlemmer'],['grupper','Valgte grupper']].map(([v,l])=>`<option value="${v}" ${state.psMal===v?'selected':''}>${l}</option>`).join('')}</select></label>`:'<p class="small" style="margin:0">Du kan sende til gruppene du leder.</p>'}
@@ -2477,7 +2478,7 @@ function lpAsk(key){
   const x=(col==='posts'?posts:rawEvents).find(a=>String(a.id)===id);if(!x||!FB)return;
   const tittel=col==='posts'?x.t:x.title,dlg=document.createElement('dialog');dlg.className='lp';
   const mal=col==='posts'?((x.groups||[]).length?{type:'grupper',groups:x.groups}:x.m?{type:'medlem'}:{type:'alle'}):null;
-  const pv=col==='posts'&&PUSH_URL?'<div style="display:grid;gap:8px"><b>Send påminnelse</b><span class="small">Nytt varsel til samme målgruppe som nyheten ('+esc(malTekst(mal))+'). Du kan endre teksten.</span><label class="f">Varseltittel<input id="lpPT" maxlength="60" value="'+esc(('Påminnelse: '+x.t).slice(0,60))+'"></label><label class="f">Varseltekst<textarea id="lpPB" rows="4" maxlength="200">'+esc(kortTekst(String(x.b||'').replace(/[ 	]+/g,' ').trim()))+'</textarea></label><button class="btn primary" value="varsel" style="width:auto">Send påminnelse</button></div><hr style="border:0;border-top:1px solid var(--line);width:100%">':'';
+  const pv=col==='posts'&&PUSH_URL?'<div style="display:grid;gap:8px"><b>Send påminnelse</b><span class="small">Nytt varsel til samme målgruppe som nyheten ('+esc(malTekst(mal))+'). Du kan endre teksten.</span><label class="f">Varseltittel<input id="lpPT" maxlength="60" value="'+esc(('Påminnelse: '+x.t).slice(0,60))+'"></label><label class="f">Varseltekst<textarea id="lpPB" rows="6" maxlength="1000">'+esc(kortTekst(String(x.b||'').replace(/[ 	]+/g,' ').trim()))+'</textarea></label><button class="btn primary" value="varsel" style="width:auto">Send påminnelse</button></div><hr style="border:0;border-top:1px solid var(--line);width:100%">':'';
   dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">'+(col==='posts'?'«'+esc(tittel)+'»':'Slette «'+esc(tittel)+'»?')+'</h3>'+pv+'<h3 style="margin:0;font-size:17px">'+(col==='posts'?'Slette nyheten?':'')+'</h3><p class="small" style="margin:0">'+(col==='posts'?'Nyheten':'Arrangementet')+' fjernes for alle. Du kan rulle tilbake under Meg → Sikkerhetskopi og tilbakerulling.</p><div class="btns"><button class="btn" value="rediger">Rediger</button><button class="btn danger" value="slett">Slett</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('close',async()=>{const rv=dlg.returnValue,ok=rv==='slett',pt0=dlg.querySelector('#lpPT'),pb0=dlg.querySelector('#lpPB'),tt=pt0?pt0.value.trim():'',bb=pb0?pb0.value.trim():'';dlg.remove();
