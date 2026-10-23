@@ -1067,6 +1067,7 @@ function homeDeler(){
    neste:['Neste hovedsamling',()=>(n?`<div class="card next" data-t="prog" role="link" tabindex="0" style="cursor:pointer"><div class="eyebrow">Neste hovedsamling</div><h2>${n.t}</h2>
    <div class="meta">${nesteTid(n)}</div></div>`
   :`<div class="card next" data-t="prog"><div class="eyebrow">Neste hovedsamling</div><h2>Ingen planlagt</h2><div class="meta">Se Program.</div></div>`)],
+   gruppebesk:['Send beskjed til gruppa',()=>gruppeBeskjedCard()],
    velkomst:['Kom i gang',()=>welcomeCard()],
    besok:['Logg inn for å få mer',()=>visitorCard()],
    viktig:['Nyheter',()=>((!state.fast||String(post&&post.id).startsWith('varsel'))&&UI.vk!==false&&post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
@@ -1332,7 +1333,7 @@ function fields(t,ed,only){return FIELDS[t].filter(f=>(!only||only.includes(f[0]
   if(b==='rich')return richBox('',richFra(ed),l);
   if(b==='area')return `<label class="f">${l}<textarea name="${k}" rows="3" ${req?'required':''}>${esc(v)}</textarea></label>`;
   if(b==='sel')return `<label class="f">${l}<select name="${k}">${(k==='cat'?allCats():o).map(x=>`<option value="${x}" ${String(v==null?o[0]:(k==='cat'?normCat(v):v))===String(x)?'selected':''}>${k==='day'?cap(DAYS[x]):k==='remindH'?REMIND_OPT[x]:x}</option>`).join('')}</select></label>`;
-  if(b==='chk')return `<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="${k}" style="width:auto" ${v?'checked':''}>${l}</label>`;
+  if(b==='chk')return `<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="${k}" style="width:auto" ${(v||(k==='push'&&state.pushStd&&!ed))?'checked':''}>${l}</label>`;
   return `<label class="f">${l}<input name="${k}" type="${b}" ${req?'required':''} value="${esc(v)}"></label>`}).join('')}
 function admItems(t){const l=t==='events'?rawEvents.slice().sort((a,b)=>a.start<b.start?-1:1):t==='posts'?posts:regular;const f=t==='posts'||state.af==='Alle'?l:l.filter(x=>normCat(x.cat)===state.af);return state.admin?f:f.filter(ledItem)}
 function admLabel(t,x){return t==='events'?`${esc(x.start)} · ${esc(x.title)}${x.groups&&x.groups.length?' <span class="small">('+esc(x.groups.map(gName).join(', '))+')</span>':''}${x.hideHome?' <span class="small">(skjult på Hjem)</span>':''}`:t==='posts'?esc(x.t)+(x.tag&&x.tag!=='Alle'?' <span class="small">('+esc(x.tag)+')</span>':'')+(x.hideHome?' <span class="small">(skjult på Hjem)</span>':''):`${cap(DAYS[x.day])} ${esc(x.time)} · ${esc(x.title)}`}
@@ -2199,7 +2200,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='23.10.2026 kl. 11:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='23.10.2026 kl. 12:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2350,7 +2351,7 @@ function loginCard(){
 
 /* Kortene under Meg kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
 const ME_KORT={
-  login:['Innlogging',()=>loginCard()],lr:['Saker til lederrådet',()=>lrCard()],innst:['Innstillinger',()=>settingsCard()],share:['Del appen',()=>shareCard()],
+  login:['Innlogging',()=>loginCard()],gruppebesk:['Send beskjed til gruppa',()=>gruppeBeskjedCard()],lr:['Saker til lederrådet',()=>lrCard()],innst:['Innstillinger',()=>settingsCard()],share:['Del appen',()=>shareCard()],
   vakter:['Mine vakter',()=>vakterCard()],ansvar:['Ansvarsområder',()=>ansvarCard()],meld:['Beskjeder',()=>meldCard()],notater:['Møtenotater',()=>notesCard()],profil:['Min profil',()=>profileCard()],attester:['Politiattester',()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():''],
@@ -2761,7 +2762,8 @@ document.addEventListener('click',async e=>{
       await FB.del('posts',p.id);await refresh();push(sendt?'Meldingen er slettet':'Utsendelsen er avlyst',sendt?'Varselet var allerede sendt, så det kan ikke trekkes tilbake.':'Varselet blir ikke sendt.')}
     catch(er){c.disabled=false;push('Kunne ikke avlyse',saveMsg(er&&er.code))}}
   else if(c.dataset.postopen){keep(()=>{const k='p_'+c.dataset.postopen;state.open[k]=!state.open[k];if(state.open[k])markLest(c.dataset.postopen)})}
-  else if('pubnew' in c.dataset){pubAsk()}
+  else if('pubnew' in c.dataset){state.pushStd=false;pubAsk()}
+  else if('gruppebesk' in c.dataset){gruppeBeskjed()}
   else if('grpnew' in c.dataset){grpAsk(null)}
   else if(c.dataset.grpedit){grpAsk(c.dataset.grpedit)}
   else if(c.dataset.grpdel){grpDel(c.dataset.grpdel)}
@@ -3033,11 +3035,17 @@ function editAsk(t,id){
   dlg.addEventListener('close',()=>{clearInterval(iv);dlg.remove();state.msg='';state.adm.edit=null;state.adm.form=false});
   dlg.showModal();
 }
+/* Gruppeledere: enkel vei til å sende beskjed til gruppa. Åpner samme steg-for-steg-vindu som Ny melding (tekstredigerer, mottakere = gruppene du leder, varsel), med «Send også som varsel» på som standard. */
+function gruppeBeskjedCard(){
+  if(!(state.view==='meg'&&state.member&&!state.admin&&isLeader()))return '';
+  const gr=(state.leads||[]).map(g=>esc(gName(g))).join(', ');
+  return '<div class="card"><div class="eyebrow">Gruppeleder</div><h2>Send beskjed til gruppa</h2><p class="small" style="margin:6px 0 12px">Du leder: <b>'+gr+'</b>. Skriv en kort beskjed, så får alle i gruppa den som varsel på telefonen og i Nyheter.</p><button class="btn primary" type="button" data-gruppebesk style="width:auto">Skriv beskjed</button></div>'}
+function gruppeBeskjed(){state.pushStd=true;pubAsk()}
 function pubAsk(){
   if(document.querySelector('dialog.pub'))return;
   const dlg=document.createElement('dialog');dlg.className='lp pub';document.body.appendChild(dlg);
   const iv=setInterval(()=>{const m=$('#pubMsg');if(m&&state.msg)m.textContent=state.msg},300);
-  dlg.addEventListener('close',()=>{clearInterval(iv);dlg.remove();state.msg=''});
+  dlg.addEventListener('close',()=>{clearInterval(iv);dlg.remove();state.msg='';state.pushStd=false});
   dlg.addEventListener('click',e=>{if(e.target.closest('[data-pubclose]'))dlg.close()});
   wizStart(dlg,'posts');
   dlg.showModal();
