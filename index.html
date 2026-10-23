@@ -328,6 +328,13 @@ html[data-stil="android"] .btn,html[data-stil="android"] .chip,html[data-stil="a
   --lamp-ink:#1f1405; --lamp-glow:rgba(214,162,90,.26);
   --shadow-card:0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28); --shadow-pop:0 10px 26px rgba(0,0,0,.45);
   --ikon-a:#9bd13a; --ikon-b:#5f8f1f; --hero-a:#6aa31f; --hero-b:#1f3008; --hero-dot:#e6d86a; --hero-link:#e2f1b8; color-scheme:dark}
+.fotoboks{position:relative;flex:none;width:64px;height:64px}
+#nFoto{all:unset;box-sizing:border-box;width:64px;height:64px;border-radius:var(--r-s);background:var(--chip);color:var(--brand);display:grid;place-items:center;cursor:pointer;overflow:hidden;border:1px solid var(--line)}
+#nFoto img,.opptmini img{width:100%;height:100%;object-fit:cover;display:block}
+#nFotoX{all:unset;position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--surface);display:grid;place-items:center;font-size:12px;cursor:pointer}
+#nFotoX[hidden]{display:none}
+.nminitur{flex:none;width:44px;height:44px;border-radius:var(--r-s);object-fit:cover;display:block}
+.opptmini{flex:none;width:56px;height:56px;border-radius:var(--r-s);overflow:hidden;background:var(--chip);color:var(--muted);display:grid;place-items:center}
 .palrutenett{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .palbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);font-size:var(--t-m);font-weight:600;line-height:1.2;transition:border-color var(--d-med) var(--ease),box-shadow var(--d-med) var(--ease)}
 .palbtn[aria-pressed="true"]{border-color:var(--lamp);box-shadow:0 0 0 2px var(--lamp-glow)}
@@ -1649,6 +1656,14 @@ const richVis=p=>p.bh?richLinks(sanitizeNote(p.bh)):linkify(esc(String(p.b||''))
   document.addEventListener('drop',e=>{if(e.target.closest&&e.target.closest('[data-rich]'))e.preventDefault()}) }
 const noteLinjer=h=>{const d=document.createElement('div');d.innerHTML=sanitizeNote(h).replace(/<br\s*\/?>/gi,'\n').replace(/<(div|p)(\s[^>]*)?>/gi,'\n$&').replace(/<\/(div|p)>/gi,'\n');return (d.textContent||'').split('\n').map(x=>x.replace(/\s+/g,' ').trim()).join('\n').replace(/\n{3,}/g,'\n\n').trim()};
 const noteText=h=>{const d=document.createElement('div');d.innerHTML=sanitizeNote(h);return (d.innerText||d.textContent||'').replace(/\s+/g,' ').trim()};
+/* Kamera: åpner telefonens kamera (på PC en filvelger) og lager et lite miniatyrbilde (maks 360 px, JPEG) som tekst (data-URL). Må kalles direkte fra et trykk. */
+const BILDE_IKON='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+function bildeMini(fil){return new Promise((res,rej)=>{const u=URL.createObjectURL(fil),im=new Image();
+  im.onload=()=>{const m=360,k=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',.72))};
+  im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('bilde'))};im.src=u})}
+function taBilde(ferdig){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.setAttribute('capture','environment');inp.style.display='none';document.body.appendChild(inp);
+  inp.addEventListener('change',async()=>{const f=inp.files&&inp.files[0];inp.remove();if(!f)return;try{ferdig(await bildeMini(f))}catch(e){push('Kunne ikke bruke bildet','Prøv å ta et nytt bilde.')}});
+  inp.addEventListener('cancel',()=>inp.remove());inp.click()}
 function notesCard(){
   if(!state.user||!state.member)return '';
   const l=state.notes,n=l?l.length:0;
@@ -1663,7 +1678,7 @@ function notesCard(){
      +'<div class="reg" id="noteList">'+noteRows(vis)+'</div>'}
   return '<details class="card acc" data-acc="notater" '+(state.acc.notater?'open':'')+'><summary><h2>Møtenotater'+(l?' ('+n+')':'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.noteMsg||'')+'</p></details>'}
 function noteRows(l){
-  return l.map(x=>'<div class="r"><button type="button" data-noteopen="'+esc(x.id)+'" style="display:flex;width:100%;gap:8px;align-items:center;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><span class="grow"><b>'+esc(x.title||'Uten tittel')+'</b><span class="small" style="display:block">'+esc(noDato(x.date))+(x.speaker?' · '+esc(x.speaker):'')+'</span></span><span class="small">Åpne</span></button></div>').join('')||'<p class="small">Ingen notater ennå.</p>'}
+  return l.map(x=>'<div class="r"><button type="button" data-noteopen="'+esc(x.id)+'" style="display:flex;width:100%;gap:8px;align-items:center;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer">'+(x.img?'<img class="nminitur" src="'+x.img+'" alt="">':'')+'<span class="grow"><b>'+esc(x.title||'Uten tittel')+'</b><span class="small" style="display:block">'+esc(noDato(x.date))+(x.speaker?' · '+esc(x.speaker):'')+'</span></span><span class="small">Åpne</span></button></div>').join('')||'<p class="small">Ingen notater ennå.</p>'}
 function noteDelAsk(id){
   const x=(state.notes||[]).find(n=>n.id===id);if(!x||document.querySelector('dialog.lp'))return;
   const dlg=document.createElement('dialog');dlg.className='lp';
@@ -1687,7 +1702,7 @@ function noteAsk(id){
   const datoV=ex?ex.date:idag,dd=new Date(datoV+'T12:00'),datoTxt=isNaN(dd)?'':cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+(dd.getFullYear()!==new Date().getFullYear()?' '+dd.getFullYear():'');
   dlg.innerHTML='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px"><h3 style="margin:0">'+(ex?'Notat':'Nytt notat')+'</h3><span class="small" id="nDS" style="color:var(--muted)">'+esc(datoTxt)+'</span></div>'
    +'<input id="nD" type="hidden" value="'+esc(datoV)+'">'
-   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><label class="f">Tittel<input id="nT" maxlength="120" placeholder="Tema" value="'+esc(ex?ex.title:'')+'"></label><label class="f">Forkynner<input id="nP" maxlength="80" placeholder="Hvem taler?" value="'+esc(ex?(ex.speaker||''):'')+'"></label></div>'
+   +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px"><div class="fotoboks"><button type="button" id="nFoto"></button><button type="button" id="nFotoX" hidden aria-label="Fjern bildet">✕</button></div><div style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Tittel<input id="nT" maxlength="120" placeholder="Tema" value="'+esc(ex?ex.title:'')+'"></label><label class="f">Forkynner<input id="nP" maxlength="80" placeholder="Hvem taler?" value="'+esc(ex?(ex.speaker||''):'')+'"></label></div></div>'
    +'<div class="ntools" role="toolbar" aria-label="Tekstverktøy"><button type="button" class="btn" data-ncmd="bold" aria-label="Fet"><b>B</b></button><button type="button" class="btn" data-ncmd="italic" aria-label="Kursiv"><i>I</i></button>'
    +'<span class="nsep"></span><button type="button" class="btn" data-nsize="-1" aria-label="Mindre tekst" style="font-size:var(--t-s);font-weight:700">A</button><input type="range" class="nslide" id="nSlide" min="0" max="3" step="1" value="1" aria-label="Tekststørrelse: dra til høyre for større og til venstre for mindre"><button type="button" class="btn" data-nsize="1" aria-label="Større tekst" style="font-size:var(--t-xl);font-weight:700;line-height:1">A</button></div>'
    +'<div class="nwrap"><div id="nEd" class="ned" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notat">'+(ex?sanitizeNote(ex.html):'')+'</div><div class="ngrip" id="nGrip" role="separator" aria-label="Dra for å endre størrelsen på tekstfeltet" title="Dra for å endre størrelse"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5L5 14M14 10l-4 4"/></svg></div></div>'
@@ -1695,7 +1710,10 @@ function noteAsk(id){
    +'<div class="btns nbtns"><button type="button" class="btn primary" id="nSave" style="flex:1">Lagre</button><button type="button" class="btn primary" id="nClose" style="flex:1">'+(ex?'Lukk':'Avbryt')+'</button></div><div class="btns nbtns" style="margin-top:8px">'+(PUSH_URL?'<button type="button" class="btn" id="nMail" style="flex:1" aria-label="Send til e-post" title="Send til e-post">E-post</button>':'')+'<button type="button" class="btn" id="nShare" style="flex:1">Del</button>'+(ex?'<button type="button" class="btn danger" id="nDel" style="flex:1">Slett</button>':'')+'</div>';   // Lukk vises først etter at et nytt notat er lagret
   document.body.appendChild(dlg);
   const ed=dlg.querySelector('#nEd'),msg=t=>{dlg.querySelector('#nMsg').textContent=t};
-  const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,dlg.querySelector('#nP').value,sanitizeNote(ed.innerHTML)]);let start;
+  let foto=ex&&ex.img||'';const fb1=dlg.querySelector('#nFoto'),fx=dlg.querySelector('#nFotoX');
+  const visFoto=()=>{fb1.innerHTML=foto?'<img src="'+foto+'" alt="Bilde av forkynneren">':BILDE_IKON;fx.hidden=!foto;fb1.setAttribute('aria-label',foto?'Ta nytt bilde av forkynneren':'Ta bilde av forkynneren')};visFoto();
+  fb1.addEventListener('click',()=>taBilde(d=>{foto=d;visFoto()}));fx.addEventListener('click',()=>{foto='';visFoto()});
+  const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,dlg.querySelector('#nP').value,sanitizeNote(ed.innerHTML),foto]);let start;
   { const g=dlg.querySelector('#nGrip');let y0=0,h0=0,on=false;
     g.addEventListener('pointerdown',e=>{on=true;y0=e.clientY;h0=ed.getBoundingClientRect().height;try{g.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault()});
     g.addEventListener('pointermove',e=>{if(!on)return;ed.style.height=Math.max(140,Math.min(innerHeight*0.8,h0+(e.clientY-y0)))+'px'});
@@ -1728,7 +1746,7 @@ function noteAsk(id){
   dlg.querySelector('#nClose').addEventListener('click',lukk);
   dlg.addEventListener('cancel',e=>{if(snap()!==start){e.preventDefault();lukk()}});
   dlg.querySelector('#nSave').addEventListener('click',async()=>{
-    const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML)};
+    const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML),img:foto};
     if(!d.title&&!noteText(d.html)){msg('Skriv en tittel eller litt tekst.');return}
     if(!d.title)d.title=noteText(d.html).slice(0,40);
     try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();
@@ -2249,7 +2267,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='23.10.2026 kl. 16:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='23.10.2026 kl. 17:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2277,7 +2295,7 @@ function settingsCard(){
   ${profSub('installer','Slik installerer du appen',installBody())}
   ${profSub('inoppd','Oppdater appen','<p class="small" style="margin:0 0 8px">Versjon: <b>'+APP_BYGG+'</b>. Står det en eldre tid enn sist du fikk beskjed om en endring, har telefonen ikke den nyeste versjonen ennå. Trykk under for å hente den nå.</p><button class="btn" data-oppdater>Hent nyeste versjon</button>')}</details>`}
 /* Taleopptak: ta opp i appen, lagres på telefonen (IndexedDB), og «Send til Google Drive» åpner telefonens delingsmeny der du velger Drive. Ingenting sendes til menigheten eller til noen server av oss. */
-const OPPT={state:'ledig',rec:null,stream:null,chunks:[],t0:0,tim:null,wl:null,mime:'',feil:'',msg:'',liste:null,spill:null,urls:{}};
+const OPPT={bilde:'',state:'ledig',rec:null,stream:null,chunks:[],t0:0,tim:null,wl:null,mime:'',feil:'',msg:'',liste:null,spill:null,urls:{}};
 const oTall=n=>String(n).padStart(2,'0');
 function oDb(){return new Promise((res,rej)=>{const r=indexedDB.open('sm-opptak',1);r.onupgradeneeded=()=>r.result.createObjectStore('o',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function oAlle(){const db=await oDb();return new Promise((res,rej)=>{const q=db.transaction('o').objectStore('o').getAll();q.onsuccess=()=>res(q.result.sort((a,b)=>b.id-a.id));q.onerror=()=>rej(q.error)})}
@@ -2303,7 +2321,7 @@ async function opptFerdig(){const sek=Math.round((Date.now()-OPPT.t0)/1000);oppt
   if(!blob.size){OPPT.feil='Opptaket ble tomt.';keep(()=>{});return}
   const d=new Date(),ext=/mp4/.test(OPPT.mime)?'m4a':/ogg/.test(OPPT.mime)?'ogg':'webm',
     navn='Opptak '+d.getFullYear()+'-'+oTall(d.getMonth()+1)+'-'+oTall(d.getDate())+' '+oTall(d.getHours())+'.'+oTall(d.getMinutes())+'.'+ext;
-  try{await oLagre({id:Date.now(),navn,sek,blob});OPPT.liste=await oAlle();OPPT.msg='Opptaket er lagret på telefonen. Trykk «Send til Google Drive» for å få det over på Drive.'}
+  try{await oLagre({id:Date.now(),navn,sek,blob,img:OPPT.bilde||''});OPPT.bilde='';OPPT.liste=await oAlle();OPPT.msg='Opptaket er lagret på telefonen. Trykk «Send til Google Drive» for å få det over på Drive.'}
   catch(e){OPPT.feil='Kunne ikke lagre opptaket på telefonen (er det plass?).'}
   keep(()=>{})}
 const oFil=o=>new File([o.blob],o.navn,{type:o.blob.type||'audio/webm'});
@@ -2323,12 +2341,13 @@ function opptInner(){
   let h='<p class="small" style="margin:0 0 10px">Ta opp tale i appen. Opptaket lagres på telefonen din, og med «Send til Google Drive» velger du Drive i telefonens delingsmeny. Ingenting går til menigheten. Ta bare opp når alle som snakker vet om det og har sagt ja.</p>';
   if(OPPT.state==='opptak')h+='<div class="btns" style="align-items:center"><button type="button" class="btn danger" data-opptstopp>Stopp opptak</button><b id="opptTid" style="font-variant-numeric:tabular-nums">0:00</b><span class="small">Hold skjermen på mens du tar opp.</span></div>';
   else h+='<button type="button" class="btn primary" data-opptstart style="width:auto">Start opptak</button>';
+  h+='<div class="btns" style="margin-top:8px;align-items:center"><button type="button" class="btn" data-opptfoto>Ta bilde</button>'+(OPPT.bilde?'<span class="opptmini" style="width:44px;height:44px"><img src="'+OPPT.bilde+'" alt="Bilde som følger neste opptak"></span><button type="button" class="btn" data-opptfotox>Fjern bildet</button>':'<span class="small">Bildet følger opptaket.</span>')+'</div>';
   if(OPPT.msg)h+='<p class="small" role="status" style="margin:10px 0 0">'+esc(OPPT.msg)+'</p>';
   if(OPPT.feil)h+='<p class="small" role="alert" style="margin:10px 0 0;color:#b3261e">'+esc(OPPT.feil)+'</p>';
   if(OPPT.liste&&OPPT.liste.length){h+='<h3 style="margin:16px 0 6px;font-size:var(--t-b)">Lagret på telefonen</h3><div style="display:grid;gap:10px">'+OPPT.liste.map(o=>
-    '<div class="item" style="padding:12px"><b style="display:block;overflow-wrap:anywhere">'+esc(o.navn)+'</b><span class="small">'+oVarighet(o.sek||0)+' · '+Math.max(1,Math.round(o.blob.size/1024))+' kB</span>'
+    '<div class="item" style="padding:12px"><div style="display:flex;gap:10px;align-items:center"><span class="opptmini">'+(o.img?'<img src="'+o.img+'" alt="Bilde fra opptaket">':BILDE_IKON)+'</span><div style="min-width:0;flex:1"><b style="display:block;overflow-wrap:anywhere">'+esc(o.navn)+'</b><span class="small">'+oVarighet(o.sek||0)+' · '+Math.max(1,Math.round(o.blob.size/1024))+' kB</span></div></div>'
     +(String(OPPT.spill)===String(o.id)&&OPPT.urls[o.id]?'<audio controls autoplay src="'+OPPT.urls[o.id]+'" style="width:100%;margin-top:8px"></audio>':'')
-    +'<div class="btns" style="margin-top:8px"><button type="button" class="btn primary" data-opptdel="'+o.id+'" style="width:auto">Send til Google Drive</button><button type="button" class="btn" data-opptspill="'+o.id+'">'+(String(OPPT.spill)===String(o.id)?'Skjul spiller':'Spill av')+'</button><button type="button" class="btn" data-opptlast="'+o.id+'">Lagre på telefonen</button><button type="button" class="btn danger" data-opptslett="'+o.id+'">Slett</button></div></div>').join('')+'</div>'}
+    +'<div class="btns" style="margin-top:8px"><button type="button" class="btn primary" data-opptdel="'+o.id+'" style="width:auto">Send til Google Drive</button><button type="button" class="btn" data-opptfotoid="'+o.id+'">'+(o.img?'Nytt bilde':'Ta bilde')+'</button><button type="button" class="btn" data-opptspill="'+o.id+'">'+(String(OPPT.spill)===String(o.id)?'Skjul spiller':'Spill av')+'</button><button type="button" class="btn" data-opptlast="'+o.id+'">Lagre på telefonen</button><button type="button" class="btn danger" data-opptslett="'+o.id+'">Slett</button></div></div>').join('')+'</div>'}
   return h}
 function pushInner(){
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
@@ -2694,6 +2713,9 @@ document.addEventListener('click',async e=>{
   else if('opptstart' in c.dataset){opptStart()}
   else if('opptstopp' in c.dataset){opptStopp()}
   else if(c.dataset.opptdel){opptDel(c.dataset.opptdel)}
+  else if('opptfoto' in c.dataset){taBilde(d=>{OPPT.bilde=d;keep(()=>{})})}
+  else if('opptfotox' in c.dataset){OPPT.bilde='';keep(()=>{})}
+  else if(c.dataset.opptfotoid){const id=c.dataset.opptfotoid;taBilde(async d=>{const o=(OPPT.liste||[]).find(x=>String(x.id)===String(id));if(!o)return;o.img=d;try{await oLagre(o)}catch(e){OPPT.feil='Kunne ikke lagre bildet.'}keep(()=>{})})}
   else if(c.dataset.opptspill){opptSpill(c.dataset.opptspill)}
   else if(c.dataset.opptlast){opptLast(c.dataset.opptlast)}
   else if(c.dataset.opptslett){opptSlett(c.dataset.opptslett)}

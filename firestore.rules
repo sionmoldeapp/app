@@ -306,11 +306,12 @@ service cloud.firestore {
       allow read, delete: if signedIn() && request.auth.token.email == email && isMember();
       allow create, update: if signedIn() && request.auth.token.email == email && isMember()
         && noteId.matches('n([1-9]|[1-9][0-9]|100)')
-        && request.resource.data.keys().hasOnly(['title', 'date', 'speaker', 'html', 'updated'])
+        && request.resource.data.keys().hasOnly(['title', 'date', 'speaker', 'html', 'img', 'updated'])
         && request.resource.data.title is string && request.resource.data.title.size() <= 120
         && request.resource.data.speaker is string && request.resource.data.speaker.size() <= 80
         && request.resource.data.date is string && request.resource.data.date.size() <= 10
         && request.resource.data.html is string && request.resource.data.html.size() <= 20000
+        && (!('img' in request.resource.data) || (request.resource.data.img is string && request.resource.data.img.size() <= 60000))
         && request.resource.data.updated == request.time;
     }
     // Administratorer er dokumenter i admins, med e-postadressen som dokument-ID. Bare administratorer kan endre listen.

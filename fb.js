@@ -87,8 +87,8 @@ const FB={
     async viewCounts(){const s=await S.getDocs(S.collection(db,'postViews'));const o={};s.docs.forEach(d=>o[d.id]=d.data().n||0);return o},
     async pushCount(){const s=await S.getDocs(S.collection(db,'pushTokens'));return s.size},
     // Private møtenotater: members/{e-post}/notes/n1..n100. Bare eieren har tilgang.
-    async notesList(email){const s=await S.getDocs(S.collection(db,'members',email,'notes'));return s.docs.map(d=>{const x=d.data();return {id:d.id,title:x.title||'',date:x.date||'',speaker:x.speaker||'',html:x.html||'',ms:x.updated&&x.updated.toMillis?x.updated.toMillis():0}}).sort((a,b)=>b.ms-a.ms)},
-    saveNote:(email,id,d)=>S.setDoc(S.doc(db,'members',email,'notes',id),{title:d.title,date:d.date,speaker:d.speaker||'',html:d.html,updated:S.serverTimestamp()}),
+    async notesList(email){const s=await S.getDocs(S.collection(db,'members',email,'notes'));return s.docs.map(d=>{const x=d.data();return {id:d.id,title:x.title||'',date:x.date||'',speaker:x.speaker||'',html:x.html||'',img:x.img||'',ms:x.updated&&x.updated.toMillis?x.updated.toMillis():0}}).sort((a,b)=>b.ms-a.ms)},
+    saveNote:(email,id,d)=>S.setDoc(S.doc(db,'members',email,'notes',id),{title:d.title,date:d.date,speaker:d.speaker||'',html:d.html,...(d.img?{img:d.img}:{}),updated:S.serverTimestamp()}),
     delNote:(email,id)=>sl(S.deleteDoc(S.doc(db,'members',email,'notes',id))),
     // Vakter: shifts/{gruppe}/items (vaktene) og shifts/{gruppe}/requests (byttebeskjeder til lederen).
     async shiftsList(group,fromIso){const s=await S.getDocs(S.collection(db,'shifts',group,'items'));return s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>!fromIso||x.date>=fromIso).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.role).localeCompare(String(b.role)))},
