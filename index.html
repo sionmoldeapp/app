@@ -887,7 +887,7 @@ function julCard(){
         +'<div style="display:flex;gap:8px;margin-top:10px"><input id="julNr" inputmode="numeric" maxlength="8" placeholder="Loddnummer" aria-label="Skriv loddnummeret ditt" style="flex:1;min-width:0"><button type="button" class="btn primary" data-julsjekk style="width:auto">Sjekk lodd</button></div><p class="small" id="julMsg" role="status" style="margin:6px 0 0"></p>'}
     else h+=(pr.length?'<div class="small" style="margin-bottom:6px">Premier:</div><ul style="margin:0 0 8px;padding-left:20px">'+pr.map(p=>'<li>'+esc(p)+'</li>').join('')+'</ul>':'')+'<p class="small" style="margin:0">Trekningen er ikke gjennomført ennå. Ha loddet ditt klart.</p>'}
   const knapper=red?'<div class="btns" style="margin-top:12px"><button type="button" class="btn" data-juledit>Endre</button>'+(j.loddOn&&premieListe(j.premier).length?'<button type="button" class="btn primary" data-jultrekk style="width:auto">'+(tr.length?'Trekk på nytt':'Trekk vinnere')+'</button>':'')+(tr.length?'<button type="button" class="btn" data-julnull>Nullstill trekning</button>':'')+'</div>'+(j.on?'':'<p class="small" style="margin:6px 0 0">Skjult for andre akkurat nå (Vis på Hjem er av).</p>'):'';
-  return '<details class="card acc" data-acc="jul" '+(state.acc.jul!==false?'open':'')+'><summary><h2>'+esc(j.tittel||'Julemesse')+'</h2></summary>'+h+knapper+'</details>'}
+  return '<details class="card acc" data-acc="jul" '+(state.acc.jul?'open':'')+'><summary><h2>'+esc(j.tittel||'Julemesse')+'</h2></summary>'+h+knapper+'</details>'}
 function julSjekk(){const j=state.jul||{},tr=Array.isArray(j.trukket)?j.trukket:[],inp=document.getElementById('julNr'),m=document.getElementById('julMsg');if(!inp||!m)return;
   const n=parseInt(inp.value.replace(/\D/g,''),10);if(!(n>=0)||inp.value.trim()===''){m.textContent='Skriv loddnummeret ditt.';return}
   const v=tr.filter(x=>+x.n===n);m.textContent=v.length?'Gratulerer! Lodd nr '+n+' vant: '+v.map(x=>x.p).join(', ')+'. Ta kontakt med oss på messen for å hente premien.':'Lodd nr '+n+' vant ikke denne gangen. Takk for at du var med!';
@@ -1240,7 +1240,6 @@ function homeDeler(){
    neste:['Neste hovedsamling',()=>(n?`<div class="card next" data-t="prog" data-nid="${esc(String(n.id))}" role="link" tabindex="0" style="cursor:pointer"><div class="eyebrow">Neste hovedsamling</div><h2>${n.t}</h2>
    <div class="meta">${nesteTid(n)}</div></div>`
   :`<div class="card next" data-t="prog"><div class="eyebrow">Neste hovedsamling</div><h2>Ingen planlagt</h2><div class="meta">Se Program.</div></div>`)],
-   jul:['Julemesse',()=>julCard()],
    gruppebesk:['Send beskjed til gruppa',()=>gruppeBeskjedCard()],
    velkomst:['Kom i gang',()=>welcomeCard()],
    besok:['Logg inn for å få mer',()=>visitorCard()],
@@ -2445,7 +2444,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='24.10.2026 kl. 09:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='24.10.2026 kl. 09:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2671,7 +2670,7 @@ function loginCard(){
 
 /* Kortene under Meg kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
 const ME_KORT={
-  login:['Innlogging',()=>loginCard()],gruppebesk:['Send beskjed til gruppa',()=>gruppeBeskjedCard()],lr:['Saker til lederrådet',()=>lrCard()],utleie:['Utleie',()=>utleieCard()],innst:['Innstillinger',()=>settingsCard()],share:['Del appen',()=>shareCard()],
+  login:['Innlogging',()=>loginCard()],gruppebesk:['Send beskjed til gruppa',()=>gruppeBeskjedCard()],lr:['Saker til lederrådet',()=>lrCard()],utleie:['Utleie',()=>utleieCard()],jul:['Julemesse',()=>julCard()],innst:['Innstillinger',()=>settingsCard()],share:['Del appen',()=>shareCard()],
   vakter:['Mine vakter',()=>vakterCard()],ansvar:['Ansvarsområder',()=>ansvarCard()],meld:['Beskjeder',()=>meldCard()],verktoy:['Møteverktøy',()=>verktoyCard()],profil:['Min profil',()=>profileCard()],attester:['Politiattester',()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''],stat:['Oversikt',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():''],
