@@ -957,11 +957,14 @@ state.ut=state.ut||{liste:undefined,mnd:null,dag:null,rom:'Alle'};
 async function utLast(){if(!FB)return;try{const fra=new Date();fra.setDate(fra.getDate()-62);const [l,r]=await Promise.all([FB.utList(dkey(fra)),FB.getUtleie().catch(()=>null)]);
     state.ut.liste=l;if(r&&r.rom&&r.rom.length)state.utRom=r.rom;state.ut.feil=''}
   catch(e){state.ut.liste=[];state.ut.feil='Kunne ikke hente bookingene ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}keep(()=>{})}
-const utStart=b=>Date.parse(b.dato+'T'+b.fra+':00'),utSlutt=b=>Date.parse((b.dato2||b.dato)+'T'+b.til+':00');
-const utDager=b=>{const ut=[],e=b.dato2&&b.dato2>b.dato?b.dato2:b.dato;let d=new Date(b.dato+'T12:00');for(let i=0;i<62;i++){const k=dkey(d);ut.push(k);if(k>=e)break;d.setDate(d.getDate()+1)}return ut};
-function utKonflikt(b,ekskl){return (state.ut.liste||[]).filter(x=>x.id!==ekskl&&utStart(x)<utSlutt(b)&&utSlutt(x)>utStart(b)
+/* Tider per dag: tider er en liste av «dato|fra|til». Uten tider: én dag = fra–til, flere dager = første dag fra til midnatt, dager imellom hele dagen, siste dag fra midnatt til til. */
+const utTiderMap=b=>Object.fromEntries((b.tider||[]).map(x=>String(x).split('|')).filter(a=>a.length===3).map(([k,f,t])=>[k,[f,t]]));
+const utDagTid=(b,k)=>{const m=utTiderMap(b);if(m[k])return m[k];if(!(b.dato2&&b.dato2>b.dato))return [b.fra,b.til];return k===b.dato?[b.fra,'23:59']:k===b.dato2?['00:00',b.til]:['00:00','23:59']};
+const utIntervaller=b=>utDager(b).map(k=>{const [f,t]=utDagTid(b,k);return [Date.parse(k+'T'+f+':00'),Date.parse(k+'T'+t+':00')]});
+function utDager(b){const ut=[],e=b.dato2&&b.dato2>b.dato?b.dato2:b.dato;let d=new Date(b.dato+'T12:00');for(let i=0;i<62;i++){const k=dkey(d);ut.push(k);if(k>=e)break;d.setDate(d.getDate()+1)}return ut}
+function utKonflikt(b,ekskl){const ib=utIntervaller(b);return (state.ut.liste||[]).filter(x=>x.id!==ekskl&&utIntervaller(x).some(([s1,e1])=>ib.some(([s2,e2])=>s1<e2&&e1>s2))
   &&(x.rom||[]).some(r=>(b.rom||[]).includes(r)||r==='Hele bygget'||(b.rom||[]).includes('Hele bygget')))}
-function utRad(x,dag){const fler=x.dato2&&x.dato2>x.dato,tid=!fler?x.fra+'–'+x.til:dag===x.dato?'Fra '+x.fra:dag===x.dato2?'Til '+x.til:'Hele dagen',rom=(x.rom||[]).map(r=>'<span class="tag" style="background:'+utFarge(r)+'22;color:'+utFarge(r)+'">'+esc(r)+'</span>').join(' ');
+function utRad(x,dag){const fler=x.dato2&&x.dato2>x.dato,tm=utTiderMap(x),tid=tm[dag]?tm[dag][0]+'–'+tm[dag][1]:!fler?x.fra+'–'+x.til:dag===x.dato?'Fra '+x.fra:dag===x.dato2?'Til '+x.til:'Hele dagen',rom=(x.rom||[]).map(r=>'<span class="tag" style="background:'+utFarge(r)+'22;color:'+utFarge(r)+'">'+esc(r)+'</span>').join(' ');
   return '<div class="r"><button type="button" data-utedit="'+esc(x.id)+'" style="display:flex;width:100%;gap:10px;align-items:flex-start;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><b style="flex:none;min-width:84px;font-variant-numeric:tabular-nums">'+esc(tid)+'</b><span class="grow"><b>'+esc(x.tittel||'Utleie')+'</b>'+(fler?'<span class="small" style="display:block">'+esc(utDatoKort(x.dato)+' – '+utDatoKort(x.dato2))+'</span>':'')+(x.leier?'<span class="small" style="display:block">'+esc(x.leier)+'</span>':'')+'<span style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">'+rom+'</span></span>'+(x.status==='foresporsel'?'<span class="tag">Forespørsel</span>':'')+'</button></div>'}
 function utleieCard(){
   if(!utTilgang())return '';
@@ -994,8 +997,8 @@ function utAsk(id,dato){
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(ex?'Endre booking':'Ny booking')+'</h3>'
    +'<label class="f">Tittel / hva skal det brukes til<input id="uT" maxlength="100" value="'+esc(b.tittel)+'" placeholder="For eksempel Bursdagsselskap"></label>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:var(--t-m);margin-bottom:4px">Rom</legend>'+utRomListe().map(r=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utr="'+esc(r)+'" style="width:22px;height:22px;flex:none" '+((b.rom||[]).includes(r)?'checked':'')+'>'+esc(r)+'</label>').join('')+'</fieldset>'
-   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Første dag<input id="uD" type="date" value="'+esc(b.dato)+'"></label><label class="f">Siste dag <span class="small">(flere dager)</span><input id="uD2" type="date" value="'+esc(b.dato2||'')+'"></label></div><p class="small" style="margin:-4px 0 0">Lar du «Siste dag» stå tom, gjelder bookingen bare én dag. Ved flere dager gjelder «Fra» første dag og «Til» siste dag, og dagene imellom er hele dager.</p>'
-   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Fra<input id="uF" type="time" value="'+esc(b.fra)+'"></label><label class="f">Til<input id="uTi" type="time" value="'+esc(b.til)+'"></label></div>'
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Første dag<input id="uD" type="date" value="'+esc(b.dato)+'"></label><label class="f">Siste dag <span class="small">(flere dager)</span><input id="uD2" type="date" value="'+esc(b.dato2||'')+'"></label></div><p class="small" style="margin:-4px 0 0">Lar du «Siste dag» stå tom, gjelder bookingen bare én dag. Velger du flere dager, kan du sette eget tidspunkt for hver dag.</p>'
+   +'<div id="uEn" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Fra<input id="uF" type="time" value="'+esc(b.fra)+'"></label><label class="f">Til<input id="uTi" type="time" value="'+esc(b.til)+'"></label></div><div id="uTider" style="display:grid;gap:4px"></div>'
    +'<label class="f">Leietaker<input id="uL" maxlength="100" value="'+esc(b.leier)+'" placeholder="Navn på person eller organisasjon"></label>'
    +'<label class="f">Telefon eller e-post<input id="uK" maxlength="100" value="'+esc(b.kontakt)+'"></label>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Pris<input id="uP" maxlength="30" value="'+esc(b.pris)+'" placeholder="kr"></label><label class="f">Status<select id="uS"><option value="bekreftet" '+(b.status==='bekreftet'?'selected':'')+'>Bekreftet</option><option value="foresporsel" '+(b.status==='foresporsel'?'selected':'')+'>Forespørsel</option></select></label></div>'
@@ -1003,19 +1006,30 @@ function utAsk(id,dato){
    +'<p class="small" style="margin:0">Legg ikke inn opplysninger om barn under 13 år.</p><p class="small" id="uMsg" role="status" style="margin:0"></p>'
    +'<div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button>'+(ex?'<button class="btn danger" value="slett" formnovalidate>Slett</button>':'')+'<button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
+  { const q=x=>dlg.querySelector(x),tm0=utTiderMap(b);
+    const bygg=()=>{const a=q('#uD').value,z=q('#uD2').value,flere=a&&z&&z>a&&Math.round((Date.parse(z)-Date.parse(a))/864e5)<=60;q('#uEn').style.display=flere?'none':'grid';const box=q('#uTider');
+      if(!flere){box.innerHTML='';return}
+      const forr={};box.querySelectorAll('[data-utf]').forEach(i=>{forr[i.dataset.utf]=[i.value,box.querySelector('[data-utt="'+i.dataset.utf+'"]').value]});
+      box.innerHTML='<p class="small" style="margin:0"><b>Tidspunkt hver dag</b></p>'+utDager({dato:a,dato2:z}).map(k=>{const [f,t]=forr[k]||tm0[k]||[q('#uF').value||'10:00',q('#uTi').value||'12:00'],dd=new Date(k+'T12:00');
+        return '<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:6px;align-items:end"><span class="small" style="padding-bottom:12px">'+esc(cap(DAYS[dd.getDay()]).slice(0,3)+' '+dd.getDate()+'. '+MON[dd.getMonth()])+'</span><label class="f">Fra<input type="time" data-utf="'+k+'" value="'+esc(f)+'"></label><label class="f">Til<input type="time" data-utt="'+k+'" value="'+esc(t)+'"></label></div>'}).join('')};
+    q('#uD').addEventListener('change',bygg);q('#uD2').addEventListener('change',bygg);bygg() }
   dlg.querySelector('form').addEventListener('submit',async e=>{
     const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='slett')return;e.preventDefault();const msg=t=>{dlg.querySelector('#uMsg').textContent=t};
     if(v==='slett'){if(!await bekreft('Slette denne bookingen?'))return;
       try{await FB.utDel(id);state.ut.liste=state.ut.liste.filter(x=>x.id!==id);dlg.close();keep(()=>{});push('Slettet','Bookingen er fjernet.')}catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}return}
     const d={tittel:dlg.querySelector('#uT').value.trim(),rom:[...dlg.querySelectorAll('[data-utr]')].filter(x=>x.checked).map(x=>x.dataset.utr),dato:dlg.querySelector('#uD').value,dato2:dlg.querySelector('#uD2').value,fra:dlg.querySelector('#uF').value,til:dlg.querySelector('#uTi').value,
       leier:dlg.querySelector('#uL').value.trim(),kontakt:dlg.querySelector('#uK').value.trim(),pris:dlg.querySelector('#uP').value.trim(),status:dlg.querySelector('#uS').value,notat:dlg.querySelector('#uN').value.trim()};
+    const flere=d.dato&&d.dato2&&d.dato2>d.dato&&Math.round((Date.parse(d.dato2)-Date.parse(d.dato))/864e5)<=60;
+    if(flere){const rader=[...dlg.querySelectorAll('[data-utf]')];d.tider=rader.map(i=>i.dataset.utf+'|'+i.value+'|'+dlg.querySelector('[data-utt="'+i.dataset.utf+'"]').value);
+      if(d.tider.some(x=>{const [,f,t]=x.split('|');return !f||!t||utMin(t)<=utMin(f)})){msg('Hver dag må ha gyldige klokkeslett, og «Til» må være etter «Fra».');return}
+      d.fra=d.tider[0].split('|')[1];d.til=d.tider[d.tider.length-1].split('|')[2]}else d.tider=[];
     if(!d.dato||!d.fra||!d.til){msg('Velg dato og klokkeslett.');return}
     if(d.dato2&&d.dato2<d.dato){msg('Siste dag kan ikke være før første dag.');return}
-    if(!d.dato2||d.dato2===d.dato){d.dato2='';if(utMin(d.til)<=utMin(d.fra)){msg('Sluttid må være etter starttid.');return}}
+    if(!d.dato2||d.dato2===d.dato){d.dato2='';d.tider=[];if(utMin(d.til)<=utMin(d.fra)){msg('Sluttid må være etter starttid.');return}}
     else if(Math.round((Date.parse(d.dato2)-Date.parse(d.dato))/864e5)>60){msg('En booking kan høyst gå over 60 dager.');return}
     if(!d.rom.length){msg('Velg minst ett rom.');return}
     const k=utKonflikt(d,id);
-    if(k.length&&!await bekreft('Dobbeltbooking: '+k.map(x=>(x.tittel||'Utleie')+' '+(x.dato2?utDatoKort(x.dato)+'–'+utDatoKort(x.dato2):x.fra+'–'+x.til)+' ('+(x.rom||[]).join(', ')+')').join('; ')+'. Lagre likevel?',{ok:'Lagre likevel',fare:false}))return;
+    if(k.length&&!await bekreft('Dobbeltbooking: '+k.map(x=>(x.tittel||'Utleie')+' '+(x.dato2&&x.dato2>x.dato?utDatoKort(x.dato)+'–'+utDatoKort(x.dato2):x.fra+'–'+x.til)+' ('+(x.rom||[]).join(', ')+')').join('; ')+'. Lagre likevel?',{ok:'Lagre likevel',fare:false}))return;
     try{const nid=await FB.utSave(id,{...d,by:meEmail()});state.ut.liste=[...(state.ut.liste||[]).filter(x=>x.id!==nid),{id:nid,...d}].sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;state.ut.mnd=d.dato.slice(0,7);dlg.close();state.acc.utleie=true;keep(()=>{});push('Lagret','Bookingen er lagret.')}
     catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
@@ -2444,7 +2458,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='24.10.2026 kl. 10:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='24.10.2026 kl. 11:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
