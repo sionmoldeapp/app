@@ -588,6 +588,8 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .nhero .small{color:rgba(255,255,255,.78)}
 .nhero .tag{background:rgba(255,255,255,.18);color:#fff}
 .nhero .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
+.nhero .btn.on{background:#fff;color:var(--hero-b);border-color:#fff}
+.nhero .svar{border-color:rgba(255,255,255,.25)!important}.nhero .svar input{background:rgba(255,255,255,.95);color:#1c2a3a}
 .ndetalj .head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .nrad.open .ntit{white-space:normal}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--lamp);flex:none}
@@ -1192,10 +1194,38 @@ const postEtiketter=p=>p.groups&&p.groups.length?p.groups.map(gName):(p.audience
 const nyhIkon=p=>/hilsen/i.test(p.t)
   ?'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>'
   :'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2M8 9h6M8 13h6"/></svg>';
+/* Raske svar på gruppebeskjeder. Mottakeren (medlem i gruppa) trykker Ok / Kommer / Kommer ikke, eller skriver noen ord. Lederen ser en oversikt under beskjeden. */
+const SVAR_TXT={ok:'Ok, mottatt',kommer:'Kommer',ikke:'Kommer ikke',tekst:'Svar'};
+state.svar=state.svar||{};
+const svarMa=p=>!!(p&&p.svar&&(p.groups||[]).length&&state.user&&state.member);
+const svarLeder=p=>svarMa(p)&&(state.admin||(state.leads||[]).some(g=>(p.groups||[]).includes(g)));
+const svarMedlem=p=>svarMa(p)&&!svarLeder(p)&&(state.groups||[]).some(g=>(p.groups||[]).includes(g));
+async function svarLast(id){const p=posts.find(x=>String(x.id)===String(id));if(!FB||!p||!svarMa(p))return;
+  try{const st=state.svar[id]=state.svar[id]||{};if(svarLeder(p))st.alle=await FB.svarAlle(id);else if(svarMedlem(p))st.mine=await FB.svarMitt(id);keep(()=>{})}catch(e){}}
+function svarBlokk(p){
+  if(svarLeder(p)){const l=(state.svar[p.id]||{}).alle;
+    if(!l)return '<div class="svar small" style="margin-top:10px">Henter svar …</div>';
+    const tell=k=>l.filter(x=>x.k===k).length;
+    return '<div class="svar" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><b style="font-size:var(--t-m)">Svar ('+l.length+')</b>'
+     +(l.length?'<div class="btns" style="margin:6px 0">'+['ok','kommer','ikke','tekst'].filter(k=>tell(k)).map(k=>'<span class="tag">'+SVAR_TXT[k]+' '+tell(k)+'</span>').join('')+'</div>'
+       +'<div class="reg">'+l.map(x=>'<div class="r" style="display:block"><b>'+esc(x.name||x.by)+'</b> <span class="small">'+esc(SVAR_TXT[x.k]||'')+(x.t?' · '+esc(x.t):'')+'</span></div>').join('')+'</div>':'<p class="small" style="margin:4px 0 0">Ingen har svart ennå.</p>')+'</div>'}
+  if(svarMedlem(p)){const m=(state.svar[p.id]||{}).mine;
+    return '<div class="svar" data-svar="'+esc(p.id)+'" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><b style="font-size:var(--t-m)">Svar til lederen</b>'
+     +'<div class="btns" style="margin:8px 0">'+['ok','kommer','ikke'].map(k=>'<button type="button" class="btn '+(m&&m.k===k?'on':'')+'" data-svark="'+k+'" aria-pressed="'+!!(m&&m.k===k)+'">'+SVAR_TXT[k]+'</button>').join('')+'</div>'
+     +'<div style="display:flex;gap:8px"><input class="svart" maxlength="140" placeholder="Eller skriv noen ord …" value="'+esc(m&&m.t||'')+'" aria-label="Skriv et kort svar" style="flex:1;min-width:0"><button type="button" class="btn primary" data-svarsend style="width:auto">Send</button></div>'
+     +(m?'<p class="small" role="status" style="margin:6px 0 0">Du svarte: <b>'+esc(SVAR_TXT[m.k]||'')+'</b>'+(m.t?' · '+esc(m.t):'')+'. Trykk på et annet svar for å endre.</p>':'')+'</div>'}
+  return ''}
+async function svarSend(pid,k,tekst){
+  const st=state.svar[pid]=state.svar[pid]||{},m=st.mine||{},nk=k||(tekst?(m.k||'tekst'):m.k);
+  if(!nk){push('Velg et svar','Trykk Ok, Kommer eller Kommer ikke, eller skriv noen ord.');return}
+  const t=String(tekst!=null?tekst:(m.t||'')).trim().slice(0,140);
+  try{await FB.svarSett(pid,{name:minNavn(),k:nk,t});st.mine={k:nk,t,ms:Date.now()};try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}push('Svaret er sendt','Lederen ser det.')}
+  catch(e){push('Kunne ikke sende svaret',saveMsg(e&&e.code))}
+  keep(()=>{})}
 function nyhKort(p,hero){
   if(p.m&&!state.member)return `<div class="card locked"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><div><b style="color:var(--ink)">${esc(p.t)}</b><div class="small">Logg inn som medlem for å lese.</div></div></div>`;
   const open=!!state.open['p_'+p.id],u=ulest(p),fest=p.pinned&&(effAdmin()||(effLeder()&&state.ltype==='forkynner')),tekst=String(p.b||'').replace(/\s+/g,' ').trim();
-  const detalj=open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open"><span class="pt${p.bh?' rt':''}">${richVis(p)}</span></div>${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:'';
+  const detalj=open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open"><span class="pt${p.bh?' rt':''}">${richVis(p)}</span></div>${svarBlokk(p)}${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:'';
   const lp=state.admin&&editOn()?` data-lp="posts:${p.id}"`:'';
   if(hero)return `<div class="nhero ${open?'open':''}"${lp}><button type="button" class="nhero-b" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="nhero-ey">${u?'<span class="dot" title="Ulest"></span>':''}Siste nytt · ${esc(ago(p))}</span><span class="nhero-t">${fest?'<svg class="pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path d="M12 17v5M8 3h8l-1 7 3 3H6l3-3z"/></svg>':''}${esc(p.t)}</span>${open?'':`<span class="nhero-p">${esc(tekst)}</span><span class="nhero-mer">Les mer ›</span>`}</button>${detalj}</div>`;
   return `<div class="nrad ${open?'open':''} ${u?'ulest':''}"${lp}><button type="button" class="nhode ptitle" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="nikon">${nyhIkon(p)}${u?'<span class="dot" title="Ulest"></span>':''}</span><span class="ntekst"><b class="ntit">${fest?'<svg class="pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path d="M12 17v5M8 3h8l-1 7 3 3H6l3-3z"/></svg>':''}${esc(p.t)}</b>${open?'':`<span class="nprev">${esc(tekst)}</span>`}</span><span class="nmeta">${esc(ago(p))}</span></button>${detalj}</div>`}
@@ -1315,7 +1345,7 @@ const PLACES=['Kometvegen 7','Åndalsnes','Eidsvåg','Eide','Tingvoll'],TIMES=['
 /* [felt, etikett, type, valg, type på feltet for «Annet»]. Stjerne etter typen betyr obligatorisk. */
 const FIELDS={
  events:[['title','Tittel','text*'],['start','Startdato','date*'],['end','Sluttdato (bare for flere dager)','date'],['time','Klokkeslett','combo',TIMES,'time'],['place','Sted','combo',PLACES,'text'],['who','Taler eller hvem','text'],['text','Beskrivelse','area'],['cat','Kategori','sel',CATS],['groups','Gruppe (valgfritt). Bare medlemmer i valgte grupper og administratorer ser arrangementet','multi',GR_IDS],['m','Bare for medlemmer','chk'],['remindH','Påminnelse til medlemmene i gruppen (gjelder grupper med automatisk påminnelse)','sel',[24,48,3,1,0]],['hideHome','Ikke vis på Hjem (vises fortsatt i Program)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk']],
- posts:[['t','Tittel','text*'],['b','Melding','rich*'],['audience','Målgruppe','multi',['Alle','Medlem',...GR_IDS]],['pinned','Fest øverst i Nyheter (står først uansett når den ble lagt ut)','chk'],['hideHome','Ikke vis på Hjem (vises fortsatt i Nyheter)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['expireAt','Skjul etter (valgfritt)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk'],['push','Send også som varsel til telefonene (ved planlagt visning sendes det på det tidspunktet)','chk']],
+ posts:[['t','Tittel','text*'],['b','Melding','rich*'],['audience','Målgruppe','multi',['Alle','Medlem',...GR_IDS]],['pinned','Fest øverst i Nyheter (står først uansett når den ble lagt ut)','chk'],['hideHome','Ikke vis på Hjem (vises fortsatt i Nyheter)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['expireAt','Skjul etter (valgfritt)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk'],['svar','La mottakerne svare raskt (Ok, Kommer, Kommer ikke eller en kort tekst). Bare du, lederne for gruppene og administratorer ser svarene.','chk'],['push','Send også som varsel til telefonene (ved planlagt visning sendes det på det tidspunktet)','chk']],
  regular:[['title','Tittel','text*'],['day','Ukedag','sel',[1,2,3,4,5,6,0]],['time','Klokkeslett','combo*',TIMES,'time'],['weeks','Hvilke uker','sel',['Hver uke','Partallsuker','Oddetallsuker','Ca. én gang i måneden']],['note','Merknad','text'],['cat','Kategori','sel',CATS]]};
 const COL={events:'events',posts:'posts',regular:'regular'};
 const REMIND_OPT={24:'Dagen før (ett døgn før)',48:'To dager før',3:'3 timer før',1:'1 time før',0:'Ingen påminnelse'};
@@ -1333,7 +1363,7 @@ function fields(t,ed,only){return FIELDS[t].filter(f=>(!only||only.includes(f[0]
   if(b==='rich')return richBox('',richFra(ed),l);
   if(b==='area')return `<label class="f">${l}<textarea name="${k}" rows="3" ${req?'required':''}>${esc(v)}</textarea></label>`;
   if(b==='sel')return `<label class="f">${l}<select name="${k}">${(k==='cat'?allCats():o).map(x=>`<option value="${x}" ${String(v==null?o[0]:(k==='cat'?normCat(v):v))===String(x)?'selected':''}>${k==='day'?cap(DAYS[x]):k==='remindH'?REMIND_OPT[x]:x}</option>`).join('')}</select></label>`;
-  if(b==='chk')return `<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="${k}" style="width:auto" ${(v||(k==='push'&&state.pushStd&&!ed))?'checked':''}>${l}</label>`;
+  if(b==='chk')return `<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="${k}" style="width:auto" ${(v||((k==='push'||k==='svar')&&state.pushStd&&!ed))?'checked':''}>${l}</label>`;
   return `<label class="f">${l}<input name="${k}" type="${b}" ${req?'required':''} value="${esc(v)}"></label>`}).join('')}
 function admItems(t){const l=t==='events'?rawEvents.slice().sort((a,b)=>a.start<b.start?-1:1):t==='posts'?posts:regular;const f=t==='posts'||state.af==='Alle'?l:l.filter(x=>normCat(x.cat)===state.af);return state.admin?f:f.filter(ledItem)}
 function admLabel(t,x){return t==='events'?`${esc(x.start)} · ${esc(x.title)}${x.groups&&x.groups.length?' <span class="small">('+esc(x.groups.map(gName).join(', '))+')</span>':''}${x.hideHome?' <span class="small">(skjult på Hjem)</span>':''}`:t==='posts'?esc(x.t)+(x.tag&&x.tag!=='Alle'?' <span class="small">('+esc(x.tag)+')</span>':'')+(x.hideHome?' <span class="small">(skjult på Hjem)</span>':''):`${cap(DAYS[x.day])} ${esc(x.time)} · ${esc(x.title)}`}
@@ -2200,7 +2230,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='23.10.2026 kl. 12:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='23.10.2026 kl. 13:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2761,7 +2791,9 @@ document.addEventListener('click',async e=>{
     try{let sendt=false;if(p.schedId)sendt=!(await FB.delScheduled(p.schedId));
       await FB.del('posts',p.id);await refresh();push(sendt?'Meldingen er slettet':'Utsendelsen er avlyst',sendt?'Varselet var allerede sendt, så det kan ikke trekkes tilbake.':'Varselet blir ikke sendt.')}
     catch(er){c.disabled=false;push('Kunne ikke avlyse',saveMsg(er&&er.code))}}
-  else if(c.dataset.postopen){keep(()=>{const k='p_'+c.dataset.postopen;state.open[k]=!state.open[k];if(state.open[k])markLest(c.dataset.postopen)})}
+  else if(c.dataset.postopen){keep(()=>{const k='p_'+c.dataset.postopen;state.open[k]=!state.open[k];if(state.open[k])markLest(c.dataset.postopen)});if(state.open['p_'+c.dataset.postopen])svarLast(c.dataset.postopen)}
+  else if(c.dataset.svark){const b=c.closest('[data-svar]');if(b)svarSend(b.dataset.svar,c.dataset.svark,null)}
+  else if('svarsend' in c.dataset){const b=c.closest('[data-svar]');if(b)svarSend(b.dataset.svar,null,b.querySelector('.svart').value)}
   else if('pubnew' in c.dataset){state.pushStd=false;pubAsk()}
   else if('gruppebesk' in c.dataset){gruppeBeskjed()}
   else if('grpnew' in c.dataset){grpAsk(null)}
@@ -2946,7 +2978,7 @@ const WIZ={
     {h:'Skriv meldingen',p:'Tittel og melding. Du kan bruke fet, kursiv og ulik tekststørrelse.',keys:['t','b']},
     {h:'Hvem skal få den?',p:'Du kan velge flere. Den som er med i flere av dem får bare én melding.',keys:['audience']},
     {h:'Når skal den vises?',p:'Valgfritt. La feltene stå tomme for å vise den med en gang.',keys:['pubAt','expireAt']},
-    {h:'Slik sendes den',p:'Sjekk at alt stemmer før du sender.',keys:['push','pinned','hideHome','draft'],sum:true}],
+    {h:'Slik sendes den',p:'Sjekk at alt stemmer før du sender.',keys:['svar','push','pinned','hideHome','draft'],sum:true}],
   regular:[
     {h:'Hva slags samling?',p:'En fast samling gjentas hver uke.',keys:['title','cat']},
     {h:'Når er den?',p:'Velg også om den gjelder hver uke eller bare partalls- eller oddetallsuker.',keys:['day','time','weeks']},

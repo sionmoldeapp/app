@@ -136,6 +136,11 @@ const FB={
     async bonnAnon(url,d){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'bonnanon',...d})});return r.json()},
     delPrayer:id=>sl(S.deleteDoc(S.doc(db,'prayers',id))),
     // Saker til lederrådet: bare administratorer og medlemmer i gruppen lederradet (reglene).
+    // Raske svar på gruppebeskjeder: posts/{id}/svar/{e-post}. Hver bruker har ett svar per beskjed. Lederne for gruppene og administratorer leser alle.
+    svarMitt:async pid=>{const s=await S.getDoc(S.doc(db,'posts',String(pid),'svar',String(auth.currentUser.email).toLowerCase()));return s.exists()?s.data():null},
+    svarAlle:async pid=>{const s=await S.getDocs(S.collection(db,'posts',String(pid),'svar'));return s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(x.ms||0)-(y.ms||0))},
+    svarSett:(pid,o)=>{const me=String(auth.currentUser.email).toLowerCase();return S.setDoc(S.doc(db,'posts',String(pid),'svar',me),{by:me,name:String(o.name||'').slice(0,60),k:o.k,t:String(o.t||'').slice(0,140),ms:Date.now()})},
+    svarSlett:pid=>S.deleteDoc(S.doc(db,'posts',String(pid),'svar',String(auth.currentUser.email).toLowerCase())),
     async lrList(){const s=await S.getDocs(S.query(S.collection(db,'lrsaker'),S.orderBy('ms','desc'),S.limit(100)));return s.docs.map(d=>({id:d.id,...d.data()}))},
     lrAdd:d=>S.addDoc(S.collection(db,'lrsaker'),{t:String(d.t).slice(0,2000),...(d.bh?{bh:String(d.bh).slice(0,8000)}:{}),name:String(d.name||'').slice(0,60),by:auth.currentUser.email.toLowerCase(),ms:Date.now(),done:false}),
     lrDone:(id,v)=>sl(S.updateDoc(S.doc(db,'lrsaker',id),{done:!!v,doneMs:v?Date.now():0})),

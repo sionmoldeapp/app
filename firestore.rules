@@ -28,6 +28,22 @@ service cloud.firestore {
       allow update: if col in ['events', 'posts'] && isLeader() && ledGroups(resource.data.get('groups', [])) && ledGroups(request.resource.data.get('groups', [])) && request.resource.data.get('m', false) == true;
       allow delete: if col in ['events', 'posts'] && isLeader() && ledGroups(resource.data.get('groups', []));
     }
+    // Raske svar på gruppebeskjeder (posts/{id}/svar/{e-post}). Et medlem i en av gruppene beskjeden gjelder kan svare (Ok, Kommer, Kommer ikke og/eller en kort tekst, maks 140 tegn).
+    // Svaret kan leses av avsenderen selv, administratorer og lederne for gruppene beskjeden gjelder. Andre medlemmer ser det ikke.
+    match /posts/{pid}/svar/{uid} {
+      allow read: if signedIn() && (uid == request.auth.token.email || isAdmin()
+        || (isLeader() && myLeads().toSet().intersection(get(/databases/$(database)/documents/posts/$(pid)).data.get('groups', []).toSet()).size() > 0));
+      allow create, update: if isMember() && uid == request.auth.token.email
+        && request.resource.data.keys().hasOnly(['by', 'name', 'k', 't', 'ms'])
+        && request.resource.data.by == request.auth.token.email
+        && request.resource.data.k in ['ok', 'kommer', 'ikke', 'tekst']
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60
+        && request.resource.data.t is string && request.resource.data.t.size() <= 140
+        && request.resource.data.ms is number
+        && get(/databases/$(database)/documents/posts/$(pid)).data.get('svar', false) == true
+        && (isAdmin() || get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []).toSet().intersection(get(/databases/$(database)/documents/posts/$(pid)).data.get('groups', []).toSet()).size() > 0);
+      allow delete: if signedIn() && (uid == request.auth.token.email || isAdmin());
+    }
     // Ansvarsområder: bare medlemmer leser, bare administrator endrer.
     match /roles/{id} {
       allow read: if isMember();
