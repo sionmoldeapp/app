@@ -167,6 +167,17 @@ service cloud.firestore {
             && request.resource.data.annet is string && request.resource.data.annet.size() <= 800
             && request.resource.data.giro is string && request.resource.data.giro.size() <= 400
             && (!('testament' in request.resource.data) || (request.resource.data.testament is string && request.resource.data.testament.size() <= 600)))
+        || (id == 'julemesse' && request.resource.data.keys().hasOnly(['on', 'tittel', 'tid', 'sted', 'tekst', 'loddOn', 'loddFra', 'loddTil', 'loddInfo', 'premier', 'trukket', 'trukketMs'])
+            && request.resource.data.on is bool && request.resource.data.loddOn is bool
+            && request.resource.data.tittel is string && request.resource.data.tittel.size() <= 80
+            && request.resource.data.tid is string && request.resource.data.tid.size() <= 80
+            && request.resource.data.sted is string && request.resource.data.sted.size() <= 80
+            && request.resource.data.tekst is string && request.resource.data.tekst.size() <= 1500
+            && request.resource.data.loddInfo is string && request.resource.data.loddInfo.size() <= 600
+            && request.resource.data.premier is string && request.resource.data.premier.size() <= 1500
+            && request.resource.data.loddFra is number && request.resource.data.loddTil is number
+            && request.resource.data.trukket is list && request.resource.data.trukket.size() <= 50
+            && request.resource.data.trukketMs is number)
         || (id == 'personvern' && request.resource.data.keys().hasOnly(['text', 'updated'])
             && request.resource.data.text is string && request.resource.data.text.size() <= 20000
             && request.resource.data.updated is string && request.resource.data.updated.size() <= 10));

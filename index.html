@@ -695,11 +695,12 @@ async function pushTall(){   // leser alle varselkoder, så resultatet gjenbruke
 async function load(){
   // Alle forespørslene sendes samtidig (tidligere én og én, og det tok mange sekunder).
   const ok=p=>p.catch(()=>null);
-  const [gr,ca,ko,gv,pv,lt,fr]=await Promise.all([FB?ok(FB.groupsList()):null,FB?ok(FB.catsList()):null,FB?ok(FB.getContact()):null,FB?ok(FB.getGiving()):null,FB&&state.user?ok(FB.getPrivacy()):null,FB&&state.admin?ok(FB.ltypesList()):null,fetchAll()]);
+  const [gr,ca,ko,gv,pv,lt,fr,jm]=await Promise.all([FB?ok(FB.groupsList()):null,FB?ok(FB.catsList()):null,FB?ok(FB.getContact()):null,FB?ok(FB.getGiving()):null,FB&&state.user?ok(FB.getPrivacy()):null,FB&&state.admin?ok(FB.ltypesList()):null,fetchAll(),FB?ok(FB.getJul()):null]);
   if(gr)applyGroups(gr);
   if(ca)applyCats(ca);
   if(ko)state.contact=ko;
   if(gv)state.giving=gv;
+  if(jm)state.jul=jm;
   if(FB&&state.user)state.pv=pv;
   if(lt)applyLtypes(lt);
   bruk(...fr);
@@ -865,6 +866,84 @@ const kartUrl=p=>'https://www.google.com/maps/search/?api=1&query='+encodeURICom
 
 const CONTACT_DEF={address:'Kometvegen 7, 6419 Molde',hours:'tirsdag–torsdag kl. 10–16',phone:'71 25 10 29',email:'post@sionmolde.no'};
 /* Givertjeneste: kontonummer, Vipps, Avtalegiro og annen økonomiinformasjon. Administrator endrer (blyanten → Endre). Tomme felt skjules. */
+/* Julemesse og loddtrekning. Alt ligger i ett dokument (settings/julemesse) som alle kan lese og bare administratorer endrer. Loddene selges utenfor appen: appen viser bare info, trekker vinnernumre tilfeldig og lar folk sjekke loddnummeret sitt. Ingen personopplysninger lagres. */
+const premieListe=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,50);
+function julTilfeldig(n){const a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;let x;do{crypto.getRandomValues(a);x=a[0]}while(x>=lim);return x%n}
+function julTrekk(j){const fra=+j.loddFra,til=+j.loddTil,N=til-fra+1,brukt=new Set(),res=[];
+  for(const p of premieListe(j.premier)){let n;do{n=fra+julTilfeldig(N)}while(brukt.has(n));brukt.add(n);res.push({p,n})}return res}
+function julCard(){
+  const j=state.jul||null,red=state.admin&&editOn();
+  if(!(j&&j.on)&&!red)return '';
+  if(!j)return '<div class="card"><h2>Julemesse</h2><p class="small" style="margin:6px 0 10px">Ikke satt opp ennå. Her kan du legge ut informasjon om julemessen og holde loddtrekning.</p><button type="button" class="btn primary" data-juledit style="width:auto">Sett opp julemesse</button></div>';
+  const rad=(n,v)=>'<div class="r" style="display:block"><span class="small">'+esc(n)+'</span><b style="display:block;font-size:var(--t-l)">'+esc(v)+'</b></div>',tr=Array.isArray(j.trukket)?j.trukket:[];
+  let h='<div class="reg">'+(j.tid?rad('Når',j.tid):'')+(j.sted?rad('Hvor',j.sted):'')+(j.tekst?'<div class="r" style="display:block"><div style="white-space:pre-line">'+linkify(esc(j.tekst))+'</div></div>':'')+'</div>';
+  if(j.loddOn){
+    h+='<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Loddtrekning</h3>';
+    if(j.loddInfo)h+='<div class="small" style="white-space:pre-line;margin-bottom:8px">'+linkify(esc(j.loddInfo))+'</div>';
+    const pr=premieListe(j.premier);
+    if(tr.length){
+      h+='<div class="reg">'+tr.map(x=>'<div class="r" style="display:flex;gap:8px;align-items:center;justify-content:space-between"><b>'+esc(x.p)+'</b><span class="tag">Lodd nr '+esc(String(x.n))+'</span></div>').join('')+'</div>'
+        +(j.trukketMs?'<p class="small" style="margin:6px 0 0">Trukket '+esc(fmtTid(j.trukketMs))+'.</p>':'')
+        +'<div style="display:flex;gap:8px;margin-top:10px"><input id="julNr" inputmode="numeric" maxlength="8" placeholder="Loddnummer" aria-label="Skriv loddnummeret ditt" style="flex:1;min-width:0"><button type="button" class="btn primary" data-julsjekk style="width:auto">Sjekk lodd</button></div><p class="small" id="julMsg" role="status" style="margin:6px 0 0"></p>'}
+    else h+=(pr.length?'<div class="small" style="margin-bottom:6px">Premier:</div><ul style="margin:0 0 8px;padding-left:20px">'+pr.map(p=>'<li>'+esc(p)+'</li>').join('')+'</ul>':'')+'<p class="small" style="margin:0">Trekningen er ikke gjennomført ennå. Ha loddet ditt klart.</p>'}
+  const knapper=red?'<div class="btns" style="margin-top:12px"><button type="button" class="btn" data-juledit>Endre</button>'+(j.loddOn&&premieListe(j.premier).length?'<button type="button" class="btn primary" data-jultrekk style="width:auto">'+(tr.length?'Trekk på nytt':'Trekk vinnere')+'</button>':'')+(tr.length?'<button type="button" class="btn" data-julnull>Nullstill trekning</button>':'')+'</div>'+(j.on?'':'<p class="small" style="margin:6px 0 0">Skjult for andre akkurat nå (Vis på Hjem er av).</p>'):'';
+  return '<details class="card acc" data-acc="jul" '+(state.acc.jul!==false?'open':'')+'><summary><h2>'+esc(j.tittel||'Julemesse')+'</h2></summary>'+h+knapper+'</details>'}
+function julSjekk(){const j=state.jul||{},tr=Array.isArray(j.trukket)?j.trukket:[],inp=document.getElementById('julNr'),m=document.getElementById('julMsg');if(!inp||!m)return;
+  const n=parseInt(inp.value.replace(/\D/g,''),10);if(!(n>=0)||inp.value.trim()===''){m.textContent='Skriv loddnummeret ditt.';return}
+  const v=tr.filter(x=>+x.n===n);m.textContent=v.length?'Gratulerer! Lodd nr '+n+' vant: '+v.map(x=>x.p).join(', ')+'. Ta kontakt med oss på messen for å hente premien.':'Lodd nr '+n+' vant ikke denne gangen. Takk for at du var med!';
+  try{if(v.length&&navigator.vibrate)navigator.vibrate([20,40,20])}catch(e){}}
+function julAsk(){
+  if(!state.admin||document.querySelector('dialog.pub'))return;
+  const j={on:true,tittel:'Julemesse',tid:'',sted:'',tekst:'',loddOn:false,loddFra:1,loddTil:200,loddInfo:'',premier:'',trukket:[],trukketMs:0,...(state.jul||{})},dlg=document.createElement('dialog');dlg.className='lp pub';
+  const chk=(id,l,v)=>'<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="'+id+'" style="width:auto" '+(v?'checked':'')+'>'+l+'</label>';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Julemesse og loddtrekning</h3><p class="small" style="margin:0">Dette vises for alle på Hjem når «Vis på Hjem» er på.</p>'
+   +chk('jOn','Vis på Hjem',j.on)
+   +'<label class="f">Tittel<input id="jT" maxlength="80" value="'+esc(j.tittel||'')+'"></label>'
+   +'<label class="f">Når<input id="jW" maxlength="80" placeholder="For eksempel lørdag 6. desember kl. 12–16" value="'+esc(j.tid||'')+'"></label>'
+   +'<label class="f">Hvor<input id="jS" maxlength="80" placeholder="For eksempel i menighetssalen, Kometvegen 7" value="'+esc(j.sted||'')+'"></label>'
+   +'<label class="f">Om julemessen<textarea id="jX" rows="4" maxlength="1500" placeholder="Hva kan folk se frem til? Kafé, basar, barnehjørne, …">'+esc(j.tekst||'')+'</textarea></label>'
+   +'<h4 style="margin:8px 0 0">Loddtrekning</h4>'+chk('jLOn','Har loddtrekning',j.loddOn)
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Første loddnummer<input id="jFra" inputmode="numeric" maxlength="6" value="'+esc(String(j.loddFra))+'"></label><label class="f">Siste loddnummer<input id="jTil" inputmode="numeric" maxlength="6" value="'+esc(String(j.loddTil))+'"></label></div>'
+   +'<label class="f">Om lodd (pris, hvor de selges, Vipps)<textarea id="jI" rows="3" maxlength="600">'+esc(j.loddInfo||'')+'</textarea></label>'
+   +'<label class="f">Premier (ett per linje, i rekkefølgen de trekkes)<textarea id="jP" rows="5" maxlength="1500" placeholder="1. premie: Gavekort&#10;2. premie: Julekurv">'+esc(j.premier||'')+'</textarea></label>'
+   +'<p class="small" style="margin:0">Husk at loddsalg og lotteri har regler du må følge. Sjekk med Lotteritilsynet om dere trenger tillatelse.</p>'
+   +'<p class="small" id="jMsg" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='lagre')return;e.preventDefault();
+    const fra=parseInt(dlg.querySelector('#jFra').value,10)||0,til=parseInt(dlg.querySelector('#jTil').value,10)||0,lodd=dlg.querySelector('#jLOn').checked;
+    if(lodd&&(til<fra||til-fra>999999)){dlg.querySelector('#jMsg').textContent='Siste loddnummer må være større enn eller lik det første.';return}
+    const d={on:dlg.querySelector('#jOn').checked,tittel:dlg.querySelector('#jT').value.trim(),tid:dlg.querySelector('#jW').value.trim(),sted:dlg.querySelector('#jS').value.trim(),tekst:dlg.querySelector('#jX').value.trim(),
+      loddOn:lodd,loddFra:fra,loddTil:til,loddInfo:dlg.querySelector('#jI').value.trim(),premier:dlg.querySelector('#jP').value.trim(),trukket:j.trukket||[],trukketMs:j.trukketMs||0};
+    try{await FB.setJul(d);state.jul=d;dlg.close();state.acc.jul=true;keep(()=>{});push('Lagret','Julemessen er oppdatert.')}
+    catch(er){dlg.querySelector('#jMsg').textContent='Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
+  dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+/* Trekningen: vinnerne trekkes tilfeldig (nettleserens sikre tilfeldighet, ingen nummer to ganger), vises ett og ett med en liten rulleanimasjon, og lagres først når du trykker «Lagre og vis for alle». */
+async function julTrekkAsk(){
+  const j=state.jul;if(!state.admin||!j||document.querySelector('dialog.pub'))return;
+  const fra=+j.loddFra,til=+j.loddTil,pr=premieListe(j.premier);
+  if(!(til>=fra)||!pr.length){push('Kan ikke trekke','Legg inn loddnumre og minst én premie først.');return}
+  if(til-fra+1<pr.length){push('Kan ikke trekke','Det er flere premier enn loddnumre.');return}
+  if((j.trukket||[]).length&&!await bekreft('Det er allerede trukket vinnere. Trekke på nytt? De gamle vinnerne forsvinner.',{ok:'Trekk på nytt'}))return;
+  const res=julTrekk(j),dlg=document.createElement('dialog');dlg.className='lp pub';let i=0,tid=null,ferdig=false;
+  dlg.innerHTML='<h3 style="margin:0 0 8px">Loddtrekning</h3><p class="small" id="tP" style="margin:0 0 6px"></p><div id="tN" aria-live="polite" style="font-family:var(--f-display);font-size:72px;line-height:1;text-align:center;margin:10px 0;min-height:76px;color:var(--brand)">–</div><div class="reg" id="tL"></div><p class="small" id="tM" role="status" style="margin:8px 0 0"></p><div class="btns" style="margin-top:10px"><button type="button" class="btn primary" id="tGo" style="width:auto">Trekk '+esc(pr[0])+'</button><button type="button" class="btn" id="tSave" style="width:auto" hidden>Lagre og vis for alle</button><button type="button" class="btn" id="tX">Avbryt</button></div>';
+  document.body.appendChild(dlg);const $d=s=>dlg.querySelector(s),spin=()=>{$d('#tN').textContent=String(fra+julTilfeldig(til-fra+1))};
+  $d('#tP').textContent='Neste: '+pr[0]+' ('+(1)+' av '+pr.length+')';
+  $d('#tGo').addEventListener('click',()=>{
+    if(tid)return;const r=res[i],go=$d('#tGo');go.disabled=true;
+    const lett=matchMedia('(prefers-reduced-motion:reduce)').matches;
+    const vis=()=>{clearInterval(tid);tid=null;$d('#tN').textContent=String(r.n);$d('#tL').insertAdjacentHTML('beforeend','<div class="r" style="display:flex;gap:8px;justify-content:space-between"><b>'+esc(r.p)+'</b><span class="tag">Lodd nr '+r.n+'</span></div>');try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}
+      i++;if(i<res.length){$d('#tP').textContent='Neste: '+res[i].p+' ('+(i+1)+' av '+res.length+')';go.textContent='Trekk '+res[i].p;go.disabled=false}else{ferdig=true;$d('#tP').textContent='Alle premiene er trukket.';go.hidden=true;$d('#tSave').hidden=false}};
+    if(lett){vis();return}
+    tid=setInterval(spin,55);setTimeout(vis,1900)});
+  $d('#tSave').addEventListener('click',async()=>{
+    try{const d={...j,trukket:res,trukketMs:Date.now()};await FB.setJul(d);state.jul=d;dlg.close();keep(()=>{});push('Lagret','Vinnerne er publisert på Hjem.')}
+    catch(er){$d('#tM').textContent='Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
+  const lukk=async()=>{if(i>0&&!ferdig||ferdig){if(!await bekreft('Lukke uten å lagre trekningen? Vinnerne som er trukket blir ikke publisert.',{ok:'Lukk uten å lagre'}))return}clearInterval(tid);dlg.close()};
+  $d('#tX').addEventListener('click',lukk);dlg.addEventListener('cancel',e=>{e.preventDefault();lukk()});
+  dlg.addEventListener('close',()=>{clearInterval(tid);dlg.remove()});dlg.showModal()}
+async function julNull(){const j=state.jul;if(!state.admin||!j)return;if(!await bekreft('Nullstille trekningen? Vinnerne fjernes fra Hjem.',{ok:'Nullstill'}))return;
+  try{const d={...j,trukket:[],trukketMs:0};await FB.setJul(d);state.jul=d;keep(()=>{});push('Nullstilt','Trekningen er fjernet.')}catch(er){push('Kunne ikke nullstille',saveMsg(er&&er.code))}}
 const GIVING_DEF={konto:'9536 06 40400',bank:'Handelsbanken',vipps:'100349',giro:'',annet:'Brukes til tiende og gaver.',testament:'Ønsker du å gi en testamentarisk gave til menigheten, ta kontakt med kontoret.'};
 function givingCard(){
   const g={...GIVING_DEF,...(state.giving||{})},rad=(navn,verdi,kopi)=>'<div class="r" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap"><div class="grow"><span class="small">'+esc(navn)+'</span><b style="display:block;font-size:var(--t-l);letter-spacing:.02em">'+esc(verdi)+'</b></div>'+(kopi?'<button type="button" class="btn" data-kopier="'+esc(kopi)+'">Kopier</button>':'')+'</div>',R=[];
@@ -1076,6 +1155,7 @@ function homeDeler(){
    neste:['Neste hovedsamling',()=>(n?`<div class="card next" data-t="prog" data-nid="${esc(String(n.id))}" role="link" tabindex="0" style="cursor:pointer"><div class="eyebrow">Neste hovedsamling</div><h2>${n.t}</h2>
    <div class="meta">${nesteTid(n)}</div></div>`
   :`<div class="card next" data-t="prog"><div class="eyebrow">Neste hovedsamling</div><h2>Ingen planlagt</h2><div class="meta">Se Program.</div></div>`)],
+   jul:['Julemesse',()=>julCard()],
    gruppebesk:['Send beskjed til gruppa',()=>gruppeBeskjedCard()],
    velkomst:['Kom i gang',()=>welcomeCard()],
    besok:['Logg inn for å få mer',()=>visitorCard()],
@@ -2280,7 +2360,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='23.10.2026 kl. 22:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='23.10.2026 kl. 23:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2768,6 +2848,10 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.prdel){prayDel(c.dataset.prdel)}
   else if('contactedit' in c.dataset){contactAsk()}
   else if('givingedit' in c.dataset){givingAsk()}
+  else if('juledit' in c.dataset){julAsk()}
+  else if('jultrekk' in c.dataset){julTrekkAsk()}
+  else if('julnull' in c.dataset){julNull()}
+  else if('julsjekk' in c.dataset){julSjekk()}
   else if(c.dataset.kopier){kopierTekst(c.dataset.kopier)}
   else if('pvedit' in c.dataset){pvAsk()}
   else if(c.dataset.atedit){atAsk(c.dataset.atedit)}

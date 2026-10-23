@@ -155,6 +155,8 @@ const FB={
     async getPrivacy(){const s=await S.getDoc(S.doc(db,'settings','personvern'));return s.exists()?s.data():null},
     setPrivacy:(text,updated)=>S.setDoc(S.doc(db,'settings','personvern'),{text:String(text).slice(0,20000),updated:String(updated).slice(0,10)}),
     // Givertjeneste (kontonummer, Vipps, Avtalegiro og annen økonomiinfo): alle kan lese, administrator endrer.
+    async getJul(){const s=await S.getDoc(S.doc(db,'settings','julemesse'));return s.exists()?s.data():null},
+    setJul:d=>S.setDoc(S.doc(db,'settings','julemesse'),{on:!!d.on,tittel:String(d.tittel||'').slice(0,80),tid:String(d.tid||'').slice(0,80),sted:String(d.sted||'').slice(0,80),tekst:String(d.tekst||'').slice(0,1500),loddOn:!!d.loddOn,loddFra:Math.max(0,parseInt(d.loddFra,10)||0),loddTil:Math.max(0,parseInt(d.loddTil,10)||0),loddInfo:String(d.loddInfo||'').slice(0,600),premier:String(d.premier||'').slice(0,1500),trukket:(Array.isArray(d.trukket)?d.trukket:[]).slice(0,50).map(x=>({p:String(x.p).slice(0,100),n:parseInt(x.n,10)||0})),trukketMs:Number(d.trukketMs)||0}),
     async getGiving(){const s=await S.getDoc(S.doc(db,'settings','giving'));return s.exists()?s.data():null},
     setGiving:d=>S.setDoc(S.doc(db,'settings','giving'),{konto:String(d.konto||'').slice(0,40),bank:String(d.bank||'').slice(0,40),vipps:String(d.vipps||'').slice(0,20),giro:String(d.giro||'').slice(0,400),annet:String(d.annet||'').slice(0,800),testament:String(d.testament||'').slice(0,600)}),
     async getContact(){const s=await S.getDoc(S.doc(db,'settings','contact'));return s.exists()?s.data():null},
@@ -398,7 +400,7 @@ const FB={
     }
   };
   // Lagring og sending vises med «Lagrer …» / «Sender …» til databasen eller tjenesten har svart.
-  for(const n of ['setAttest','setPrivacy','setRole','newThread','addMsg','addPrayer','lrAdd','setContact','setGiving','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
+  for(const n of ['setAttest','setPrivacy','setRole','newThread','addMsg','addPrayer','lrAdd','setContact','setGiving','setJul','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
   for(const n of ['sendPush','sendNote','sendPrayers','sendSaker','sendWelcome','sendRsvpMail','sendMail']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Sender …')}
   window._fbRes(FB);
 }catch(e){console.warn('Firebase kunne ikke lastes, bruker JSON-filene',e);window._fbRes(null)}
