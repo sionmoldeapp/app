@@ -155,6 +155,13 @@ const FB={
     async getPrivacy(){const s=await S.getDoc(S.doc(db,'settings','personvern'));return s.exists()?s.data():null},
     setPrivacy:(text,updated)=>S.setDoc(S.doc(db,'settings','personvern'),{text:String(text).slice(0,20000),updated:String(updated).slice(0,10)}),
     // Givertjeneste (kontonummer, Vipps, Avtalegiro og annen økonomiinfo): alle kan lese, administrator endrer.
+    // Utleie av bygget: bookinger (samlingen bookinger) og romlisten (settings/utleie). Bare administratorer og gruppen utleie.
+    async utList(fra){const s=await S.getDocs(S.query(S.collection(db,'bookinger'),S.where('dato','>=',String(fra)),S.orderBy('dato'),S.limit(500)));return s.docs.map(d=>({id:d.id,...d.data()}))},
+    async utSave(id,d){const o={tittel:String(d.tittel||'').slice(0,100),rom:(d.rom||[]).slice(0,10).map(x=>String(x).slice(0,40)),dato:String(d.dato).slice(0,10),fra:String(d.fra).slice(0,5),til:String(d.til).slice(0,5),leier:String(d.leier||'').slice(0,100),kontakt:String(d.kontakt||'').slice(0,100),pris:String(d.pris||'').slice(0,30),status:d.status==='foresporsel'?'foresporsel':'bekreftet',notat:String(d.notat||'').slice(0,500),by:String(d.by||'').slice(0,80),ms:Date.now()};
+      if(id){await S.setDoc(S.doc(db,'bookinger',id),o);return id}const r=await S.addDoc(S.collection(db,'bookinger'),o);return r.id},
+    utDel:id=>S.deleteDoc(S.doc(db,'bookinger',id)),
+    async getUtleie(){const s=await S.getDoc(S.doc(db,'settings','utleie'));return s.exists()?s.data():null},
+    setUtleie:d=>S.setDoc(S.doc(db,'settings','utleie'),{rom:(d.rom||[]).slice(0,20).map(x=>String(x).slice(0,40))}),
     async getJul(){const s=await S.getDoc(S.doc(db,'settings','julemesse'));return s.exists()?s.data():null},
     setJul:d=>S.setDoc(S.doc(db,'settings','julemesse'),{on:!!d.on,tittel:String(d.tittel||'').slice(0,80),tid:String(d.tid||'').slice(0,80),sted:String(d.sted||'').slice(0,80),tekst:String(d.tekst||'').slice(0,1500),loddOn:!!d.loddOn,loddFra:Math.max(0,parseInt(d.loddFra,10)||0),loddTil:Math.max(0,parseInt(d.loddTil,10)||0),loddInfo:String(d.loddInfo||'').slice(0,600),premier:String(d.premier||'').slice(0,1500),trukket:(Array.isArray(d.trukket)?d.trukket:[]).slice(0,50).map(x=>({p:String(x.p).slice(0,100),n:parseInt(x.n,10)||0})),trukketMs:Number(d.trukketMs)||0}),
     async getGiving(){const s=await S.getDoc(S.doc(db,'settings','giving'));return s.exists()?s.data():null},

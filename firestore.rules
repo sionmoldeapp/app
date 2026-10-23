@@ -157,6 +157,28 @@ service cloud.firestore {
         && request.resource.data.by == request.auth.token.email
         && request.resource.data.updated == request.time;
     }
+    // Utleie av bygget: administratorer og medlemmer i gruppen utleie leser og endrer bookingene (de inneholder navn og kontaktinfo til leietakere).
+    function utleieTilgang() {
+      return isAdmin() || (signedIn() && exists(/databases/$(database)/documents/members/$(request.auth.token.email))
+        && 'utleie' in get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []));
+    }
+    match /bookinger/{id} {
+      allow read, delete: if utleieTilgang();
+      allow create, update: if utleieTilgang()
+        && request.resource.data.keys().hasOnly(['tittel', 'rom', 'dato', 'fra', 'til', 'leier', 'kontakt', 'pris', 'status', 'notat', 'by', 'ms'])
+        && request.resource.data.tittel is string && request.resource.data.tittel.size() <= 100
+        && request.resource.data.rom is list && request.resource.data.rom.size() >= 1 && request.resource.data.rom.size() <= 10
+        && request.resource.data.dato is string && request.resource.data.dato.size() == 10
+        && request.resource.data.fra is string && request.resource.data.fra.size() == 5
+        && request.resource.data.til is string && request.resource.data.til.size() == 5
+        && request.resource.data.leier is string && request.resource.data.leier.size() <= 100
+        && request.resource.data.kontakt is string && request.resource.data.kontakt.size() <= 100
+        && request.resource.data.pris is string && request.resource.data.pris.size() <= 30
+        && request.resource.data.status in ['foresporsel', 'bekreftet']
+        && request.resource.data.notat is string && request.resource.data.notat.size() <= 500
+        && request.resource.data.by is string && request.resource.data.by.size() <= 80
+        && request.resource.data.ms is number;
+    }
     // Kontaktinfo som vises på Hjem og personvernteksten under Meg: alle kan lese, bare administrator endrer.
     match /settings/{id} {
       allow read: if true;
@@ -178,6 +200,7 @@ service cloud.firestore {
             && request.resource.data.loddFra is number && request.resource.data.loddTil is number
             && request.resource.data.trukket is list && request.resource.data.trukket.size() <= 50
             && request.resource.data.trukketMs is number)
+        || (id == 'utleie' && request.resource.data.keys().hasOnly(['rom']) && request.resource.data.rom is list && request.resource.data.rom.size() <= 20)
         || (id == 'personvern' && request.resource.data.keys().hasOnly(['text', 'updated'])
             && request.resource.data.text is string && request.resource.data.text.size() <= 20000
             && request.resource.data.updated is string && request.resource.data.updated.size() <= 10));
