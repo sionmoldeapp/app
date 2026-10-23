@@ -2199,7 +2199,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='23.10.2026 kl. 10:05';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='23.10.2026 kl. 11:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2220,11 +2220,66 @@ function settingsCard(){
   const H=t=>`<h3 style="margin:14px 0 6px;font-size:var(--t-l)">${t}</h3>`;
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
   ${profSub('inpush','Varsler',pushInner())}
+  ${state.member?profSub('inoppt','Taleopptak',opptInner()):''}
   ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${PALETTER.map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div><p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('installer','Slik installerer du appen',installBody())}
   ${profSub('inoppd','Oppdater appen','<p class="small" style="margin:0 0 8px">Versjon: <b>'+APP_BYGG+'</b>. Står det en eldre tid enn sist du fikk beskjed om en endring, har telefonen ikke den nyeste versjonen ennå. Trykk under for å hente den nå.</p><button class="btn" data-oppdater>Hent nyeste versjon</button>')}</details>`}
+/* Taleopptak: ta opp i appen, lagres på telefonen (IndexedDB), og «Send til Google Drive» åpner telefonens delingsmeny der du velger Drive. Ingenting sendes til menigheten eller til noen server av oss. */
+const OPPT={state:'ledig',rec:null,stream:null,chunks:[],t0:0,tim:null,wl:null,mime:'',feil:'',msg:'',liste:null,spill:null,urls:{}};
+const oTall=n=>String(n).padStart(2,'0');
+function oDb(){return new Promise((res,rej)=>{const r=indexedDB.open('sm-opptak',1);r.onupgradeneeded=()=>r.result.createObjectStore('o',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function oAlle(){const db=await oDb();return new Promise((res,rej)=>{const q=db.transaction('o').objectStore('o').getAll();q.onsuccess=()=>res(q.result.sort((a,b)=>b.id-a.id));q.onerror=()=>rej(q.error)})}
+async function oLagre(o){const db=await oDb();return new Promise((res,rej)=>{const t=db.transaction('o','readwrite');t.objectStore('o').put(o);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+async function oSlett(id){const db=await oDb();return new Promise((res,rej)=>{const t=db.transaction('o','readwrite');t.objectStore('o').delete(id);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+async function opptLastListe(){try{OPPT.liste=await oAlle()}catch(e){OPPT.liste=[];OPPT.feil='Kunne ikke lese lagrede opptak på denne telefonen.'}keep(()=>{})}
+function opptTikk(){const e=document.getElementById('opptTid');if(!e)return;const sek=Math.floor((Date.now()-OPPT.t0)/1000);e.textContent=Math.floor(sek/60)+':'+oTall(sek%60)}
+function opptRydd(){try{OPPT.stream&&OPPT.stream.getTracks().forEach(t=>t.stop())}catch(e){}OPPT.stream=null;clearInterval(OPPT.tim);try{OPPT.wl&&OPPT.wl.release()}catch(e){}OPPT.wl=null}
+async function opptStart(){OPPT.feil='';OPPT.msg='';OPPT.chunks=[];
+  try{
+    if(!navigator.mediaDevices||!window.MediaRecorder)throw new Error('Opptak støttes ikke i denne nettleseren.');
+    const typer=['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg'];OPPT.mime=typer.find(t=>MediaRecorder.isTypeSupported(t))||'audio/webm';
+    OPPT.stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    OPPT.rec=new MediaRecorder(OPPT.stream,{mimeType:OPPT.mime});
+    OPPT.rec.ondataavailable=e=>{if(e.data&&e.data.size)OPPT.chunks.push(e.data)};
+    OPPT.rec.onstop=opptFerdig;OPPT.rec.start(1000);OPPT.state='opptak';OPPT.t0=Date.now();OPPT.tim=setInterval(opptTikk,500);
+    try{OPPT.wl=await navigator.wakeLock.request('screen')}catch(e){}
+  }catch(e){opptRydd();OPPT.state='ledig';OPPT.feil=e&&e.name==='NotAllowedError'?'Mikrofonen ble ikke tillatt. Slå på mikrofon for appen i telefonens innstillinger.':(e&&e.message)||'Kunne ikke starte opptaket.'}
+  keep(()=>{})}
+function opptStopp(){if(OPPT.rec&&OPPT.rec.state!=='inactive')OPPT.rec.stop()}
+async function opptFerdig(){const sek=Math.round((Date.now()-OPPT.t0)/1000);opptRydd();OPPT.state='ledig';
+  const blob=new Blob(OPPT.chunks,{type:OPPT.mime.split(';')[0]});OPPT.chunks=[];
+  if(!blob.size){OPPT.feil='Opptaket ble tomt.';keep(()=>{});return}
+  const d=new Date(),ext=/mp4/.test(OPPT.mime)?'m4a':/ogg/.test(OPPT.mime)?'ogg':'webm',
+    navn='Opptak '+d.getFullYear()+'-'+oTall(d.getMonth()+1)+'-'+oTall(d.getDate())+' '+oTall(d.getHours())+'.'+oTall(d.getMinutes())+'.'+ext;
+  try{await oLagre({id:Date.now(),navn,sek,blob});OPPT.liste=await oAlle();OPPT.msg='Opptaket er lagret på telefonen. Trykk «Send til Google Drive» for å få det over på Drive.'}
+  catch(e){OPPT.feil='Kunne ikke lagre opptaket på telefonen (er det plass?).'}
+  keep(()=>{})}
+const oFil=o=>new File([o.blob],o.navn,{type:o.blob.type||'audio/webm'});
+/* Må kalles direkte fra et trykk (ingen await før share), ellers blokkerer nettleseren delingsmenyen. */
+function opptDel(id){const o=(OPPT.liste||[]).find(x=>String(x.id)===String(id));if(!o)return;OPPT.feil='';OPPT.msg='';
+  const fil=oFil(o);
+  if(navigator.canShare&&navigator.canShare({files:[fil]})){
+    navigator.share({files:[fil],title:o.navn}).then(()=>{OPPT.msg='Delingsmenyen ble brukt. Er du usikker på om det kom frem, sjekk Google Drive.';keep(()=>{})}).catch(e=>{if(e&&e.name!=='AbortError'){OPPT.feil='Kunne ikke åpne delingsmenyen. Bruk «Lagre på telefonen» og last opp fra Google Drive.';keep(()=>{})}})}
+  else{opptLast(id);OPPT.msg='Denne nettleseren kan ikke dele filer til Drive direkte. Filen er lagret på telefonen. Åpne Google Drive og last den opp derfra.';keep(()=>{})}}
+function opptLast(id){const o=(OPPT.liste||[]).find(x=>String(x.id)===String(id));if(!o)return;const u=URL.createObjectURL(o.blob),a=document.createElement('a');a.href=u;a.download=o.navn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
+function opptSpill(id){OPPT.spill=String(OPPT.spill)===String(id)?null:id;if(OPPT.spill!==null&&!OPPT.urls[id]){const o=OPPT.liste.find(x=>String(x.id)===String(id));if(o)OPPT.urls[id]=URL.createObjectURL(o.blob)}keep(()=>{})}
+async function opptSlett(id){const o=(OPPT.liste||[]).find(x=>String(x.id)===String(id));if(!o||!await bekreft('Slette opptaket «'+o.navn+'» fra denne telefonen? Er det ikke sendt til Google Drive først, er det borte.'))return;
+  try{await oSlett(o.id);OPPT.liste=await oAlle();if(OPPT.urls[o.id]){URL.revokeObjectURL(OPPT.urls[o.id]);delete OPPT.urls[o.id]}if(String(OPPT.spill)===String(o.id))OPPT.spill=null}catch(e){OPPT.feil='Kunne ikke slette.'}keep(()=>{})}
+const oVarighet=sek=>Math.floor(sek/60)+':'+oTall(sek%60);
+function opptInner(){
+  if(OPPT.liste===null){OPPT.liste=[];opptLastListe()}
+  let h='<p class="small" style="margin:0 0 10px">Ta opp tale i appen. Opptaket lagres på telefonen din, og med «Send til Google Drive» velger du Drive i telefonens delingsmeny. Ingenting går til menigheten. Ta bare opp når alle som snakker vet om det og har sagt ja.</p>';
+  if(OPPT.state==='opptak')h+='<div class="btns" style="align-items:center"><button type="button" class="btn danger" data-opptstopp>Stopp opptak</button><b id="opptTid" style="font-variant-numeric:tabular-nums">0:00</b><span class="small">Hold skjermen på mens du tar opp.</span></div>';
+  else h+='<button type="button" class="btn primary" data-opptstart style="width:auto">Start opptak</button>';
+  if(OPPT.msg)h+='<p class="small" role="status" style="margin:10px 0 0">'+esc(OPPT.msg)+'</p>';
+  if(OPPT.feil)h+='<p class="small" role="alert" style="margin:10px 0 0;color:#b3261e">'+esc(OPPT.feil)+'</p>';
+  if(OPPT.liste&&OPPT.liste.length){h+='<h3 style="margin:16px 0 6px;font-size:var(--t-b)">Lagret på telefonen</h3><div style="display:grid;gap:10px">'+OPPT.liste.map(o=>
+    '<div class="item" style="padding:12px"><b style="display:block;overflow-wrap:anywhere">'+esc(o.navn)+'</b><span class="small">'+oVarighet(o.sek||0)+' · '+Math.max(1,Math.round(o.blob.size/1024))+' kB</span>'
+    +(String(OPPT.spill)===String(o.id)&&OPPT.urls[o.id]?'<audio controls autoplay src="'+OPPT.urls[o.id]+'" style="width:100%;margin-top:8px"></audio>':'')
+    +'<div class="btns" style="margin-top:8px"><button type="button" class="btn primary" data-opptdel="'+o.id+'" style="width:auto">Send til Google Drive</button><button type="button" class="btn" data-opptspill="'+o.id+'">'+(String(OPPT.spill)===String(o.id)?'Skjul spiller':'Spill av')+'</button><button type="button" class="btn" data-opptlast="'+o.id+'">Lagre på telefonen</button><button type="button" class="btn danger" data-opptslett="'+o.id+'">Slett</button></div></div>').join('')+'</div>'}
+  return h}
 function pushInner(){
   const ios=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
   const on=!!lsGet('sm-push');
@@ -2586,6 +2641,12 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ui){keep(()=>{UI[c.dataset.ui]=UI[c.dataset.ui]===false;if(c.dataset.ui==='vk'&&UI.vk)lsSet('sm-viktig-skjult','');uiLagre()})}
   else if(c.dataset.stil){setStil(c.dataset.stil);keep(()=>{})}
   else if('utsvReset' in c.dataset){nullstillUtseende();keep(()=>{})}
+  else if('opptstart' in c.dataset){opptStart()}
+  else if('opptstopp' in c.dataset){opptStopp()}
+  else if(c.dataset.opptdel){opptDel(c.dataset.opptdel)}
+  else if(c.dataset.opptspill){opptSpill(c.dataset.opptspill)}
+  else if(c.dataset.opptlast){opptLast(c.dataset.opptlast)}
+  else if(c.dataset.opptslett){opptSlett(c.dataset.opptslett)}
   else if(c.dataset.pal){setPal(c.dataset.pal);keep(()=>{})}
   else if(c.dataset.fs){UI.fs=+c.dataset.fs;uiLagre();applyFs();keep(()=>{})}
   else if(c.dataset.pref){keep(()=>{state.prefs[c.dataset.pref]=!state.prefs[c.dataset.pref];save()})}
