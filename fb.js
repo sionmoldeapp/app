@@ -114,6 +114,12 @@ const FB={
       b.set(tref,{roleId:role.id,roleName:String(role.name).slice(0,60),from:me,fromName:String(name).slice(0,60),parts,last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:parts.filter(p=>p!==me),created:S.serverTimestamp()});
       b.set(mref,{by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()});
       await b.commit();return tref.id},
+    // Privat beskjed fra en gruppeleder (eller administrator) til ett medlem i gruppen. Egen samtale (kind 'dm') som medlemmet svarer i under Beskjeder.
+    async newDm(toEmail,toName,groupName,text,name){
+      const me=auth.currentUser.email.toLowerCase(),to=String(toEmail).toLowerCase(),parts=[me,to],tref=S.doc(S.collection(db,'threads')),mref=S.doc(S.collection(db,'threads',tref.id,'messages')),b=S.writeBatch(db);
+      b.set(tref,{roleId:'dm',roleName:String(groupName||'Beskjed').slice(0,60),kind:'dm',toName:String(toName||to).slice(0,60),from:me,fromName:String(name).slice(0,60),parts,last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:[to],created:S.serverTimestamp()});
+      b.set(mref,{by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()});
+      await b.commit();return tref.id},
     async addMsg(t,text,name){
       const me=auth.currentUser.email.toLowerCase(),tref=S.doc(db,'threads',t.id),mref=S.doc(S.collection(db,'threads',t.id,'messages')),b=S.writeBatch(db);
       b.set(mref,{by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()});

@@ -65,6 +65,22 @@ service cloud.firestore {
         && request.resource.data.last is string && request.resource.data.last.size() <= 140
         && request.resource.data.ms is number && request.resource.data.unread is list
         && request.resource.data.created == request.time;
+      // Privat beskjed fra en gruppeleder til ett medlem i en av gruppene vedkommende har ansvar for (administrator kan skrive til alle medlemmer).
+      // parts er alltid [avsender, mottaker]. Mottakeren svarer i samme samtale (se update under).
+      allow create: if isMember()
+        && request.resource.data.keys().hasOnly(['roleId', 'roleName', 'kind', 'toName', 'from', 'fromName', 'parts', 'last', 'lastBy', 'ms', 'unread', 'created'])
+        && request.resource.data.kind == 'dm' && request.resource.data.roleId == 'dm'
+        && request.resource.data.from == request.auth.token.email && request.resource.data.lastBy == request.auth.token.email
+        && request.resource.data.roleName is string && request.resource.data.roleName.size() <= 60
+        && request.resource.data.toName is string && request.resource.data.toName.size() <= 60
+        && request.resource.data.fromName is string && request.resource.data.fromName.size() <= 60
+        && request.resource.data.parts is list && request.resource.data.parts.size() == 2
+        && request.resource.data.parts[0] == request.auth.token.email && request.resource.data.parts[1] != request.auth.token.email
+        && exists(/databases/$(database)/documents/members/$(request.resource.data.parts[1]))
+        && (isAdmin() || (isLeader() && get(/databases/$(database)/documents/members/$(request.resource.data.parts[1])).data.get('groups', []).toSet().hasAny(myLeads().toSet())))
+        && request.resource.data.last is string && request.resource.data.last.size() <= 140
+        && request.resource.data.ms is number && request.resource.data.unread is list
+        && request.resource.data.created == request.time;
       // Ny melding (last, lastBy, ms, unread) eller markering som lest (bare unread).
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
         && request.resource.data.unread is list && request.resource.data.unread.toSet().difference(resource.data.parts.toSet()).size() == 0
