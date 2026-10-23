@@ -165,10 +165,11 @@ service cloud.firestore {
     match /bookinger/{id} {
       allow read, delete: if utleieTilgang();
       allow create, update: if utleieTilgang()
-        && request.resource.data.keys().hasOnly(['tittel', 'rom', 'dato', 'fra', 'til', 'leier', 'kontakt', 'pris', 'status', 'notat', 'by', 'ms'])
+        && request.resource.data.keys().hasOnly(['tittel', 'rom', 'dato', 'dato2', 'fra', 'til', 'leier', 'kontakt', 'pris', 'status', 'notat', 'by', 'ms'])
         && request.resource.data.tittel is string && request.resource.data.tittel.size() <= 100
         && request.resource.data.rom is list && request.resource.data.rom.size() >= 1 && request.resource.data.rom.size() <= 10
         && request.resource.data.dato is string && request.resource.data.dato.size() == 10
+        && (!('dato2' in request.resource.data) || (request.resource.data.dato2 is string && request.resource.data.dato2.size() <= 10))
         && request.resource.data.fra is string && request.resource.data.fra.size() == 5
         && request.resource.data.til is string && request.resource.data.til.size() == 5
         && request.resource.data.leier is string && request.resource.data.leier.size() <= 100

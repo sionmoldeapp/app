@@ -157,7 +157,7 @@ const FB={
     // Givertjeneste (kontonummer, Vipps, Avtalegiro og annen økonomiinfo): alle kan lese, administrator endrer.
     // Utleie av bygget: bookinger (samlingen bookinger) og romlisten (settings/utleie). Bare administratorer og gruppen utleie.
     async utList(fra){const s=await S.getDocs(S.query(S.collection(db,'bookinger'),S.where('dato','>=',String(fra)),S.orderBy('dato'),S.limit(500)));return s.docs.map(d=>({id:d.id,...d.data()}))},
-    async utSave(id,d){const o={tittel:String(d.tittel||'').slice(0,100),rom:(d.rom||[]).slice(0,10).map(x=>String(x).slice(0,40)),dato:String(d.dato).slice(0,10),fra:String(d.fra).slice(0,5),til:String(d.til).slice(0,5),leier:String(d.leier||'').slice(0,100),kontakt:String(d.kontakt||'').slice(0,100),pris:String(d.pris||'').slice(0,30),status:d.status==='foresporsel'?'foresporsel':'bekreftet',notat:String(d.notat||'').slice(0,500),by:String(d.by||'').slice(0,80),ms:Date.now()};
+    async utSave(id,d){const o={tittel:String(d.tittel||'').slice(0,100),rom:(d.rom||[]).slice(0,10).map(x=>String(x).slice(0,40)),dato:String(d.dato).slice(0,10),dato2:String(d.dato2||'').slice(0,10),fra:String(d.fra).slice(0,5),til:String(d.til).slice(0,5),leier:String(d.leier||'').slice(0,100),kontakt:String(d.kontakt||'').slice(0,100),pris:String(d.pris||'').slice(0,30),status:d.status==='foresporsel'?'foresporsel':'bekreftet',notat:String(d.notat||'').slice(0,500),by:String(d.by||'').slice(0,80),ms:Date.now()};
       if(id){await S.setDoc(S.doc(db,'bookinger',id),o);return id}const r=await S.addDoc(S.collection(db,'bookinger'),o);return r.id},
     utDel:id=>S.deleteDoc(S.doc(db,'bookinger',id)),
     async getUtleie(){const s=await S.getDoc(S.doc(db,'settings','utleie'));return s.exists()?s.data():null},
