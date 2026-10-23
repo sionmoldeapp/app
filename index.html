@@ -1749,17 +1749,22 @@ function noteAsk(id){
     try{const sl=getSelection();if(sl.rangeCount)sistRange=sl.getRangeAt(0).cloneRange()}catch(x){}});
   ed.addEventListener('paste',e=>{e.preventDefault();const t=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,t)});
   ed.addEventListener('drop',e=>e.preventDefault());
-  const lukk=async()=>{if(snap()!==start&&!await bekreft('Lukke uten å lagre endringene?'))return;dlg.close()};
+  // Lukk lagrer automatisk når det er gjort endringer (tomme notater lagres ikke). Feiler lagringen, spørres det før vinduet lukkes.
+  const lukk=async()=>{
+    if(snap()!==start){const tomt=!dlg.querySelector('#nT').value.trim()&&!noteText(sanitizeNote(ed.innerHTML));
+      if(!tomt&&!await lagre()&&!await bekreft('Notatet kunne ikke lagres. Lukke uten å lagre?'))return}
+    dlg.close()};
   dlg.querySelector('#nClose').addEventListener('click',lukk);
   dlg.querySelector('#nX').addEventListener('click',lukk);
   dlg.addEventListener('cancel',e=>{if(snap()!==start){e.preventDefault();lukk()}});
-  dlg.querySelector('#nSave').addEventListener('click',async()=>{
+  const lagre=async()=>{
     const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML),img:foto};
-    if(!d.title&&!noteText(d.html)){msg('Skriv en tittel eller litt tekst.');return}
+    if(!d.title&&!noteText(d.html)){msg('Skriv en tittel eller litt tekst.');return false}
     if(!d.title)d.title=noteText(d.html).slice(0,40);
     try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();
-      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.verktoy=true;state.acc.vnotat=true;dlg.querySelector('#nT').value=d.title;start=snap();dlg.querySelector('#nClose').textContent='Lukk';msg('Lagret. Trykk Lukk når du er ferdig.');keep(()=>{});push('Lagret','Notatet er lagret.')}
-    catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
+      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.verktoy=true;state.acc.vnotat=true;dlg.querySelector('#nT').value=d.title;start=snap();dlg.querySelector('#nClose').textContent='Lukk';msg('Lagret. Trykk Lukk når du er ferdig.');keep(()=>{});push('Lagret','Notatet er lagret.');return true}
+    catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?');return false}};
+  dlg.querySelector('#nSave').addEventListener('click',()=>{lagre()});
   dlg.querySelector('#nShare').addEventListener('click',async()=>{
     const t=dlg.querySelector('#nT').value.trim(),tekst=[t,[noDato(dlg.querySelector('#nD').value),dlg.querySelector('#nP').value.trim()].filter(Boolean).join(' · '),'',noteLinjer(ed.innerHTML)].join('\n').trim();
     if(!t&&!noteText(sanitizeNote(ed.innerHTML))){msg('Skriv en tittel eller litt tekst først.');return}
@@ -2275,7 +2280,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='23.10.2026 kl. 21:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='23.10.2026 kl. 22:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
