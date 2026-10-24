@@ -353,6 +353,7 @@ html[data-bred="1"] nav.tabs button .tab-bdg{position:static;margin-left:auto}
 .megboks>.card{background:transparent;box-shadow:none;border-radius:0;border-top:1px solid var(--line);padding:12px 0 0;margin-top:12px}
 .megboks>.card h2{font-size:var(--t-l)}
 .megboks>.card:first-child{margin-top:6px}
+[data-subcid]>summary{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .palrutenett{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .palbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);font-size:var(--t-m);font-weight:600;line-height:1.2;transition:border-color var(--d-med) var(--ease),box-shadow var(--d-med) var(--ease)}
 .palbtn[aria-pressed="true"]{border-color:var(--lamp);box-shadow:0 0 0 2px var(--lamp-glow)}
@@ -2580,7 +2581,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 10:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 11:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2873,11 +2874,11 @@ function subSorter(cid,html,velger){
   const o=subOrd()[cid]||[],keys=barn.map(e=>e.dataset.acc),ord=[...o.filter(k=>keys.includes(k)),...keys.filter(k=>!o.includes(k))];
   state.subVis[cid]=ord;
   const navn=k=>{const e=barn.find(x=>x.dataset.acc===k),h=e&&(e.querySelector('summary h2')||e.querySelector('summary h3')||e.querySelector('summary'));return h?h.textContent.trim():k},sort=state.subSort===cid;
+  barn.forEach(e=>{e.dataset.subcid=cid});
   const anker=document.createComment('a');boks.insertBefore(anker,barn[0]);barn.forEach(e=>e.remove());
-  const knapp=document.createElement('div');knapp.style.cssText='margin:6px 0 2px;text-align:right';
-  knapp.innerHTML='<button type="button" class="pmore" style="display:inline" data-subsort="'+esc(cid)+'" aria-pressed="'+sort+'">'+(sort?'Ferdig med sortering':'Sorter rekkefølge')+'</button>';
-  anker.before(knapp);
-  if(sort){const l=document.createElement('div');l.className='reg';
+  if(sort){const knapp=document.createElement('div');knapp.style.cssText='margin:6px 0 2px;text-align:right';
+    knapp.innerHTML='<button type="button" class="pmore" style="display:inline" data-subsort="'+esc(cid)+'">Ferdig med sortering</button>';anker.before(knapp);
+    const l=document.createElement('div');l.className='reg';
     l.innerHTML=ord.map((k,i)=>'<div class="r" style="display:flex;align-items:center;gap:8px"><b class="grow">'+esc(navn(k))+'</b><button type="button" class="btn" data-subflytt="'+esc(cid)+'|'+esc(k)+'|-1" '+(i===0?'disabled':'')+' aria-label="Flytt '+esc(navn(k))+' opp">▲</button><button type="button" class="btn" data-subflytt="'+esc(cid)+'|'+esc(k)+'|1" '+(i===ord.length-1?'disabled':'')+' aria-label="Flytt '+esc(navn(k))+' ned">▼</button></div>').join('');anker.before(l)}
   else ord.forEach(k=>anker.before(barn.find(x=>x.dataset.acc===k)));
   anker.remove();return rot.outerHTML}
@@ -2888,7 +2889,7 @@ function megCard(){return subSorter('meg',megKort(),'.megboks')}
 function megKort(){
   const deler=[state.user?loginCard():'',state.user?profileCard():'',settingsCard(),state.user?vakterCard():'',state.user?meldCard():'',state.user?verktoyCard():''].filter(x=>x&&String(x).trim());
   if(!deler.length)return '';
-  return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, innstillinger, vakter, beskjeder og notater.</p><div class="megboks">'+deler.join('')+'</div></details>'}
+  return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, innstillinger, vakter, beskjeder og notater. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
 const ME_KORT={
   meg:['Meg',()=>megCard()],login:['Innlogging',()=>state.user?'':loginCard()],gruppebesk:['Send beskjed til gruppa',()=>gruppeBeskjedCard()],lr:['Saker til lederrådet',()=>lrCard()],utleie:['Utleie',()=>utleieCard()],jul:['Julemesse',()=>julCard()],share:['Del appen',()=>shareCard()],
   ansvar:['Ansvarsområder',()=>ansvarCard()],attester:['Politiattester',()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''],stat:['Statistikk',()=>statCard()],
@@ -3032,11 +3033,20 @@ document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.targe
   if(e.target.id==='pastQ'){state.pq=e.target.value;state.pastN=40;const l=$('#pastList');if(l)l.innerHTML=pastList();return}
   if(e.target.id==='nyhQ'){state.nyq=e.target.value;const l=$('#nyhList');if(l)l.innerHTML=nyhListe(posts.filter(p=>!(state.admin&&state.view==='meg'&&postSkjult(p))));return}
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
+/* Hold inne på en undermeny (ca. 0,6 s) åpner sortering av undermenyene i samme gruppe. «Ferdig med sortering» lukker den. */
+{let t=null,x0=0,y0=0,svelg=false;
+  document.addEventListener('pointerdown',e=>{const sm=e.target.closest&&e.target.closest('[data-subcid] > summary');if(!sm||e.target.closest('button,a,input,select,textarea'))return;
+    x0=e.clientX;y0=e.clientY;clearTimeout(t);const cid=sm.parentElement.dataset.subcid;
+    t=setTimeout(()=>{t=null;svelg=true;try{navigator.vibrate&&navigator.vibrate(25)}catch(x){}state.subSort=cid;keep(()=>{});setTimeout(()=>{svelg=false},1500)},600)});
+  document.addEventListener('pointermove',e=>{if(t&&Math.hypot(e.clientX-x0,e.clientY-y0)>10){clearTimeout(t);t=null}});
+  ['pointerup','pointercancel'].forEach(n=>document.addEventListener(n,()=>{clearTimeout(t);t=null;if(svelg)setTimeout(()=>{svelg=false},350)}));
+  document.addEventListener('click',e=>{if(svelg){svelg=false;e.preventDefault();e.stopPropagation()}},true);
+  document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('[data-subcid] > summary'))e.preventDefault()}) }
 /* Langt trykk på et kort under Mer åpner «Endre rekkefølge». */
 {let t=null,x0=0,y0=0,svelg=false;
   document.addEventListener('pointerdown',e=>{
     if((state.tab!=='me'&&state.tab!=='home')||state.reorder||!e.target.closest('#view'))return;
-    if(e.target.closest('button,a,input,select,textarea,label,[data-noteopen],[data-lp],[contenteditable],.merow'))return;
+    if(e.target.closest('button,a,input,select,textarea,label,[data-noteopen],[data-lp],[contenteditable],.merow,[data-subcid] > summary'))return;
     x0=e.clientX;y0=e.clientY;clearTimeout(t);
     t=setTimeout(()=>{t=null;
       const n=ordSynlige(ov()).length;if(n<2)return;
