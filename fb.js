@@ -110,6 +110,9 @@ const FB={
     delRole:id=>sl(S.deleteDoc(S.doc(db,'roles',id))),
     async threadsList(me){const s=await S.getDocs(S.query(S.collection(db,'threads'),S.where('parts','array-contains',me),S.limit(50)));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.ms||0)-(a.ms||0))},
     async msgsList(id){const s=await S.getDocs(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)));return s.docs.map(d=>{const x=d.data();return {id:d.id,by:x.by,name:x.name,text:x.text,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})},
+    // Lyttere for chat: nye samtaler og meldinger kommer med en gang (leser bare det som endres).
+    watchThreads:(me,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads'),S.where('parts','array-contains',me),S.limit(50)),s=>cb(s.docs.map(d=>({id:d.id,...d.data({serverTimestamps:'estimate'})})).sort((x,y)=>(y.ms||0)-(x.ms||0))),e=>err&&err(e)),
+    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)),s=>cb(s.docs.map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
     async newThread(role,text,name){
       const me=auth.currentUser.email.toLowerCase(),parts=[...new Set([me,...(role.emails||[])])],tref=S.doc(S.collection(db,'threads')),mref=S.doc(S.collection(db,'threads',tref.id,'messages')),b=S.writeBatch(db);
       b.set(tref,{roleId:role.id,roleName:String(role.name).slice(0,60),from:me,fromName:String(name).slice(0,60),parts,last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:parts.filter(p=>p!==me),created:S.serverTimestamp()});

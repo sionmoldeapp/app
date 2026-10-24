@@ -466,6 +466,40 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .eyebrow{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)}
 .next h2{font-size:34px;margin:4px 0 6px}
 .next .meta{opacity:.9;font-size:var(--t-b)}
+.chat{position:fixed;inset:0;z-index:40;display:flex;justify-content:center;background:rgba(5,20,40,.45)}
+.chat[hidden]{display:none}
+.chat .cw{width:100%;max-width:560px;height:100%;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.chd{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
+.chd h2{margin:0;font-size:var(--t-xl)}
+.chd .ctit{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.2}
+.chd .ctit b{font-size:var(--t-b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chd .ctit span{font-size:var(--t-s);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cbtn{border:0;background:var(--chip);color:var(--ink);width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:22px;line-height:1}
+.cbtn svg{width:20px;height:20px}
+.cav{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 16px/1 var(--f-body,inherit);flex:none}
+.chd .cav{width:38px;height:38px;font-size:14px}
+.cliste{flex:1;overflow-y:auto;padding:4px 0 20px}
+.crad{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;background:none;color:inherit;font:inherit;padding:10px 14px;cursor:pointer;border-radius:0}
+.crad:active{background:var(--chip)}
+.crad .ctx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.crad .cn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crad .cp{font-size:var(--t-m);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crad.ny .cn,.crad.ny .cp{font-weight:700;color:var(--ink)}
+.crad .cm{display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:var(--t-s);color:var(--muted);flex:none}
+.cdot{width:12px;height:12px;border-radius:50%;background:var(--lamp)}
+.cmsg{flex:1;overflow-y:auto;padding:12px 12px 4px;display:flex;flex-direction:column;gap:3px;overscroll-behavior:contain}
+.cdag{align-self:center;font-size:var(--t-s);color:var(--muted);margin:10px 0 4px}
+.cb{max-width:80%;padding:8px 13px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35}
+.cb.me{align-self:flex-end;background:var(--brand);color:var(--brand-ink);border-bottom-right-radius:6px}
+.cb.de{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px}
+.cb a{color:inherit;text-decoration:underline}
+.ct{font-size:var(--t-xs);color:var(--muted);margin:0 6px 6px}
+.ct.me{align-self:flex-end}.ct.de{align-self:flex-start}
+.cinp{display:flex;gap:8px;align-items:flex-end;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface)}
+.cinp textarea{flex:1;resize:none;max-height:120px;border-radius:20px;padding:10px 14px;line-height:1.3;margin:0;min-height:42px}
+.csend{width:42px;height:42px;border-radius:50%;border:0;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;flex:none;padding:0}
+.csend:disabled{opacity:.5}
+.cseksj{padding:12px 14px 4px;font-size:var(--t-s);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .bdg{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:8px;border-radius:var(--r-pill);background:var(--lamp);color:var(--lamp-ink);font:700 13px/1 var(--f-body,inherit);letter-spacing:0;vertical-align:middle;text-transform:none}
 .tabs button{position:relative}
 .tabs .tab-bdg{position:absolute;top:4px;left:50%;margin-left:6px;min-width:18px;height:18px;padding:0 5px;border-radius:var(--r-pill);background:var(--lamp);color:var(--lamp-ink);font:700 11px/18px var(--f-body,inherit);text-align:center;box-shadow:0 0 0 2px var(--surface,#fff)}
@@ -644,7 +678,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 label.f{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:var(--t-m)}
 input,textarea,select{font:inherit;font-size:var(--t-b);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--r-s);padding:10px;width:100%}
 .form{display:flex;flex-direction:column;gap:12px}
-nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
+nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
 /* Android-PWA: systemlinjen nederst (navigasjonsfeltet/bevegelsesstreken) kan ligge over appen uten at telefonen oppgir sikker sone. Gi fanene ekstra plass nederst. */
 @media (display-mode:standalone) and (pointer:coarse){nav.tabs{padding-bottom:calc(6px + max(env(safe-area-inset-bottom,0px),8px))}main{padding-bottom:118px}}
 nav.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:var(--t-xs);font-weight:600;color:var(--muted);border-radius:var(--r-s)}
@@ -765,6 +799,7 @@ const ICON={
  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
  news:'<path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2M8 9h6M8 13h6"/>',
+ chat:'<path d="M4 5h16v11H9l-5 4z"/>',
  me:'<path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3.4"/>'};
 const TABS=[['home','Hjem','home'],['prog','Program','cal'],['news','Nyheter','news'],['me','Mer','me']];
 /* Det som må sjekkes ut under Mer: uleste beskjeder, byttebeskjeder om vakter (for de som styrer vaktlistene) og åpne saker til lederrådet. Vises som tall på kortene og på fanen Meg. */
@@ -773,7 +808,7 @@ function meTall(){
   const meg=meEmail(),meld=(state.threads||[]).filter(t=>(t.unread||[]).includes(meg)).length;
   const vakt=Object.keys(state.reqs||{}).reduce((n,g)=>n+(kanStyre(g)?((state.reqs[g]||[]).length):0),0);
   const lr=lrTilgang()?lrNye().length:0;
-  return {meld,vakt,lr,sum:meld+vakt+lr}}
+  return {meld,vakt,lr,sum:vakt+lr}}
 const nyhUlest=()=>posts.filter(p=>ulest(p)&&!postSkjult(p)).length;
 const bdg=n=>n>0?'<span class="bdg" role="status" aria-label="'+n+' å sjekke">'+n+'</span>':'';
 let sistFane=null;
@@ -782,7 +817,9 @@ function nyhMarkerSett(){
   // Bare nyheter som allerede sto i listen da du åpnet fanen regnes som sett. En nyhet du selv legger ut mens du er der, forblir ulest og vises på Hjem.
   try{nyhFiltrert(posts.filter(p=>!postSkjult(p))).slice(0,state.nyhN||NYH_SIDE).forEach(p=>{if(p.ms&&!(p.m&&!state.member)&&(!state.nyhInn||p.ms<=state.nyhInn))lest[p.id]=1});lagreLest()}catch(e){}}
 function drawTabs(){try{settBred()}catch(e){}
-  if(sistFane==='news'&&state.tab!=='news')nyhMarkerSett();if(state.tab==='news'&&sistFane!=='news')state.nyhInn=Date.now();sistFane=state.tab;$('#tabs').innerHTML=TABS.map(([k,l,i])=>`<button data-t="${k}" ${state.tab===k?'aria-current="page"':''}><svg viewBox="0 0 24 24">${ICON[i]}</svg>${l}${k==='me'&&meTall().sum>0?`<span class="tab-bdg" aria-label="${meTall().sum} å sjekke">${meTall().sum}</span>`:''}${k==='news'&&state.tab!=='news'&&nyhUlest()>0?`<span class="tab-bdg" aria-label="${nyhUlest()} uleste nyheter">${nyhUlest()}</span>`:''}</button>`).join('')}
+  if(sistFane==='news'&&state.tab!=='news')nyhMarkerSett();if(state.tab==='news'&&sistFane!=='news')state.nyhInn=Date.now();sistFane=state.tab;const knapper=TABS.map(([k,l,i])=>`<button data-t="${k}" ${state.tab===k?'aria-current="page"':''}><svg viewBox="0 0 24 24">${ICON[i]}</svg>${l}${k==='me'&&meTall().sum>0?`<span class="tab-bdg" aria-label="${meTall().sum} å sjekke">${meTall().sum}</span>`:''}${k==='news'&&state.tab!=='news'&&nyhUlest()>0?`<span class="tab-bdg" aria-label="${nyhUlest()} uleste nyheter">${nyhUlest()}</span>`:''}</button>`);
+  if(state.user&&state.member){const nC=chatUlest();knapper.splice(knapper.length-1,0,`<button data-chattab aria-label="Chat${nC?', '+nC+' uleste':''}"><svg viewBox="0 0 24 24">${ICON.chat}</svg>Chat${nC>0?`<span class="tab-bdg" aria-label="${nC} uleste">${nC}</span>`:''}</button>`)}
+  $('#tabs').innerHTML=knapper.join('')}
 
 function when(d){const diff=Math.round((new Date(d).setHours(0,0,0,0)-new Date(now).setHours(0,0,0,0))/864e5);
   return diff===0?'I dag':diff===1?'I morgen':cap(DAYS[d.getDay()])}
@@ -2413,9 +2450,132 @@ function memberCard(onlyBody){
 async function loadRoles(){
   try{state.roles=await FB.rolesList();state.ansMsg=''}catch(e){state.roles=[];state.ansMsg='Kunne ikke hente ansvarsområder ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{})}
-async function loadThreads(){
-  try{state.threads=await FB.threadsList(meEmail());state.meldMsg=''}catch(e){state.threads=[];state.meldMsg='Kunne ikke hente beskjeder ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
-  keep(()=>{})}
+/* ---------- Chat (som Messenger) ----------
+   Egen fane «Chat» nederst. Samtalene er threads (parts = [leder, medarbeider]) med meldinger i threads/{id}/messages. Lyttere (onSnapshot) gir
+   nye meldinger med en gang uten å hente alt på nytt. Gruppeledere og administratorer kan skrive til hele gruppen (hver person får en
+   privat samtale og svarer der) eller til én person. Ingen nye regler: bruker de samme reglene som privat beskjed (kind dm). */
+state.chat=state.chat||{vis:false,vy:'liste',id:null,ny:null,msgs:[],unsub:null,sender:false};
+const chatUlest=()=>(state.threads||[]).filter(t=>(t.unread||[]).includes(meEmail())).length;
+const chatKan=()=>!!(state.user&&state.member&&(state.admin||isLeader()));
+const chatNavn=(t,meg)=>t.from===meg?(t.kind==='dm'?(t.toName||''):(t.roleName||'')):(t.fromName||'');
+const chatUnder=(t,meg)=>t.kind==='dm'?(t.roleName||''):(t.from===meg?'Til de ansvarlige':'Ansvarsområde: '+(t.roleName||''));
+const chatFarger=['#3f8ad6','#c8741f','#1f7a96','#7d55c7','#b8405a','#2b8f62'];
+function chatAv(navn){const n=String(navn||'?').trim()||'?',d=n.split(/\s+/),ini=((d[0]||'?')[0]+(d.length>1?d[d.length-1][0]:'')).toUpperCase();let h=0;for(const ch of n)h=(h*31+ch.charCodeAt(0))>>>0;return '<span class="cav" style="background:'+chatFarger[h%chatFarger.length]+'" aria-hidden="true">'+esc(ini)+'</span>'}
+const chatKl=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return p(d.getHours())+':'+p(d.getMinutes())};
+const chatDg=ms=>Math.round((new Date().setHours(0,0,0,0)-new Date(ms).setHours(0,0,0,0))/864e5);
+function chatTid(ms){if(!ms)return '';const d=new Date(ms),dg=chatDg(ms);return dg<=0?chatKl(ms):dg===1?'I går':dg<7?cap(DAYS[d.getDay()]).slice(0,3):d.getDate()+'. '+MON[d.getMonth()].slice(0,3)}
+function chatDag(ms){const d=new Date(ms),dg=chatDg(ms);return dg<=0?'I dag':dg===1?'I går':cap(DAYS[d.getDay()])+' '+d.getDate()+'. '+MON[d.getMonth()]}
+const chatTraad=id=>(state.threads||[]).find(t=>t.id===id);
+function chatEl(){let e=document.getElementById('chat');if(!e){e=document.createElement('div');e.id='chat';e.className='chat';e.hidden=true;e.innerHTML='<div class="cw" role="dialog" aria-modal="true" aria-label="Chat"></div>';document.body.appendChild(e)}return e}
+const chatW=()=>chatEl().querySelector('.cw');
+function chatStoppMsgs(){const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}c.unsub=null}c.msgs=[]}
+function thrStopp(){if(state.thrUnsub){try{state.thrUnsub()}catch(e){}state.thrUnsub=null}}
+/* Lytter på samtalene til brukeren (maks 50). Første kall setter opp lytteren; senere kall gjør ingenting. */
+function loadThreads(){
+  if(!FB||!state.user||!state.member)return Promise.resolve();
+  if(state.thrUnsub)return state.thrPromise||Promise.resolve();
+  state.thrPromise=new Promise(res=>{
+    state.thrUnsub=FB.watchThreads(meEmail(),l=>{state.threads=l;state.meldMsg='';chatTraadEndret();res()},e=>{state.threads=state.threads||[];state.meldMsg='Kunne ikke hente samtaler ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?';chatTraadEndret();res()})});
+  return state.thrPromise}
+function chatTraadEndret(){
+  try{drawTabs()}catch(e){}
+  try{const c=state.chat;if(!c.vis)return;
+    if(c.vy==='liste'){const l=document.getElementById('cListe');if(l)l.innerHTML=chatListeInn()}
+    else if(c.vy==='samtale'&&c.id)chatLest()}catch(e){}}
+function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unread||[]).includes(meg)){t.unread=t.unread.filter(x=>x!==meg);FB.markThreadRead(t.id).catch(()=>{});try{drawTabs()}catch(e){}}}
+function chatApne(id){
+  if(!FB||!state.user||!state.member)return;
+  const c=state.chat;c.vis=true;chatEl().hidden=false;document.body.style.overflow='hidden';
+  loadThreads();
+  if(id){chatVent(id,()=>chatSamtale(id));chatListe()}else chatListe()}
+/* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
+function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatListe();return}setTimeout(()=>chatVent(id,fn,n+1),250)}
+function chatLukk(){const c=state.chat;chatStoppMsgs();c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow=''}
+function chatListeInn(){
+  const meg=meEmail(),l=state.threads;
+  if(l===undefined)return '<p class="small" style="padding:14px">Henter samtaler …</p>';
+  if(!l.length)return tom('prat','Ingen samtaler ennå',chatKan()?'Trykk på blyanten oppe til høyre for å skrive til hele gruppen eller til én person.':'Når en leder skriver til deg, kommer samtalen her, og du kan svare.')+(state.meldMsg?'<p class="small" style="padding:0 14px">'+esc(state.meldMsg)+'</p>':'');
+  return l.map(t=>{const ny=(t.unread||[]).includes(meg),n=chatNavn(t,meg);
+    return '<button type="button" class="crad'+(ny?' ny':'')+'" data-chatopen="'+esc(t.id)+'">'+chatAv(n)+'<span class="ctx"><span class="cn">'+esc(n)+'</span><span class="cp">'+esc((t.lastBy===meg?'Du: ':'')+(t.last||''))+'</span></span><span class="cm"><span>'+esc(chatTid(t.ms))+'</span>'+(ny?'<span class="cdot" aria-label="Ny melding"></span>':'')+'</span></button>'}).join('')}
+function chatListe(){
+  const c=state.chat;chatStoppMsgs();c.vy='liste';c.id=null;c.ny=null;
+  chatW().innerHTML='<header class="chd"><h2>Chat</h2><span class="grow"></span>'+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatlukk aria-label="Lukk chat">✕</button></header><div class="cliste" id="cListe">'+chatListeInn()+'</div>'}
+const chatSend='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>';
+function chatRamme(tittel,under,av,innhold,hint){
+  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span></header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
+   +'<form class="cinp" id="cForm"><textarea id="cT" rows="1" maxlength="1000" placeholder="'+esc(hint||'Skriv en melding …')+'" aria-label="Melding"></textarea><button type="submit" class="csend" aria-label="Send">'+chatSend+'</button></form>'}
+function chatSamtale(id){
+  const c=state.chat,t=chatTraad(id);if(!t){chatListe();return}
+  chatStoppMsgs();c.vy='samtale';c.id=id;c.ny=null;const meg=meEmail(),n=chatNavn(t,meg);
+  chatRamme(n,chatUnder(t,meg),chatAv(n),'<p class="small" style="align-self:center">Henter meldinger …</p>');
+  c.unsub=FB.watchMsgs(id,l=>{c.msgs=l;chatMsgs(true);chatLest()},e=>{const b=document.getElementById('cMsg');if(b)b.innerHTML='<p class="small">Kunne ikke hente meldingene ('+((e&&e.code)||'feil')+').</p>'});
+  chatLest()}
+function chatMsgs(sist){
+  const box=document.getElementById('cMsg');if(!box)return;const meg=meEmail(),l=state.chat.msgs;
+  const nær=box.scrollHeight-box.scrollTop-box.clientHeight<140;let h='',forrige=null;
+  l.forEach((m,i)=>{
+    if(!forrige||chatDg(m.ms)!==chatDg(forrige.ms))h+='<div class="cdag">'+esc(chatDag(m.ms))+'</div>';
+    const mine=m.by===meg,neste=l[i+1],slutt=!neste||neste.by!==m.by||neste.ms-m.ms>3e5||chatDg(neste.ms)!==chatDg(m.ms);
+    h+='<div class="cb '+(mine?'me':'de')+'">'+linkify(esc(m.text))+'</div>'+(slutt?'<div class="ct '+(mine?'me':'de')+'">'+esc(chatKl(m.ms))+'</div>':'');forrige=m});
+  box.innerHTML=h||'<p class="small" style="align-self:center;margin-top:20px">Ingen meldinger ennå. Skriv den første.</p>';
+  if(nær||sist)box.scrollTop=box.scrollHeight}
+/* Ny melding: velg hele gruppen eller en person. Bare ledere og administratorer. */
+const chatFolkAlle=()=>(state.admin?members:leaderMem).filter(u=>u.id!==meEmail());
+const chatGrupper=()=>state.admin?GROUPS:GROUPS.filter(g=>(state.leads||[]).includes(g[0]));
+const chatGruppeFolk=g=>chatFolkAlle().filter(u=>(u.groups||[]).includes(g));
+function chatNyPersonerHtml(q){
+  const nq=norm(q||'').trim(),gs=chatGrupper().map(g=>g[0]);
+  const l=chatFolkAlle().filter(u=>!nq||norm((u.name||'')+' '+u.id).includes(nq)).sort((a,b)=>(a.name||a.id).localeCompare(b.name||b.id,'nb')).slice(0,40);
+  return l.map(u=>{const g=(u.groups||[]).find(x=>gs.includes(x))||(u.groups||[])[0]||'',n=u.name||u.id;return '<button type="button" class="crad" data-chatpers="'+esc(u.id+'|'+g)+'">'+chatAv(n)+'<span class="ctx"><span class="cn">'+esc(n)+'</span><span class="cp">'+esc(u.name?u.id:'')+'</span></span></button>'}).join('')||'<p class="small" style="padding:0 14px">Ingen treff.</p>'}
+function chatNyVelg(){
+  const c=state.chat;chatStoppMsgs();c.vy='ny';c.id=null;c.ny=null;
+  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button><span class="ctit"><b>Ny melding</b></span></header><div class="cliste">'
+   +'<div class="cseksj">Til hele gruppen</div>'+(chatGrupper().map(g=>{const n=chatGruppeFolk(g[0]).length;return '<button type="button" class="crad" data-chatgr="'+esc(g[0])+'">'+chatAv(g[1])+'<span class="ctx"><span class="cn">'+esc(g[1])+'</span><span class="cp">'+n+(n===1?' person':' personer')+' · alle får en privat samtale og svarer deg der</span></span></button>'}).join('')||'<p class="small" style="padding:0 14px">Du leder ingen grupper ennå.</p>')
+   +'<div class="cseksj">Til én person</div><div style="padding:0 14px 8px"><input type="search" id="cQ" placeholder="Søk etter navn eller e-post" autocomplete="off" aria-label="Søk etter person"></div><div id="cPers">'+chatNyPersonerHtml('')+'</div></div>'}
+function chatGruppeSkriv(g){
+  const c=state.chat,folk=chatGruppeFolk(g);c.vy='samtale';c.id=null;c.ny={mode:'gruppe',gid:g,folk};
+  chatRamme('Hele gruppen: '+gName(g),folk.length+(folk.length===1?' person':' personer')+' får meldingen som privat chat',chatAv(gName(g)),'<p class="small" style="align-self:center;text-align:center;margin:20px 10px">Skriv meldingen under. Hver person får den som en privat samtale med deg og kan svare der. Ingen ser hverandres svar.</p>','Melding til hele gruppen …')}
+async function chatTil(epost,gid,navn){
+  if(!FB||!state.user)return;chatApne();await loadThreads();
+  const til=String(epost||'').toLowerCase(),meg=meEmail(),t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(til)&&(x.parts||[]).includes(meg));
+  if(t){chatSamtale(t.id);return}
+  const c=state.chat,n=navn||til;c.vy='samtale';c.id=null;c.ny={mode:'person',til,gid,navn:n};
+  chatRamme(n,gid?gName(gid):'',chatAv(n),'<p class="small" style="align-self:center;text-align:center;margin:20px 10px">Skriv første melding til '+esc(n)+'. Bare dere to ser samtalen.</p>')}
+async function chatSendTekst(tekst){
+  const c=state.chat,meg=meEmail(),navn=nyBeskjedNavn();
+  if(c.id){const t=chatTraad(c.id);if(!t)throw {code:'ikke-funnet'};await FB.addMsg(t,tekst,navn);if(PUSH_URL)FB.notifyThread(PUSH_URL,c.id).catch(()=>{});return}
+  const ny=c.ny;if(!ny)return;
+  if(ny.mode==='person'){const id=await FB.newDm(ny.til,ny.navn,ny.gid?gName(ny.gid):'Beskjed',tekst,navn);if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});chatVent(id,()=>chatSamtale(id));return}
+  if(ny.mode==='gruppe'){
+    let ok=0,feil=0;const folk=ny.folk;
+    for(let i=0;i<folk.length;i+=4){
+      await Promise.all(folk.slice(i,i+4).map(async u=>{try{const t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(u.id)&&(x.parts||[]).includes(meg));if(t)await FB.addMsg(t,tekst,navn);else await FB.newDm(u.id,u.name||u.id,gName(ny.gid),tekst,navn);ok++}catch(e){feil++}}));
+      const b=document.getElementById('cMsg');if(b)b.innerHTML='<p class="small" style="align-self:center;margin:20px">Sender … '+Math.min(i+4,folk.length)+' av '+folk.length+'</p>'}
+    if(ok&&PUSH_URL)FB.sendPush(PUSH_URL,'Ny beskjed fra '+navn,kortTekst(tekst),'me',{type:'grupper',groups:[ny.gid]}).catch(()=>{});
+    push(feil?'Delvis sendt':'Sendt',feil?ok+' fikk beskjeden, '+feil+' feilet.':'Beskjeden er sendt til '+ok+(ok===1?' person.':' personer.'));
+    chatListe()}}
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('button');if(!b)return;const d=b.dataset;
+  if('chattab' in d){state.chat.vis?chatLukk():chatApne()}
+  else if('chatlukk' in d)chatLukk();
+  else if('chatback' in d){const c=state.chat;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()}
+  else if('chatnyv' in d)chatNyVelg();
+  else if(d.chatopen)chatSamtale(d.chatopen);
+  else if(d.chatgr)chatGruppeSkriv(d.chatgr);
+  else if(d.chatpers){const [em,g]=d.chatpers.split('|'),u=chatFolkAlle().find(x=>x.id===em);chatTil(em,g,u&&u.name)}});
+document.addEventListener('submit',async e=>{
+  if(!e.target||e.target.id!=='cForm')return;e.preventDefault();
+  const ta=document.getElementById('cT'),tekst=(ta.value||'').trim();if(!tekst||state.chat.sender)return;
+  state.chat.sender=true;const btn=e.target.querySelector('.csend');btn.disabled=true;
+  try{await chatSendTekst(tekst);ta.value='';ta.style.height=''}
+  catch(er){push('Kunne ikke sende','Prøv igjen ('+((er&&er.code)||'feil')+').')}
+  state.chat.sender=false;const b2=document.querySelector('#cForm .csend');if(b2)b2.disabled=false;const t2=document.getElementById('cT');if(t2)t2.focus()});
+document.addEventListener('input',e=>{
+  if(e.target.id==='cT'){const t=e.target;t.style.height='auto';t.style.height=Math.min(t.scrollHeight,120)+'px'}
+  else if(e.target.id==='cQ'){const l=document.getElementById('cPers');if(l)l.innerHTML=chatNyPersonerHtml(e.target.value)}});
+document.addEventListener('keydown',e=>{
+  if(e.target&&e.target.id==='cT'&&e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&!matchMedia('(pointer:coarse)').matches){e.preventDefault();document.getElementById('cForm').requestSubmit()}
+  else if(e.key==='Escape'&&state.chat.vis&&!document.querySelector('dialog[open]')){const c=state.chat;if(c.vy==='liste')chatLukk();else chatListe()}});
 const tlfHref=t=>{const d=String(t||'').replace(/[^0-9+]/g,'');return 'tel:'+(d.startsWith('+')?d:'+47'+d)};
 function ansRad(r,red){
   const meg=meEmail(),kanSende=(r.emails||[]).some(e=>e!==meg);
@@ -2427,7 +2587,7 @@ function ansvarCard(){
   if(!state.user||!state.member)return '';
   const l=state.roles,red=state.admin&&editOn();let inn;
   if(l===undefined)inn='<p class="small">Henter ansvarsområder …</p>';
-  else inn='<p class="small" style="margin:0 0 8px">Hvem som har ansvar for hva i menigheten. Trykk «Send beskjed» for å skrive til de ansvarlige her i appen, og de kan svare deg under Beskjeder.</p>'
+  else inn='<p class="small" style="margin:0 0 8px">Hvem som har ansvar for hva i menigheten. Trykk «Send beskjed» for å skrive til de ansvarlige her i appen, og de kan svare deg i Chat.</p>'
     +(red?'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-ansnew style="width:auto">+ Nytt ansvarsområde</button></div>':'')
     +'<div class="reg">'+(l.length?l.map(r=>ansRad(r,red)).join(''):tom('folk','Ingen ansvarsområder ennå',state.admin?'Slå på redigering (blyanten) for å legge inn.':''))+'</div>';
   return '<details class="card acc" data-acc="ansvar" '+(state.acc.ansvar?'open':'')+'><summary><h2>Ansvarsområder</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.ansMsg||'')+'</p></details>'}
@@ -2442,7 +2602,7 @@ const nyBeskjedNavn=()=>(state.profile&&state.profile.name)||lsGet('sm-navn')||m
 function ansMsgAsk(roleId){
   const r=(state.roles||[]).find(x=>x.id===roleId);if(!r||document.querySelector('dialog.pub'))return;
   const dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Beskjed til «'+esc(r.name)+'»</h3><p class="small" style="margin:0">Til: '+esc((r.persons||[]).map(p=>p.n).join(', '))+'. Navnet og e-postadressen din følger med, og de kan svare deg under Beskjeder.</p>'
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Beskjed til «'+esc(r.name)+'»</h3><p class="small" style="margin:0">Til: '+esc((r.persons||[]).map(p=>p.n).join(', '))+'. Navnet og e-postadressen din følger med, og de kan svare deg i Chat.</p>'
    +'<label class="f">Beskjed<textarea id="bT" rows="5" maxlength="1000" placeholder="Skriv beskjeden her …"></textarea></label><p class="small" id="bS" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.querySelector('form').addEventListener('submit',async e=>{
@@ -2450,7 +2610,7 @@ function ansMsgAsk(roleId){
     const text=dlg.querySelector('#bT').value.trim();if(!text){dlg.querySelector('#bS').textContent='Skriv en beskjed.';return}
     try{const id=await FB.newThread(r,text,nyBeskjedNavn());dlg.close();
       if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});
-      state.acc.meld=true;await loadThreads();push('Sendt','Beskjeden er sendt. Svar kommer under Beskjeder.')}
+      chatApne(id);push('Sendt','Beskjeden er sendt. Svar kommer i Chat.')}
     catch(er){dlg.querySelector('#bS').textContent='Kunne ikke sende ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 /* Privat beskjed fra gruppeleder til ett medlem (også som svar på et raskt svar). Finnes det allerede en samtale med personen, legges meldingen til i den. */
@@ -2658,7 +2818,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 22:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 09:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2987,9 +3147,9 @@ function admCard(){
   return subSorter('adm','<details class="card acc" data-acc="admkort" '+(state.acc.admkort?'open':'')+'><summary><h2>Administrer</h2></summary><p class="small" style="margin:0 0 4px">'+tekst+' Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>','.megboks')}
 function megCard(){return subSorter('meg',megKort(),'.megboks')}
 function megKort(){
-  const deler=[state.user?profileCard():'',attestKort(),settingsCard(),state.user?vakterCard():'',state.user?meldCard():'',state.user?verktoyCard():'',state.user?loginCard():''].filter(x=>x&&String(x).trim());
+  const deler=[state.user?profileCard():'',attestKort(),settingsCard(),state.user?vakterCard():'',state.user?verktoyCard():'',state.user?loginCard():''].filter(x=>x&&String(x).trim());
   if(!deler.length)return '';
-  return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, innstillinger, vakter, beskjeder og notater. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
+  return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, innstillinger, vakter og møteverktøy. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
 const ME_KORT={
   meg:['Meg',()=>megCard()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],lr:['Saker til lederrådet',()=>lrCard()],utleie:['Utleie',()=>state.admin?'':utleieCard()],
   ansvar:['Ansvarsområder',()=>ansvarCard()],
@@ -3478,7 +3638,7 @@ document.addEventListener('click',async e=>{
         const an=d2.animate({height:['0px',h+'px'],paddingBottom:['0px',pb],opacity:[0,1]},{duration:280,easing:'cubic-bezier(.2,.7,.2,1)'});
         an.onfinish=an.oncancel=()=>{d2.style.overflow='';delete d2.dataset.anim}}}
   }
-  else if(c.dataset.dm){const [e1,g1,n1]=c.dataset.dm.split('|');dmAsk(e1,g1,n1)}
+  else if(c.dataset.dm){const [e1,g1,n1]=c.dataset.dm.split('|');chatTil(e1,g1,n1)}
   else if(c.dataset.svark){const b=c.closest('[data-svar]');if(b)svarSend(b.dataset.svar,c.dataset.svark,null)}
   else if('svarsend' in c.dataset){const b=c.closest('[data-svar]');if(b)svarSend(b.dataset.svar,null,b.querySelector('.svart').value)}
   else if('pubnew' in c.dataset){state.pushStd=false;pubAsk()}
@@ -4004,7 +4164,7 @@ function apneFraVarsel(tab,tittel,tekst){
       if(b){state.ut.mnd=b.dato.slice(0,7);state.ut.dag=b.dato;state.open['ut_'+b.id+'_'+b.dato]=true}
       utMarkerSett();fadeRender();rull(b?'[data-ev="ut_'+b.id+'_'+b.dato+'"]':'details[data-acc=utleie]',b?null:null)};
     if(state.ut.liste===undefined)utLast().then(vis);else vis();return true}
-  if(/^ny beskjed/.test(lc)&&state.user){state.tab='me';state.acc.megkort=true;state.acc.meld=true;if(state.threads===undefined)loadThreads();fadeRender();rull('details[data-acc=meld]');return true}
+  if(/^ny beskjed/.test(lc)&&state.user&&state.member){loadThreads().then(()=>{const u=(state.threads||[]).filter(t=>(t.unread||[]).includes(meEmail())).sort((a,b)=>(b.ms||0)-(a.ms||0))[0];chatApne(u?u.id:null)});return true}
   if(/vakt/.test(lc)&&state.user){state.tab='me';state.acc.megkort=true;state.acc.vakter=true;if(state.shifts===undefined)loadShifts();fadeRender();rull('details[data-acc=vakter]');return true}
   if(tab==='prog'||/^påminnelse$/.test(lc)){
     const ev=events.find(e=>e.title&&B.includes(e.title)),f=nextFast().find(x=>B.includes(fastInfo(x.fast,x.ex).title)),id=ev?ev.id:f?fastId(f.fast,f.w):'';
@@ -4077,7 +4237,7 @@ async function start(){
     if(pr&&typeof pr.suborder==='string'){try{JSON.parse(pr.suborder);lsSet(SUBORD_KEY,pr.suborder)}catch(e){}}else if(med&&lsGet(SUBORD_KEY)){FB.setPrefSub(u.email.toLowerCase(),lsGet(SUBORD_KEY)).catch(()=>{})}
     state.notes=undefined;state.shifts=undefined;state.reqs=undefined;state.myShifts=[];
     if(u&&state.member){loadMyShifts().then(()=>keep(()=>{}));setTimeout(utSjekkNye,1500)}
-    state.threads=undefined;state.roles=undefined;if(u&&state.member){loadThreads();loadVaktReq();if(lrTilgang())loadLr()}
+    thrStopp();state.thrPromise=null;state.threads=undefined;if(!u&&state.chat.vis)chatLukk();state.roles=undefined;if(u&&state.member){loadThreads();loadVaktReq();if(lrTilgang())loadLr()}
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
     try{u?localStorage.setItem('sm-innlogget','1'):localStorage.removeItem('sm-innlogget')}catch(er){}
     await load();state.fast=false;state.authVent=false;
