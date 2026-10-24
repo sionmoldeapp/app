@@ -1,5 +1,5 @@
 <!doctype html><html lang="nb"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#c9e1fb"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-180.png"><title>Sion Molde</title>
-<script>try{var t=localStorage.getItem('sm-theme');if(t)document.documentElement.dataset.theme=t;window.PAL_BG={"klassisk":["#c9e1fb","#0b2540"],"premium":["#f6f4ef","#0a1b2e"],"kobber":["#f5f2ec","#0a2427"],"grafitt":["#f5f5f7","#111418"],"skog":["#f3f4ee","#0d1f18"],"vin":["#f7f2f0","#1a0f14"],"iphone":["#f2f2f7","#000000"],"android":["#f1f6f3","#071f2b"],"rosa":["#fff1f5","#1f0f18"],"gutta":["#eef1f5","#090c12"],"jul":["#fbf6ef","#0f1f17"],"solnedgang":["#fff4ea","#1b0f1e"],"shrek":["#eef2dc","#141b0b"]};var pv=localStorage.getItem('sm-pal');if(!PAL_BG[pv])pv='premium';document.documentElement.dataset.pal=pv;var sv=localStorage.getItem('sm-stil');if(sv!=='ios'&&sv!=='android')sv='standard';document.documentElement.dataset.stil=sv;var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.querySelector('meta[name=theme-color]').content=PAL_BG[pv][d?1:0]}catch(e){}</script>
+<script>try{var t=localStorage.getItem('sm-theme');if(t)document.documentElement.dataset.theme=t;window.PAL_BG={"klassisk":["#c9e1fb","#0b2540"],"premium":["#f6f4ef","#0a1b2e"],"kobber":["#f5f2ec","#0a2427"],"grafitt":["#f5f5f7","#111418"],"skog":["#f3f4ee","#0d1f18"],"vin":["#f7f2f0","#1a0f14"],"iphone":["#f2f2f7","#000000"],"android":["#f1f6f3","#071f2b"],"rosa":["#fff1f5","#1f0f18"],"gutta":["#eef1f5","#090c12"],"jul":["#fbf6ef","#0f1f17"],"solnedgang":["#fff4ea","#1b0f1e"],"shrek":["#eef2dc","#141b0b"],"egen":["#f6f4ef","#0a1b2e"]};var pv=localStorage.getItem('sm-pal');if(!PAL_BG[pv])pv='premium';document.documentElement.dataset.pal=pv;var sv=localStorage.getItem('sm-stil');if(sv!=='ios'&&sv!=='android')sv='standard';document.documentElement.dataset.stil=sv;var d=t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches;document.querySelector('meta[name=theme-color]').content=PAL_BG[pv][d?1:0]}catch(e){}</script>
 <link rel="stylesheet" href="fonts.css">
 <style>
 /* Layout: mobilapp i smal kolonne, fast fanelinje nederst, innhold bytter per fane */
@@ -346,6 +346,9 @@ html[data-bred="1"] nav.tabs{left:0;top:0;bottom:0;transform:none;width:240px;ma
 html[data-bred="1"] nav.tabs::before{content:'Administrasjon';font-family:var(--f-display);font-size:26px;text-transform:uppercase;letter-spacing:.02em;padding:0 16px 18px;color:var(--ink)}
 html[data-bred="1"] nav.tabs button{flex-direction:row;justify-content:flex-start;gap:14px;padding:12px 16px;font-size:var(--t-b)}
 html[data-bred="1"] nav.tabs button .tab-bdg{position:static;margin-left:auto}
+.egenrad{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}.egenrad label{flex:1 1 150px;font-size:var(--t-m);font-weight:600}
+.egenrad input[type=color]{width:46px;height:38px;padding:2px;border:1px solid var(--line);border-radius:var(--r-s);background:var(--surface);cursor:pointer;flex:none}
+.egenrad input[type=text]{width:92px;flex:none;font-variant-numeric:tabular-nums}
 .palrutenett{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .palbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--surface);font-size:var(--t-m);font-weight:600;line-height:1.2;transition:border-color var(--d-med) var(--ease),box-shadow var(--d-med) var(--ease)}
 .palbtn[aria-pressed="true"]{border-color:var(--lamp);box-shadow:0 0 0 2px var(--lamp-glow)}
@@ -2470,7 +2473,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='24.10.2026 kl. 14:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='24.10.2026 kl. 15:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2484,8 +2487,58 @@ function nullstillUtseende(){setStil('standard');setPal('premium')}
 function bredNa(){const v=UI.vis||'auto';return innerWidth>=1000&&(v==='bred'||(v==='auto'&&!!(state.admin||(state.real&&state.real.admin))))}
 function settBred(){const r=document.documentElement;r.dataset.bred=bredNa()?'1':'0';r.dataset.tab=state.tab}
 addEventListener('resize',()=>settBred());
+/* Egen palett: brukeren velger noen få farger, resten (kort, tekst, linjer, mørk visning, kontrast) regnes ut. Lagres bare på enheten (sm-egen), og brukes som data-pal="egen". */
+const cHex=h=>{h=String(h||'').trim().replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');return /^[0-9a-f]{6}$/i.test(h)?'#'+h.toLowerCase():null};
+const cRgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const cHx=a=>'#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const cMix=(a,b,t)=>{const x=cRgb(a),y=cRgb(b);return cHx(x.map((v,i)=>v*(1-t)+y[i]*t))};
+const cLum=h=>{const [r,g,b]=cRgb(h).map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*r+.7152*g+.0722*b};
+const cKon=(a,b)=>{const l1=cLum(a),l2=cLum(b);return (Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05)};
+const cInk=h=>cKon(h,'#ffffff')>=cKon(h,'#111111')?'#ffffff':'#111111';
+const EGEN_DEF={brand:'#14304f',lamp:'#96723a',bgL:'#f6f4ef',bgD:'#0a1b2e',surfL:'',surfD:'',inkL:'',inkD:''};
+function egenCfg(){let j={};try{j=JSON.parse(lsGet('sm-egen')||'{}')||{}}catch(e){}const o={...EGEN_DEF};for(const k in EGEN_DEF){const v=cHex(j[k]);if(v)o[k]=v;else if(/^(surf|ink)/.test(k))o[k]=''}return o}
+function egenTokens(c,mork){
+  const bg=mork?c.bgD:c.bgL,surf=(mork?c.surfD:c.surfL)||(mork?cMix(bg,'#ffffff',.08):cMix(bg,'#ffffff',.75)),ink=(mork?c.inkD:c.inkL)||(mork?cMix('#ffffff',bg,.08):cMix(bg,'#000000',.88));
+  let brand=c.brand,lamp=c.lamp;
+  if(mork){if(cLum(brand)<.3)brand=cMix(brand,'#ffffff',.5);if(cLum(lamp)<.3)lamp=cMix(lamp,'#ffffff',.5)}else if(cLum(lamp)>.45)lamp=cMix(lamp,'#000000',.35);
+  const muted=cMix(ink,bg,.42),line=cMix(bg,ink,.14),chip=cMix(bg,ink,.08),okc=mork?'#8cc7b0':'#2d6a5a',lb=cLum(c.brand);
+  const ha=lb>.3?cMix(c.brand,'#000000',.2):cMix(c.brand,'#ffffff',.12),hb=lb>.3?cMix(c.brand,'#000000',.55):lb>.12?cMix(c.brand,'#000000',.4):cMix(c.brand,'#000000',.45),[lr,lg,lbb]=cRgb(lamp);
+  return '--bg:'+bg+';--surface:'+surf+';--ink:'+ink+';--muted:'+muted+';--line:'+line+';--brand:'+brand+';--brand-ink:'+cInk(brand)+';--lamp:'+lamp+';--lamp-soft:'+cMix(lamp,bg,.82)+';--ok:'+okc+';--ok-soft:'+cMix(okc,bg,.82)+';--chip:'+chip
+   +';--lamp-ink:'+cInk(lamp)+';--lamp-glow:rgba('+lr+','+lg+','+lbb+','+(mork?.26:.22)+');--shadow-card:'+(mork?'0 1px 2px rgba(0,0,0,.3),0 8px 22px rgba(0,0,0,.28)':'0 1px 2px rgba(28,42,58,.05),0 8px 22px rgba(28,42,58,.06)')+';--shadow-pop:'+(mork?'0 10px 26px rgba(0,0,0,.45)':'0 10px 26px rgba(28,42,58,.14)')
+   +';--ikon-a:'+cMix(c.brand,'#ffffff',.2)+';--ikon-b:'+c.brand+';--hero-a:'+ha+';--hero-b:'+hb+';--hero-dot:'+cMix(lamp,'#ffffff',.35)+';--hero-link:'+cMix(c.brand,'#ffffff',.85)+(mork?';color-scheme:dark':'')}
+function egenBruk(){let st=document.getElementById('egenPal');if(!st){st=document.createElement('style');st.id='egenPal';document.head.appendChild(st)}
+  const c=egenCfg(),L=egenTokens(c,false),D=egenTokens(c,true);
+  st.textContent=':root[data-pal="egen"]{'+L+'}@media (prefers-color-scheme:dark){:root[data-pal="egen"]:not([data-theme="light"]){'+D+'}}:root[data-pal="egen"][data-theme="dark"]{'+D+'}';
+  window.PAL_BG=window.PAL_BG||{};PAL_BG.egen=[c.bgL,c.bgD]}
+egenBruk();
+const egenPalEntry=()=>{const c=egenCfg();return ['egen','Egen palett',c.bgL,c.brand,c.lamp]};
+function egenKontrast(){const c=egenCfg(),dr=[['lys',egenTokens(c,false)],['mørk',egenTokens(c,true)]],feil=[];
+  for(const [n,t] of dr){const v=k=>(new RegExp('--'+k+':(#[0-9a-f]{6})')).exec(t)[1];
+    const k1=cKon(v('ink'),v('surface')),k2=cKon(v('brand-ink'),v('brand')),k3=cKon(v('muted'),v('bg'));
+    if(k1<4.5)feil.push('Teksten mot kortene i '+n+' visning er svak ('+k1.toFixed(1)+':1)');
+    if(k2<3)feil.push('Teksten på knappene i '+n+' visning er svak ('+k2.toFixed(1)+':1)');
+    if(k3<3)feil.push('Dempet tekst i '+n+' visning er svak')}
+  return feil.length?'Lav kontrast: '+feil.join('. ')+'. Prøv en mørkere tekst eller et lysere/mørkere bakgrunn.':'Kontrasten er god i både lys og mørk visning.'}
+function egenEditor(){
+  const c=egenCfg(),L=egenTokens(c,false),D=egenTokens(c,true),gett=(t,k)=>(new RegExp('--'+k+':(#[0-9a-f]{6})')).exec(t)[1];
+  const felt=[['brand','Primærfarge (knapper og kort)',false],['lamp','Aksentfarge (etiketter og merker)',false],['bgL','Bakgrunn, lys visning',false],['bgD','Bakgrunn, mørk visning',false],
+    ['surfL','Kortfarge, lys visning',true],['surfD','Kortfarge, mørk visning',true],['inkL','Tekstfarge, lys visning',true],['inkD','Tekstfarge, mørk visning',true]];
+  const vis=k=>c[k]||(k==='surfL'?gett(L,'surface'):k==='surfD'?gett(D,'surface'):k==='inkL'?gett(L,'ink'):gett(D,'ink'));
+  const rad=([k,l,valg])=>'<div class="egenrad"><label for="eg_'+k+'">'+l+'</label><input type="color" id="eg_'+k+'" data-egen="'+k+'" value="'+vis(k)+'"><input type="text" data-egent="'+k+'" maxlength="7" value="'+(c[k]||'')+'" placeholder="'+(valg?'auto':vis(k))+'" aria-label="'+l+' som kode" inputmode="text" autocapitalize="off" spellcheck="false">'+(valg&&c[k]?'<button type="button" class="btn" data-egenauto="'+k+'">Auto</button>':'')+'</div>';
+  return '<details class="acc sub" data-acc="egenpal" '+(state.acc.egenpal?'open':'')+' style="margin-top:14px"><summary><h3 style="font-size:var(--t-b)">Avansert: lag din egen palett</h3></summary>'
+   +'<p class="small" style="margin:0 0 8px">Velg fargene du vil ha. Resten (kort, tekst, linjer og mørk visning) regnes ut automatisk. Du ser endringen med en gang, og den gjelder bare på denne enheten.</p>'
+   +felt.slice(0,4).map(rad).join('')
+   +'<details class="acc sub" data-acc="egenflere" '+(state.acc.egenflere?'open':'')+' style="margin-top:8px"><summary><span class="small"><b>Flere valg</b> (kort- og tekstfarger)</span></summary><p class="small" style="margin:6px 0 0">La stå på «auto» hvis du ikke har et ønske.</p>'+felt.slice(4).map(rad).join('')+'</details>'
+   +'<p class="small" id="egenKon" role="status" style="margin:10px 0 0">'+esc(egenKontrast())+'</p>'
+   +'<div class="btns" style="margin-top:8px"><button type="button" class="btn primary" data-egenbruk style="width:auto">Bruk egen palett</button><button type="button" class="btn" data-egenreset>Tilbakestill egen palett</button></div></details>'}
+function egenSett(k,v){const h=cHex(v);if(!h)return false;let j={};try{j=JSON.parse(lsGet('sm-egen')||'{}')||{}}catch(e){}j[k]=h;lsSet('sm-egen',JSON.stringify(j));
+  if(document.documentElement.dataset.pal!=='egen')setPal('egen');else egenBruk();
+  const kon=document.getElementById('egenKon');if(kon)kon.textContent=egenKontrast();try{themeIcon()}catch(e){}return true}
+document.addEventListener('input',e=>{const t=e.target,k=t.dataset&&(t.dataset.egen||t.dataset.egent);if(!k)return;
+  if(egenSett(k,t.value)){const h=cHex(t.value),f=t.dataset.egen?document.querySelector('[data-egent="'+k+'"]'):document.querySelector('[data-egen="'+k+'"]');if(f)f.value=h;
+    const sw=document.querySelector('.palbtn[data-pal="egen"] .pal-prove');if(sw){const c=egenCfg();sw.style.background='linear-gradient(135deg,'+c.bgL+' 0 34%,'+c.brand+' 34% 67%,'+c.lamp+' 67%)'}}});
 function palNa(){return document.documentElement.dataset.pal||'premium'}
-function setPal(p){document.documentElement.dataset.pal=p;try{localStorage.setItem('sm-pal',p)}catch(e){}themeIcon()}
+function setPal(p){if(p==='egen')egenBruk();document.documentElement.dataset.pal=p;try{localStorage.setItem('sm-pal',p)}catch(e){}themeIcon()}
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
 function uiLagre(){try{localStorage.setItem('sm-ui',JSON.stringify(UI))}catch(e){}}
 applyFs();
@@ -2494,7 +2547,7 @@ function settingsCard(){
   const H=t=>`<h3 style="margin:14px 0 6px;font-size:var(--t-l)">${t}</h3>`;
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
   ${profSub('inpush','Varsler',pushInner())}
-  ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Skjermvisning</h3><p class="small" style="margin:0 0 8px">På PC kan appen fylle hele nettleservinduet med sidemeny og flere kolonner. Automatisk betyr bred visning for administratorer på stor skjerm.</p><div class="btns" role="group" aria-label="Skjermvisning" style="margin-bottom:16px">${[['auto','Automatisk'],['bred','Bred (PC)'],['mobil','Mobilvisning']].map(([v,n])=>`<button type="button" class="btn ${(UI.vis||'auto')===v?'on':''}" data-vis="${v}" aria-pressed="${(UI.vis||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${PALETTER.map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div><p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
+  ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Skjermvisning</h3><p class="small" style="margin:0 0 8px">På PC kan appen fylle hele nettleservinduet med sidemeny og flere kolonner. Automatisk betyr bred visning for administratorer på stor skjerm.</p><div class="btns" role="group" aria-label="Skjermvisning" style="margin-bottom:16px">${[['auto','Automatisk'],['bred','Bred (PC)'],['mobil','Mobilvisning']].map(([v,n])=>`<button type="button" class="btn ${(UI.vis||'auto')===v?'on':''}" data-vis="${v}" aria-pressed="${(UI.vis||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${[...PALETTER,egenPalEntry()].map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div>${egenEditor()}<p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('installer','Slik installerer du appen',installBody())}
@@ -2998,6 +3051,9 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.af){state.af=c.dataset.af;state.sel={};keep(()=>{})}
   else if(c.dataset.f){state.filter=c.dataset.f;keep(()=>{})}
   else if(c.dataset.ui){keep(()=>{UI[c.dataset.ui]=UI[c.dataset.ui]===false;if(c.dataset.ui==='vk'&&UI.vk)lsSet('sm-viktig-skjult','');uiLagre()})}
+  else if('egenbruk' in c.dataset){setPal('egen');keep(()=>{})}
+  else if(c.dataset.egenauto){const k=c.dataset.egenauto;let j={};try{j=JSON.parse(lsGet('sm-egen')||'{}')||{}}catch(e){}j[k]='';lsSet('sm-egen',JSON.stringify(j));egenBruk();keep(()=>{})}
+  else if('egenreset' in c.dataset){lsSet('sm-egen','');egenBruk();keep(()=>{})}
   else if(c.dataset.vis){UI.vis=c.dataset.vis;uiLagre();settBred();keep(()=>{})}
   else if(c.dataset.stil){setStil(c.dataset.stil);keep(()=>{})}
   else if('utsvReset' in c.dataset){nullstillUtseende();keep(()=>{})}
