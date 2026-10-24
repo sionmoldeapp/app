@@ -2653,7 +2653,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 19:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 20:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2964,9 +2964,12 @@ function subFlytt(cid,key,d){const ord=(state.subVis[cid]||[]).slice(),i=ord.ind
   [ord[i],ord[j]]=[ord[j],ord[i]];const o=subOrd();o[cid]=ord;lsSet(SUBORD_KEY,JSON.stringify(o));
   if(FB&&state.user&&state.user.email)FB.setPrefSub(state.user.email.toLowerCase(),JSON.stringify(o)).catch(()=>{});keep(()=>{})}
 /* Administrer: samler alt som styrer appen (ikke personlige ting). Administratorer får alle verktøyene, gruppeledere får verktøy for egne grupper og varsler. Kortene inni beholder sine egne data-acc. */
+/* Tunge kort (mange brukere) bygges bare når de er åpne; lukket vises bare tittelen. Åpning tegner siden på nytt (toggle-lytteren). */
+const ADM_LAT=['brukere','tilh'];
+const admLat=(acc,tittel,bygg)=>state.acc[acc]?bygg():'<details class="card acc" data-acc="'+acc+'"><summary><h2>'+tittel+'</h2></summary></details>';
 const ADM_KORT={
-  medlem:()=>state.view==='meg'&&state.admin?memberCard():'',grupper:()=>state.view==='meg'&&state.admin?groupsCard():'',
-  tilh:()=>state.view==='meg'&&(state.admin||isLeader())?tilhKort():'',
+  medlem:()=>state.view==='meg'&&state.admin?admLat('brukere','Brukere ('+members.length+')',memberCard):'',grupper:()=>state.view==='meg'&&state.admin?groupsCard():'',
+  tilh:()=>state.view==='meg'&&(state.admin||isLeader())?admLat('tilh','Tilhørighet og varsler',tilhKort):'',
   ledergr:()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():'',
   gruppebesk:()=>gruppeBeskjedCard(),publiser:()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'',
   utleie:()=>state.admin?utleieCard():'',jul:()=>state.admin?julCard():'',
@@ -3899,7 +3902,7 @@ async function loadSnaps(){
   catch(e){state.snaps=[];state.snapMsg='Kunne ikke hente sikkerhetspunkter ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{});
 }
-document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='vnotat'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='utleie'&&e.target.open){utMarkerSett();if(state.ut.liste===undefined&&FB&&utLes())utLast()}if(k==='lr'&&e.target.open&&FB&&lrTilgang()){if(state.lr===undefined)loadLr();else lrMarkerSett()}if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB&&prayLes())loadPrayers();if(k==='ansvar'&&e.target.open&&state.roles===undefined&&FB)loadRoles();if(k==='attester'&&e.target.open&&state.attester===undefined&&FB)loadAttester();if(k==='meld'&&e.target.open&&state.threads===undefined&&FB)loadThreads();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
+document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(ADM_LAT.includes(k)&&e.target.open&&!e.target.querySelector('p,div'))keep(()=>{});if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='vnotat'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='utleie'&&e.target.open){utMarkerSett();if(state.ut.liste===undefined&&FB&&utLes())utLast()}if(k==='lr'&&e.target.open&&FB&&lrTilgang()){if(state.lr===undefined)loadLr();else lrMarkerSett()}if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB&&prayLes())loadPrayers();if(k==='ansvar'&&e.target.open&&state.roles===undefined&&FB)loadRoles();if(k==='attester'&&e.target.open&&state.attester===undefined&&FB)loadAttester();if(k==='meld'&&e.target.open&&state.threads===undefined&&FB)loadThreads();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
   if('prmute' in d){const m=new Set(state.profile.muted||[]);e.target.checked?m.delete(d.prmute):m.add(d.prmute);try{await FB.setProfile(state.user.email,{muted:[...m]});state.profile.muted=[...m];state.prMsg='Lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code);e.target.checked=!e.target.checked}keep(()=>{});return}
