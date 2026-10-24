@@ -992,6 +992,8 @@ function utNedTikk(){document.querySelectorAll('[data-utnt]').forEach(e=>{const 
 { const neste=()=>{const n=new Date();return (60-n.getMinutes())*60e3-n.getSeconds()*1e3+500};
   const kjor=()=>{utNedTikk();setTimeout(kjor,neste())};setTimeout(kjor,neste());
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)utNedTikk()}) }
+/* Allergener som kan krysses av på en booking (de 14 som skal merkes i EU/Norge, pluss laktose). Vises for vertskapet, i varselet og i påminnelsen. */
+const UT_ALLERGENER=['Gluten','Melk','Laktose','Egg','Fisk','Skalldyr','Bløtdyr','Peanøtter','Nøtter','Soya','Selleri','Sennep','Sesam','Sulfitt','Lupin'];
 const UT_PAAMINN=[[0,'Ingen påminnelse'],[3,'3 timer før'],[6,'6 timer før'],[12,'12 timer før'],[24,'1 døgn før (standard)'],[48,'2 døgn før'],[72,'3 døgn før'],[168,'1 uke før']];
 const utPaaminnTekst=h=>{const x=UT_PAAMINN.find(p=>p[0]===h);return x?x[1].replace(' (standard)',''):(h+' timer før')};
 /* Bookingene vises som i Program: dato-rute, tittel, tid og rom, og ett trykk åpner alle detaljene (samme åpne/lukke-animasjon som arrangementene). */
@@ -1007,7 +1009,7 @@ function utItem(x,dag){
     +'<div class="detail"><div style="display:flex;flex-wrap:wrap;gap:4px">'+rom+'</div>'
     +(fler?rad('Dager',utDatoKort(x.dato)+' – '+utDatoKort(x.dato2)):'')
     +(fler?'<div class="small">'+utDager(x).map(k=>{const dd=new Date(k+'T12:00');return esc(cap(DAYS[dd.getDay()]).slice(0,3)+' '+dd.getDate()+'. '+MON[dd.getMonth()]+': '+utTidDag(x,k))}).join('<br>')+'</div>':'')
-    +rad('Antall gjester',x.gjester?String(x.gjester):'')+rad('Servering',x.servering)+(x.status!=='foresporsel'?rad('Påminnelse til vertskapet',utPaaminnTekst(x.remindH==null?24:Number(x.remindH))):'')
+    +rad('Antall gjester',x.gjester?String(x.gjester):'')+rad('Servering',x.servering)+((x.allergener||[]).length||x.allergenNotat?'<div class="small"><b>Allergener:</b> '+(x.allergener||[]).map(a=>'<span class="tag" style="background:#b3261e22;color:#b3261e">'+esc(a)+'</span>').join(' ')+(x.allergenNotat?' '+esc(x.allergenNotat):'')+'</div>':'')+(x.status!=='foresporsel'?rad('Påminnelse til vertskapet',utPaaminnTekst(x.remindH==null?24:Number(x.remindH))):'')
     +(skriv?rad('Leietaker',x.leier)+rad('Kontakt',x.kontakt)+rad('Pris',x.pris)+rad('Merknad',x.notat):'')
     +(skriv?'<div class="btns"><button type="button" class="btn" data-utedit="'+esc(x.id)+'">Endre</button></div>':'')+'</div></div>'}
 function utRad(x,dag){const fler=x.dato2&&x.dato2>x.dato,tm=utTiderMap(x),tid=tm[dag]?tm[dag][0]+'–'+tm[dag][1]:!fler?x.fra+'–'+x.til:dag===x.dato?'Fra '+x.fra:dag===x.dato2?'Til '+x.til:'Hele dagen',rom=(x.rom||[]).map(r=>'<span class="tag" style="background:'+utFarge(r)+'22;color:'+utFarge(r)+'">'+esc(r)+'</span>').join(' ');
@@ -1039,7 +1041,7 @@ function utleieCard(){
   return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie?'open':'')+'><summary><h2>Utleie</h2></summary>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
 function utAsk(id,dato){
   if(!utTilgang()||document.querySelector('dialog.pub'))return;
-  const ex=id?(state.ut.liste||[]).find(x=>x.id===id):null,b={tittel:'',rom:[],gjester:0,servering:'',remindH:24,dato:dato||state.ut.dag,dato2:'',fra:'10:00',til:'12:00',leier:'',kontakt:'',pris:'',status:'bekreftet',notat:'',...(ex||{})};
+  const ex=id?(state.ut.liste||[]).find(x=>x.id===id):null,b={tittel:'',rom:[],gjester:0,servering:'',allergener:[],allergenNotat:'',remindH:24,dato:dato||state.ut.dag,dato2:'',fra:'10:00',til:'12:00',leier:'',kontakt:'',pris:'',status:'bekreftet',notat:'',...(ex||{})};
   const dlg=document.createElement('dialog');dlg.className='lp pub';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(ex?'Endre booking':'Ny booking')+'</h3>'
    +'<label class="f">Tittel / hva skal det brukes til<input id="uT" maxlength="100" value="'+esc(b.tittel)+'" placeholder="For eksempel Bursdagsselskap"></label>'
@@ -1047,6 +1049,7 @@ function utAsk(id,dato){
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Første dag<input id="uD" type="date" value="'+esc(b.dato)+'"></label><label class="f">Siste dag<input id="uD2" type="date" value="'+esc(b.dato2||'')+'"></label></div><p class="small" style="margin:-4px 0 0">Lar du «Siste dag» stå tom, gjelder bookingen bare én dag. Velger du flere dager, kan du sette eget tidspunkt for hver dag.</p>'
    +'<div id="uEn" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Fra<input id="uF" type="time" value="'+esc(b.fra)+'"></label><label class="f">Til<input id="uTi" type="time" value="'+esc(b.til)+'"></label></div><div id="uTider" style="display:grid;gap:4px"></div>'
    +'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px"><label class="f">Antall gjester<input id="uG" type="number" min="0" max="2000" inputmode="numeric" value="'+(b.gjester||'')+'"></label><label class="f">Matrett som skal serveres<input id="uM" maxlength="200" value="'+esc(b.servering||'')+'" placeholder="For eksempel kjøttkaker, kaffe og kake"></label></div>'
+   +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:var(--t-m);margin-bottom:4px">Allergener blant gjestene</legend><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">'+UT_ALLERGENER.map(a=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utal="'+esc(a)+'" style="width:22px;height:22px;flex:none" '+((b.allergener||[]).includes(a)?'checked':'')+'>'+esc(a)+'</label>').join('')+'</div><label class="f" style="margin-top:6px">Andre allergier eller kosthold<input id="uAn" maxlength="200" value="'+esc(b.allergenNotat||'')+'" placeholder="For eksempel vegetar eller nøtteallergi hos barn"></label></fieldset>'
    +'<label class="f">Leietaker<input id="uL" maxlength="100" value="'+esc(b.leier)+'" placeholder="Navn på person eller organisasjon"></label>'
    +'<label class="f">Telefon eller e-post<input id="uK" maxlength="100" value="'+esc(b.kontakt)+'"></label>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Pris<input id="uP" maxlength="30" value="'+esc(/^Eget/.test(b.pris)?'':b.pris)+'" placeholder="'+(/^Eget/.test(b.pris)?'Gratis':'kr')+'" '+(/^Eget/.test(b.pris)?'disabled':'')+'></label><label class="f">Status<select id="uS"><option value="bekreftet" '+(b.status==='bekreftet'?'selected':'')+'>Bekreftet</option><option value="foresporsel" '+(b.status==='foresporsel'?'selected':'')+'>Forespørsel</option></select></label></div>'
@@ -1070,7 +1073,7 @@ function utAsk(id,dato){
     if(v==='slett'){if(!await bekreft('Slette denne bookingen?'))return;
       try{await FB.utDel(id);state.ut.liste=state.ut.liste.filter(x=>x.id!==id);dlg.close();keep(()=>{});push('Slettet','Bookingen er fjernet.')}catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}return}
     const d={tittel:dlg.querySelector('#uT').value.trim(),rom:[...dlg.querySelectorAll('[data-utr]')].filter(x=>x.checked).map(x=>x.dataset.utr),dato:dlg.querySelector('#uD').value,dato2:dlg.querySelector('#uD2').value,fra:dlg.querySelector('#uF').value,til:dlg.querySelector('#uTi').value,
-      remindH:parseInt(dlg.querySelector('#uRem').value,10)||0,gjester:Math.max(0,Math.min(2000,parseInt(dlg.querySelector('#uG').value,10)||0)),servering:dlg.querySelector('#uM').value.trim(),leier:dlg.querySelector('#uL').value.trim(),kontakt:dlg.querySelector('#uK').value.trim(),pris:dlg.querySelector('#uEget').checked?'Eget arrangement (gratis)':dlg.querySelector('#uP').value.trim(),status:dlg.querySelector('#uS').value,notat:dlg.querySelector('#uN').value.trim()};
+      remindH:parseInt(dlg.querySelector('#uRem').value,10)||0,allergener:[...dlg.querySelectorAll('[data-utal]')].filter(x=>x.checked).map(x=>x.dataset.utal),allergenNotat:dlg.querySelector('#uAn').value.trim(),gjester:Math.max(0,Math.min(2000,parseInt(dlg.querySelector('#uG').value,10)||0)),servering:dlg.querySelector('#uM').value.trim(),leier:dlg.querySelector('#uL').value.trim(),kontakt:dlg.querySelector('#uK').value.trim(),pris:dlg.querySelector('#uEget').checked?'Eget arrangement (gratis)':dlg.querySelector('#uP').value.trim(),status:dlg.querySelector('#uS').value,notat:dlg.querySelector('#uN').value.trim()};
     const flere=d.dato&&d.dato2&&d.dato2>d.dato&&Math.round((Date.parse(d.dato2)-Date.parse(d.dato))/864e5)<=60;
     if(flere){const rader=[...dlg.querySelectorAll('[data-utf]')];d.tider=rader.map(i=>i.dataset.utf+'|'+i.value+'|'+dlg.querySelector('[data-utt="'+i.dataset.utf+'"]').value);
       if(d.tider.some(x=>{const [,f,t]=x.split('|');return !f||!t||utMin(t)<=utMin(f)})){msg('Hver dag må ha gyldige klokkeslett, og «Til» må være etter «Fra».');return}
@@ -1089,7 +1092,7 @@ function utAsk(id,dato){
 async function utVarsle(d,ny){
   if(!FB||!PUSH_URL)return 'Varsel er ikke satt opp.';
   const dd=new Date(d.dato+'T12:00'),flere=d.dato2&&d.dato2>d.dato,dag=cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+(flere?'–'+utDatoKort(d.dato2):''),
-    deler=[dag+(flere?'':' kl. '+d.fra+'–'+d.til),(d.rom||[]).join(', '),d.gjester?d.gjester+' gjester':'',d.servering?'Servering: '+d.servering:''].filter(Boolean);
+    deler=[dag+(flere?'':' kl. '+d.fra+'–'+d.til),(d.rom||[]).join(', '),d.gjester?d.gjester+' gjester':'',d.servering?'Servering: '+d.servering:'',(d.allergener||[]).length||d.allergenNotat?'Allergener: '+[...(d.allergener||[]),d.allergenNotat].filter(Boolean).join(', '):''].filter(Boolean);
   try{const r=await FB.sendPush(PUSH_URL,((ny?'Ny booking: ':'Endret booking: ')+(d.tittel||'Utleie')).slice(0,60),deler.join(' · ').slice(0,300),'me',{type:'grupper',groups:['vertskap']});
     return r.ok?(r.sendt?'Varsel sendt til vertskapet ('+r.sendt+' enheter).':'Ingen i gruppen Vertskap har slått på varsler ennå.'):'Varselet ble ikke sendt: '+r.feil}
   catch(e){return 'Varselet kunne ikke sendes. Bookingen er lagret.'}}
@@ -2518,7 +2521,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 13:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 14:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
