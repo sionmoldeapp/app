@@ -361,6 +361,8 @@ const FB={
     setLtype:(email,ltype)=>S.updateDoc(S.doc(db,'members',email),{ltype}),
     setLeder:(email,v)=>S.updateDoc(S.doc(db,'members',email),{leder:!!v}),
     setLeads:(email,leads,groups)=>S.updateDoc(S.doc(db,'members',email),{leads,groups}),
+    // Administrator: tilhørighet (groups), varsel uten å være med (extra) og avslåtte varsler (muted) for en bruker.
+    setVarselFra:(email,role,f)=>S.updateDoc(S.doc(db,role==='admin'?'admins':'members',email),f),
     setGroups:(email,role,groups)=>S.updateDoc(S.doc(db,role==='admin'?'admins':'members',email),{groups}),
     async isMember(email){
       try{return (await S.getDoc(S.doc(db,'members',email))).exists()}catch(e){return false}
@@ -368,7 +370,7 @@ const FB={
     // Brukere = administratorer (samlingen admins) og medlemmer (samlingen members). Adressen er dokument-ID.
     async listUsers(){
       const [m,a]=await Promise.all([S.getDocs(S.collection(db,'members')),S.getDocs(S.collection(db,'admins'))]);
-      return a.docs.map(d=>({id:d.id,role:'admin',groups:d.data().groups||[],leads:[]})).concat(m.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],leads:d.data().leads||[],leder:d.data().leder===true,ltype:d.data().ltype||'',name:d.data().name||''}))).sort((x,y)=>x.id<y.id?-1:1);
+      return a.docs.map(d=>({id:d.id,role:'admin',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:[]})).concat(m.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:d.data().leads||[],leder:d.data().leder===true,ltype:d.data().ltype||'',name:d.data().name||''}))).sort((x,y)=>x.id<y.id?-1:1);
     },
     // Gruppeleder: medlemmer i egne grupper, legge til (oppretter kontoen hvis personen er ny) og fjerne fra en gruppe.
     async leaderMembers(leads){const s=await S.getDocs(S.collection(db,'members'));return s.docs.map(d=>({id:d.id,groups:d.data().groups||[],leads:d.data().leads||[],name:d.data().name||''})).filter(u=>u.groups.some(g=>leads.includes(g))).sort((a,b)=>a.id<b.id?-1:1)},
