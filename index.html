@@ -1041,8 +1041,11 @@ function utleieCard(){
   if(!utLes())return '';
   const u=state.ut,nå=new Date(),idag=dkey(nå);
   if(!u.mnd)u.mnd=idag.slice(0,7);if(!u.dag)u.dag=idag;
+  if(u.visDag!==idag){u.vis='alle';u.fil='alle';u.visDag=idag}   // sorteringene nullstilles hvert døgn (og når appen åpnes på nytt)
   const [år,mm]=u.mnd.split('-').map(Number),første=new Date(år,mm-1,1),dagerIMnd=new Date(år,mm,0).getDate(),forskyv=(første.getDay()+6)%7;
-  const filter=b=>u.rom==='Alle'||(b.rom||[]).includes(u.rom)||(b.rom||[]).includes('Hele bygget');
+  const egen=b=>!!b.program||/^Eget/.test(b.pris||''),visOK=b=>!u.vis||u.vis==='alle'||(u.vis==='egne'?egen(b):!egen(b));
+  const filter=b=>visOK(b)&&(u.rom==='Alle'||(b.rom||[]).includes(u.rom)||(b.rom||[]).includes('Hele bygget'));
+  const visChips='<p class="small" style="margin:0 0 4px"><b>Type</b></p><div class="btns" style="margin:0 0 8px" role="group" aria-label="Vis">'+[['alle','Alle'],['utleid','Utleide'],['egne','Egne arrangementer']].map(([v,n])=>'<button type="button" class="btn '+((u.vis||'alle')===v?'on':'')+'" data-utvis="'+v+'" aria-pressed="'+((u.vis||'alle')===v)+'">'+n+'</button>').join('')+'</div>';
   const alle=(u.liste||[]).filter(filter),perDag={},prog=utProgram(u.mnd+'-01',u.mnd+'-'+String(dagerIMnd).padStart(2,'0')).filter(filter);
   [...alle,...prog].forEach(b=>{utDager(b).forEach(k=>{(perDag[k]=perDag[k]||[]).push(b)})});
   let inn;
@@ -1055,16 +1058,16 @@ function utleieCard(){
     const valgteB=(perDag[u.dag]||[]).slice().sort((a,b)=>utMin(a.fra)-utMin(b.fra)),dd=new Date(u.dag+'T12:00');
     const kommende=alle.filter(b=>(b.dato2||b.dato)>=idag).sort((a,b)=>(a.dato+a.fra).localeCompare(b.dato+b.fra))
     .slice(0,10);
-    const fakChips=utTilgang()?'<div class="btns" style="margin:0 0 8px" role="group" aria-label="Faktura">'+[['alle','Alle'],['ikke','Ikke fakturerte'],['ja','Fakturerte']].map(([v,n])=>'<button type="button" class="btn '+((u.fil||'alle')===v?'on':'')+'" data-utfil="'+v+'" aria-pressed="'+((u.fil||'alle')===v)+'">'+n+'</button>').join('')+'</div>':'';
+    const fakChips=utTilgang()?'<p class="small" style="margin:0 0 4px"><b>Faktura</b></p><div class="btns" style="margin:0 0 8px" role="group" aria-label="Faktura">'+[['alle','Alle'],['ikke','Ikke fakturerte'],['ja','Fakturerte']].map(([v,n])=>'<button type="button" class="btn '+((u.fil||'alle')===v?'on':'')+'" data-utfil="'+v+'" aria-pressed="'+((u.fil||'alle')===v)+'">'+n+'</button>').join('')+'</div>':'';
     if(utTilgang()&&(u.fil||'alle')!=='alle'){
-      if(u.alle===undefined){utLastAlle();inn=fakChips+'<p class="small">Henter alle bookinger …</p>'}
+      if(u.alle===undefined){utLastAlle();inn=visChips+fakChips+'<p class="small">Henter alle bookinger …</p>'}
       else{const ikke=u.fil==='ikke',lis=u.alle.filter(filter).filter(b=>utFakRel(b)&&(ikke?!b.fakturert:!!b.fakturert)).sort((a,b)=>ikke?(a.dato+a.fra).localeCompare(b.dato+b.fra):(b.dato+b.fra).localeCompare(a.dato+a.fra));
-        inn=fakChips+'<label class="f" style="margin:0 0 8px">Vis rom<select id="utRomSel">'+['Alle',...utRomListe()].map(r=>'<option '+(u.rom===r?'selected':'')+'>'+esc(r)+'</option>').join('')+'</select></label>'
+        inn=visChips+fakChips+'<label class="f" style="margin:0 0 8px">Vis rom<select id="utRomSel">'+['Alle',...utRomListe()].map(r=>'<option '+(u.rom===r?'selected':'')+'>'+esc(r)+'</option>').join('')+'</select></label>'
          +'<h3 style="margin:6px 0 6px;font-size:var(--t-l)">'+(ikke?'Ikke fakturerte':'Fakturerte')+' ('+lis.length+')</h3>'
          +'<div class="list">'+(lis.length?lis.map(b=>utItem(b,b.dato)).join(''):'<p class="small">'+(ikke?'Alle utleier er fakturert, eller ingen er lagt inn.':'Ingen fakturerte utleier ennå.')+'</p>')+'</div>'}
       inn+=utFakEpostLinje()}
     else
-    inn=fakChips+'<div class="btns" style="margin:0 0 8px;align-items:center"><button type="button" class="btn" data-utmnd="-1" aria-label="Forrige måned">‹</button><b style="min-width:130px;text-align:center">'+cap(UT_MND[mm-1])+' '+år+'</b><button type="button" class="btn" data-utmnd="1" aria-label="Neste måned">›</button><button type="button" class="btn" data-utidag>I dag</button></div>'
+    inn=visChips+fakChips+'<div class="btns" style="margin:0 0 8px;align-items:center"><button type="button" class="btn" data-utmnd="-1" aria-label="Forrige måned">‹</button><b style="min-width:130px;text-align:center">'+cap(UT_MND[mm-1])+' '+år+'</b><button type="button" class="btn" data-utmnd="1" aria-label="Neste måned">›</button><button type="button" class="btn" data-utidag>I dag</button></div>'
      +'<label class="f" style="margin:0 0 8px">Vis rom<select id="utRomSel">'+['Alle',...utRomListe()].map(r=>'<option '+(u.rom===r?'selected':'')+'>'+esc(r)+'</option>').join('')+'</select></label>'
      +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:var(--t-xs);color:var(--muted);margin-bottom:2px">'+['man','tir','ons','tor','fre','lør','søn'].map(x=>'<span>'+x+'</span>').join('')+'</div>'
      +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">'+celler.join('')+'</div>'
@@ -1133,6 +1136,8 @@ function utFakSkjema(b){return '<fieldset class="f" style="border:0;padding:0;ma
   +'<label class="f">Påminn meg om faktura<select id="uFakV">'+UT_FAKV.map(([h,t])=>'<option value="'+h+'" '+(Number(b.fakturaVentH||24)===h?'selected':'')+'>'+t+'</option>').join('')+'</select></label>'
   +'<label class="f">Utsett neste påminnelse med<select id="uFakU">'+UT_UTSETT.map(([d,t])=>'<option value="'+d+'">'+t+'</option>').join('')+'</select></label>'
   +'<p class="small" style="margin:0">Er ikke «Faktura er sendt» krysset av, sendes en e-post til '+esc(utFakEpost())+' 1 døgn etter at utleien er over, og den gjentas helt til du krysser av. Gjelder ikke egne arrangementer eller forespørsler.</p></fieldset>'}
+/* Sortering i utleiekalenderen (Alle/Utleide/Egne og faktura-filteret) nullstilles når appen har vært lukket en stund. */
+{ let borte=0;document.addEventListener('visibilitychange',()=>{if(document.hidden){borte=Date.now();return}if(borte&&Date.now()-borte>10*60e3){state.ut.vis='alle';state.ut.fil='alle';keep(()=>{})}borte=0}) }
 async function utEpostAsk(){
   if(!state.admin||document.querySelector('dialog.pub'))return;
   const dlg=document.createElement('dialog');dlg.className='lp pub';
@@ -2570,7 +2575,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='26.10.2026 kl. 12:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='26.10.2026 kl. 13:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -3118,6 +3123,7 @@ document.addEventListener('click',async e=>{
   else if('utidag' in c.dataset){const t=dkey(new Date());keep(()=>{state.ut.mnd=t.slice(0,7);state.ut.dag=t})}
   else if('utny' in c.dataset){utAsk(null,state.ut.dag)}
   else if(c.dataset.utedit){utAsk(c.dataset.utedit)}
+  else if(c.dataset.utvis){keep(()=>{state.ut.vis=c.dataset.utvis})}
   else if(c.dataset.utfil){keep(()=>{state.ut.fil=c.dataset.utfil})}
   else if(c.dataset.utfak){utFakToggle(c.dataset.utfak)}
   else if('utepost' in c.dataset){utEpostAsk()}
