@@ -971,7 +971,10 @@ const utDatoKort=d=>{const x=new Date(d+'T12:00');return x.getDate()+'. '+MON[x.
 const utMin=t=>{const m=/^(\d{1,2}):(\d{2})$/.exec(t||'');return m?(+m[1])*60+(+m[2]):0};
 state.ut=state.ut||{liste:undefined,mnd:null,dag:null,rom:'Alle'};
 async function utLast(){if(!FB)return;try{const fra=new Date();fra.setDate(fra.getDate()-62);const [l,r]=await Promise.all([FB.utList(dkey(fra)),FB.getUtleie().catch(()=>null)]);
-    state.ut.liste=l;if(r&&r.rom&&r.rom.length)state.utRom=r.rom;state.ut.feil=''}
+    state.ut.liste=l;if(r&&r.rom&&r.rom.length){let l=r.rom;
+      // Engangs: en lagret romliste fra før får de nye rommene lagt til (kan fjernes igjen under Rom).
+      if(!lsGet('sm-utrom2')){const mangler=['Lillesal','Kafeen','Barnerom','Ungdomsrom','Backstage'].filter(x=>!l.includes(x));if(mangler.length){l=[...l,...mangler];if(state.admin)FB.setUtleie({rom:l}).catch(()=>{})}lsSet('sm-utrom2','1')}
+      state.utRom=l}state.ut.feil=''}
   catch(e){state.ut.liste=[];state.ut.feil='Kunne ikke hente bookingene ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}keep(()=>{})}
 /* Tider per dag: tider er en liste av «dato|fra|til». Uten tider: én dag = fra–til, flere dager = første dag fra til midnatt, dager imellom hele dagen, siste dag fra midnatt til til. */
 const utTiderMap=b=>Object.fromEntries((b.tider||[]).map(x=>String(x).split('|')).filter(a=>a.length===3).map(([k,f,t])=>[k,[f,t]]));
@@ -2485,7 +2488,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='24.10.2026 kl. 17:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 09:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
