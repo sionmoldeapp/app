@@ -1,4 +1,4 @@
-const V='sion-v20',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','icon-192.png','badge-96.png','fb.js','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
+const V='sion-v21',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','icon-192.png','badge-96.png','fb.js','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(V).then(c=>c.addAll(F)))});   // ny versjon tar over med en gang, uten å vente på at appen lukkes
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V&&x!=='sion-varsel').map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('message',e=>{if(e.data&&e.data.type==='skip')self.skipWaiting()});
@@ -17,12 +17,14 @@ self.addEventListener('fetch',e=>{
 // Push-varsler fra Firebase Cloud Messaging: vis varselet, og åpne appen når det trykkes på.
 self.addEventListener('push',e=>{
   let d={};try{d=e.data.json()}catch(x){}
-  const n=d.notification||d.data||{};
+  const n=d.notification||(d.data&&(d.data.title||d.data.body)?d.data:null)||(d.title||d.body?d:null)||d.data||{};
   // Siste varsel (også påminnelser) huskes på telefonen, så Hjem kan vise det selv om appen var lukket da det kom.
   const lagre=caches.open('sion-varsel').then(c=>c.put(new Request(self.registration.scope+'varsel.json'),new Response(JSON.stringify({t:n.title||'Sion Molde',b:n.body||'',ms:Date.now()})))).catch(()=>{});
   // Er appen åpen, får den beskjed med en gang (uten dette måtte den lastes på nytt for å vise varselet på Hjem).
   const si=clients.matchAll({type:'window',includeUncontrolled:true}).then(l=>l.forEach(c=>c.postMessage({type:'push',title:n.title||'Sion Molde',body:n.body||''}))).catch(()=>{});
-  e.waitUntil(Promise.all([lagre,si,self.registration.showNotification(n.title||'Sion Molde',{body:n.body||'',badge:'badge-96.png',silent:false,vibrate:[200,100,200],data:{url:(d.fcmOptions&&d.fcmOptions.link)||(d.data&&d.data.url)||'./'}})]))});
+  // Varselet vises alltid, også hvis hurtigbuffer eller meldinger til appen feiler. Feiler visningen med alle valg, prøves en enklere versjon.
+  const vis=self.registration.showNotification(n.title||'Sion Molde',{body:n.body||'',badge:'badge-96.png',silent:false,vibrate:[200,100,200],data:{url:(d.fcmOptions&&d.fcmOptions.link)||(d.data&&d.data.url)||'./'}}).catch(()=>self.registration.showNotification(n.title||'Sion Molde',{body:n.body||''}));
+  e.waitUntil(Promise.allSettled([lagre,si,vis]))});
 self.addEventListener('notificationclick',e=>{
   e.notification.close();
   const url=(e.notification.data&&e.notification.data.url)||'./';
