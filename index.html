@@ -2580,7 +2580,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 09:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 10:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2882,7 +2882,8 @@ function subSorter(cid,html,velger){
   else ord.forEach(k=>anker.before(barn.find(x=>x.dataset.acc===k)));
   anker.remove();return rot.outerHTML}
 function subFlytt(cid,key,d){const ord=(state.subVis[cid]||[]).slice(),i=ord.indexOf(key),j=i+Number(d);if(i<0||j<0||j>=ord.length)return;
-  [ord[i],ord[j]]=[ord[j],ord[i]];const o=subOrd();o[cid]=ord;lsSet(SUBORD_KEY,JSON.stringify(o));keep(()=>{})}
+  [ord[i],ord[j]]=[ord[j],ord[i]];const o=subOrd();o[cid]=ord;lsSet(SUBORD_KEY,JSON.stringify(o));
+  if(FB&&state.user&&state.user.email)FB.setPrefSub(state.user.email.toLowerCase(),JSON.stringify(o)).catch(()=>{});keep(()=>{})}
 function megCard(){return subSorter('meg',megKort(),'.megboks')}
 function megKort(){
   const deler=[state.user?loginCard():'',state.user?profileCard():'',settingsCard(),state.user?vakterCard():'',state.user?meldCard():'',state.user?verktoyCard():''].filter(x=>x&&String(x).trim());
@@ -3915,6 +3916,8 @@ async function start(){
     state.groups=grp;state.leads=lds;state.leder=ldr;state.profile=prof;
     state.ltype=state.leder?((await FB.myLtype(u.email))||''):'';
     state.meorder=null;state.homeorder=null;if(pr&&Array.isArray(pr.meorder))state.meorder=pr.meorder;if(pr&&Array.isArray(pr.homeorder))state.homeorder=pr.homeorder;
+    // Rekkefølgen på undermenyene følger brukeren (userPrefs.suborder). Finnes den i databasen, brukes den; ellers sendes den som er lagret på enheten opp.
+    if(pr&&typeof pr.suborder==='string'){try{JSON.parse(pr.suborder);lsSet(SUBORD_KEY,pr.suborder)}catch(e){}}else if(med&&lsGet(SUBORD_KEY)){FB.setPrefSub(u.email.toLowerCase(),lsGet(SUBORD_KEY)).catch(()=>{})}
     state.notes=undefined;state.shifts=undefined;state.reqs=undefined;state.myShifts=[];
     if(u&&state.member)loadMyShifts().then(()=>keep(()=>{}));
     state.threads=undefined;state.roles=undefined;if(u&&state.member){loadThreads();loadVaktReq();if(lrTilgang())loadLr()}

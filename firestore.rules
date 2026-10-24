@@ -135,9 +135,10 @@ service cloud.firestore {
     // Egne innstillinger (rekkefølgen på kortene under Meg og Hjem): bare eieren leser og skriver sitt eget dokument.
     match /userPrefs/{email} {
       allow read, delete: if signedIn() && request.auth.token.email == email;
-      allow create, update: if signedIn() && request.auth.token.email == email && request.resource.data.keys().hasOnly(['meorder', 'homeorder'])
+      allow create, update: if signedIn() && request.auth.token.email == email && request.resource.data.keys().hasOnly(['meorder', 'homeorder', 'suborder'])
         && (!('meorder' in request.resource.data) || (request.resource.data.meorder is list && request.resource.data.meorder.size() <= 20))
-        && (!('homeorder' in request.resource.data) || (request.resource.data.homeorder is list && request.resource.data.homeorder.size() <= 20));
+        && (!('homeorder' in request.resource.data) || (request.resource.data.homeorder is list && request.resource.data.homeorder.size() <= 20))
+        && (!('suborder' in request.resource.data) || (request.resource.data.suborder is string && request.resource.data.suborder.size() <= 1500));
     }
     // Politiattest: bare datoen den ble godkjent (aldri attesten eller innholdet). Eieren (medlem), administratorer og gruppeledere for medlemmets grupper
     // leser og skriver. Lister kan bare administratorer hente (gruppeledere leser ett dokument om gangen).

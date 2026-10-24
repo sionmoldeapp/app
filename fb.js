@@ -53,6 +53,7 @@ const FB={
     // Egen profil: navn og gruppevarsler en ikke vil ha (muted). Sletting av seg selv: konto, medlemskap og varselkode.
     // Egne innstillinger (userPrefs/{e-post}): rekkefølgen på kortene under Meg. Bare eieren leser og skriver.
     async myPrefs(email){try{const s=await S.getDoc(S.doc(db,'userPrefs',email));return s.exists()?s.data():null}catch(e){return null}},
+    setPrefSub:(email,json)=>S.setDoc(S.doc(db,'userPrefs',email),{suborder:String(json).slice(0,1500)},{merge:true}),
     setPrefOrder:(email,felt,list)=>(felt==='meorder'||felt==='homeorder')?S.setDoc(S.doc(db,'userPrefs',email),{[felt]:list.slice(0,20).map(x=>String(x).slice(0,20))},{merge:true}):Promise.resolve(),
     async myProfile(email){try{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()?{name:s.data().name||'',muted:s.data().muted||[]}:null}catch(e){return null}},
     setProfile:(email,d)=>S.updateDoc(S.doc(db,'members',email),d),
