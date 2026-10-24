@@ -657,7 +657,7 @@ nav.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1
   <label class="f">Navn<input id="rsN" name="name" type="text" autocomplete="name" required></label>
   <label class="f">E-post eller mobil (valgfritt)<input id="rsK" name="contact" type="text" autocomplete="email"></label>
   <div class="btns"><button class="btn primary" type="submit" style="width:auto">Send</button><button class="btn" type="button" data-rscancel>Avbryt</button></div></form></dialog>
-<dialog id="viewDlg" aria-labelledby="viewT"><div class="form"><h2 id="viewT">Vis appen som</h2><p class="small" style="margin:0">Se hva andre ser under Hjem, Program og Nyheter. Verktøyene dine under Meg påvirkes ikke.</p>
+<dialog id="viewDlg" aria-labelledby="viewT"><div class="form"><h2 id="viewT">Vis appen som</h2><p class="small" style="margin:0">Se hva andre ser under Hjem, Program og Nyheter. Verktøyene dine under Mer påvirkes ikke.</p>
   <div id="viewOpts"></div><div class="btns"><button class="btn" type="button" data-viewclose>Lukk</button></div></div></dialog>
 <div id="push" role="status" aria-live="polite"><div class="logo-mark"><img src="logo-512.png" alt=""></div><div><b id="pushT"></b><span id="pushB"></span></div></div>
 
@@ -745,9 +745,9 @@ const ICON={
  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
  news:'<path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2M8 9h6M8 13h6"/>',
- me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>'};
-const TABS=[['home','Hjem','home'],['prog','Program','cal'],['news','Nyheter','news'],['me','Meg','me']];
-/* Det som må sjekkes ut under Meg: uleste beskjeder, byttebeskjeder om vakter (for de som styrer vaktlistene) og åpne saker til lederrådet. Vises som tall på kortene og på fanen Meg. */
+ me:'<path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3.4"/>'};
+const TABS=[['home','Hjem','home'],['prog','Program','cal'],['news','Nyheter','news'],['me','Mer','me']];
+/* Det som må sjekkes ut under Mer: uleste beskjeder, byttebeskjeder om vakter (for de som styrer vaktlistene) og åpne saker til lederrådet. Vises som tall på kortene og på fanen Meg. */
 function meTall(){
   if(!state.user||!state.member)return {meld:0,vakt:0,lr:0,sum:0};
   const meg=meEmail(),meld=(state.threads||[]).filter(t=>(t.unread||[]).includes(meg)).length;
@@ -793,7 +793,7 @@ function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp
   return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(inf.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${inf.place?' · '+esc(inf.place):''}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'&&TIDOK(ex.time)&&ex.time!==r.time?'<span class="tag avl" style="background:var(--lamp);color:var(--lamp-ink)">Endret</span>':'<span class="tag">Fast</span>'}</button>
    <div class="detail">${inf.text?'<div>'+linkify(esc(inf.text))+'</div>':''}${inf.who?'<div class="small">'+esc(inf.who)+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}${ukeTekst(r)}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
 function evItem(e){
-  if(e.m&&!state.member)return `<div class="item"><div class="locked" style="padding:12px">${dateBox(e)}<div class="grow"><b>${e.t}</b><span class="small">Kun for medlemmer. Logg inn under «Meg».</span></div></div></div>`;
+  if(e.m&&!state.member)return `<div class="item"><div class="locked" style="padding:12px">${dateBox(e)}<div class="grow"><b>${e.t}</b><span class="small">Kun for medlemmer. Logg inn under «Mer».</span></div></div></div>`;
   const open=state.open[e.id],r=state.rsvp[e.id];
   return `<div class="item ${open?'open':''}"${state.admin&&editOn()?` data-lp="events:${e.id}"`:''}><button data-ev="${e.id}" aria-expanded="${!!open}">${dateBox(e)}
    <div class="grow"><b>${e.t}</b><span class="small">${when(e.w)} ${tm(e)}${statusTag(e)}${e.place?' · '+esc(e.place):''}${e.groups&&e.groups.length?' · '+esc(e.groups.map(gName).join(', ')):''}</span></div>
@@ -1718,7 +1718,7 @@ function grpAsk(id){
   if(!FB)return;
   const g=id?GROUPS.find(x=>x[0]===id):null,dlg=document.createElement('dialog');dlg.className='lp';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(g?'Endre gruppe':'Ny gruppe')+'</h3><label class="f">Navn<input id="gN" maxlength="40" value="'+esc(g?g[1]:'')+'"></label><label class="f">Beskrivelse (valgfritt)<input id="gD" maxlength="40" placeholder="for eksempel ungdom" value="'+esc(g?g[2]:'')+'"></label>'
-   +'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="gV" style="width:22px;height:22px;flex:none" '+((g?grVakt(g[0]):true)?'checked':'')+'>Gruppen har vaktliste (under Meg → Vakter)</label>'
+   +'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="gV" style="width:22px;height:22px;flex:none" '+((g?grVakt(g[0]):true)?'checked':'')+'>Gruppen har vaktliste (under Mer → Vakter)</label>'
    +'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="gP" style="width:22px;height:22px;flex:none" '+((g?grRemind(g[0]):false)?'checked':'')+'>Automatisk påminnelse dagen før samlinger for gruppen</label><p class="small" role="status" id="gMsg" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   const f=dlg.querySelector('form');
@@ -1811,8 +1811,8 @@ function welcomeCard(){
   <ol class="small" style="margin:0 0 10px;padding-left:20px;display:grid;gap:6px;color:var(--ink)">
    <li><b>Legg appen på telefonen.</b> ${ios?'Trykk på Del-ikonet i Safari og velg «Legg til på Hjem-skjerm».':'Trykk på menyen (tre prikker) i Chrome og velg «Installer app».'}</li>
    <li><b>Slå på varsler</b> for å få beskjed om nyheter og endringer.${pushOn?' ✓ Er på.':''}</li>
-   <li><b>Bytt passord</b> hvis du vil, under Meg.</li></ol>
-  <p class="small" style="margin:0 0 10px">Du finner veiledningen igjen under Meg → «Slik installerer du appen».</p>
+   <li><b>Bytt passord</b> hvis du vil, under Mer.</li></ol>
+  <p class="small" style="margin:0 0 10px">Du finner veiledningen igjen under Mer → «Slik installerer du appen».</p>
   <div class="btns">${!pushOn&&state.pushOk?'<button class="btn primary" data-pushon style="width:auto">Slå på varsler</button>':''}<button class="btn" data-komskjul>Skjul</button></div></div>`}
 /* Sender velkomst-e-post til nylig opprettede brukere via varseltjenesten. Returnerer en kort tekst til meldingen. */
 async function velkomst(liste){
@@ -1876,7 +1876,7 @@ function installBody(){
    +'<p class="small" style="margin:0 0 8px">Da ligger appen på telefonen som en vanlig app, og du kan få varsler.</p>'
    +'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Android (Chrome)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne <b>sionmoldeapp.github.io/app</b> i Chrome.</li><li>Trykk på menyen (tre prikker) øverst til høyre.</li><li>Velg <b>Installer app</b>, og bekreft.</li></ol>'
    +'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">iPhone (Safari)</h3><ol class="small" style="margin:0 0 8px;padding-left:20px;color:var(--ink)"><li>Åpne siden i <b>Safari</b> (ikke Chrome).</li><li>Trykk på Del-ikonet (firkant med pil opp).</li><li>Velg <b>Legg til på Hjem-skjerm</b>.</li></ol>'
-   +'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Varsler</h3><p class="small" style="margin:0">Åpne appen, gå til Meg → Varsler og trykk «Slå på varsler». På iPhone må appen ligge på Hjem-skjermen først.</p>'}
+   +'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Varsler</h3><p class="small" style="margin:0">Åpne appen, gå til Mer → Varsler og trykk «Slå på varsler». På iPhone må appen ligge på Hjem-skjermen først.</p>'}
 function shareCard(){
   if(!canStats())return '';
   const qr='https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data='+encodeURIComponent(APP_LINK);
@@ -1973,7 +1973,7 @@ function notesInner(){
      +(n>2?'<div class="srad">'+sokBtn('note')+'</div>'+sokInp('note','Søk i notatene …','margin:0 0 8px'):'')
      +'<div class="reg" id="noteList">'+noteRows(vis)+'</div>'}
   return inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.noteMsg||'')+'</p>'}
-/* Møteverktøy: notater og lyd-/videoopptak samlet i ett kort under Meg. */
+/* Møteverktøy: notater og lyd-/videoopptak samlet i ett kort under Mer. */
 function verktoyCard(){
   if(!state.user||!state.member)return '';
   const l=state.notes,n=l?l.length:0,o=OPPT.liste&&OPPT.liste.length?OPPT.liste.length:0;
@@ -2443,7 +2443,7 @@ function ansEditAsk(roleId){
     catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 
-/* Personvernerklæring (vises under Meg for innloggede). Administrator kan endre teksten i appen (settings/personvern). Enkel skrivemåte:
+/* Personvernerklæring (vises under Mer for innloggede). Administrator kan endre teksten i appen (settings/personvern). Enkel skrivemåte:
    «## Overskrift», «- punkt», tom linje mellom avsnitt og **fet**. Standardteksten under brukes til noe er lagret. Hold den i samsvar med behandlingsoversikten (personvern/ utenfor repoet). */
 const PV_STD_DATO='2026-10-20';
 const PV_STD=`## Hvem er ansvarlig?
@@ -2476,7 +2476,7 @@ At noen tilhører en menighet, og forbønner som kan handle om tro eller helse, 
 - Nyhetsbrev: til du ber om å bli fjernet.
 
 ## Dine rettigheter
-Du kan be om **innsyn**, **retting**, **sletting**, begrensning og å trekke tilbake samtykke. Under Meg → Min profil kan du **laste ned alt appen har lagret om deg** og **slette deg selv** med dataene dine (konto, notater, forbønner og samtaler du har startet). Trenger du hjelp, send e-post til post@sionmolde.no. Vi svarer innen 30 dager. Mener du at vi ikke følger reglene, kan du klage til Datatilsynet: https://www.datatilsynet.no
+Du kan be om **innsyn**, **retting**, **sletting**, begrensning og å trekke tilbake samtykke. Under Mer → Min profil kan du **laste ned alt appen har lagret om deg** og **slette deg selv** med dataene dine (konto, notater, forbønner og samtaler du har startet). Trenger du hjelp, send e-post til post@sionmolde.no. Vi svarer innen 30 dager. Mener du at vi ikke følger reglene, kan du klage til Datatilsynet: https://www.datatilsynet.no
 
 ## Barn
 Appen er ikke laget for barn under 13 år, og vi registrerer ikke opplysninger om barn under 13 år. Ledere skal ikke legge dem inn. Oppdager vi det, sletter vi opplysningene.
@@ -2575,7 +2575,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='26.10.2026 kl. 13:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='26.10.2026 kl. 14:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2815,7 +2815,7 @@ function backupCard(){
 
 function viewCard(){
   const meg=state.admin?'Meg selv (administrator)':'Meg selv (gruppeleder)';
-  return `<div class="card"><label class="f">Vis appen som<select id="viewSel">${[['meg',meg],['medlem','Vanlig innlogget medlem'],['besok','Besøkende (ikke innlogget)']].map(([v,l])=>`<option value="${v}" ${state.view===v?'selected':''}>${l}</option>`).join('')}</select></label><p class="small" style="margin:6px 0 0">Gjelder hva du ser under Hjem, Program og Nyheter, slik at du kan sjekke hva andre ser. Verktøyene dine under Meg påvirkes ikke.</p></div>`}
+  return `<div class="card"><label class="f">Vis appen som<select id="viewSel">${[['meg',meg],['medlem','Vanlig innlogget medlem'],['besok','Besøkende (ikke innlogget)']].map(([v,l])=>`<option value="${v}" ${state.view===v?'selected':''}>${l}</option>`).join('')}</select></label><p class="small" style="margin:6px 0 0">Gjelder hva du ser under Hjem, Program og Nyheter, slik at du kan sjekke hva andre ser. Verktøyene dine under Mer påvirkes ikke.</p></div>`}
 
 const fmtTid=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return d.getDate()+'. '+MON[d.getMonth()]+' '+d.getFullYear()+' kl. '+p(d.getHours())+':'+p(d.getMinutes())};
 const tellTxt=c=>(c.events||0)+' arrangementer · '+(c.posts||0)+' nyheter · '+(c.regular||0)+' faste samlinger · '+((c.members||0)+(c.admins||0))+' brukere';
@@ -2852,14 +2852,14 @@ function loginCard(){
   <button class="btn primary" type="submit">Logg inn</button><button class="pmore" type="button" data-reset>Glemt passord?</button></form>
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.err)}</p>`:'<p class="small">Innlogging er ikke tilgjengelig akkurat nå.</p>'}</div>`}
 
-/* Kortene under Meg kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
+/* Kortene under Mer kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
 const ME_KORT={
   login:['Innlogging',()=>loginCard()],gruppebesk:['Send beskjed til gruppa',()=>gruppeBeskjedCard()],lr:['Saker til lederrådet',()=>lrCard()],utleie:['Utleie',()=>utleieCard()],jul:['Julemesse',()=>julCard()],innst:['Innstillinger',()=>settingsCard()],share:['Del appen',()=>shareCard()],
   vakter:['Mine vakter',()=>vakterCard()],ansvar:['Ansvarsområder',()=>ansvarCard()],meld:['Beskjeder',()=>meldCard()],verktoy:['Møteverktøy',()=>verktoyCard()],profil:['Min profil',()=>profileCard()],attester:['Politiattester',()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''],stat:['Statistikk',()=>statCard()],
   medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
   ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():''],
   kategorier:['Nye kategorier',()=>katCard()],personvern:['Personvern',()=>personvernCard()]};
-/* Kortene under Meg og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
+/* Kortene under Mer og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
 const ORD={me:{felt:'meorder',ls:'sm-meorder'},home:{felt:'homeorder',ls:'sm-homeorder'}};
 const ov=()=>state.tab==='home'?'home':'me';
 const ordKort=v=>v==='home'?homeDeler():ME_KORT;
@@ -2871,7 +2871,7 @@ function ordHtml(v){
   const vis=ordSynlige(v);
   if(state.reorder)return `<div class="btns" style="margin:-4px 0 12px"><button class="btn on" data-meorder>Ferdig</button><button class="btn" data-meresett>Standard rekkefølge</button></div><p class="small" style="margin:0 0 10px">Hold på ≡ til venstre og dra raden opp eller ned. Slipp der den skal stå. Resten av raden kan du bruke til å bla.</p><div id="meList">${vis.map(([k,,navn],i)=>`<div class="merow" data-mek="${k}"><span class="mehandle" aria-hidden="true">≡</span><b>${esc(navn)}</b><span class="mebtns"><button class="btn" data-meup="${k}" ${i===0?'disabled':''} aria-label="Flytt ${esc(navn)} opp">▲</button><button class="btn" data-medown="${k}" ${i===vis.length-1?'disabled':''} aria-label="Flytt ${esc(navn)} ned">▼</button></span></div>`).join('')}</div>`;
   return vis.map(x=>x[1]).join('')+(vis.length>1&&(+lsGet('sm-hint')||0)<3?'<p class="small" style="text-align:center;margin:8px 0 0">Hold fingeren på et kort for å endre rekkefølgen.</p>':'')}
-function me(){return `<h1>Meg</h1>${ordHtml('me')}`}
+function me(){return `<h1>Mer</h1>${ordHtml('me')}`}
 function meLagre(ord){
   const v=ov(),o=ORD[v];state[o.felt]=ord;try{localStorage.setItem(o.ls,JSON.stringify(ord))}catch(e){}
   if(FB&&state.user&&state.user.email)FB.setPrefOrder(state.user.email.toLowerCase(),o.felt,ord).catch(()=>{})}
@@ -2996,7 +2996,7 @@ document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.targe
   if(e.target.id==='pastQ'){state.pq=e.target.value;state.pastN=40;const l=$('#pastList');if(l)l.innerHTML=pastList();return}
   if(e.target.id==='nyhQ'){state.nyq=e.target.value;const l=$('#nyhList');if(l)l.innerHTML=nyhListe(posts.filter(p=>!(state.admin&&state.view==='meg'&&postSkjult(p))));return}
   if(e.target.id==='progQ'){state.q=e.target.value;const l=$('#progList');if(l)l.innerHTML=progList()}});
-/* Langt trykk på et kort under Meg åpner «Endre rekkefølge». */
+/* Langt trykk på et kort under Mer åpner «Endre rekkefølge». */
 {let t=null,x0=0,y0=0,svelg=false;
   document.addEventListener('pointerdown',e=>{
     if((state.tab!=='me'&&state.tab!=='home')||state.reorder||!e.target.closest('#view'))return;
@@ -3153,7 +3153,7 @@ document.addEventListener('click',async e=>{
       if(state.rem[id])await FB.delReminder(remId(id)).catch(()=>{});
       await FB.setReminder(remId(id),{token:lsGet('sm-push'),title:ev.title,fireAt:at});
       keep(()=>{state.rem[id]='d';save()});push('Påminnelse satt','Du får et varsel ett døgn før.')}
-    catch(er){push('Kunne ikke sette påminnelse',er&&er.code==='push/denied'?'Du har sagt nei til varsler. Slå dem på i innstillingene.':er&&er.code==='push/unsupported'?'Varsler støttes ikke her. På iPhone må appen ligge på hjemskjermen.':'Slå på varsler under Meg, og prøv igjen.')}}
+    catch(er){push('Kunne ikke sette påminnelse',er&&er.code==='push/denied'?'Du har sagt nei til varsler. Slå dem på i innstillingene.':er&&er.code==='push/unsupported'?'Varsler støttes ikke her. På iPhone må appen ligge på hjemskjermen.':'Slå på varsler under Mer, og prøv igjen.')}}
   else if('rscancel' in c.dataset){$('#rsDlg').close();rsPending=null}
   else if(c.dataset.af){state.af=c.dataset.af;state.sel={};keep(()=>{})}
   else if(c.dataset.f){state.filter=c.dataset.f;keep(()=>{})}
@@ -3718,7 +3718,7 @@ function lpAsk(key){
   const tittel=col==='posts'?x.t:x.title,dlg=document.createElement('dialog');dlg.className='lp';
   const mal=col==='posts'?((x.groups||[]).length?{type:'grupper',groups:x.groups}:x.m?{type:'medlem'}:{type:'alle'}):null;
   const pv=col==='posts'&&PUSH_URL?'<div style="display:grid;gap:8px"><b>Send påminnelse</b><span class="small">Nytt varsel til samme målgruppe som nyheten ('+esc(malTekst(mal))+'). Du kan endre teksten.</span><label class="f">Varseltittel<input id="lpPT" maxlength="60" value="'+esc(('Påminnelse: '+x.t).slice(0,60))+'"></label><label class="f">Varseltekst<textarea id="lpPB" rows="6" maxlength="1000">'+esc(kortTekst(String(x.b||'').replace(/[ 	]+/g,' ').trim()))+'</textarea></label><button class="btn primary" value="varsel" style="width:auto">Send påminnelse</button></div><hr style="border:0;border-top:1px solid var(--line);width:100%">':'';
-  dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">'+(col==='posts'?'«'+esc(tittel)+'»':'Slette «'+esc(tittel)+'»?')+'</h3>'+pv+'<h3 style="margin:0;font-size:var(--t-l)">'+(col==='posts'?'Slette nyheten?':'')+'</h3><p class="small" style="margin:0">'+(col==='posts'?'Nyheten':'Arrangementet')+' fjernes for alle. Du kan rulle tilbake under Meg → Sikkerhetskopi og tilbakerulling.</p><div class="btns"><button class="btn" value="rediger">Rediger</button><button class="btn danger" value="slett">Slett</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
+  dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">'+(col==='posts'?'«'+esc(tittel)+'»':'Slette «'+esc(tittel)+'»?')+'</h3>'+pv+'<h3 style="margin:0;font-size:var(--t-l)">'+(col==='posts'?'Slette nyheten?':'')+'</h3><p class="small" style="margin:0">'+(col==='posts'?'Nyheten':'Arrangementet')+' fjernes for alle. Du kan rulle tilbake under Mer → Sikkerhetskopi og tilbakerulling.</p><div class="btns"><button class="btn" value="rediger">Rediger</button><button class="btn danger" value="slett">Slett</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('close',async()=>{const rv=dlg.returnValue,ok=rv==='slett',pt0=dlg.querySelector('#lpPT'),pb0=dlg.querySelector('#lpPB'),tt=pt0?pt0.value.trim():'',bb=pb0?pb0.value.trim():'';dlg.remove();
     if(rv==='rediger'){editAsk(col,id);return}
