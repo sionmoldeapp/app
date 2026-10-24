@@ -983,6 +983,21 @@ const utIntervaller=b=>utDager(b).map(k=>{const [f,t]=utDagTid(b,k);return [Date
 function utDager(b){const ut=[],e=b.dato2&&b.dato2>b.dato?b.dato2:b.dato;let d=new Date(b.dato+'T12:00');for(let i=0;i<62;i++){const k=dkey(d);ut.push(k);if(k>=e)break;d.setDate(d.getDate()+1)}return ut}
 function utKonflikt(b,ekskl){const ib=utIntervaller(b);return (state.ut.liste||[]).filter(x=>x.id!==ekskl&&utIntervaller(x).some(([s1,e1])=>ib.some(([s2,e2])=>s1<e2&&e1>s2))
   &&(x.rom||[]).some(r=>(b.rom||[]).includes(r)||r==='Hele bygget'||(b.rom||[]).includes('Hele bygget')))}
+/* Bookingene vises som i Program: dato-rute, tittel, tid og rom, og ett trykk åpner alle detaljene (samme åpne/lukke-animasjon som arrangementene). */
+function utTidDag(x,dag){const fler=x.dato2&&x.dato2>x.dato,tm=utTiderMap(x);return tm[dag]?tm[dag][0]+'–'+tm[dag][1]:!fler?x.fra+'–'+x.til:dag===x.dato?'Fra '+x.fra:dag===x.dato2?'Til '+x.til:'Hele dagen'}
+function utItem(x,dag){
+  const fler=x.dato2&&x.dato2>x.dato,d=new Date(dag+'T12:00'),id='ut_'+x.id+'_'+dag,open=!!state.open[id],skriv=utTilgang(),
+    rom=(x.rom||[]).map(r=>'<span class="tag" style="background:'+utFarge(r)+'22;color:'+utFarge(r)+'">'+esc(r)+'</span>').join(' '),
+    tag=/^Eget/.test(x.pris||'')?'<span class="tag m">Eget</span>':x.status==='foresporsel'?'<span class="tag">Forespørsel</span>':'<span class="tag">Utleie</span>',
+    rad=(n,v)=>v?'<div class="small"><b>'+n+':</b> '+esc(v)+'</div>':'';
+  return '<div class="item '+(open?'open':'')+'"><button type="button" data-ev="'+esc(id)+'" aria-expanded="'+open+'"><div class="date">'+d.getDate()+'. '+cap(MON[d.getMonth()])+'</div>'
+    +'<div class="grow"><b>'+esc(x.tittel||'Utleie')+'</b><span class="small">'+esc(utTidDag(x,dag))+' · '+esc((x.rom||[]).join(', '))+'</span></div>'+tag+'</button>'
+    +'<div class="detail"><div style="display:flex;flex-wrap:wrap;gap:4px">'+rom+'</div>'
+    +(fler?rad('Dager',utDatoKort(x.dato)+' – '+utDatoKort(x.dato2)):'')
+    +(fler?'<div class="small">'+utDager(x).map(k=>{const dd=new Date(k+'T12:00');return esc(cap(DAYS[dd.getDay()]).slice(0,3)+' '+dd.getDate()+'. '+MON[dd.getMonth()]+': '+utTidDag(x,k))}).join('<br>')+'</div>':'')
+    +rad('Antall gjester',x.gjester?String(x.gjester):'')+rad('Servering',x.servering)
+    +(skriv?rad('Leietaker',x.leier)+rad('Kontakt',x.kontakt)+rad('Pris',x.pris)+rad('Merknad',x.notat):'')
+    +(skriv?'<div class="btns"><button type="button" class="btn" data-utedit="'+esc(x.id)+'">Endre</button></div>':'')+'</div></div>'}
 function utRad(x,dag){const fler=x.dato2&&x.dato2>x.dato,tm=utTiderMap(x),tid=tm[dag]?tm[dag][0]+'–'+tm[dag][1]:!fler?x.fra+'–'+x.til:dag===x.dato?'Fra '+x.fra:dag===x.dato2?'Til '+x.til:'Hele dagen',rom=(x.rom||[]).map(r=>'<span class="tag" style="background:'+utFarge(r)+'22;color:'+utFarge(r)+'">'+esc(r)+'</span>').join(' ');
   return '<div class="r"><'+(utTilgang()?'button type="button" data-utedit="'+esc(x.id)+'"':'div')+' style="display:flex;width:100%;gap:10px;align-items:flex-start;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><b style="flex:none;min-width:84px;font-variant-numeric:tabular-nums">'+esc(tid)+'</b><span class="grow"><b>'+esc(x.tittel||'Utleie')+'</b>'+(fler?'<span class="small" style="display:block">'+esc(utDatoKort(x.dato)+' – '+utDatoKort(x.dato2))+'</span>':'')+(x.leier&&utTilgang()?'<span class="small" style="display:block">'+esc(x.leier)+'</span>':'')+((x.gjester||x.servering)?'<span class="small" style="display:block">'+(x.gjester?x.gjester+' gjester':'')+(x.gjester&&x.servering?' · ':'')+(x.servering?'Servering: '+esc(x.servering):'')+'</span>':'')+'<span style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">'+rom+'</span></span>'+(/^Eget/.test(x.pris||'')?'<span class="tag m">Eget</span>':'')+(x.status==='foresporsel'?'<span class="tag">Forespørsel</span>':'')+'</'+(utTilgang()?'button':'div')+'></div>'}
 function utleieCard(){
@@ -1000,14 +1015,15 @@ function utleieCard(){
       const prikker=[...new Set(b.flatMap(x=>x.rom||[]))].slice(0,3).map(r=>'<i style="width:6px;height:6px;border-radius:50%;background:'+utFarge(r)+';display:block"></i>').join('');
       celler.push('<button type="button" data-utdag="'+k+'" aria-label="'+d+'. '+UT_MND[mm-1]+(b.length?', '+b.length+' booking'+(b.length>1?'er':''):'')+'" style="all:unset;box-sizing:border-box;cursor:pointer;text-align:center;padding:6px 0;border-radius:var(--r-s);min-height:46px;'+(valgt?'background:var(--brand);color:var(--brand-ink)':k===idag?'background:var(--chip)':'')+'"><b style="font-size:var(--t-m)">'+d+'</b><span style="display:flex;gap:2px;justify-content:center;height:8px;margin-top:2px">'+prikker+'</span></button>')}
     const valgteB=(perDag[u.dag]||[]).slice().sort((a,b)=>utMin(a.fra)-utMin(b.fra)),dd=new Date(u.dag+'T12:00');
-    const kommende=alle.filter(b=>(b.dato2||b.dato)>=idag).sort((a,b)=>(a.dato+a.fra).localeCompare(b.dato+b.fra)).slice(0,6);
+    const kommende=alle.filter(b=>(b.dato2||b.dato)>=idag).sort((a,b)=>(a.dato+a.fra).localeCompare(b.dato+b.fra))
+    .slice(0,10);
     inn='<div class="btns" style="margin:0 0 8px;align-items:center"><button type="button" class="btn" data-utmnd="-1" aria-label="Forrige måned">‹</button><b style="min-width:130px;text-align:center">'+cap(UT_MND[mm-1])+' '+år+'</b><button type="button" class="btn" data-utmnd="1" aria-label="Neste måned">›</button><button type="button" class="btn" data-utidag>I dag</button></div>'
      +'<label class="f" style="margin:0 0 8px">Vis rom<select id="utRomSel">'+['Alle',...utRomListe()].map(r=>'<option '+(u.rom===r?'selected':'')+'>'+esc(r)+'</option>').join('')+'</select></label>'
      +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:var(--t-xs);color:var(--muted);margin-bottom:2px">'+['man','tir','ons','tor','fre','lør','søn'].map(x=>'<span>'+x+'</span>').join('')+'</div>'
      +'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">'+celler.join('')+'</div>'
-     +'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">'+cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+'</h3><div class="reg">'+(valgteB.length?valgteB.map(b=>utRad(b,u.dag)).join(''):'<p class="small">Ingen bookinger denne dagen.</p>')+'</div>'
+     +'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">'+cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+'</h3><div class="list">'+(valgteB.length?valgteB.map(b=>utItem(b,u.dag)).join(''):'<p class="small">Ingen bookinger denne dagen.</p>')+'</div>'
      +(utTilgang()?'<div class="btns" style="margin-top:10px"><button type="button" class="btn primary" data-utny style="width:auto">+ Ny booking</button>'+(state.admin?'<button type="button" class="btn" data-utrom>Rom</button>':'')+'</div>':'<p class="small" style="margin:10px 0 0">Du ser bookingene som vertskap, og får varsel når det kommer en ny.</p>')
-     +(kommende.length?'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Kommende</h3><div class="reg">'+kommende.map(b=>'<div class="r" style="display:block"><span class="small">'+esc(cap(DAYS[new Date(b.dato+'T12:00').getDay()])+' '+Number(b.dato.slice(8))+'. '+MON[Number(b.dato.slice(5,7))-1])+'</span>'+utRad(b,b.dato).replace('<div class="r">','<div>')+'</div>').join('')+'</div>':'')}
+     +(kommende.length?'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Kommende</h3><div class="list">'+(()=>{let sist='',ut='';kommende.forEach(b=>{const dag=b.dato<idag?idag:b.dato,w=new Date(dag+'T12:00'),k=when(w)+' '+w.getDate()+'. '+MON[w.getMonth()];if(k!==sist){ut+='<div class="day">'+k+'</div>';sist=k}ut+=utItem(b,dag)});return ut})()+'</div>':'')}
   return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie?'open':'')+'><summary><h2>Utleie</h2></summary>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
 function utAsk(id,dato){
   if(!utTilgang()||document.querySelector('dialog.pub'))return;
@@ -2488,7 +2504,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 09:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 10:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
