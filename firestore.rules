@@ -309,6 +309,11 @@ service cloud.firestore {
     // Medlemslisten: e-postadressen er dokument-ID. Brukeren kan sjekke sin egen adresse, administratorer styrer listen.
     // Gruppeledere kan se medlemslisten (for å styre sine grupper), legge nye medlemmer inn i egne grupper, og bare endre feltet groups
     // på eksisterende medlemmer: de kan bare legge til eller fjerne grupper de selv leder.
+    // Hva som er lagt til eller tatt bort i en liste (feltet f) må bare gjelde grupper en gruppeleder selv leder.
+    function ledChg(f) {
+      return request.resource.data.get(f, []).toSet().difference(resource.data.get(f, []).toSet()).hasOnly(myLeads())
+        && resource.data.get(f, []).toSet().difference(request.resource.data.get(f, []).toSet()).hasOnly(myLeads());
+    }
     match /members/{email} {
       allow get: if signedIn() && request.auth.token.email == email || isAdmin() || isLeader();
       allow list: if isAdmin() || isLeader();
@@ -324,11 +329,11 @@ service cloud.firestore {
         && request.resource.data.email == email
         && request.resource.data.groups is list && request.resource.data.groups.size() > 0
         && request.resource.data.groups.hasOnly(myLeads());
+      // Gruppeleder: groups (med i gruppen), extra (varsel uten å være med) og muted (varsel av), men bare for egne grupper.
       allow update: if isLeader()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['groups'])
-        && request.resource.data.groups is list
-        && request.resource.data.groups.toSet().difference(resource.data.get('groups', []).toSet()).hasOnly(myLeads())
-        && resource.data.get('groups', []).toSet().difference(request.resource.data.groups.toSet()).hasOnly(myLeads());
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['groups', 'extra', 'muted'])
+        && request.resource.data.get('groups', []) is list && request.resource.data.get('extra', []) is list && request.resource.data.get('muted', []) is list
+        && ledChg('groups') && ledChg('extra') && ledChg('muted');
     }
     // Vakter per gruppe: bare gruppens medlemmer (og administratorer) leser. Leder av gruppen (eller administrator) endrer vaktene.
     // Medlemmer i gruppen kan sende en byttebeskjed (requests) som bare avsenderen, gruppens leder og administratorer ser.

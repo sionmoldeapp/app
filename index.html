@@ -1179,34 +1179,37 @@ document.addEventListener('change',e=>{if(e.target.id==='utRomSel'){state.ut.rom
 /* Tilhørighet og varsler (administrator): enkle brytere for hvem som er med i hver gruppe og hvem som får varsel fra gruppen. «Varsel» kan også slås på for en enkeltperson som ikke er med i gruppen (feltet extra), og av for en som er med (feltet muted). */
 state.tl=state.tl||{mode:'gruppe',g:'',p:'',q:''};
 const tlNavn=u=>u.name||u.id;
+const tlLeder=()=>!state.admin&&isLeader();
+const tlG=()=>tlLeder()?GROUPS.filter(g=>(state.leads||[]).includes(g[0])):GROUPS;
+const tlM=()=>tlLeder()?leaderMem:members;
 const tlVar=(u,g)=>(u.groups||[]).includes(g)?!(u.muted||[]).includes(g):(u.extra||[]).includes(g);
 function tlBryter(attr,on,etikett,navn){return '<label class="tlsw"><span class="small">'+esc(etikett)+'</span><button type="button" class="tg" role="switch" aria-checked="'+(!!on)+'" aria-label="'+esc(etikett+' – '+navn)+'" '+attr+'></button></label>'}
 function tlRader(){
-  const t=state.tl,gs=GROUPS;if(!t.g||!gs.some(x=>x[0]===t.g))t.g=(gs[0]||[''])[0];
+  const t=state.tl,gs=tlG();if(!t.g||!gs.some(x=>x[0]===t.g))t.g=(gs[0]||[''])[0];
   if(t.mode==='person'){
-    const lst=members.slice().sort((a,b)=>tlNavn(a).localeCompare(tlNavn(b),'nb'));if(!lst.length)return '<p class="small">Ingen brukere ennå.</p>';
+    const lst=tlM().slice().sort((a,b)=>tlNavn(a).localeCompare(tlNavn(b),'nb'));if(!lst.length)return '<p class="small">Ingen brukere ennå.</p>';
     const u=lst.find(x=>x.id===t.p)||lst[0];t.p=u.id;
     return gs.map(g=>'<div class="r tlr"><div class="grow"><b>'+esc(g[1])+'</b></div><div class="tlsws">'+tlBryter('data-tlmed="'+esc(u.id+'|'+g[0])+'"',(u.groups||[]).includes(g[0]),'Med',tlNavn(u))+tlBryter('data-tlvar="'+esc(u.id+'|'+g[0])+'"',tlVar(u,g[0]),'Varsel',tlNavn(u))+'</div></div>').join('')}
-  const q=norm(t.q||'').trim(),lst=members.filter(u=>!q||norm(tlNavn(u)+' '+u.id).includes(q)).sort((a,b)=>{const am=(a.groups||[]).includes(t.g),bm=(b.groups||[]).includes(t.g);return (bm-am)||tlNavn(a).localeCompare(tlNavn(b),'nb')});
+  const q=norm(t.q||'').trim(),lst=tlM().filter(u=>!q||norm(tlNavn(u)+' '+u.id).includes(q)).sort((a,b)=>{const am=(a.groups||[]).includes(t.g),bm=(b.groups||[]).includes(t.g);return (bm-am)||tlNavn(a).localeCompare(tlNavn(b),'nb')});
   if(!lst.length)return '<p class="small">Ingen treff.</p>';
   return lst.map(u=>'<div class="r tlr"><div class="grow"><b>'+esc(tlNavn(u))+'</b>'+(u.name?'<span class="small" style="display:block">'+esc(u.id)+'</span>':'')+((u.leads||[]).includes(t.g)?'<span class="tag m" style="margin-top:2px">Leder</span>':'')+'</div><div class="tlsws">'+tlBryter('data-tlmed="'+esc(u.id+'|'+t.g)+'"',(u.groups||[]).includes(t.g),'Med',tlNavn(u))+tlBryter('data-tlvar="'+esc(u.id+'|'+t.g)+'"',tlVar(u,t.g),(u.groups||[]).includes(t.g)?'Varsel':'Varsel uten å være med',tlNavn(u))+'</div></div>').join('')}
 function tilhKort(){
-  const t=state.tl,gs=GROUPS;if(!t.g||!gs.some(x=>x[0]===t.g))t.g=(gs[0]||[''])[0];
+  const t=state.tl,gs=tlG();if(!t.g||!gs.some(x=>x[0]===t.g))t.g=(gs[0]||[''])[0];
   const modus='<div class="btns" role="group" aria-label="Visning" style="margin:0 0 10px">'+[['gruppe','Per gruppe'],['person','Per person']].map(([v,n])=>'<button type="button" class="btn '+(t.mode===v?'on':'')+'" data-tlmode="'+v+'" aria-pressed="'+(t.mode===v)+'">'+n+'</button>').join('')+'</div>';
   let topp;
-  if(t.mode==='person'){const lst=members.slice().sort((a,b)=>tlNavn(a).localeCompare(tlNavn(b),'nb'));
+  if(t.mode==='person'){const lst=tlM().slice().sort((a,b)=>tlNavn(a).localeCompare(tlNavn(b),'nb'));
     topp='<label class="f" style="margin:0 0 8px">Person<select id="tlP">'+lst.map(u=>'<option value="'+esc(u.id)+'" '+(u.id===t.p?'selected':'')+'>'+esc(tlNavn(u))+(u.name?' ('+esc(u.id)+')':'')+'</option>').join('')+'</select></label><p class="small" style="margin:0 0 6px"><b>Med</b> = tilhører gruppen og ser innholdet. <b>Varsel</b> = får varsel fra gruppen, også uten å være med.</p>'}
   else topp='<div class="chips scroll" role="group" aria-label="Gruppe" style="margin:0 0 8px">'+gs.map(g=>'<button type="button" class="chip" data-tlg="'+esc(g[0])+'" aria-pressed="'+(t.g===g[0])+'">'+esc(g[1])+'</button>').join('')+'</div>'
-    +'<div class="btns" style="margin:0 0 8px"><button type="button" class="btn" data-grpnew>+ Ny gruppe</button>'+(t.g?'<button type="button" class="btn" data-grpedit="'+esc(t.g)+'">Endre gruppen</button><button type="button" class="btn" data-grpdel="'+esc(t.g)+'">Slett</button>':'')+'</div>'
+    +(tlLeder()?'':'<div class="btns" style="margin:0 0 8px"><button type="button" class="btn" data-grpnew>+ Ny gruppe</button>'+(t.g?'<button type="button" class="btn" data-grpedit="'+esc(t.g)+'">Endre gruppen</button><button type="button" class="btn" data-grpdel="'+esc(t.g)+'">Slett</button>':'')+'</div>')
     +'<input id="tlQ" type="search" placeholder="Søk etter person" value="'+esc(t.q||'')+'" autocomplete="off" style="margin:0 0 6px"><p class="small" style="margin:0 0 6px"><b>Med</b> = tilhører gruppen og ser innholdet. <b>Varsel</b> = får varsel fra gruppen, også uten å være med.</p>';
   return '<details class="card acc" data-acc="tilh" '+(state.acc.tilh?'open':'')+'><summary><h2>Tilhørighet og varsler</h2></summary>'+modus+topp+'<div class="reg" id="tlRader">'+tlRader()+'</div><p class="small" role="status" id="tlMsg" style="margin:8px 0 0">'+esc(state.tlMsg||'')+'</p></details>'}
 async function tlMed(par,on){
-  const [em,g]=par.split('|'),u=members.find(x=>x.id===em);if(!u)return;
+  const [em,g]=par.split('|'),u=tlM().find(x=>x.id===em);if(!u)return;
   if(!on&&(u.leads||[]).includes(g)){push('Er leder for gruppen','Fjern ledervervet under Brukere først.');return}
   const groups=on?[...new Set([...(u.groups||[]),g])]:(u.groups||[]).filter(x=>x!==g),extra=(u.extra||[]).filter(x=>x!==g);
   try{await FB.setVarselFra(em,u.role,{groups,extra});u.groups=groups;u.extra=extra;state.tlMsg=tlNavn(u)+(on?' er nå med i ':' er tatt ut av ')+gName(g)+'.';keep(()=>{})}catch(er){state.tlMsg=saveMsg(er&&er.code);keep(()=>{})}}
 async function tlVarsel(par,on){
-  const [em,g]=par.split('|'),u=members.find(x=>x.id===em);if(!u)return;const med=(u.groups||[]).includes(g);let f;
+  const [em,g]=par.split('|'),u=tlM().find(x=>x.id===em);if(!u)return;const med=(u.groups||[]).includes(g);let f;
   if(med){const m=(u.muted||[]).filter(x=>x!==g);f={muted:on?m:[...m,g]}}else{const x=(u.extra||[]).filter(y=>y!==g);f={extra:on?[...x,g]:x}}
   try{await FB.setVarselFra(em,u.role,f);Object.assign(u,f);state.tlMsg=tlNavn(u)+(on?' får varsel fra ':' får ikke varsel fra ')+gName(g)+'.';keep(()=>{})}catch(er){state.tlMsg=saveMsg(er&&er.code);keep(()=>{})}}
 document.addEventListener('input',e=>{if(e.target.id==='tlQ'){state.tl.q=e.target.value;const l=document.getElementById('tlRader');if(l)l.innerHTML=tlRader()}});
@@ -2645,7 +2648,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 15:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 17:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2955,17 +2958,29 @@ function subSorter(cid,html,velger){
 function subFlytt(cid,key,d){const ord=(state.subVis[cid]||[]).slice(),i=ord.indexOf(key),j=i+Number(d);if(i<0||j<0||j>=ord.length)return;
   [ord[i],ord[j]]=[ord[j],ord[i]];const o=subOrd();o[cid]=ord;lsSet(SUBORD_KEY,JSON.stringify(o));
   if(FB&&state.user&&state.user.email)FB.setPrefSub(state.user.email.toLowerCase(),JSON.stringify(o)).catch(()=>{});keep(()=>{})}
+/* Administrer: samler alt som styrer appen (ikke personlige ting). Administratorer får alle verktøyene, gruppeledere får verktøy for egne grupper og varsler. Kortene inni beholder sine egne data-acc. */
+const ADM_KORT={
+  medlem:()=>state.view==='meg'&&state.admin?memberCard():'',grupper:()=>state.view==='meg'&&state.admin?groupsCard():'',
+  tilh:()=>state.view==='meg'&&(state.admin||isLeader())?tilhKort():'',
+  ledergr:()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():'',
+  gruppebesk:()=>gruppeBeskjedCard(),publiser:()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'',
+  utleie:()=>state.admin?utleieCard():'',jul:()=>state.admin?julCard():'',
+  attester:()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():'',stat:()=>statCard(),
+  kategorier:()=>state.admin?katCard():'',snap:()=>state.view==='meg'&&state.admin?snapCard():'',share:()=>shareCard()};
+function admCard(){
+  const deler=Object.values(ADM_KORT).map(f=>f()).filter(x=>x&&String(x).trim());
+  if(!deler.length)return '';
+  const tekst=state.admin?'Brukere, grupper, varsler, utleie og andre verktøy for å styre appen.':'Verktøy for gruppene du har ansvar for: medlemmer, varsler og beskjeder.';
+  return subSorter('adm','<details class="card acc" data-acc="admkort" '+(state.acc.admkort?'open':'')+'><summary><h2>Administrer</h2></summary><p class="small" style="margin:0 0 4px">'+tekst+' Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>','.megboks')}
 function megCard(){return subSorter('meg',megKort(),'.megboks')}
 function megKort(){
   const deler=[state.user?loginCard():'',state.user?profileCard():'',attestKort(),settingsCard(),state.user?vakterCard():'',state.user?meldCard():'',state.user?verktoyCard():''].filter(x=>x&&String(x).trim());
   if(!deler.length)return '';
   return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, innstillinger, vakter, beskjeder og notater. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
 const ME_KORT={
-  meg:['Meg',()=>megCard()],login:['Innlogging',()=>state.user?'':loginCard()],gruppebesk:['Send beskjed til gruppa',()=>gruppeBeskjedCard()],lr:['Saker til lederrådet',()=>lrCard()],utleie:['Utleie',()=>utleieCard()],jul:['Julemesse',()=>julCard()],share:['Del appen',()=>shareCard()],
-  ansvar:['Ansvarsområder',()=>ansvarCard()],attester:['Politiattester',()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''],stat:['Statistikk',()=>statCard()],
-  medlem:['Brukere',()=>state.view==='meg'&&state.admin?memberCard():''],grupper:['Grupper',()=>state.view==='meg'&&state.admin?groupsCard():''],tilh:['Tilhørighet og varsler',()=>state.view==='meg'&&state.admin?tilhKort():''],snap:['Sikkerhetskopi og tilbakerulling',()=>state.view==='meg'&&state.admin?snapCard():''],
-  ledergr:['Mine grupper',()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():''],publiser:['Publiser',()=>state.view==='meg'&&!state.admin&&isLeader()?admin():''],
-  kategorier:['Nye kategorier',()=>katCard()],personvern:['Personvern',()=>personvernCard()]};
+  meg:['Meg',()=>megCard()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],lr:['Saker til lederrådet',()=>lrCard()],utleie:['Utleie',()=>state.admin?'':utleieCard()],
+  ansvar:['Ansvarsområder',()=>ansvarCard()],
+  personvern:['Personvern',()=>personvernCard()]};
 /* Kortene under Mer og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
 const ORD={me:{felt:'meorder',ls:'sm-meorder'},home:{felt:'homeorder',ls:'sm-homeorder'}};
 const ov=()=>state.tab==='home'?'home':'me';
