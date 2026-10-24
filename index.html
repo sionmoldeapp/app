@@ -1823,7 +1823,8 @@ async function velkomst(liste){
   try{const r=await FB.sendWelcome(PUSH_URL,liste);return r.ok?' Velkomst-e-post sendt.':' Velkomst-e-post ikke sendt: '+r.feil}
   catch(er){return ' Velkomst-e-posten kunne ikke sendes.'}}
 /* Min profil (innloggede medlemmer): navn, hvilke gruppevarsler en vil ha, og slette seg selv. */
-function profileCard(){
+function profileCard(){return subSorter('profil',profilKort())}
+function profilKort(){
   if(!state.user||!state.member)return '';
   if(state.admin||!state.profile)return '<details class="card acc" data-acc="profil" '+(state.acc.profil?'open':'')+'><summary><h2>Min profil</h2></summary>'+attestSub()+'</details>';   // administratorer har ingen medlemsprofil, men kan legge inn politiattest
   const p=state.profile,gs=state.groups||[];
@@ -1977,7 +1978,8 @@ function notesInner(){
      +'<div class="reg" id="noteList">'+noteRows(vis)+'</div>'}
   return inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.noteMsg||'')+'</p>'}
 /* Møteverktøy: notater og lyd-/videoopptak samlet i ett kort under Mer. */
-function verktoyCard(){
+function verktoyCard(){return subSorter('verktoy',verktoyKort())}
+function verktoyKort(){
   if(!state.user||!state.member)return '';
   const l=state.notes,n=l?l.length:0,o=OPPT.liste&&OPPT.liste.length?OPPT.liste.length:0;
   return '<details class="card acc" data-acc="verktoy" '+(state.acc.verktoy?'open':'')+'><summary><h2>Møteverktøy</h2></summary><p class="small" style="margin:0 0 4px">Notater og opptak fra møtene. Bare du ser dem.</p>'
@@ -2578,7 +2580,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='26.10.2026 kl. 16:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='26.10.2026 kl. 17:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2647,7 +2649,8 @@ function setPal(p){if(p==='egen')egenBruk();document.documentElement.dataset.pal
 function applyFs(){document.body.style.zoom=UI.fs&&UI.fs!==1?String(UI.fs):''}
 function uiLagre(){try{localStorage.setItem('sm-ui',JSON.stringify(UI))}catch(e){}}
 applyFs();
-function settingsCard(){
+function settingsCard(){return subSorter('innst',settingsKort())}
+function settingsKort(){
   const bryter=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${k==='nh'?UI[k]===true:UI[k]!==false}" aria-label="${l}" data-ui="${k}"></button></div>`;
   const H=t=>`<h3 style="margin:14px 0 6px;font-size:var(--t-l)">${t}</h3>`;
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
@@ -2857,7 +2860,29 @@ function loginCard(){
 
 /* Kortene under Mer kan stokkes om (Endre rekkefølge). Rekkefølgen huskes på denne enheten (sm-meorder). */
 /* «Meg»: alt som er personlig samlet i ett kort under Mer: innlogging/utlogging, profil, innstillinger, mine vakter, beskjeder og møteverktøy. Selve kortene beholder sine egne åpne/lukket-valg (data-acc). */
-function megCard(){
+/* Undermenyer kan sorteres: «Sorter rekkefølge» over en gruppe undermenyer viser dem som en liste med ▲ ▼. Rekkefølgen lagres på enheten (sm-suborder). Fungerer ved å ordne ferdig HTML etter data-acc, så de ulike kortene trenger ikke vite om det. */
+const SUBORD_KEY='sm-suborder';state.subVis=state.subVis||{};state.subSort=state.subSort||null;
+function subOrd(){try{return JSON.parse(lsGet(SUBORD_KEY)||'{}')||{}}catch(e){return {}}}
+function subSorter(cid,html,velger){
+  if(!html||!String(html).trim())return html;
+  const t=document.createElement('template');t.innerHTML=html;const rot=t.content.firstElementChild;if(!rot)return html;
+  const boks=velger?rot.querySelector(velger):rot;if(!boks)return html;
+  const barn=[...boks.children].filter(el=>el.dataset&&el.dataset.acc);if(barn.length<2)return html;
+  const o=subOrd()[cid]||[],keys=barn.map(e=>e.dataset.acc),ord=[...o.filter(k=>keys.includes(k)),...keys.filter(k=>!o.includes(k))];
+  state.subVis[cid]=ord;
+  const navn=k=>{const e=barn.find(x=>x.dataset.acc===k),h=e&&(e.querySelector('summary h2')||e.querySelector('summary h3')||e.querySelector('summary'));return h?h.textContent.trim():k},sort=state.subSort===cid;
+  const anker=document.createComment('a');boks.insertBefore(anker,barn[0]);barn.forEach(e=>e.remove());
+  const knapp=document.createElement('div');knapp.style.cssText='margin:6px 0 2px;text-align:right';
+  knapp.innerHTML='<button type="button" class="pmore" style="display:inline" data-subsort="'+esc(cid)+'" aria-pressed="'+sort+'">'+(sort?'Ferdig med sortering':'Sorter rekkefølge')+'</button>';
+  anker.before(knapp);
+  if(sort){const l=document.createElement('div');l.className='reg';
+    l.innerHTML=ord.map((k,i)=>'<div class="r" style="display:flex;align-items:center;gap:8px"><b class="grow">'+esc(navn(k))+'</b><button type="button" class="btn" data-subflytt="'+esc(cid)+'|'+esc(k)+'|-1" '+(i===0?'disabled':'')+' aria-label="Flytt '+esc(navn(k))+' opp">▲</button><button type="button" class="btn" data-subflytt="'+esc(cid)+'|'+esc(k)+'|1" '+(i===ord.length-1?'disabled':'')+' aria-label="Flytt '+esc(navn(k))+' ned">▼</button></div>').join('');anker.before(l)}
+  else ord.forEach(k=>anker.before(barn.find(x=>x.dataset.acc===k)));
+  anker.remove();return rot.outerHTML}
+function subFlytt(cid,key,d){const ord=(state.subVis[cid]||[]).slice(),i=ord.indexOf(key),j=i+Number(d);if(i<0||j<0||j>=ord.length)return;
+  [ord[i],ord[j]]=[ord[j],ord[i]];const o=subOrd();o[cid]=ord;lsSet(SUBORD_KEY,JSON.stringify(o));keep(()=>{})}
+function megCard(){return subSorter('meg',megKort(),'.megboks')}
+function megKort(){
   const deler=[state.user?loginCard():'',state.user?profileCard():'',settingsCard(),state.user?vakterCard():'',state.user?meldCard():'',state.user?verktoyCard():''].filter(x=>x&&String(x).trim());
   if(!deler.length)return '';
   return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, innstillinger, vakter, beskjeder og notater.</p><div class="megboks">'+deler.join('')+'</div></details>'}
@@ -3131,6 +3156,8 @@ document.addEventListener('click',async e=>{
   else if('utidag' in c.dataset){const t=dkey(new Date());keep(()=>{state.ut.mnd=t.slice(0,7);state.ut.dag=t})}
   else if('utny' in c.dataset){utAsk(null,state.ut.dag)}
   else if(c.dataset.utedit){utAsk(c.dataset.utedit)}
+  else if(c.dataset.subsort){const c2=c.dataset.subsort;keep(()=>{state.subSort=state.subSort===c2?null:c2})}
+  else if(c.dataset.subflytt){const p=c.dataset.subflytt.split('|');subFlytt(p[0],p[1],p[2])}
   else if(c.dataset.utvis){keep(()=>{state.ut.vis=c.dataset.utvis})}
   else if(c.dataset.utfil){keep(()=>{state.ut.fil=c.dataset.utfil})}
   else if(c.dataset.utfak){utFakToggle(c.dataset.utfak)}
