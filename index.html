@@ -1199,7 +1199,7 @@ function tilhKort(){
   let topp;
   if(t.mode==='person'){const lst=tlM().slice().sort((a,b)=>tlNavn(a).localeCompare(tlNavn(b),'nb'));
     topp='<label class="f" style="margin:0 0 8px">Person<select id="tlP">'+lst.map(u=>'<option value="'+esc(u.id)+'" '+(u.id===t.p?'selected':'')+'>'+esc(tlNavn(u))+(u.name?' ('+esc(u.id)+')':'')+'</option>').join('')+'</select></label><p class="small" style="margin:0 0 6px"><b>Med</b> = tilhører gruppen og ser innholdet. <b>Varsel</b> = får varsel fra gruppen, også uten å være med.</p>'}
-  else topp='<div class="chips" role="group" aria-label="Gruppe" style="margin:0 0 8px">'+gs.map(g=>'<button type="button" class="chip" data-tlg="'+esc(g[0])+'" aria-pressed="'+(t.g===g[0])+'">'+esc(g[1])+'</button>').join('')+'</div>'
+  else topp=(t.apen&&gs.length>1?'<div class="chips" role="group" aria-label="Velg gruppe" style="margin:0 0 8px">'+gs.map(g=>'<button type="button" class="chip" data-tlg="'+esc(g[0])+'" aria-pressed="'+(t.g===g[0])+'">'+esc(g[1])+'</button>').join('')+'</div>':'<div class="r" style="margin:0 0 8px;align-items:center"><div class="grow"><span class="small" style="display:block">Du administrerer</span><b style="font-size:var(--t-l)">'+esc(gName(t.g))+'</b></div>'+(gs.length>1?'<button type="button" class="btn" data-tlbytt>Bytt gruppe</button>':'')+'</div>')
     +(tlLeder()?'':'<div class="btns" style="margin:0 0 8px"><button type="button" class="btn" data-grpnew>+ Ny gruppe</button>'+(t.g?'<button type="button" class="btn" data-grpedit="'+esc(t.g)+'">Endre gruppen</button><button type="button" class="btn" data-grpdel="'+esc(t.g)+'">Slett</button>':'')+'</div>')
     +'<input id="tlQ" type="search" placeholder="Søk etter person" value="'+esc(t.q||'')+'" autocomplete="off" style="margin:0 0 6px"><p class="small" style="margin:0 0 6px"><b>Med</b> = tilhører gruppen og ser innholdet. <b>Varsel</b> = får varsel fra gruppen, også uten å være med.</p>';
   return '<details class="card acc" data-acc="tilh" '+(state.acc.tilh?'open':'')+'><summary><h2>Tilhørighet og varsler</h2></summary>'+modus+topp+'<div class="reg" id="tlRader">'+tlRader()+'</div><p class="small" role="status" id="tlMsg" style="margin:8px 0 0">'+esc(state.tlMsg||'')+'</p></details>'}
@@ -2648,7 +2648,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 18:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 18:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -3261,7 +3261,8 @@ document.addEventListener('click',async e=>{
   else if('utny' in c.dataset){utAsk(null,state.ut.dag)}
   else if(c.dataset.utedit){utAsk(c.dataset.utedit)}
   else if(c.dataset.tlmode){keep(()=>{state.tl.mode=c.dataset.tlmode;state.acc.tilh=true})}
-  else if(c.dataset.tlg){keep(()=>{state.tl.g=c.dataset.tlg;state.tl.q=''})}
+  else if(c.dataset.tlbytt!==undefined){keep(()=>{state.tl.apen=true})}
+  else if(c.dataset.tlg){keep(()=>{state.tl.g=c.dataset.tlg;state.tl.q='';state.tl.apen=false})}
   else if(c.dataset.tlmed){tlMed(c.dataset.tlmed,c.getAttribute('aria-checked')!=='true')}
   else if(c.dataset.tlvar){tlVarsel(c.dataset.tlvar,c.getAttribute('aria-checked')!=='true')}
   else if(c.dataset.subsort){const c2=c.dataset.subsort;keep(()=>{state.subSort=state.subSort===c2?null:c2})}
