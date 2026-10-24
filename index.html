@@ -2605,23 +2605,25 @@ function attestStatus(dato){
   const d=new Date(dato+'T12:00');d.setFullYear(d.getFullYear()+ATTEST_AAR);
   const dager=Math.ceil((d.getTime()-Date.now())/864e5),utl=isoDato(d);
   return {utl,dager,tekst:dager<0?'Utløpt':dager<=ATTEST_VARSEL_DAGER?'Utløper snart':'Gyldig',farge:dager<0?'#b3261e':dager<=ATTEST_VARSEL_DAGER?'var(--lamp)':'var(--ok)'}}
+const attestVenter='<span class="tag" style="background:var(--lamp);color:var(--lamp-ink)">Venter godkjenning</span>';
 const attestChip=st=>st?'<span class="tag" style="background:'+st.farge+';color:#fff">'+st.tekst+'</span>':'';
 const profSub=(k,tittel,html)=>'<details class="acc sub" data-acc="'+k+'" '+(state.acc[k]?'open':'')+' style="margin-top:10px"><summary><h3 style="font-size:var(--t-l)">'+tittel+'</h3></summary>'+html+'</details>';
 /* Politiattest er en egen undermeny under Meg (ikke lenger inni Min profil). Administratorer og medlemmer uten profil har den også. */
 function attestKort(){if(!state.user||!state.member)return '';return '<details class="card acc" data-acc="attest" '+(state.acc.attest?'open':'')+'><summary><h2>Politiattest</h2></summary>'+attestBody()+'</details>'}
 function attestBody(){
-  const a=state.attest,st=a?attestStatus(a.dato):null,idag=isoDato(new Date());
-  return '<p class="small" style="margin:0 0 8px">Legg inn datoen politiattesten din ble godkjent. Appen lagrer bare datoen, aldri selve attesten. Den er gyldig i '+ATTEST_AAR+' år, og du og lederne får en påminnelse '+ATTEST_VARSEL_DAGER+' dager før den går ut.</p>'
-   +(st?'<p style="margin:0 0 8px"><b>Godkjent:</b> '+esc(noDato(a.dato))+'<br><b>Går ut:</b> '+esc(noDato(st.utl))+' '+attestChip(st)+'</p>':'<p class="small" style="margin:0 0 8px">Ingen dato er lagt inn.</p>')
+  const a=state.attest,st=a?attestStatus(a.dato):null,idag=isoDato(new Date()),venter=!!a&&a.godkjent===false;
+  return '<p class="small" style="margin:0 0 8px">Legg inn datoen politiattesten din ble godkjent. Appen lagrer bare datoen, aldri selve attesten. En administrator må godkjenne datoen før den regnes som godkjent. Den er gyldig i '+ATTEST_AAR+' år, og du og lederne får en påminnelse '+ATTEST_VARSEL_DAGER+' dager før den går ut.</p>'
+   +(venter&&st?'<p style="margin:0 0 8px"><b>Registrert dato:</b> '+esc(noDato(a.dato))+' '+attestVenter+'<br><span class="small">Venter på at en administrator godkjenner datoen.</span></p>':st?'<p style="margin:0 0 8px"><b>Godkjent:</b> '+esc(noDato(a.dato))+'<br><b>Går ut:</b> '+esc(noDato(st.utl))+' '+attestChip(st)+'</p>':'<p class="small" style="margin:0 0 8px">Ingen dato er lagt inn.</p>')
    +'<label class="f">Dato godkjent<input id="atD" type="date" max="'+idag+'" value="'+esc(a?a.dato:'')+'"></label>'
    +'<div class="btns" style="margin-top:8px"><button class="btn primary" data-atsave style="flex:1">Lagre</button>'+(a?'<button class="btn" data-atdel style="flex:1">Fjern</button>':'')+'</div>'
    +'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.atMsg||'')+'</p>'}
 async function loadAttester(){
   try{
     const ut={};
-    if(state.admin){(await FB.listAttester()).forEach(x=>{ut[x.id]=x.dato})}
-    else{const ids=(leaderMem||[]).map(u=>u.id);(await FB.attesterFor(ids)).forEach(x=>{ut[x.id]=x.dato})}
-    state.attester=ut;state.atMsg2=''}
+    const gk={};
+    if(state.admin){(await FB.listAttester()).forEach(x=>{ut[x.id]=x.dato;gk[x.id]=x.godkjent})}
+    else{const ids=(leaderMem||[]).map(u=>u.id);(await FB.attesterFor(ids)).forEach(x=>{ut[x.id]=x.dato;gk[x.id]=x.godkjent})}
+    state.attester=ut;state.attGod=gk;state.atMsg2=''}
   catch(e){state.attester={};state.atMsg2='Kunne ikke hente politiattester ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
   keep(()=>{})}
 const attestPersoner=()=>state.admin?(members||[]).map(u=>({id:u.id,navn:u.name||''})):(leaderMem||[]).map(u=>({id:u.id,navn:u.name||''}));
@@ -2629,10 +2631,11 @@ function attesterCard(){
   const l=state.attester;let inn;
   if(l===undefined)inn='<p class="small">Henter politiattester …</p>';
   else{
-    const ps=attestPersoner().map(p=>({...p,dato:l[p.id]||'',st:attestStatus(l[p.id])}));
-    const med=ps.filter(p=>p.st).sort((a,b)=>a.st.dager-b.st.dager),uten=ps.filter(p=>!p.st);
-    const rad=p=>'<div class="r"><div class="grow"><b>'+esc(p.navn||p.id)+'</b><span class="small" style="display:block">'+(p.st?'Godkjent '+esc(noDato(p.dato))+' · går ut '+esc(noDato(p.st.utl)):'Ingen dato')+'</span></div>'+attestChip(p.st)+'<button class="btn" data-atedit="'+esc(p.id)+'">'+(p.st?'Endre':'Legg inn')+'</button></div>';
-    inn='<p class="small" style="margin:0 0 8px">'+(state.admin?'Alle medlemmer. ':'Medlemmer i gruppene du leder. ')+'Sortert etter nærmest utløp. Du kan legge inn eller rette datoen.</p>'
+    const gkm=state.attGod||{},ps=attestPersoner().map(p=>({...p,dato:l[p.id]||'',st:attestStatus(l[p.id]),venter:!!attestStatus(l[p.id])&&gkm[p.id]===false}));
+    const vent=ps.filter(p=>p.venter),med=ps.filter(p=>p.st&&!p.venter).sort((a,b)=>a.st.dager-b.st.dager),uten=ps.filter(p=>!p.st);
+    const rad=p=>'<div class="r" style="flex-wrap:wrap"><div class="grow"><b>'+esc(p.navn||p.id)+'</b><span class="small" style="display:block">'+(p.venter?'Registrert '+esc(noDato(p.dato))+' · venter godkjenning':p.st?'Godkjent '+esc(noDato(p.dato))+' · går ut '+esc(noDato(p.st.utl)):'Ingen dato')+'</span></div>'+(p.venter?attestVenter:attestChip(p.st))+(p.venter&&state.admin?'<button class="btn primary" data-atgod="'+esc(p.id)+'">Godkjenn</button>':'')+'<button class="btn" data-atedit="'+esc(p.id)+'">'+(p.st?'Endre':'Legg inn')+'</button></div>';
+    inn='<p class="small" style="margin:0 0 8px">'+(state.admin?'Alle medlemmer. ':'Medlemmer i gruppene du leder. ')+'Sortert etter nærmest utløp. '+(state.admin?'Datoer medlemmene legger inn må godkjennes av deg.':'Datoer du legger inn må godkjennes av en administrator.')+'</p>'
+     +(vent.length?'<div style="margin:0 0 10px;padding:10px;border:2px solid var(--lamp);border-radius:var(--r-s);background:var(--lamp-soft)"><b>Venter godkjenning ('+vent.length+')</b><div class="reg">'+vent.map(rad).join('')+'</div></div>':'')
      +'<div class="reg">'+(med.map(rad).join('')||'<p class="small">Ingen datoer er lagt inn ennå.</p>')+'</div>'
      +(uten.length?'<details class="acc sub" data-acc="at_uten" '+(state.acc.at_uten?'open':'')+'><summary><h3 style="font-size:var(--t-l)">Mangler dato ('+uten.length+')</h3></summary><div class="reg">'+uten.map(rad).join('')+'</div></details>':'')}
   return '<details class="card acc" data-acc="attester" '+(state.acc.attester?'open':'')+'><summary><h2>Politiattester</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.atMsg2||'')+'</p></details>'}
@@ -2647,15 +2650,15 @@ function atAsk(email){
     const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='fjern')return;e.preventDefault();
     const dato=dlg.querySelector('#atD2').value;
     try{
-      if(v==='fjern'){await FB.delAttest(email);delete state.attester[email]}
-      else{if(!/^\d{4}-\d{2}-\d{2}$/.test(dato)){dlg.querySelector('#atS').textContent='Velg en dato.';return}await FB.setAttest(email,dato);state.attester[email]=dato}
-      dlg.close();keep(()=>{});push('Lagret','Politiattesten er oppdatert.')}
+      if(v==='fjern'){await FB.delAttest(email);delete state.attester[email];if(state.attGod)delete state.attGod[email]}
+      else{if(!/^\d{4}-\d{2}-\d{2}$/.test(dato)){dlg.querySelector('#atS').textContent='Velg en dato.';return}await FB.setAttest(email,dato,!!state.admin);state.attester[email]=dato;(state.attGod=state.attGod||{})[email]=!!state.admin}
+      dlg.close();keep(()=>{});push('Lagret',state.admin||v==='fjern'?'Politiattesten er oppdatert.':'Datoen er lagret og venter godkjenning fra en administrator.')}
     catch(er){dlg.querySelector('#atS').textContent='Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 21:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 22:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -3288,9 +3291,10 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.kopier){kopierTekst(c.dataset.kopier)}
   else if('pvedit' in c.dataset){pvAsk()}
   else if(c.dataset.atedit){atAsk(c.dataset.atedit)}
+  else if(c.dataset.atgod){const em=c.dataset.atgod,d=(state.attester||{})[em];if(!d)return;try{await FB.setAttest(em,d,true);(state.attGod=state.attGod||{})[em]=true;state.atMsg2='';keep(()=>{});push('Godkjent','Politiattesten er godkjent.')}catch(er){state.atMsg2=saveMsg(er&&er.code);keep(()=>{})}}
   else if('atsave' in c.dataset){
     const dato=($('#atD')||{}).value||'';if(!/^\d{4}-\d{2}-\d{2}$/.test(dato)){keep(()=>{state.atMsg='Velg en dato.'});return}
-    try{await FB.setAttest(meEmail(),dato);keep(()=>{state.attest={dato};state.atMsg=''});push('Lagret','Datoen er lagret. Du og lederne får påminnelse før den går ut.')}
+    try{const ok=!!state.admin;await FB.setAttest(meEmail(),dato,ok);keep(()=>{state.attest={dato,godkjent:ok};state.atMsg=''});push('Lagret',ok?'Datoen er lagret. Du og lederne får påminnelse før den går ut.':'Datoen er lagret og venter godkjenning fra en administrator.')}
     catch(er){keep(()=>{state.atMsg='Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'})}}
   else if('atdel' in c.dataset){
     if(!await bekreft('Fjerne datoen for politiattesten?',{ok:'Fjern',fare:true}))return;

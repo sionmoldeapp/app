@@ -129,11 +129,12 @@ const FB={
     markThreadRead:id=>S.updateDoc(S.doc(db,'threads',id),{unread:S.arrayRemove(auth.currentUser.email.toLowerCase())}),
     async notifyThread(url,id){const idToken=await auth.currentUser.getIdToken(true);const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'beskjed',threadId:id})});return r.json()},
     // Politiattest (attester/{e-post}): bare datoen den ble godkjent.
-    async getAttest(email){const s=await S.getDoc(S.doc(db,'attester',email));return s.exists()?{dato:s.data().dato||''}:null},
-    setAttest:(email,dato)=>S.setDoc(S.doc(db,'attester',email),{dato:String(dato).slice(0,10),by:auth.currentUser.email.toLowerCase(),updated:S.serverTimestamp()}),
+    async getAttest(email){const s=await S.getDoc(S.doc(db,'attester',email));return s.exists()?{dato:s.data().dato||'',godkjent:s.data().godkjent!==false}:null},
+    // godkjent: bare administratorer kan sette true (reglene). Medlemmer og ledere lagrer false = venter godkjenning.
+    setAttest:(email,dato,godkjent)=>S.setDoc(S.doc(db,'attester',email),{dato:String(dato).slice(0,10),by:auth.currentUser.email.toLowerCase(),updated:S.serverTimestamp(),godkjent:!!godkjent}),
     delAttest:email=>sl(S.deleteDoc(S.doc(db,'attester',email))),
-    async listAttester(){const s=await S.getDocs(S.collection(db,'attester'));return s.docs.map(d=>({id:d.id,dato:d.data().dato||''}))},
-    async attesterFor(ids){const ut=[];for(const id of ids){try{const s=await S.getDoc(S.doc(db,'attester',id));if(s.exists())ut.push({id,dato:s.data().dato||''})}catch(e){}}return ut},
+    async listAttester(){const s=await S.getDocs(S.collection(db,'attester'));return s.docs.map(d=>({id:d.id,dato:d.data().dato||'',godkjent:d.data().godkjent!==false}))},
+    async attesterFor(ids){const ut=[];for(const id of ids){try{const s=await S.getDoc(S.doc(db,'attester',id));if(s.exists())ut.push({id,dato:s.data().dato||'',godkjent:s.data().godkjent!==false})}catch(e){}}return ut},
     // Bønneemner (prayers): bare medlemmer. by og ber bruker uid, ikke e-post.
     async prayersList(){const s=await S.getDocs(S.query(S.collection(db,'prayers'),S.orderBy('ms','desc'),S.limit(40)));return s.docs.map(d=>({id:d.id,...d.data()}))},
     markPrayed:ids=>sl((async()=>{const b=S.writeBatch(db),t=Date.now();ids.forEach(id=>b.update(S.doc(db,'prayers',id),{bedt:t}));await b.commit()})()),
