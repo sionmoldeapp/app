@@ -967,7 +967,7 @@ const utTilgang=()=>!!(state.user&&state.member&&(state.admin||(state.groups||[]
 /* Skrive: administratorer og gruppen utleie. Lese (uten å endre): også gruppen vertskap, som får varsel om bookinger og ser antall gjester og servering. */
 const utLes=()=>!!(utTilgang()||(state.user&&state.member&&(state.groups||[]).includes('vertskap')));
 const utRomListe=()=>{const r=state.utRom&&state.utRom.length?state.utRom:UT_ROM_DEF;return r};
-const utFarge=r=>UT_FARGER[Math.max(0,utRomListe().indexOf(r))%UT_FARGER.length];
+const utFarge=r=>r==='__prog'?'#7b8794':UT_FARGER[Math.max(0,utRomListe().indexOf(r))%UT_FARGER.length];
 const utDatoKort=d=>{const x=new Date(d+'T12:00');return x.getDate()+'. '+MON[x.getMonth()]};
 const utMin=t=>{const m=/^(\d{1,2}):(\d{2})$/.exec(t||'');return m?(+m[1])*60+(+m[2]):0};
 state.ut=state.ut||{liste:undefined,mnd:null,dag:null,rom:'Alle'};
@@ -983,8 +983,20 @@ const utTiderMap=b=>Object.fromEntries((b.tider||[]).map(x=>String(x).split('|')
 const utDagTid=(b,k)=>{const m=utTiderMap(b);if(m[k])return m[k];if(!(b.dato2&&b.dato2>b.dato))return [b.fra,b.til];return k===b.dato?[b.fra,'23:59']:k===b.dato2?['00:00',b.til]:['00:00','23:59']};
 const utIntervaller=b=>utDager(b).map(k=>{const [f,t]=utDagTid(b,k);return [Date.parse(k+'T'+f+':00'),Date.parse(k+'T'+t+':00')]});
 function utDager(b){const ut=[],e=b.dato2&&b.dato2>b.dato?b.dato2:b.dato;let d=new Date(b.dato+'T12:00');for(let i=0;i<62;i++){const k=dkey(d);ut.push(k);if(k>=e)break;d.setDate(d.getDate()+1)}return ut}
-function utKonflikt(b,ekskl){const ib=utIntervaller(b);return (state.ut.liste||[]).filter(x=>x.id!==ekskl&&utIntervaller(x).some(([s1,e1])=>ib.some(([s2,e2])=>s1<e2&&e1>s2))
-  &&(x.rom||[]).some(r=>(b.rom||[]).includes(r)||r==='Hele bygget'||(b.rom||[]).includes('Hele bygget')))}
+/* Arrangementer og faste samlinger fra Program vises automatisk i utleiekalenderen (bare visning, endres under Program). Rommet hentes fra feltet Sted/tittel hvis et romnavn (for eksempel «Hovedsal») står der; ellers vises de uten rom. Sluttid er ikke satt i Program, så to timer regnes som varighet. */
+function utProgram(fra,til){
+  const ut=[],rom=utRomListe().filter(r=>r!=='Hele bygget'),finn=t=>{const lc=String(t||'').toLowerCase();return rom.filter(r=>lc.includes(r.toLowerCase()))},
+    slutt=f=>{const [h,m]=f.split(':').map(Number),t=Math.min(23*60+59,h*60+m+120);return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')},
+    hel=(id,tittel,r,d1,d2,f,tl,sted)=>ut.push({id,program:true,tittel,rom:r,dato:d1,dato2:d2,tider:[],fra:f,til:tl,gjester:0,servering:'',leier:'',kontakt:'',pris:'Eget arrangement (gratis)',status:'bekreftet',notat:'',sted});
+  (rawEvents||[]).filter(e=>e&&e.start&&liveOK(e)&&!e.draft).forEach(e=>{const d1=e.start,d2=e.end&&e.end>e.start?e.end:'';if((d2||d1)<fra||d1>til)return;
+    const f=TIDOK(e.time)?e.time:'09:00';hel('p_e_'+e.id,e.title||'Arrangement',finn([e.place,e.title].join(' ')),d1,d2,f,d2?'23:59':slutt(f),e.place||'')});
+  (regular||[]).filter(r=>TIDOK(r.time)).forEach(r=>{const d=new Date(fra+'T12:00'),e=new Date(til+'T12:00');
+    for(;d<=e;d.setDate(d.getDate()+1)){if(d.getDay()!==r.day||!ukeOK(r,d))continue;const k=dkey(d),ex=(r.ex||{})[k];if(ex&&(ex.k==='fjernet'||ex.k==='avlyst'))continue;
+      const inf=fastInfo(r,ex),f=ex&&ex.k==='endret'&&TIDOK(ex.time)?ex.time:r.time;hel('p_f_'+r.id+'_'+k,inf.title,finn([inf.place,inf.title,inf.note].join(' ')),k,'',f,slutt(f),inf.place||'')}});
+  return ut}
+function utKonflikt(b,ekskl){const ib=utIntervaller(b),prog=utProgram(b.dato,b.dato2&&b.dato2>b.dato?b.dato2:b.dato);
+  return [...(state.ut.liste||[]),...prog].filter(x=>x.id!==ekskl&&utIntervaller(x).some(([s1,e1])=>ib.some(([s2,e2])=>s1<e2&&e1>s2))
+    &&((x.program&&!(x.rom||[]).length)||(x.rom||[]).some(r=>(b.rom||[]).includes(r)||r==='Hele bygget'||(b.rom||[]).includes('Hele bygget'))))}
 /* Nedtelling til bookingen (oppdateres hver hele time mens appen er åpen) */
 function utNedtelling(a,b){const nu=Date.now();if(nu>=b)return 'Ferdig';if(nu>=a)return 'Pågår nå';
   const d=a-nu,dager=Math.floor(d/864e5),t=Math.floor((d%864e5)/36e5);
@@ -1004,23 +1016,23 @@ const UT_UTSETT=[[0,'Ingen utsettelse'],[1,'1 dag'],[3,'3 dager'],[7,'1 uke'],[1
 const UT_PAAMINN=[[0,'Ingen påminnelse'],[3,'3 timer før'],[6,'6 timer før'],[12,'12 timer før'],[24,'1 døgn før (standard)'],[48,'2 døgn før'],[72,'3 døgn før'],[168,'1 uke før']];
 const utPaaminnTekst=h=>{const x=UT_PAAMINN.find(p=>p[0]===h);return x?x[1].replace(' (standard)',''):(h+' timer før')};
 /* Bookingene vises som i Program: dato-rute, tittel, tid og rom, og ett trykk åpner alle detaljene (samme åpne/lukke-animasjon som arrangementene). */
-function utTidDag(x,dag){const fler=x.dato2&&x.dato2>x.dato,tm=utTiderMap(x);return tm[dag]?tm[dag][0]+'–'+tm[dag][1]:!fler?x.fra+'–'+x.til:dag===x.dato?'Fra '+x.fra:dag===x.dato2?'Til '+x.til:'Hele dagen'}
+function utTidDag(x,dag){const fler=x.dato2&&x.dato2>x.dato,tm=utTiderMap(x);return tm[dag]?tm[dag][0]+'–'+tm[dag][1]:!fler?(x.program?'kl. '+x.fra:x.fra+'–'+x.til):dag===x.dato?'Fra '+x.fra:dag===x.dato2?'Til '+x.til:'Hele dagen'}
 const utNedGrenser=x=>{const iv=utIntervaller(x);return iv[0][0]+'|'+iv[iv.length-1][1]};
 /* Datoer for en booking over flere dager, for eksempel «29.–31. okt» eller «30. okt – 2. nov» */
 function utDatoOmr(x){if(!(x.dato2&&x.dato2>x.dato))return utDatoKort(x.dato);const a=new Date(x.dato+'T12:00'),b=new Date(x.dato2+'T12:00');return a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear()?a.getDate()+'.–'+b.getDate()+'. '+MON[b.getMonth()]:utDatoKort(x.dato)+' – '+utDatoKort(x.dato2)}
 function utItem(x,dag){
   const fler=x.dato2&&x.dato2>x.dato,d=new Date(dag+'T12:00'),id='ut_'+x.id+'_'+dag,open=!!state.open[id],skriv=utTilgang(),
     rom=(x.rom||[]).map(r=>'<span class="tag" style="background:'+utFarge(r)+'22;color:'+utFarge(r)+'">'+esc(r)+'</span>').join(' '),
-    tag=/^Eget/.test(x.pris||'')?'<span class="tag m">Eget</span>':x.status==='foresporsel'?'<span class="tag">Forespørsel</span>':'<span class="tag">Utleie</span>',
+    tag=x.program?'<span class="tag">Program</span>':/^Eget/.test(x.pris||'')?'<span class="tag m">Eget</span>':x.status==='foresporsel'?'<span class="tag">Forespørsel</span>':'<span class="tag">Utleie</span>',
     rad=(n,v)=>v?'<div class="small"><b>'+n+':</b> '+esc(v)+'</div>':'';
   return '<div class="item '+(open?'open':'')+'"><button type="button" data-ev="'+esc(id)+'" aria-expanded="'+open+'"><div class="date">'+d.getDate()+'. '+cap(MON[d.getMonth()])+'</div>'
-    +'<div class="grow utl"><b>'+esc(x.tittel||'Utleie')+'</b><span class="small">'+esc((fler?utDatoOmr(x)+' · ':'')+utTidDag(x,dag)+' · '+(x.rom||[]).join(', '))+'</span><span class="small" data-utnt="'+utNedGrenser(x)+'" style="display:block;color:var(--lamp);font-weight:600">'+esc(utNedtelling(...utNedGrenser(x).split('|').map(Number)))+'</span><span style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">'+tag+(skriv&&utFakRel(x)?(x.fakturert?'<span class="tag m">Fakturert</span>':'<span class="tag" style="background:#b3261e22;color:#b3261e">Ikke fakturert</span>'):'')+'</span></div></button>'
+    +'<div class="grow utl"><b>'+esc(x.tittel||'Utleie')+'</b><span class="small">'+esc((fler?utDatoOmr(x)+' · ':'')+utTidDag(x,dag)+((x.rom||[]).length?' · '+x.rom.join(', '):x.program&&x.sted?' · '+x.sted:''))+'</span><span class="small" data-utnt="'+utNedGrenser(x)+'" style="display:block;color:var(--lamp);font-weight:600">'+esc(utNedtelling(...utNedGrenser(x).split('|').map(Number)))+'</span><span style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">'+tag+(skriv&&!x.program&&utFakRel(x)?(x.fakturert?'<span class="tag m">Fakturert</span>':'<span class="tag" style="background:#b3261e22;color:#b3261e">Ikke fakturert</span>'):'')+'</span></div></button>'
     +'<div class="detail"><div style="display:flex;flex-wrap:wrap;gap:4px">'+rom+'</div>'
     +(fler?rad('Dager',utDatoKort(x.dato)+' – '+utDatoKort(x.dato2)):'')
     +(fler?'<div class="small">'+utDager(x).map(k=>{const dd=new Date(k+'T12:00');return esc(cap(DAYS[dd.getDay()]).slice(0,3)+' '+dd.getDate()+'. '+MON[dd.getMonth()]+': '+utTidDag(x,k))}).join('<br>')+'</div>':'')
     +rad('Antall gjester',x.gjester?String(x.gjester):'')+rad('Servering',x.servering)+((x.allergener||[]).length||x.allergenNotat?'<div class="small"><b>Allergener:</b> '+(x.allergener||[]).map(a=>'<span class="tag" style="background:#b3261e22;color:#b3261e">'+esc(a)+'</span>').join(' ')+(x.allergenNotat?' '+esc(x.allergenNotat):'')+'</div>':'')+(x.status!=='foresporsel'?rad('Påminnelse til vertskapet',utPaaminnTekst(x.remindH==null?24:Number(x.remindH))):'')
-    +(skriv?rad('Leietaker',x.leier)+rad('Kontakt',x.kontakt)+rad('Pris',x.pris)+rad('Merknad',x.notat):'')
-    +(skriv&&utFakRel(x)?rad('Faktura',x.fakturert?'Sendt'+(x.fakturertMs?' '+utDatoKort(dkey(new Date(x.fakturertMs))):''):'Ikke sendt ennå'):'')+(skriv?'<div class="btns"><button type="button" class="btn" data-utedit="'+esc(x.id)+'">Endre</button>'+(utFakRel(x)?'<button type="button" class="btn '+(x.fakturert?'':'primary')+'" data-utfak="'+esc(x.id)+'" style="width:auto">'+(x.fakturert?'Fjern «faktura sendt»':'Marker faktura sendt')+'</button>':'')+'</div>':'')+'</div></div>'}
+    +(x.program?'<div class="small">'+(x.sted?'Sted: '+esc(x.sted)+'. ':'')+'Dette er et arrangement fra Program, og endres der. Står rommet (for eksempel «Hovedsal») i feltet Sted, blokkerer det rommet her.</div>':'')+(skriv&&!x.program?rad('Leietaker',x.leier)+rad('Kontakt',x.kontakt)+rad('Pris',x.pris)+rad('Merknad',x.notat):'')
+    +(skriv&&!x.program&&utFakRel(x)?rad('Faktura',x.fakturert?'Sendt'+(x.fakturertMs?' '+utDatoKort(dkey(new Date(x.fakturertMs))):''):'Ikke sendt ennå'):'')+(skriv&&!x.program?'<div class="btns"><button type="button" class="btn" data-utedit="'+esc(x.id)+'">Endre</button>'+(utFakRel(x)?'<button type="button" class="btn '+(x.fakturert?'':'primary')+'" data-utfak="'+esc(x.id)+'" style="width:auto">'+(x.fakturert?'Fjern «faktura sendt»':'Marker faktura sendt')+'</button>':'')+'</div>':'')+'</div></div>'}
 function utRad(x,dag){const fler=x.dato2&&x.dato2>x.dato,tm=utTiderMap(x),tid=tm[dag]?tm[dag][0]+'–'+tm[dag][1]:!fler?x.fra+'–'+x.til:dag===x.dato?'Fra '+x.fra:dag===x.dato2?'Til '+x.til:'Hele dagen',rom=(x.rom||[]).map(r=>'<span class="tag" style="background:'+utFarge(r)+'22;color:'+utFarge(r)+'">'+esc(r)+'</span>').join(' ');
   return '<div class="r"><'+(utTilgang()?'button type="button" data-utedit="'+esc(x.id)+'"':'div')+' style="display:flex;width:100%;gap:10px;align-items:flex-start;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer"><b style="flex:none;min-width:84px;font-variant-numeric:tabular-nums">'+esc(tid)+'</b><span class="grow"><b>'+esc(x.tittel||'Utleie')+'</b>'+(fler?'<span class="small" style="display:block">'+esc(utDatoKort(x.dato)+' – '+utDatoKort(x.dato2))+'</span>':'')+(x.leier&&utTilgang()?'<span class="small" style="display:block">'+esc(x.leier)+'</span>':'')+((x.gjester||x.servering)?'<span class="small" style="display:block">'+(x.gjester?x.gjester+' gjester':'')+(x.gjester&&x.servering?' · ':'')+(x.servering?'Servering: '+esc(x.servering):'')+'</span>':'')+'<span style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">'+rom+'</span></span>'+(/^Eget/.test(x.pris||'')?'<span class="tag m">Eget</span>':'')+(x.status==='foresporsel'?'<span class="tag">Forespørsel</span>':'')+'</'+(utTilgang()?'button':'div')+'></div>'}
 const utFakEpost=()=>state.utEpost||UT_FAKTURA_STD;
@@ -1031,13 +1043,14 @@ function utleieCard(){
   if(!u.mnd)u.mnd=idag.slice(0,7);if(!u.dag)u.dag=idag;
   const [år,mm]=u.mnd.split('-').map(Number),første=new Date(år,mm-1,1),dagerIMnd=new Date(år,mm,0).getDate(),forskyv=(første.getDay()+6)%7;
   const filter=b=>u.rom==='Alle'||(b.rom||[]).includes(u.rom)||(b.rom||[]).includes('Hele bygget');
-  const alle=(u.liste||[]).filter(filter),perDag={};alle.forEach(b=>{utDager(b).forEach(k=>{(perDag[k]=perDag[k]||[]).push(b)})});
+  const alle=(u.liste||[]).filter(filter),perDag={},prog=utProgram(u.mnd+'-01',u.mnd+'-'+String(dagerIMnd).padStart(2,'0')).filter(filter);
+  [...alle,...prog].forEach(b=>{utDager(b).forEach(k=>{(perDag[k]=perDag[k]||[]).push(b)})});
   let inn;
   if(u.liste===undefined)inn='<p class="small">Henter bookinger …</p>';
   else{
     const celler=[];for(let i=0;i<forskyv;i++)celler.push('<span></span>');
     for(let d=1;d<=dagerIMnd;d++){const k=u.mnd+'-'+String(d).padStart(2,'0'),b=perDag[k]||[],valgt=k===u.dag;
-      const prikker=[...new Set(b.flatMap(x=>x.rom||[]))].slice(0,3).map(r=>'<i style="width:6px;height:6px;border-radius:50%;background:'+utFarge(r)+';display:block"></i>').join('');
+      const prikker=[...new Set(b.flatMap(x=>(x.rom&&x.rom.length)?x.rom:['__prog']))].slice(0,3).map(r=>'<i style="width:6px;height:6px;border-radius:50%;background:'+utFarge(r)+';display:block"></i>').join('');
       celler.push('<button type="button" data-utdag="'+k+'" aria-label="'+d+'. '+UT_MND[mm-1]+(b.length?', '+b.length+' booking'+(b.length>1?'er':''):'')+'" style="all:unset;box-sizing:border-box;cursor:pointer;text-align:center;padding:6px 0;border-radius:var(--r-s);min-height:46px;'+(valgt?'background:var(--brand);color:var(--brand-ink)':k===idag?'background:var(--chip)':'')+'"><b style="font-size:var(--t-m)">'+d+'</b><span style="display:flex;gap:2px;justify-content:center;height:8px;margin-top:2px">'+prikker+'</span></button>')}
     const valgteB=(perDag[u.dag]||[]).slice().sort((a,b)=>utMin(a.fra)-utMin(b.fra)),dd=new Date(u.dag+'T12:00');
     const kommende=alle.filter(b=>(b.dato2||b.dato)>=idag).sort((a,b)=>(a.dato+a.fra).localeCompare(b.dato+b.fra))
@@ -1104,7 +1117,7 @@ function utAsk(id,dato){
     else if(Math.round((Date.parse(d.dato2)-Date.parse(d.dato))/864e5)>60){msg('En booking kan høyst gå over 60 dager.');return}
     if(!d.rom.length){msg('Velg minst ett rom.');return}
     const k=utKonflikt(d,id);
-    if(k.length&&!await bekreft('Dobbeltbooking: '+k.map(x=>(x.tittel||'Utleie')+' '+(x.dato2&&x.dato2>x.dato?utDatoKort(x.dato)+'–'+utDatoKort(x.dato2):x.fra+'–'+x.til)+' ('+(x.rom||[]).join(', ')+')').join('; ')+'. Lagre likevel?',{ok:'Lagre likevel',fare:false}))return;
+    if(k.length&&!await bekreft('Dobbeltbooking: '+k.map(x=>(x.tittel||'Utleie')+' '+(x.dato2&&x.dato2>x.dato?utDatoKort(x.dato)+'–'+utDatoKort(x.dato2):x.fra+'–'+x.til)+' ('+(x.program?'Program'+((x.rom||[]).length?', '+x.rom.join(', '):', rom ikke angitt'):(x.rom||[]).join(', '))+')').join('; ')+'. Lagre likevel?',{ok:'Lagre likevel',fare:false}))return;
     try{const nid=await FB.utSave(id,{...d,by:meEmail()});state.ut.alle=undefined;state.ut.liste=[...(state.ut.liste||[]).filter(x=>x.id!==nid),{id:nid,...d}].sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;state.ut.mnd=d.dato.slice(0,7);dlg.close();state.acc.utleie=true;keep(()=>{});push('Lagret','Bookingen er lagret.');if(dlg.querySelector('#uVarsle').checked)utVarsle(d,!ex).then(t=>{if(t)push('Varsel',t)})}
     catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
@@ -2557,7 +2570,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='26.10.2026 kl. 11:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='26.10.2026 kl. 12:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
