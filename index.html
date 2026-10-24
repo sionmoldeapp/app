@@ -1330,8 +1330,8 @@ function viktigKort(p){
   const open=!!state.open['v_'+p.id];
   return '<div class="viktig'+(open?' open':'')+'" data-viktig="'+esc(p.id)+'" role="button" aria-expanded="'+open+'" tabindex="0" aria-label="Nyhet: '+esc(p.t)+'">'
    +'<div class="vik-ikon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></div>'
-   +'<div class="vik-innhold"><div class="vik-meta"><span><b>Nyheter</b>'+(ago(p)?' · '+esc(ago(p)):'')+'</span><button type="button" class="vik-x" data-viktigx="'+esc(p.id)+'" aria-label="Skjul meldingen">✕</button></div>'
-   +'<div class="vik-tittel">'+esc(p.t)+'</div><div class="vik-tekst'+(p.bh?' rt':'')+'">'+(open?richVis(p):esc(tekst))+'</div></div>'
+   +'<div class="vik-innhold"><div class="vik-meta"><span><b>Nyheter</b>'+(ago(p)?' · '+esc(ago(p)):'')+'</span></div>'
+   +'<div class="vik-tittel">'+esc(p.t)+'</div><div class="vik-tekst'+(p.bh?' rt':'')+'">'+(open?richVis(p):esc(tekst))+'</div>'+(open?'<div class="btns" style="margin-top:12px"><button type="button" class="btn primary vik-lest" data-viktiglest="'+esc(p.id)+'" style="width:auto">Lest</button></div>':'')+'</div>'
    +'<svg class="vik-pil" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>'}
 /* Linjen på «Neste hovedsamling»: hvor lenge til, dag og dato og klokkeslett, for eksempel «Om 3 dager · Søndag 25. okt kl. 12:00». */
 function nesteTid(n){
@@ -2554,7 +2554,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 16:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='26.10.2026 kl. 09:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -3031,6 +3031,7 @@ document.addEventListener('click',async e=>{
   if(c.dataset.t){state.reorder=false;if('openvakter' in c.dataset){state.acc.vakter=true;if(state.shifts===undefined)loadShifts()}state.tab=c.dataset.t;if(state.tab==='news'){markSeen();countViews()}fadeRender()}
   else if(c.id==='bellBtn'){state.tab='news';markSeen();fadeRender()}
   else if(c.dataset.viktigx){viktigSkjul(c.dataset.viktigx)}
+  else if(c.dataset.viktiglest){markLest(c.dataset.viktiglest);viktigSkjul(c.dataset.viktiglest)}
   else if(c.dataset.ev){
     // Arrangementer på Hjem og i Program åpner og lukker seg jevnt (høyde og gjennomsiktighet), i stedet for å sprette opp.
     const id=c.dataset.ev,det=c.parentElement&&c.parentElement.querySelector('.detail');
@@ -3800,16 +3801,16 @@ function viktigApne(id){
   state.open['p_'+id]=true;markLest(id);state.tab='news';state.nf='Alle';state.nyq='';state.reorder=false;fadeRender();
   setTimeout(()=>{const b=document.querySelector('[data-postopen="'+id+'"]');if(b)b.scrollIntoView({block:'center',behavior:'smooth'})},520)}
 { let k=null,x0=0,y0=0,dx=0,drar=false,sperr=false;
-  document.addEventListener('pointerdown',e=>{const v=e.target.closest('.viktig');if(!v||e.target.closest('.vik-x'))return;k=v;x0=e.clientX;y0=e.clientY;dx=0;drar=false});
+  document.addEventListener('pointerdown',e=>{const v=e.target.closest('.viktig');if(!v||e.target.closest('.vik-x,.vik-lest'))return;k=v;x0=e.clientX;y0=e.clientY;dx=0;drar=false});
   document.addEventListener('pointermove',e=>{if(!k)return;const ddx=e.clientX-x0,ddy=e.clientY-y0;
     if(!drar&&Math.abs(ddx)>12&&Math.abs(ddx)>Math.abs(ddy)*1.5){drar=true;try{k.setPointerCapture(e.pointerId)}catch(x){}}
     if(drar){dx=ddx;k.style.transform='translateX('+dx+'px)';k.style.opacity=String(Math.max(.2,1-Math.abs(dx)/260))}});
   const slipp=()=>{if(!k)return;const v=k;k=null;
     if(drar){sperr=true;setTimeout(()=>{sperr=false},350);
-      if(Math.abs(dx)>90){const id=v.dataset.viktig;v.style.transition='transform .22s ease,opacity .22s ease';v.style.transform='translateX('+(dx>0?'':'-')+'110%)';v.style.opacity='0';setTimeout(()=>{lsSet('sm-viktig-skjult',String(id));keep(()=>{})},200)}
+      if(false&&Math.abs(dx)>90){const id=v.dataset.viktig;v.style.transition='transform .22s ease,opacity .22s ease';v.style.transform='translateX('+(dx>0?'':'-')+'110%)';v.style.opacity='0';setTimeout(()=>{lsSet('sm-viktig-skjult',String(id));keep(()=>{})},200)}
       else{v.style.transition='transform .2s ease,opacity .2s ease';v.style.transform='';v.style.opacity='';setTimeout(()=>{v.style.transition=''},220)}}};
   document.addEventListener('pointerup',slipp);document.addEventListener('pointercancel',slipp);
-  document.addEventListener('click',e=>{const v=e.target.closest('.viktig');if(!v||e.target.closest('.vik-x,a'))return;if(sperr){e.preventDefault();e.stopPropagation();return}viktigVis(v.dataset.viktig)},true);
+  document.addEventListener('click',e=>{const v=e.target.closest('.viktig');if(!v||e.target.closest('.vik-x,.vik-lest,a'))return;if(sperr){e.preventDefault();e.stopPropagation();return}viktigVis(v.dataset.viktig)},true);
   document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('viktig')){e.preventDefault();viktigVis(e.target.dataset.viktig)}}) }
 /* Kortet «Neste hovedsamling» på Hjem åpner Program når man trykker på det. */
 { const til=k=>{if(state.reorder)return;state.tab=k.dataset.t;
