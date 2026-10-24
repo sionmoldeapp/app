@@ -167,7 +167,7 @@ service cloud.firestore {
         && 'vertskap' in get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []));
       allow delete: if utleieTilgang();
       allow create, update: if utleieTilgang()
-        && request.resource.data.keys().hasOnly(['tittel', 'rom', 'dato', 'dato2', 'tider', 'gjester', 'servering', 'fra', 'til', 'leier', 'kontakt', 'pris', 'status', 'notat', 'by', 'ms'])
+        && request.resource.data.keys().hasOnly(['tittel', 'rom', 'dato', 'dato2', 'tider', 'gjester', 'servering', 'remindH', 'fra', 'til', 'leier', 'kontakt', 'pris', 'status', 'notat', 'by', 'ms'])
         && request.resource.data.tittel is string && request.resource.data.tittel.size() <= 100
         && request.resource.data.rom is list && request.resource.data.rom.size() >= 1 && request.resource.data.rom.size() <= 10
         && request.resource.data.dato is string && request.resource.data.dato.size() == 10
@@ -175,6 +175,7 @@ service cloud.firestore {
         && (!('tider' in request.resource.data) || (request.resource.data.tider is list && request.resource.data.tider.size() <= 62))
         && (!('gjester' in request.resource.data) || (request.resource.data.gjester is number && request.resource.data.gjester >= 0 && request.resource.data.gjester <= 2000))
         && (!('servering' in request.resource.data) || (request.resource.data.servering is string && request.resource.data.servering.size() <= 200))
+        && (!('remindH' in request.resource.data) || (request.resource.data.remindH is number && request.resource.data.remindH >= 0 && request.resource.data.remindH <= 720))
         && request.resource.data.fra is string && request.resource.data.fra.size() == 5
         && request.resource.data.til is string && request.resource.data.til.size() == 5
         && request.resource.data.leier is string && request.resource.data.leier.size() <= 100
