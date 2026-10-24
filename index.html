@@ -466,7 +466,11 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .eyebrow{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)}
 .next h2{font-size:34px;margin:4px 0 6px}
 .next .meta{opacity:.9;font-size:var(--t-b)}
-.chat{position:fixed;inset:0;z-index:40;display:flex;justify-content:center;background:rgba(5,20,40,.45)}
+.chat{position:fixed;inset:0;z-index:5;display:flex;justify-content:center;background:var(--bg)}
+.chatkort{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;color:inherit;font:inherit;padding:0;cursor:pointer}
+.chatkort .ctx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.chatkort .cn{font-weight:700;font-size:var(--t-l)}
+.chatkort .cp{font-size:var(--t-m);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chat[hidden]{display:none}
 .chat .cw{width:100%;max-width:560px;height:100%;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
 .chd{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
@@ -678,7 +682,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 label.f{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:var(--t-m)}
 input,textarea,select{font:inherit;font-size:var(--t-b);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--r-s);padding:10px;width:100%}
 .form{display:flex;flex-direction:column;gap:12px}
-nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
+nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
 /* Android-PWA: systemlinjen nederst (navigasjonsfeltet/bevegelsesstreken) kan ligge over appen uten at telefonen oppgir sikker sone. Gi fanene ekstra plass nederst. */
 @media (display-mode:standalone) and (pointer:coarse){nav.tabs{padding-bottom:calc(6px + max(env(safe-area-inset-bottom,0px),8px))}main{padding-bottom:118px}}
 nav.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:var(--t-xs);font-weight:600;color:var(--muted);border-radius:var(--r-s)}
@@ -808,7 +812,7 @@ function meTall(){
   const meg=meEmail(),meld=(state.threads||[]).filter(t=>(t.unread||[]).includes(meg)).length;
   const vakt=Object.keys(state.reqs||{}).reduce((n,g)=>n+(kanStyre(g)?((state.reqs[g]||[]).length):0),0);
   const lr=lrTilgang()?lrNye().length:0;
-  return {meld,vakt,lr,sum:vakt+lr}}
+  return {meld,vakt,lr,sum:meld+vakt+lr}}
 const nyhUlest=()=>posts.filter(p=>ulest(p)&&!postSkjult(p)).length;
 const bdg=n=>n>0?'<span class="bdg" role="status" aria-label="'+n+' å sjekke">'+n+'</span>':'';
 let sistFane=null;
@@ -818,7 +822,6 @@ function nyhMarkerSett(){
   try{nyhFiltrert(posts.filter(p=>!postSkjult(p))).slice(0,state.nyhN||NYH_SIDE).forEach(p=>{if(p.ms&&!(p.m&&!state.member)&&(!state.nyhInn||p.ms<=state.nyhInn))lest[p.id]=1});lagreLest()}catch(e){}}
 function drawTabs(){try{settBred()}catch(e){}
   if(sistFane==='news'&&state.tab!=='news')nyhMarkerSett();if(state.tab==='news'&&sistFane!=='news')state.nyhInn=Date.now();sistFane=state.tab;const knapper=TABS.map(([k,l,i])=>`<button data-t="${k}" ${state.tab===k?'aria-current="page"':''}><svg viewBox="0 0 24 24">${ICON[i]}</svg>${l}${k==='me'&&meTall().sum>0?`<span class="tab-bdg" aria-label="${meTall().sum} å sjekke">${meTall().sum}</span>`:''}${k==='news'&&state.tab!=='news'&&nyhUlest()>0?`<span class="tab-bdg" aria-label="${nyhUlest()} uleste nyheter">${nyhUlest()}</span>`:''}</button>`);
-  if(state.user&&state.member){const nC=chatUlest();knapper.splice(knapper.length-1,0,`<button data-chattab aria-label="Chat${nC?', '+nC+' uleste':''}"><svg viewBox="0 0 24 24">${ICON.chat}</svg>Chat${nC>0?`<span class="tab-bdg" aria-label="${nC} uleste">${nC}</span>`:''}</button>`)}
   $('#tabs').innerHTML=knapper.join('')}
 
 function when(d){const diff=Math.round((new Date(d).setHours(0,0,0,0)-new Date(now).setHours(0,0,0,0))/864e5);
@@ -2456,6 +2459,12 @@ async function loadRoles(){
    privat samtale og svarer der) eller til én person. Ingen nye regler: bruker de samme reglene som privat beskjed (kind dm). */
 state.chat=state.chat||{vis:false,vy:'liste',id:null,ny:null,msgs:[],unsub:null,sender:false};
 const chatUlest=()=>(state.threads||[]).filter(t=>(t.unread||[]).includes(meEmail())).length;
+/* Kortet øverst under Mer som åpner chatten (viser antall uleste og siste melding). */
+function chatKort(){
+  if(!state.user||!state.member)return '';
+  const meg=meEmail(),l=state.threads,n=chatUlest(),sist=l&&l[0];
+  const under=l===undefined?'Henter samtaler …':n>0?n+(n===1?' ulest samtale':' uleste samtaler'):sist?esc((sist.lastBy===meg?'Du: ':chatNavn(sist,meg)+': ')+(sist.last||'')):chatKan()?'Skriv til hele gruppen eller en enkeltperson':'Ingen samtaler ennå';
+  return '<div class="card"><button type="button" class="chatkort" data-chattab aria-label="Åpne chat'+(n?', '+n+' uleste':'')+'"><span class="cav" style="background:var(--brand);color:var(--brand-ink)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+ICON.chat+'</svg></span><span class="ctx"><span class="cn">Chat</span><span class="cp">'+under+'</span></span>'+(n>0?'<span class="bdg" style="margin:0">'+n+'</span>':'<span aria-hidden="true" style="font-size:22px;color:var(--muted)">›</span>')+'</button></div>'}
 const chatKan=()=>!!(state.user&&state.member&&(state.admin||isLeader()));
 const chatNavn=(t,meg)=>t.from===meg?(t.kind==='dm'?(t.toName||''):(t.roleName||'')):(t.fromName||'');
 const chatUnder=(t,meg)=>t.kind==='dm'?(t.roleName||''):(t.from===meg?'Til de ansvarlige':'Ansvarsområde: '+(t.roleName||''));
@@ -2466,6 +2475,11 @@ const chatDg=ms=>Math.round((new Date().setHours(0,0,0,0)-new Date(ms).setHours(
 function chatTid(ms){if(!ms)return '';const d=new Date(ms),dg=chatDg(ms);return dg<=0?chatKl(ms):dg===1?'I går':dg<7?cap(DAYS[d.getDay()]).slice(0,3):d.getDate()+'. '+MON[d.getMonth()].slice(0,3)}
 function chatDag(ms){const d=new Date(ms),dg=chatDg(ms);return dg<=0?'I dag':dg===1?'I går':cap(DAYS[d.getDay()])+' '+d.getDate()+'. '+MON[d.getMonth()]}
 const chatTraad=id=>(state.threads||[]).find(t=>t.id===id);
+function chatPlasser(){
+  const e=document.getElementById('chat'),n=document.getElementById('tabs');if(!e||!n)return;const r=n.getBoundingClientRect();
+  if(document.documentElement.dataset.bred==='1'){e.style.left=r.width+'px';e.style.bottom='0px'}
+  else{e.style.left='0px';e.style.bottom=Math.max(0,innerHeight-r.top)+'px'}}
+addEventListener('resize',()=>{if(state.chat.vis)chatPlasser()});
 function chatEl(){let e=document.getElementById('chat');if(!e){e=document.createElement('div');e.id='chat';e.className='chat';e.hidden=true;e.innerHTML='<div class="cw" role="dialog" aria-modal="true" aria-label="Chat"></div>';document.body.appendChild(e)}return e}
 const chatW=()=>chatEl().querySelector('.cw');
 function chatStoppMsgs(){const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}c.unsub=null}c.msgs=[]}
@@ -2478,14 +2492,15 @@ function loadThreads(){
     state.thrUnsub=FB.watchThreads(meEmail(),l=>{state.threads=l;state.meldMsg='';chatTraadEndret();res()},e=>{state.threads=state.threads||[];state.meldMsg='Kunne ikke hente samtaler ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?';chatTraadEndret();res()})});
   return state.thrPromise}
 function chatTraadEndret(){
-  try{drawTabs()}catch(e){}
+  try{drawTabs();badge()}catch(e){}
+  try{const k=document.querySelector('.chatkort');if(k){const card=k.closest('.card');if(card)card.outerHTML=chatKort()}}catch(e){}
   try{const c=state.chat;if(!c.vis)return;
     if(c.vy==='liste'){const l=document.getElementById('cListe');if(l)l.innerHTML=chatListeInn()}
     else if(c.vy==='samtale'&&c.id)chatLest()}catch(e){}}
 function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unread||[]).includes(meg)){t.unread=t.unread.filter(x=>x!==meg);FB.markThreadRead(t.id).catch(()=>{});try{drawTabs()}catch(e){}}}
 function chatApne(id){
   if(!FB||!state.user||!state.member)return;
-  const c=state.chat;c.vis=true;chatEl().hidden=false;document.body.style.overflow='hidden';
+  const c=state.chat;c.vis=true;chatEl().hidden=false;chatPlasser();document.body.style.overflow='hidden';
   loadThreads();
   if(id){chatVent(id,()=>chatSamtale(id));chatListe()}else chatListe()}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
@@ -2556,7 +2571,8 @@ async function chatSendTekst(tekst){
     chatListe()}}
 document.addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('button');if(!b)return;const d=b.dataset;
-  if('chattab' in d){state.chat.vis?chatLukk():chatApne()}
+  if('chattab' in d){chatApne()}
+  else if('t' in d&&state.chat.vis)chatLukk();
   else if('chatlukk' in d)chatLukk();
   else if('chatback' in d){const c=state.chat;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()}
   else if('chatnyv' in d)chatNyVelg();
@@ -2818,7 +2834,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 09:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 10:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -3151,7 +3167,7 @@ function megKort(){
   if(!deler.length)return '';
   return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, innstillinger, vakter og møteverktøy. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
 const ME_KORT={
-  meg:['Meg',()=>megCard()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],lr:['Saker til lederrådet',()=>lrCard()],utleie:['Utleie',()=>state.admin?'':utleieCard()],
+  chat:['Chat',()=>chatKort()],meg:['Meg',()=>megCard()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],lr:['Saker til lederrådet',()=>lrCard()],utleie:['Utleie',()=>state.admin?'':utleieCard()],
   ansvar:['Ansvarsområder',()=>ansvarCard()],
   personvern:['Personvern',()=>personvernCard()]};
 /* Kortene under Mer og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
@@ -3160,7 +3176,7 @@ const ov=()=>state.tab==='home'?'home':'me';
 const ordKort=v=>v==='home'?homeDeler():ME_KORT;
 function ordRekke(v,kort){
   let lagret=state[ORD[v].felt]||[];if(!lagret.length)try{lagret=JSON.parse(localStorage.getItem(ORD[v].ls)||'[]')}catch(e){}
-  const alle=Object.keys(kort);let l=lagret.filter(k=>alle.includes(k));if(v==='me'&&alle.includes('meg')&&!l.includes('meg'))l=['meg',...l];return [...l,...alle.filter(k=>!l.includes(k))]}
+  const alle=Object.keys(kort);let l=lagret.filter(k=>alle.includes(k));if(v==='me')['meg','chat'].forEach(k=>{if(alle.includes(k)&&!l.includes(k))l=[k,...l]});return [...l,...alle.filter(k=>!l.includes(k))]}
 function ordSynlige(v){const kort=ordKort(v);return ordRekke(v,kort).map(k=>[k,kort[k][1](),kort[k][0]]).filter(x=>x[1]&&x[1].trim())}
 function ordHtml(v){
   const vis=ordSynlige(v);
