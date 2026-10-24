@@ -1363,6 +1363,11 @@ function nesteTid(n){
   const w=new Date(n.w),dg=Math.round((new Date(w).setHours(0,0,0,0)-todayStart)/864e5);
   const rel=dg<=0?'I dag':dg===1?'I morgen':'Om '+dg+' dager';
   return rel+' · '+cap(DAYS[w.getDay()])+' '+w.getDate()+'. '+MON[w.getMonth()]+(n.time?' kl. '+n.time:'')}
+/* Nyhet-plassen på Hjem deles av nyheter, Pastorens hilsen og påminnelser: den nyeste ULESTE vises. Trykker du Lest (eller leser den under Nyheter), kommer neste uleste, til alt er lest. */
+function hjemNyhet(){
+  const kand=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)&&ulest(p)),v=sisteVarsel();
+  if(v&&v.ms>lestFra&&!lest['varsel'+v.ms]&&!posts.some(p=>p.t===v.t&&Math.abs((p.ms||0)-v.ms)<2*36e5))kand.push({id:'varsel'+v.ms,t:v.t,b:v.b,ms:v.ms,m:false,pseudo:true});
+  return kand.sort((x,y)=>(y.ms||0)-(x.ms||0))[0]||null}
 function homeDeler(){
   const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome),fast=nextFast();
   /* «Neste hovedsamling» er neste søndagsmøte eller neste arrangement i kategoriene Møter, Stevne eller Happeninger, den som kommer først. */
@@ -1370,7 +1375,7 @@ function homeDeler(){
   {const fn=fast.filter(f=>/søndagsmøte/i.test(f.fast.title)&&!(f.ex&&f.ex.k==='avlyst')).sort((x,y)=>x.w-y.w)[0];
     if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:inf.place}}}
   const wk=[...vis.slice(0,5).map(e=>({ev:e,w:e.w,id:e.id})),...fast.map(f=>({fast:f.fast,w:f.w,ex:f.ex,id:fastId(f.fast,f.w)}))].filter(x=>!(n&&x.id===n.id)).sort((a,b)=>a.w-b.w).slice(0,4);
-  let post=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)).sort((x,y)=>(y.ms||0)-(x.ms||0))[0];
+  const post=hjemNyhet();
   return {
    neste:['Neste hovedsamling',()=>(n?`<div class="card next" data-t="prog" data-nid="${esc(String(n.id))}" role="link" tabindex="0" style="cursor:pointer"><div class="eyebrow">Neste hovedsamling</div><h2>${n.t}</h2>
    <div class="meta">${nesteTid(n)}</div></div>`
@@ -1378,7 +1383,7 @@ function homeDeler(){
    gruppebesk:['Send beskjed til gruppa',()=>gruppeBeskjedCard()],
    velkomst:['Kom i gang',()=>welcomeCard()],
    besok:['Logg inn for å få mer',()=>visitorCard()],
-   viktig:['Nyheter',()=>((!state.fast||String(post&&post.id).startsWith('varsel'))&&UI.vk!==false&&post&&lsGet('sm-viktig-skjult')!==String(post.id)?viktigKort(post):'')],
+   viktig:['Nyheter',()=>((!state.fast||String(post&&post.id).startsWith('varsel'))&&UI.vk!==false&&post?viktigKort(post):'')],
    vakter:['Dine vakter',()=>myShiftsCard()],
    snart:['Kommer snart',()=>(wk.length?`<div><h2 style="margin-bottom:10px">Kommer snart</h2><div class="list">${dagListe(wk)}</div><button type="button" class="btn" data-t="prog" style="margin-top:10px">Se hele programmet</button></div>`:'')],
    sommer:['Nyhetsbrev Sommerstevne',()=>UI.sv===false?'':svCard()],
@@ -2581,7 +2586,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 11:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 12:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -3853,14 +3858,14 @@ let first=true;
     e.preventDefault();d.close(e.submitter&&e.submitter.value!==undefined?e.submitter.value:'')}) }
 /* «Viktig»-kortet: trykk åpner meldingen i Nyheter, ✕ eller sveip til siden skjuler det til en ny melding kommer. */
 function viktigSkjul(id){
-  lsSet('sm-viktig-skjult',String(id));
+  markLest(id);
   const k=document.querySelector('.viktig');
   if(!k||matchMedia('(prefers-reduced-motion:reduce)').matches){keep(()=>{});return}
   const h=k.offsetHeight,a=k.animate({opacity:[getComputedStyle(k).opacity,0],height:[h+'px','0px'],paddingTop:['14px','0px'],paddingBottom:['14px','0px'],marginBottom:['0px','-12px']},{duration:260,easing:'ease'});
   k.style.overflow='hidden';a.onfinish=()=>keep(()=>{})}
 function viktigVis(id){
   const k=document.querySelector('.viktig'),h0=k?k.offsetHeight:0,kk='v_'+id;
-  state.open[kk]=!state.open[kk];if(state.open[kk])markLest(id);
+  state.open[kk]=!state.open[kk];   // åpne på Hjem merker ikke som lest: det gjør bare Lest-knappen eller å lese under Nyheter
   keep(()=>{});
   const n=document.querySelector('.viktig');
   if(!n||!h0||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
