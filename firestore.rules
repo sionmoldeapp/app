@@ -111,8 +111,9 @@ service cloud.firestore {
     // (bare done og doneMs kan endres). Forfatteren og administratorer sletter.
     match /lrsaker/{id} {
       allow read: if inGroup('lederradet');
-      allow create: if inGroup('lederradet') && request.resource.data.keys().hasOnly(['t', 'bh', 'name', 'by', 'ms', 'done'])
+      allow create: if inGroup('lederradet') && request.resource.data.keys().hasOnly(['t', 'tittel', 'bh', 'name', 'by', 'ms', 'done'])
         && request.resource.data.t is string && request.resource.data.t.size() > 0 && request.resource.data.t.size() <= 2000
+        && (!('tittel' in request.resource.data) || (request.resource.data.tittel is string && request.resource.data.tittel.size() <= 100))
         && (!('bh' in request.resource.data) || (request.resource.data.bh is string && request.resource.data.bh.size() <= 8000))
         && request.resource.data.name is string && request.resource.data.name.size() <= 60
         && request.resource.data.by == request.auth.token.email && request.resource.data.ms is number && request.resource.data.done == false;

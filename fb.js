@@ -149,7 +149,7 @@ const FB={
     svarSett:(pid,o)=>{const me=String(auth.currentUser.email).toLowerCase();return S.setDoc(S.doc(db,'posts',String(pid),'svar',me),{by:me,name:String(o.name||'').slice(0,60),k:o.k,t:String(o.t||'').slice(0,140),ms:Date.now()})},
     svarSlett:pid=>S.deleteDoc(S.doc(db,'posts',String(pid),'svar',String(auth.currentUser.email).toLowerCase())),
     async lrList(){const s=await S.getDocs(S.query(S.collection(db,'lrsaker'),S.orderBy('ms','desc'),S.limit(100)));return s.docs.map(d=>({id:d.id,...d.data()}))},
-    lrAdd:d=>S.addDoc(S.collection(db,'lrsaker'),{t:String(d.t).slice(0,2000),...(d.bh?{bh:String(d.bh).slice(0,8000)}:{}),name:String(d.name||'').slice(0,60),by:auth.currentUser.email.toLowerCase(),ms:Date.now(),done:false}),
+    lrAdd:d=>S.addDoc(S.collection(db,'lrsaker'),{t:String(d.t).slice(0,2000),...(d.tittel?{tittel:String(d.tittel).slice(0,100)}:{}),...(d.bh?{bh:String(d.bh).slice(0,8000)}:{}),name:String(d.name||'').slice(0,60),by:auth.currentUser.email.toLowerCase(),ms:Date.now(),done:false}),
     lrDone:(id,v)=>sl(S.updateDoc(S.doc(db,'lrsaker',id),{done:!!v,doneMs:v?Date.now():0})),
     lrDel:id=>sl(S.deleteDoc(S.doc(db,'lrsaker',id))),
     // Kontaktinfo («Finn frem» på Hjem): alle kan lese, administrator endrer.
