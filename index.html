@@ -1981,9 +1981,9 @@ function notesInner(){
 function verktoyCard(){return subSorter('verktoy',verktoyKort())}
 function verktoyKort(){
   if(!state.user||!state.member)return '';
-  const l=state.notes,n=l?l.length:0,o=OPPT.liste&&OPPT.liste.length?OPPT.liste.length:0;
+  const l=state.notes,n=l?l.length:0,nl=(OPPT.liste||[]).filter(x=>(x.type||'lyd')==='lyd').length,nv=(OPPT.liste||[]).filter(x=>x.type==='video').length;
   return '<details class="card acc" data-acc="verktoy" '+(state.acc.verktoy?'open':'')+'><summary><h2>Møteverktøy</h2></summary><p class="small" style="margin:0 0 4px">Notater og opptak fra møtene. Bare du ser dem.</p>'
-   +profSub('vnotat','Møtenotater'+(l?' ('+n+')':''),notesInner())+profSub('vopptak','Lyd- og videoopptak'+(o?' ('+o+')':''),opptInner())+'</details>'}
+   +profSub('vnotat','Møtenotater'+(l?' ('+n+')':''),notesInner())+profSub('vlyd','Lydopptak'+(nl?' ('+nl+')':''),opptInner('lyd'))+profSub('vvideo','Videoopptak'+(nv?' ('+nv+')':''),opptInner('video'))+'</details>'}
 function noteRows(l){
   return l.map(x=>'<div class="r"><button type="button" data-noteopen="'+esc(x.id)+'" style="display:flex;width:100%;gap:8px;align-items:center;background:none;border:0;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer">'+(x.img?'<img class="nminitur" src="'+x.img+'" alt="">':'')+'<span class="grow"><b>'+esc(x.title||'Uten tittel')+'</b><span class="small" style="display:block">'+esc(noDato(x.date))+(x.speaker?' · '+esc(x.speaker):'')+'</span></span><span class="small">Åpne</span></button></div>').join('')||'<p class="small">Ingen notater ennå.</p>'}
 function noteDelAsk(id){
@@ -2580,7 +2580,7 @@ function atAsk(email){
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='26.10.2026 kl. 17:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 09:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2760,28 +2760,30 @@ function opptApne(c,id){
   const slutt=e=>{if(pts.delete(e.pointerId)&&pts.size===0)setTimeout(()=>{pinch=false},300)};
   document.addEventListener('pointerup',slutt);document.addEventListener('pointercancel',slutt);
   document.addEventListener('click',e=>{const f=e.target.closest&&e.target.closest('#opptVf');if(!f||pinch)return;if(OPPT.state==='klar')opptBegin()}) }
-document.addEventListener('input',e=>{if(e.target.id==='opptTit')OPPT.tittel=e.target.value;else if(e.target.id==='opptTal')OPPT.taler=e.target.value;else if(e.target.id==='opptZoom')opptSetZoom(+e.target.value)});
+document.addEventListener('input',e=>{if(/^opptTit/.test(e.target.id||''))OPPT.tittel=e.target.value;else if(/^opptTal/.test(e.target.id||''))OPPT.taler=e.target.value;else if(e.target.id==='opptZoom')opptSetZoom(+e.target.value)});
 document.addEventListener('change',async e=>{const t=e.target,id=t.dataset&&(t.dataset.opptt||t.dataset.opptp);if(!id)return;
   const o=(OPPT.liste||[]).find(x=>String(x.id)===String(id));if(!o)return;
   if(t.dataset.opptt)o.tittel=t.value.trim().slice(0,80);else o.taler=t.value.trim().slice(0,80);
   try{await oLagre(o)}catch(x){push('Kunne ikke lagre endringen','Prøv igjen.')}
   const rad=document.querySelector('[data-opptapne="'+o.id+'"]');if(rad){const b=rad.querySelector('b'),sm=rad.querySelector('.small');if(b)b.textContent=oTittel(o);if(sm)sm.textContent=o.taler?o.taler:'Taler ikke oppgitt'}});
-function opptInner(){
+function opptInner(typ){
   if(OPPT.liste===null){OPPT.liste=[];opptLastListe()}
-  let h='<p class="small" style="margin:0 0 10px">Ta opp lyd eller video i appen. Opptaket lagres på telefonen din, og med «Send til Google Drive» velger du Drive i telefonens delingsmeny. Ingenting går til menigheten. Ta bare opp når alle som snakker vet om det og har sagt ja.</p>';
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><label class="f">Tittel<input id="opptTit" maxlength="80" value="'+esc(OPPT.tittel||'')+'" placeholder="Tema (valgfritt)"></label><label class="f">Taler<input id="opptTal" maxlength="80" value="'+esc(OPPT.taler||'')+'" placeholder="Hvem taler?"></label></div>';
+  let h='<p class="small" style="margin:0 0 10px">'+(typ==='video'?'Film med kameraet i appen. Kameraet åpnes først, og opptaket starter ikke før du trykker Start opptak eller trykker i bildet.':'Ta opp lyd i appen.')+' Opptaket lagres på telefonen din, og med «Send til Google Drive» velger du Drive i telefonens delingsmeny. Ingenting går til menigheten. Ta bare opp når alle som snakker vet om det og har sagt ja.</p>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><label class="f">Tittel<input id="opptTit_'+typ+'" maxlength="80" value="'+esc(OPPT.tittel||'')+'" placeholder="Tema (valgfritt)"></label><label class="f">Taler<input id="opptTal_'+typ+'" maxlength="80" value="'+esc(OPPT.taler||'')+'" placeholder="Hvem taler?"></label></div>';
   const vfelt=klar=>'<div id="opptVf" style="position:relative;overflow:hidden;border-radius:var(--r-m);background:#000;margin-top:10px;touch-action:none"><video id="opptForh" muted playsinline autoplay style="width:100%;max-height:50vh;display:block;transform-origin:center;pointer-events:none"></video>'
     +(klar?'<div style="position:absolute;inset:0;display:grid;place-items:center;pointer-events:none"><span style="background:rgba(0,0,0,.55);color:#fff;padding:8px 14px;border-radius:99px;font-size:var(--t-m);font-weight:600">Trykk i bildet for å starte opptak</span></div>'
       :'<span style="position:absolute;top:10px;left:10px;display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.55);color:#fff;padding:4px 10px;border-radius:99px;font-size:var(--t-s);pointer-events:none"><i style="width:9px;height:9px;border-radius:50%;background:#e5484d;display:block"></i>Tar opp</span>')+'</div>';
   const zoomUI=()=>'<div class="btns" style="align-items:center;margin-top:8px"><span class="small">Zoom <b id="opptZoomT">'+String(OPPT.z||1).replace('.',',')+'×</b></span>'+[1,2,3].filter(n=>n<=(OPPT.zmax||4)).map(n=>'<button type="button" class="btn" data-opptzoom="'+n+'">'+n+'×</button>').join('')
     +'<input type="range" id="opptZoom" min="1" max="'+(OPPT.zmax||4)+'" step="0.1" value="'+(OPPT.z||1)+'" aria-label="Zoom" style="flex:1;min-width:120px"></div><p class="small" style="margin:4px 0 0">Du kan også knipe i bildet for å zoome.'+(OPPT.hw?'':' (Digital zoom)')+'</p>';
-  if(OPPT.state==='klar')h+='<div class="btns" style="align-items:center"><button type="button" class="btn primary" data-opptbegin style="width:auto">Start opptak</button><button type="button" class="btn" data-opptavbryt>Avbryt</button></div><p class="small" style="margin:6px 0 0">Kameraet er klart. Opptaket starter først når du trykker Start opptak eller trykker i bildet.</p>'+vfelt(true)+zoomUI();
-  else if(OPPT.state==='opptak')h+='<div class="btns" style="align-items:center"><button type="button" class="btn danger" data-opptstopp>Stopp opptak</button><b id="opptTid" style="font-variant-numeric:tabular-nums">0:00</b><span class="small">Hold skjermen på mens du tar opp.</span></div>'+(OPPT.type==='video'?vfelt(false)+zoomUI()+'<p class="small" style="margin:6px 0 0">Video stopper av seg selv etter 15 minutter.</p>':'');
-  else h+='<div class="btns"><button type="button" class="btn primary" data-opptstart style="width:auto">Start lydopptak</button><button type="button" class="btn primary" data-opptvideo style="width:auto">Åpne kamera for video</button></div>';
+  if(OPPT.state==='klar'&&OPPT.type===typ)h+='<div class="btns" style="align-items:center"><button type="button" class="btn primary" data-opptbegin style="width:auto">Start opptak</button><button type="button" class="btn" data-opptavbryt>Avbryt</button></div><p class="small" style="margin:6px 0 0">Kameraet er klart. Opptaket starter først når du trykker Start opptak eller trykker i bildet.</p>'+vfelt(true)+zoomUI();
+  else if(OPPT.state==='opptak'&&OPPT.type===typ)h+='<div class="btns" style="align-items:center"><button type="button" class="btn danger" data-opptstopp>Stopp opptak</button><b id="opptTid" style="font-variant-numeric:tabular-nums">0:00</b><span class="small">Hold skjermen på mens du tar opp.</span></div>'+(OPPT.type==='video'?vfelt(false)+zoomUI()+'<p class="small" style="margin:6px 0 0">Video stopper av seg selv etter 15 minutter.</p>':'');
+  else if(OPPT.state!=='ledig'&&OPPT.state!=='sender'&&OPPT.type!==typ)h+='<p class="small" role="status">Et '+(OPPT.type==='video'?'videoopptak':'lydopptak')+' er i gang eller klart. Avslutt det først.</p>';
+  else h+='<div class="btns">'+(typ==='video'?'<button type="button" class="btn primary" data-opptvideo style="width:auto">Åpne kamera for video</button>':'<button type="button" class="btn primary" data-opptstart style="width:auto">Start lydopptak</button>')+'</div>';
   h+='<div class="btns" style="margin-top:8px;align-items:center"><button type="button" class="btn" data-opptfoto>Ta bilde</button>'+(OPPT.bilde?'<span class="opptmini" style="width:44px;height:44px"><img src="'+OPPT.bilde+'" alt="Bilde som følger neste opptak"></span><button type="button" class="btn" data-opptfotox>Fjern bildet</button>':'<span class="small">Bildet følger opptaket.</span>')+'</div>';
-  if(OPPT.msg)h+='<p class="small" role="status" style="margin:10px 0 0">'+esc(OPPT.msg)+'</p>';
-  if(OPPT.feil)h+='<p class="small" role="alert" style="margin:10px 0 0;color:#b3261e">'+esc(OPPT.feil)+'</p>';
-  if(OPPT.liste&&OPPT.liste.length){h+='<h3 style="margin:16px 0 6px;font-size:var(--t-b)">Mine opptak ('+OPPT.liste.length+')</h3><div class="list">'+OPPT.liste.map(o=>{
+  const L=(OPPT.liste||[]).filter(o=>(o.type||'lyd')===typ),meg=OPPT.type===typ;
+  if(OPPT.msg&&meg)h+='<p class="small" role="status" style="margin:10px 0 0">'+esc(OPPT.msg)+'</p>';
+  if(OPPT.feil&&meg)h+='<p class="small" role="alert" style="margin:10px 0 0;color:#b3261e">'+esc(OPPT.feil)+'</p>';
+  if(L.length){h+='<h3 style="margin:16px 0 6px;font-size:var(--t-b)">'+(typ==='video'?'Mine videoer':'Mine lydopptak')+' ('+L.length+')</h3><div class="list">'+L.map(o=>{
     const id=String(o.id),open=OPPT.apen===id,spiller=String(OPPT.spill)===id&&OPPT.urls[o.id];
     return '<div class="item '+(open?'open':'')+'"><button type="button" data-opptapne="'+id+'" aria-expanded="'+open+'"><span class="opptmini">'+(o.img?'<img src="'+o.img+'" alt="">':(o.type==='video'?VIDEO_IKON:BILDE_IKON))+'</span>'
       +'<div class="grow"><b>'+esc(oTittel(o))+'</b><span class="small">'+esc(o.taler?o.taler:'Taler ikke oppgitt')+'</span></div><span class="tag">'+(o.type==='video'?'Video':'Lyd')+'</span></button>'
