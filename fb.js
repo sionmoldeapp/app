@@ -55,8 +55,8 @@ const FB={
     async myPrefs(email){try{const s=await S.getDoc(S.doc(db,'userPrefs',email));return s.exists()?s.data():null}catch(e){return null}},
     setPrefSub:(email,json)=>S.setDoc(S.doc(db,'userPrefs',email),{suborder:String(json).slice(0,1500)},{merge:true}),
     setPrefOrder:(email,felt,list)=>(felt==='meorder'||felt==='homeorder')?S.setDoc(S.doc(db,'userPrefs',email),{[felt]:list.slice(0,20).map(x=>String(x).slice(0,20))},{merge:true}):Promise.resolve(),
-    async myProfile(email){try{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()?{name:s.data().name||'',muted:s.data().muted||[]}:null}catch(e){return null}},
-    setProfile:(email,d)=>S.updateDoc(S.doc(db,'members',email),d),
+    async myProfile(email,admin){try{const s=await S.getDoc(S.doc(db,admin?'admins':'members',email));return s.exists()?{name:s.data().name||'',muted:s.data().muted||[]}:null}catch(e){return null}},
+    setProfile:(email,d,admin)=>S.updateDoc(S.doc(db,admin?'admins':'members',email),d),
     async deleteSelf(password){
       const u=auth.currentUser,email=u.email.toLowerCase();
       await A.reauthenticateWithCredential(u,A.EmailAuthProvider.credential(u.email,password));
@@ -76,7 +76,7 @@ const FB={
     async exportMine(){
       const u=auth.currentUser,email=u.email.toLowerCase(),o={eksportert:new Date().toISOString(),epost:email};
       const prøv=async f=>{try{return await f()}catch(e){return null}};
-      o.profil=await prøv(async()=>{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()?s.data():null});
+      o.profil=await prøv(async()=>{let s=await S.getDoc(S.doc(db,'members',email));if(!s.exists())s=await S.getDoc(S.doc(db,'admins',email));return s.exists()?s.data():null});
       o.notater=await prøv(async()=>(await S.getDocs(S.collection(db,'members',email,'notes'))).docs.map(d=>({id:d.id,...d.data()})));
       o.innstillinger=await prøv(async()=>{const s=await S.getDoc(S.doc(db,'userPrefs',email));return s.exists()?s.data():null});
       o.politiattest=await prøv(async()=>{const s=await S.getDoc(S.doc(db,'attester',email)),fo=await S.getDoc(S.doc(db,'attestforslag',email));if(!s.exists()&&!fo.exists())return null;const x=s.exists()?s.data():{},fil=x.fil===true?await S.getDoc(S.doc(db,'attestfil',email)):null;return {dato:x.dato||'',dokumentLagret:x.fil===true,forslag:fo.exists()?fo.data():null,dokument:fil&&fil.exists()?fil.data():null}});
