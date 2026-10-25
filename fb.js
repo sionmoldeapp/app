@@ -114,7 +114,12 @@ const FB={
     // Lyttere for chat: nye samtaler og meldinger kommer med en gang (leser bare det som endres).
     watchThreads:(me,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads'),S.where('parts','array-contains',me),S.limit(50)),s=>cb(s.docs.map(d=>({id:d.id,...d.data({serverTimestamps:'estimate'})})).sort((x,y)=>(y.ms||0)-(x.ms||0))),e=>err&&err(e)),
     watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)),s=>cb(s.docs.map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,likes:Array.isArray(x.likes)?x.likes:[],slettet:x.slettet===true,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
-    likeMsg:(tid,mid,paa)=>S.updateDoc(S.doc(db,'threads',tid,'messages',mid),{likes:paa?S.arrayUnion(auth.currentUser.email.toLowerCase()):S.arrayRemove(auth.currentUser.email.toLowerCase())}),
+    // 👍 på en melding. Når noen liker en annens melding, oppdateres også samtalen (siste melding og ulest), så den andre ser det i listen og på fanen.
+    async likeMsg(tid,mid,paa,info){
+      const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db);
+      b.update(S.doc(db,'threads',tid,'messages',mid),{likes:paa?S.arrayUnion(me):S.arrayRemove(me)});
+      if(paa&&info)b.update(S.doc(db,'threads',tid),{last:('👍 '+String(info.navn||'Noen').slice(0,40)+' likte «'+String(info.tekst||'').slice(0,60)+'»').slice(0,140),lastBy:me,ms:Date.now(),unread:(info.parts||[]).filter(p=>p!==me),gone:[]});
+      await b.commit()},
     async newThread(role,text,name){
       const me=auth.currentUser.email.toLowerCase(),parts=[...new Set([me,...(role.emails||[])])],tref=S.doc(S.collection(db,'threads')),mref=S.doc(S.collection(db,'threads',tref.id,'messages')),b=S.writeBatch(db);
       b.set(tref,{roleId:role.id,roleName:String(role.name).slice(0,60),from:me,fromName:String(name).slice(0,60),parts,last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:parts.filter(p=>p!==me),created:S.serverTimestamp()});
