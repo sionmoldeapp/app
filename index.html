@@ -598,6 +598,42 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .cinp textarea{background:#f0f2f5;border:0;border-radius:20px}
 #cT,.cinp textarea{resize:none!important}
 .csend{background:transparent;color:#0084ff;width:40px;height:40px}
+.chat .cb.me{background:var(--cfarge,#0084ff)}
+.chat .cik,.chat .csend{color:var(--cfarge,#0084ff)}
+.chat .cbar .cbt,.chat .cb.de .cqt{border-left-color:var(--cfarge,#0084ff)}
+.cik[hidden]{display:none}
+.cfarger{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.cfarger button{all:unset;width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;box-sizing:border-box;border:3px solid transparent}
+.cfarger button.on{border-color:var(--ink,#000);box-shadow:inset 0 0 0 3px #fff}
+.camen{font-size:.78em;letter-spacing:.04em}
+.cremo{flex-wrap:wrap;justify-content:center}
+.cremo button .sione{width:28px;height:28px;vertical-align:middle}
+.cremo button .camen{font-size:12px}
+.cavst{display:flex;flex-direction:column;gap:6px;margin-top:6px;min-width:210px}
+.cvalg{all:unset;position:relative;box-sizing:border-box;display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.08);overflow:hidden;cursor:pointer;font-size:var(--t-m)}
+.cb.me .cvalg{background:rgba(255,255,255,.22)}
+.cvbar{position:absolute;inset:0 auto 0 0;background:rgba(0,132,255,.28);transition:width .3s}
+.cb.me .cvbar{background:rgba(255,255,255,.35)}
+.cvt,.cvn{position:relative}
+.cvalg.on{outline:2px solid currentColor}
+.cvsum{opacity:.8}
+.clyd{display:block;width:230px;max-width:100%;height:40px;margin-top:4px}
+.cbonn{position:absolute;inset:0;z-index:7;background:var(--surface);display:flex;flex-direction:column}
+.cbonnl{flex:1;overflow:auto;padding:8px 12px}
+.cbi{padding:10px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.cbi.ferdig .cbit b{text-decoration:line-through;opacity:.6}
+.cbit{display:flex;flex-direction:column}
+.cbi .btn.on{background:var(--cfarge,#0084ff);color:#fff}
+.crec{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line);background:var(--surface)}
+.crec[hidden]{display:none}
+.crecd{width:12px;height:12px;border-radius:50%;background:#e5484d;animation:recblink 1s infinite}
+@keyframes recblink{50%{opacity:.25}}
+.crect{font-variant-numeric:tabular-nums;font-weight:700}
+.cdags{margin:6px 12px 2px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--chip)}
+.cdagtabs{display:flex;gap:6px;margin-bottom:6px}
+.cdagtabs button{all:unset;padding:4px 10px;border-radius:99px;font-size:var(--t-s);font-weight:700;cursor:pointer;color:var(--muted)}
+.cdagtabs button.on{background:#0084ff;color:#fff}
+.cdagt{margin:0 0 6px;font-size:var(--t-b)}
 .csend[hidden]{display:none}
 .ctommel{font-size:24px}
 .csokl{padding:8px 12px 2px}.csokl input{border-radius:20px;background:#f0f2f5;border:0;margin:0}
@@ -2621,7 +2657,7 @@ function navPlasser(e){
 addEventListener('resize',()=>{if(state.chat.vis)chatPlasser()});
 function chatEl(){let e=document.getElementById('chat');if(!e){e=document.createElement('div');e.id='chat';e.className='chat';e.hidden=true;e.innerHTML='<div class="cw" role="dialog" aria-modal="true" aria-label="Chat"></div>';document.body.appendChild(e)}return e}
 const chatW=()=>chatEl().querySelector('.cw');
-function chatStoppMsgs(){const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}c.unsub=null}c.msgs=[]}
+function chatStoppMsgs(){const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}c.unsub=null}c.msgs=[];try{chatAvstStopp();chatBonnStopp();chatMicAvbryt(true)}catch(e){}}
 function thrStopp(){if(state.thrUnsub){try{state.thrUnsub()}catch(e){}state.thrUnsub=null}}
 /* Lytter på samtalene til brukeren (maks 50). Første kall setter opp lytteren; senere kall gjør ingenting. */
 function loadThreads(){
@@ -2635,7 +2671,7 @@ function chatTraadEndret(){
   try{const k=document.querySelector('.chatkort');if(k){const card=k.closest('.card');if(card)card.outerHTML=chatKort()}}catch(e){}
   try{const c=state.chat;if(!c.vis)return;
     if(c.vy==='liste'){const l=document.getElementById('cListe');if(l)l.innerHTML=chatListeInn()}
-    else if(c.vy==='samtale'&&c.id)chatLest()}catch(e){}}
+    else if(c.vy==='samtale'&&c.id){chatLest();chatFargeBruk()}}catch(e){}}
 function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unread||[]).includes(meg)){t.unread=t.unread.filter(x=>x!==meg);FB.markThreadRead(t.id).catch(()=>{});try{drawTabs()}catch(e){}}}
 function chatApne(id){
   if(!FB||!state.user||!state.member)return;
@@ -2653,12 +2689,12 @@ function chatListeInn(){
     return '<button type="button" class="crad'+(ny?' ny':'')+'" data-chatopen="'+esc(t.id)+'">'+chatAv(n)+'<span class="ctx"><span class="cn">'+esc(n)+'</span><span class="cp">'+esc((t.lastBy===meg?'Du: ':'')+chatForh(t.last||''))+'</span></span><span class="cm"><span>'+esc(chatTid(t.ms))+'</span>'+(ny?'<span class="cdot" aria-label="Ny melding"></span>':'')+'</span></button>'}).join('')}
 function chatListe(){
   const c=state.chat;chatStoppMsgs();c.vy='liste';c.id=null;c.ny=null;
-  chatW().innerHTML='<header class="chd"><h2>Chat</h2><span class="grow"></span>'+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatlukk aria-label="Lukk chat">✕</button></header><div class="csokl"><input id="cSokL" type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc(c.q||'')+'"></div><div class="cliste" id="cListe">'+chatListeInn()+'</div>'}
+  chatW().innerHTML='<header class="chd"><h2>Chat</h2><span class="grow"></span>'+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatspill aria-label="Spill">🎮</button><button type="button" class="cbtn" data-chatlukk aria-label="Lukk chat">✕</button></header>'+chatDagensHtml()+'<div class="csokl"><input id="cSokL" type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc(c.q||'')+'"></div><div class="cliste" id="cListe">'+chatListeInn()+'</div>'}
 const chatSend='<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.5-7.5a1 1 0 0 0 0-1.8L3.4 3.6a1 1 0 0 0-1.4 1.2L4 11l9 1-9 1-2 6.2a1 1 0 0 0 1.4 1.2z"/></svg>';
 const TRASH='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const KAMIKON='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 /* Reaksjoner (som i Messenger): feltene på meldingen er lister med e-postadresser. */
-const CHAT_REAK=[['likes','👍'],['r_hjerte','❤️'],['r_ler','😂'],['r_wow','😮'],['r_trist','😢'],['r_be','🙏']];
+const CHAT_REAK=[['likes','👍'],['r_hjerte','❤️'],['r_ler','😂'],['r_wow','😮'],['r_trist','😢'],['r_be','🙏'],['r_ild','🔥'],['r_hender','🙌'],['r_sion',':sion:'],['r_amen','Amen']];
 const CHAT_EMOJIER=['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😋','😎','🤩','🥳','😏','😢','😭','😡','😱','😮','🤔','🙄','😴','🤗','🙏','👍','👎','👏','🙌','💪','❤️','🧡','💛','💚','💙','💜','🔥','🎉','🎶','☕','🌟','🕊️','✝️'];
 /* Sion-logoen som emoji: skrives som :sion: i meldingen og vises som logoen (i tekstfargen). */
 /* Sion-klistremerker: logoen (duen, korset og kloden) med tegnede tillegg. Skrives som :sion-navn: i meldingen. Tegnet i en 100×100-rute (logoen fyller ruten). */
@@ -2682,7 +2718,7 @@ function chatPanelHtml(){
   const logo=[['','Sion-logo','color:#0084ff'],['sort','Sion-logo i sort',''],['hvit','Sion-logo i hvitt','']].map(([v,n,st])=>'<button type="button" data-cemo=":sion'+(v?'-'+v:'')+':" aria-label="'+n+'"><span class="sione'+(v?' '+v:'')+'" style="width:26px;height:26px;'+st+'"></span></button>').join('');
   const stikk=Object.entries(SION_STIKK).map(([k,x])=>'<button type="button" class="cst" data-cemo=":sion-'+k+':" aria-label="'+x[0]+'"><span class="sionx" style="width:40px;height:40px"><span class="sione"></span><svg viewBox="0 0 100 100" aria-hidden="true">'+x[1]+'</svg></span></button>').join('');
   const feir=[['🎂 Gratulerer med dagen!','Gratulerer med dagen! 🎂🎉'],['🎉 Gratulerer!','Gratulerer! 🎉'],['🕊️ Halleluja!','Halleluja! 🕊️'],['🙏 Takk!','Takk! :sion-takk:']].map(([n,t])=>'<button type="button" class="cmal" data-cmal="'+esc(t)+'">'+esc(n)+'</button>').join('');
-  return '<div class="cemoji" id="cEmoji" hidden><div class="cegrid cstikk">'+logo+'</div><div class="cegrid cstikk2">'+stikk+'</div><div class="cmalrad">'+feir+'</div><div class="cegrid">'+CHAT_EMOJIER.map(e=>'<button type="button" data-cemo="'+e+'">'+e+'</button>').join('')+'</div></div>'}
+  return '<div class="cemoji" id="cEmoji" hidden><div class="cegrid cstikk">'+logo+'</div><div class="cegrid cstikk2">'+stikk+'</div><div class="cmalrad">'+feir+'</div><div class="cmalrad"><button type="button" class="cmal" data-cspill="terning">🎲 Terning</button><button type="button" class="cmal" data-cspill="mynt">🪙 Mynt</button><button type="button" class="cmal" data-cspill="quiz">🧠 Bibelquiz</button>'+(chatKan()&&state.chat.id?'<button type="button" class="cmal" data-cspill="avst">📊 Avstemning</button>':'')+'</div><div class="cegrid">'+CHAT_EMOJIER.map(e=>'<button type="button" data-cemo="'+e+'">'+e+'</button>').join('')+'</div></div>'}
 /* Feiringseffekter: konfetti, ballonger, duer eller hjerter over samtalen når en ny melding inneholder for eksempel «gratulerer», «bursdag», 🎉 eller et Sion-klistremerke. */
 function chatEffektFor(tekst){
   const t=String(tekst||'').toLowerCase();
@@ -2715,11 +2751,11 @@ const chatBareEmoji=t=>{t=String(t||'').trim();const u=t.replace(SION_TOKEN,'�
 
 function chatRamme(tittel,under,av,innhold,hint){
   const c=state.chat;c.svar=null;c.red=null;
-  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(c.id?'<button type="button" class="cbtn" data-chatslett aria-label="Slett samtalen">'+TRASH+'</button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
+  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(c.id?'<button type="button" class="cbtn" data-chatbonn aria-label="Bønneliste">🙏</button><button type="button" class="cbtn" data-chatfarge aria-label="Velg farge på samtalen">🎨</button><button type="button" class="cbtn" data-chatslett aria-label="Slett samtalen">'+TRASH+'</button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
    +'<div class="cbar" id="cBar" hidden></div>'+chatPanelHtml()
-   +'<form class="cinp" id="cForm"><button type="button" class="cik" data-cfoto aria-label="Send bilde" '+(c.id?'':'disabled')+'>'+KAMIKON+'</button><input type="file" id="cFil" accept="image/*" hidden><button type="button" class="cik" data-cemoknapp aria-label="Emoji">😊</button><textarea id="cT" rows="1" maxlength="1000" placeholder="'+esc(hint||'Skriv en melding …')+'" aria-label="Melding"></textarea><button type="submit" class="csend" aria-label="Send" hidden>'+chatSend+'</button><button type="button" class="csend ctommel" data-ctommel aria-label="Send tommel opp">👍</button></form>'}
+   +'<div class="crec" id="cRec" hidden></div><form class="cinp" id="cForm"><button type="button" class="cik" data-cfoto aria-label="Send bilde" '+(c.id?'':'disabled')+'>'+KAMIKON+'</button><input type="file" id="cFil" accept="image/*" hidden><button type="button" class="cik" data-cemoknapp aria-label="Emoji">😊</button><button type="button" class="cik cmic" data-cmic aria-label="Send stemmemelding" '+(c.id?'':'disabled')+'>'+MIKIKON+'</button><textarea id="cT" rows="1" maxlength="1000" placeholder="'+esc(hint||'Skriv en melding …')+'" aria-label="Melding"></textarea><button type="submit" class="csend" aria-label="Send" hidden>'+chatSend+'</button><button type="button" class="csend ctommel" data-ctommel aria-label="Send tommel opp">👍</button></form>'}
 /* Bytter mellom send-knapp (når det står tekst) og 👍 (når feltet er tomt), som i Messenger. */
-function chatInpOppd(){const ta=document.getElementById('cT'),s=document.querySelector('#cForm .csend:not(.ctommel)'),t=document.querySelector('#cForm .ctommel');if(!ta||!s||!t)return;const tom=!ta.value.trim()&&!state.chat.red;s.hidden=tom;t.hidden=!tom}
+function chatInpOppd(){const ta=document.getElementById('cT'),s=document.querySelector('#cForm .csend:not(.ctommel)'),t=document.querySelector('#cForm .ctommel');if(!ta||!s||!t)return;const tom=!ta.value.trim()&&!state.chat.red;s.hidden=tom;t.hidden=!tom;const mic=document.querySelector('#cForm .cmic');if(mic)mic.hidden=!tom}
 function chatBar(){
   const b=document.getElementById('cBar');if(!b)return;const c=state.chat;
   if(c.red){b.hidden=false;b.innerHTML='<span class="cbt"><b>Redigerer melding</b><span>'+esc(String(c.red.tekst||'').slice(0,80))+'</span></span><button type="button" class="cbtn" data-cbarx aria-label="Avbryt redigering">✕</button>'}
@@ -2730,7 +2766,7 @@ function chatSamtale(id){
   const c=state.chat,t=chatTraad(id);if(!t){chatListe();return}
   chatStoppMsgs();c.vy='samtale';c.id=id;c.ny=null;c.sett=false;const meg=meEmail(),n=chatNavn(t,meg);
   chatRamme(n,chatUnder(t,meg),chatAv(n),'<p class="small" style="align-self:center">Henter meldinger …</p>');
-  c.unsub=FB.watchMsgs(id,l=>{const forrige=c.msgs,forste=!c.sett;c.msgs=l;c.sett=true;chatMsgs(true);chatLest();c.eff=c.eff||new Set();
+  chatFargeBruk();c.unsub=FB.watchMsgs(id,l=>{const forrige=c.msgs,forste=!c.sett;c.msgs=l;c.sett=true;chatMsgs(true);chatAvstFolg(l);chatLest();c.eff=c.eff||new Set();
     (forste?l.filter(m=>Date.now()-m.ms<20000):l.filter(m=>!forrige.some(x=>x.id===m.id))).forEach(m=>{if(m.slettet||c.eff.has(m.id))return;const e=chatEffektFor(m.text);if(e){c.eff.add(m.id);chatEffekt(e)}})},e=>{const b=document.getElementById('cMsg');if(b)b.innerHTML='<p class="small">Kunne ikke hente meldingene ('+((e&&e.code)||'feil')+').</p>'});
   chatLest()}
 function chatReaksjoner(m){const ut=[];CHAT_REAK.forEach(([f,e])=>{const l=(m.reak&&m.reak[f])||[];if(l.length)ut.push([f,e,l])});return ut}
@@ -2747,17 +2783,160 @@ function chatMsgs(sist){
     let inn;
     if(m.slettet)inn='<div class="'+kl+' sl">'+(mine?'Du angret meldingen':esc(m.name||'Noen')+' angret meldingen')+'</div>';
     else{
-      const rk=chatReaksjoner(m),tot=rk.reduce((n,x)=>n+x[2].length,0),minRk=rk.some(x=>x[2].includes(meg)),stor=chatBareEmoji(m.text)&&!m.img&&!m.svar;
+      const rk=chatReaksjoner(m),tot=rk.reduce((n,x)=>n+x[2].length,0),minRk=rk.some(x=>x[2].includes(meg)),stor=chatBareEmoji(m.text)&&!m.img&&!m.svar&&!m.lyd&&!m.avst;
       inn='<div class="'+kl+(rk.length?' lk':'')+(stor?' cstor':'')+'" data-msg="'+esc(m.id)+'">'
        +(m.svar?'<div class="cqt"><b>'+esc(m.svar.navn||'')+'</b><span>'+esc(m.svar.tekst||'')+'</span></div>':'')
        +(m.img?'<img class="cimg" src="'+m.img+'" alt="Bilde" data-cbilde>':'')
-       +(m.text?chatTekstHtml(m.text):'')
-       +(rk.length?'<span class="clike'+(minRk?' mine':'')+'" aria-label="'+tot+' reaksjoner">'+rk.map(x=>x[1]).join('')+(tot>1?' '+tot:'')+'</span>':'')+'</div>'}
+       +(m.text?chatTekstHtml(m.text):'')+(m.avst&&m.avst.id?'<div class="cavst" data-avst="'+esc(m.avst.id)+'">'+chatAvstInn(m.avst.id)+'</div>':'')+(m.lyd?'<audio class="clyd" controls preload="metadata" src="'+m.lyd+'"></audio>':'')
+       +(rk.length?'<span class="clike'+(minRk?' mine':'')+'" aria-label="'+tot+' reaksjoner">'+rk.map(x=>chatReakHtml(x[1])).join('')+(tot>1?' '+tot:'')+'</span>':'')+'</div>'}
     h+='<div class="crow '+(mine?'me':'de')+'">'+av+inn+'</div>';
     if(slutt){let tid=chatKl(m.ms)+(m.redigert?' · redigert':'');if(mine&&i===l.length-1&&t&&t.lastBy===meg)tid+=' · '+(sett?'Sett':'Sendt');h+='<div class="ct '+(mine?'me':'de')+'">'+esc(tid)+'</div>'}
     forrige=m});
   box.innerHTML=h||'<p class="small" style="align-self:center;margin-top:20px">Ingen meldinger ennå. Skriv den første.</p>';
   if(nær||sist)box.scrollTop=box.scrollHeight}
+/* ---------- Chat: egne reaksjoner, farge per samtale, avstemninger, bønneliste, stemmemeldinger, dagens vers/utfordring og spill ---------- */
+const chatReakHtml=e=>e===':sion:'?sionHtml():e==='Amen'?'<b class="camen">Amen</b>':e;
+const MIKIKON='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+/* Farge per samtale (feltet farge på samtalen; begge ser den). */
+const CHAT_FARGER=[['blaa','Blå','#0084ff'],['rosa','Rosa','#ff5a8a'],['gronn','Grønn','#1f9d55'],['lilla','Lilla','#7d55c7'],['oransje','Oransje','#f57c00'],['rod','Rød','#e5484d'],['turkis','Turkis','#00a3b4'],['gull','Gull','#c9971c']];
+const chatFargeHex=t=>(CHAT_FARGER.find(f=>f[0]===(t&&t.farge))||CHAT_FARGER[0])[2];
+function chatFargeBruk(){const w=chatW(),t=state.chat.id&&chatTraad(state.chat.id);if(w)w.style.setProperty('--cfarge',chatFargeHex(t))}
+function chatFargeMeny(){
+  const c=state.chat,t=chatTraad(c.id);if(!t||document.querySelector('dialog.pub'))return;
+  const dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Farge på samtalen</h3><p class="small" style="margin:0">Fargen gjelder meldingene dine, og begge i samtalen ser den.</p><div class="cfarger">'+CHAT_FARGER.map(f=>'<button type="submit" value="'+f[0]+'" style="background:'+f[2]+'" aria-label="'+f[1]+'" class="'+((t.farge||'blaa')===f[0]?'on':'')+'"></button>').join('')+'</div><div class="btns"><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.addEventListener('close',async()=>{const v=dlg.returnValue;dlg.remove();if(!CHAT_FARGER.some(f=>f[0]===v))return;const gammel=t.farge;t.farge=v;chatFargeBruk();
+    try{await FB.setFarge(t.id,v)}catch(e){t.farge=gammel;chatFargeBruk();push('Kunne ikke bytte farge','Prøv igjen ('+((e&&e.code)||'feil')+').')}});
+  dlg.showModal()}
+/* Avstemninger: dokument i avst/{id} med spørsmål, alternativer og én liste med e-poster per alternativ (v0 … v4). Meldingen i samtalen peker på avstemningen og viser stillingen live. */
+state.chat.avstD=state.chat.avstD||{};state.chat.avW=state.chat.avW||{};
+function chatAvstInn(id){
+  const d=state.chat.avstD[id];
+  if(!d)return '<span class="small">Henter avstemning …</span>';
+  if(d.feil)return '<span class="small">Avstemningen er ikke tilgjengelig.</span>';
+  const meg=meEmail(),tot=d.val.reduce((n,_,i)=>n+(d['v'+i]||[]).length,0),min=d.val.findIndex((_,i)=>(d['v'+i]||[]).includes(meg));
+  return d.val.map((v,i)=>{const n=(d['v'+i]||[]).length,p=tot?Math.round(n*100/tot):0;
+    return '<button type="button" class="cvalg'+(min===i?' on':'')+'" data-avstv="'+esc(id)+'|'+i+'"><span class="cvbar" style="width:'+p+'%"></span><span class="cvt">'+(min===i?'✓ ':'')+esc(v)+'</span><span class="cvn">'+n+'</span></button>'}).join('')+'<div class="small cvsum">'+tot+(tot===1?' stemme':' stemmer')+' · fra '+esc(d.byNavn||'')+'</div>'}
+function chatAvstFolg(l){
+  const c=state.chat;
+  l.forEach(m=>{const id=m.avst&&m.avst.id;if(!id||c.avW[id])return;
+    c.avW[id]=FB.watchAvst(id,d=>{c.avstD[id]=d||{feil:true};document.querySelectorAll('[data-avst="'+id+'"]').forEach(el=>{el.innerHTML=chatAvstInn(id)})},()=>{c.avstD[id]={feil:true};document.querySelectorAll('[data-avst="'+id+'"]').forEach(el=>{el.innerHTML=chatAvstInn(id)})})})}
+function chatAvstStopp(){const c=state.chat;Object.values(c.avW||{}).forEach(f=>{try{f()}catch(e){}});c.avW={}}
+async function chatAvstStem(par){
+  const [id,i]=par.split('|'),c=state.chat,d=c.avstD[id];if(!d||d.feil)return;const meg=meEmail(),ny=+i;
+  const gammel=d.val.findIndex((_,k)=>(d['v'+k]||[]).includes(meg));
+  try{await FB.voteAvst(id,gammel===ny?-1:ny,gammel)}catch(e){push('Kunne ikke stemme','Prøv igjen ('+((e&&e.code)||'feil')+').')}}
+/* Ny avstemning: til hele en gruppe (hver får den i sin samtale) eller til personen i den åpne samtalen. */
+function chatAvstNy(mot){
+  if(document.querySelector('dialog.pub')||!chatKan())return;
+  const c=state.chat,gs=chatGrupper();
+  const dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Ny avstemning</h3>'
+   +'<label class="f">Spørsmål<input id="avSp" maxlength="120" placeholder="For eksempel: Hvem kommer på leir?" autocomplete="off"></label>'
+   +[0,1,2,3,4].map(i=>'<label class="f">Alternativ '+(i+1)+(i<2?'':' (valgfritt)')+'<input data-avv maxlength="40" autocomplete="off"></label>').join('')
+   +(mot==='gruppe'?'<label class="f">Til hvilken gruppe?<select id="avGr">'+gs.map(g=>'<option value="'+esc(g[0])+'">'+esc(g[1])+' ('+chatGruppeFolk(g[0]).length+')</option>').join('')+'</select></label>':'<p class="small" style="margin:0">Sendes til personen i samtalen.</p>')
+   +'<p class="small" id="avS" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="flex:1">Send</button><button class="btn" value="avbryt" formnovalidate style="flex:1">Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.querySelector('form').addEventListener('submit',async e=>{
+    if(!e.submitter||e.submitter.value!=='send')return;e.preventDefault();
+    const sp=dlg.querySelector('#avSp').value.trim(),val=[...dlg.querySelectorAll('[data-avv]')].map(x=>x.value.trim()).filter(Boolean);
+    if(!sp||val.length<2){dlg.querySelector('#avS').textContent='Skriv et spørsmål og minst to alternativer.';return}
+    let folk=[],grupper=[];
+    if(mot==='gruppe'){const g=dlg.querySelector('#avGr').value;grupper=[g];folk=chatGruppeFolk(g);if(!folk.length){dlg.querySelector('#avS').textContent='Gruppen har ingen å sende til.';return}}
+    else{const t=chatTraad(c.id);if(!t){return}const til=(t.parts||[]).find(p=>p!==meEmail()),u=chatFolkAlle().find(x=>x.id===til);const gid=chatGrupper().map(g=>g[0]);grupper=((u&&u.groups)||[]).filter(g=>gid.includes(g));if(!grupper.length){dlg.querySelector('#avS').textContent='Personen er ikke i en av gruppene dine.';return}}
+    try{const id=await FB.newAvst({sp,val,grupper,navn:nyBeskjedNavn()});dlg.close();
+      if(mot==='gruppe')await chatSendBulk(folk,grupper[0],'📊 '+sp,{avst:{id}});
+      else await chatSendTekst('📊 '+sp,{avst:{id}})}
+    catch(er){dlg.querySelector('#avS').textContent='Kunne ikke sende ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
+  dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+/* Bønneliste i samtalen: felles liste der begge kan legge til emner, trykke «Ber» og merke dem besvart. */
+function chatBonnStopp(){const c=state.chat;if(c.bonnW){try{c.bonnW()}catch(e){}c.bonnW=null}const b=document.getElementById('cBonn');if(b)b.remove()}
+function chatBonnVis(){
+  const c=state.chat;if(!c.id||document.getElementById('cBonn'))return;
+  const el=document.createElement('div');el.id='cBonn';el.className='cbonn';
+  el.innerHTML='<header class="chd"><span class="ctit"><b>🙏 Bønneliste</b><span>Felles for dere to i denne samtalen</span></span><button type="button" class="cbtn" data-bonnlukk aria-label="Lukk bønnelisten">✕</button></header><form class="cinp" id="cBonnF" style="border-top:0;border-bottom:1px solid var(--line)"><textarea id="cBonnT" rows="1" maxlength="200" placeholder="Nytt bønneemne …" aria-label="Nytt bønneemne"></textarea><button type="submit" class="csend" aria-label="Legg til">'+chatSend+'</button></form><div class="cbonnl" id="cBonnL"><p class="small" style="padding:12px">Henter …</p></div>';
+  chatW().appendChild(el);
+  c.bonnW=FB.watchBonner(c.id,l=>{c.bonner=l;chatBonnTegn()},e=>{const x=document.getElementById('cBonnL');if(x)x.innerHTML='<p class="small" style="padding:12px">Kunne ikke hente bønnelisten ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?</p>'})}
+function chatBonnTegn(){
+  const x=document.getElementById('cBonnL');if(!x)return;const meg=meEmail(),l=(state.chat.bonner||[]).slice().sort((a,b)=>(a.besvart?1:0)-(b.besvart?1:0)||(b.ms||0)-(a.ms||0));
+  x.innerHTML=l.map(b=>{const ber=(b.bedt||[]).includes(meg);
+    return '<div class="cbi'+(b.besvart?' ferdig':'')+'"><div class="cbit"><b>'+esc(b.t)+'</b><span class="small">'+esc(b.navn||'')+' · '+esc(chatTid(b.ms))+((b.bedt||[]).length?' · 🙏 '+b.bedt.length:'')+'</span></div><div class="btns"><button type="button" class="btn'+(ber?' on':'')+'" data-bonnber="'+esc(b.id)+'">'+(ber?'🙏 Du ber':'🙏 Ber')+'</button><button type="button" class="btn" data-bonnbes="'+esc(b.id)+'">'+(b.besvart?'Åpne igjen':'✓ Besvart')+'</button>'+(b.by===meg?'<button type="button" class="btn" data-bonndel="'+esc(b.id)+'" aria-label="Slett emnet">🗑</button>':'')+'</div></div>'}).join('')||'<p class="small" style="padding:12px">Ingen bønneemner ennå. Skriv det første over.</p>'}
+/* Stemmemelding: opptak i appen (maks 40 s, lav bitrate), lagres i meldingen. */
+function chatMicAvbryt(stille){
+  const c=state.chat,r=c.rec;if(!r)return;c.rec=null;clearInterval(r.iv);r.avbrutt=true;try{r.mr.state!=='inactive'&&r.mr.stop()}catch(e){}try{r.stream.getTracks().forEach(t=>t.stop())}catch(e){}
+  const bar=document.getElementById('cRec'),f=document.getElementById('cForm');if(bar){bar.hidden=true;bar.innerHTML=''}if(f)f.hidden=false}
+async function chatMicStart(){
+  const c=state.chat;if(!c.id||c.rec||c.sender)return;
+  try{
+    if(!navigator.mediaDevices||!window.MediaRecorder)throw {msg:'Opptak støttes ikke i denne nettleseren.'};
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true}),typer=['audio/webm;codecs=opus','audio/mp4','audio/webm'],mime=typer.find(t=>MediaRecorder.isTypeSupported(t))||'',
+      mr=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:24000}:{audioBitsPerSecond:24000});
+    const r={mr,stream,chunks:[],t0:Date.now(),mime:mime||'audio/webm',avbrutt:false,sendt:false};c.rec=r;
+    mr.ondataavailable=e=>{if(e.data&&e.data.size)r.chunks.push(e.data)};
+    mr.onstop=()=>{try{stream.getTracks().forEach(t=>t.stop())}catch(e){}if(!r.avbrutt&&r.sendt)chatMicSend(r)};
+    mr.start(500);
+    const bar=document.getElementById('cRec'),f=document.getElementById('cForm');if(f)f.hidden=true;
+    if(bar){bar.hidden=false;bar.innerHTML='<button type="button" class="cbtn" data-crecx aria-label="Avbryt opptaket">✕</button><span class="crecd"></span><span class="crect" id="cRecT">0:00</span><span class="grow"></span><button type="submit" class="csend" data-crecsend aria-label="Send stemmemeldingen" style="display:grid">'+chatSend+'</button>'}
+    r.iv=setInterval(()=>{const s=Math.floor((Date.now()-r.t0)/1000),t=document.getElementById('cRecT');if(t)t.textContent=Math.floor(s/60)+':'+oTall(s%60);if(s>=40&&!r.sendt){r.sendt=true;clearInterval(r.iv);try{mr.stop()}catch(e){}}},400)}
+  catch(e){c.rec=null;push('Kunne ikke starte opptaket',e&&e.name==='NotAllowedError'?'Slå på mikrofon for appen i telefonens innstillinger.':(e&&e.msg)||'Prøv igjen.')}}
+function chatMicSendKnapp(){const r=state.chat.rec;if(!r||r.sendt)return;r.sendt=true;clearInterval(r.iv);try{r.mr.stop()}catch(e){}}
+async function chatMicSend(r){
+  const c=state.chat;c.rec=null;const bar=document.getElementById('cRec'),f=document.getElementById('cForm');if(bar){bar.hidden=true;bar.innerHTML=''}if(f)f.hidden=false;
+  const sek=Math.max(1,Math.round((Date.now()-r.t0)/1000)),blob=new Blob(r.chunks,{type:r.mime.split(';')[0]});
+  if(!blob.size||sek<1){push('For kort','Hold inne og snakk litt lenger.');return}
+  const data=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result));fr.onerror=()=>res('');fr.readAsDataURL(blob)});
+  if(!data||data.length>195000){push('Stemmemeldingen er for lang','Hold den under ca. 40 sekunder.');return}
+  if(c.sender)return;c.sender=true;
+  try{await chatSendTekst('',{lyd:data,lsek:Math.min(sek,120),...(c.svar?{svar:c.svar}:{})});c.svar=null;chatBar()}
+  catch(er){push('Kunne ikke sende','Prøv igjen ('+((er&&er.code)||'feil')+').')}
+  c.sender=false}
+/* Dagens vers (fritt gjengitt, med lenke til Bibelen) og dagens utfordring. Skifter hver dag ut fra datoen. «Gjort» teller dager på rad. */
+const DAGENS_VERS=[['Joh 3,16','Gud elsker verden så høyt at han ga oss sin Sønn, så alle som tror på ham kan få evig liv.'],['Sal 23,1','Herren er min hyrde, jeg kommer ikke til å mangle noe.'],['Fil 4,13','Med Kristus ved min side har jeg kraft til alt jeg skal gjennom.'],['Jos 1,9','Vær sterk og modig. Herren din Gud er med deg overalt.'],['Rom 8,28','Gud lar alt virke sammen til det gode for dem som elsker ham.'],['Ords 3,5','Stol på Herren av hele ditt hjerte, ikke bare på din egen forstand.'],['Jes 41,10','Ikke vær redd, for jeg er med deg. Jeg styrker deg og hjelper deg.'],['Matt 11,28','Kom til meg, alle som er slitne og tynget, så skal dere få hvile.'],['1 Kor 13,13','Tro, håp og kjærlighet blir, men størst av dem er kjærligheten.'],['Sal 46,2','Gud er vår tilflukt og styrke, en hjelp som er nær i nød.'],['Jer 29,11','Gud har tanker om fred og en framtid med håp for deg.'],['Gal 5,22','Åndens frukt er kjærlighet, glede, fred, tålmodighet og vennlighet.'],['Matt 5,16','La lyset ditt skinne for andre, så de kan se det gode du gjør.'],['Ef 2,8','Du er frelst av nåde, ved tro. Det er en gave, ikke noe du fortjener.'],['Sal 119,105','Ordet ditt er en lykt for min fot og et lys på min vei.'],['Hebr 11,1','Troen er å være trygg på det man håper, og viss om det man ikke ser.'],['Matt 28,20','Jesus lover: Jeg er med dere alle dager, helt til verdens ende.'],['Sal 118,24','Dette er dagen Herren har gjort. La oss juble og glede oss i den.'],['Rom 12,2','La deg forvandle ved at tankene dine fornyes.'],['Mark 12,31','Elsk din neste som deg selv.'],['1 Joh 4,19','Vi elsker fordi Gud elsket oss først.'],['Fil 4,6','Ikke vær bekymret. Legg alt fram for Gud i bønn med takk.'],['Sal 139,14','Jeg takker deg fordi jeg er skapt på underfull måte.'],['Kol 3,23','Alt du gjør, gjør det av hjerte, som for Herren.'],['2 Tim 1,7','Gud har gitt oss kraftens, kjærlighetens og selvdisiplinens ånd, ikke frykt.'],['Luk 6,31','Gjør mot andre det du vil de skal gjøre mot deg.'],['Sal 37,4','Ha din glede i Herren, så gir han deg det hjertet ønsker.'],['Jak 1,5','Mangler du visdom, kan du be Gud om den.'],['Joh 14,6','Jesus sier: Jeg er veien, sannheten og livet.'],['Ords 17,17','En venn elsker til alle tider.']];
+const DAGENS_UTFORDRING=['Send en oppmuntrende melding til en venn.','Be for tre personer ved navn i dag.','Si takk til noen du ellers ikke pleier å takke.','Les et kapittel i Bibelen.','Gjør noe snilt uten at noen får vite det.','Smil og hils på fem personer du ikke kjenner.','Skriv ned tre ting du er takknemlig for.','Ring eller send melding til noen som kan være alene.','Syng eller spill en lovsang og la den følge deg i dag.','Inviter noen med deg på neste samling.','Be om tilgivelse eller tilgi noen, hvis det er noe som tynger.','Gi en kompliment til hver av dem du møter i dag.','Hjelp til med noe hjemme uten å bli bedt om det.','Ta en liten pause og vær stille for Gud i fem minutter.','Del et bibelvers med noen.','Skriv et kort takkekort til en leder.','Rydd, vask eller fiks noe for en annen.','Lytt mer enn du snakker i dag.','Be for menigheten og lederne våre.','Gå en tur og takk Gud for skaperverket.','Lær deg et vers utenat.','Sett av litt av pengene dine til noen som trenger det.','Spør noen: «Hvordan har du det egentlig?»','Skriv ned en bønn du ber om denne uken.','Gjør en tjeneste for et familiemedlem.','Fortell noen hva Gud har gjort i livet ditt.','Send et hjerte eller en 🙏 til noen i chatten.','Hold telefonen unna i en time og vær tilstede med de rundt deg.','Be for en du er uenig med.','Takk for maten før du spiser, selv om du er alene.'];
+const dagIdx=()=>{const d=new Date();return Math.floor((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(d.getFullYear(),0,0))/864e5)};
+function dagStat(){try{return JSON.parse(lsGet('sm-dag')||'{}')||{}}catch(e){return {}}}
+function chatDagensHtml(){
+  const i=dagIdx(),v=DAGENS_VERS[i%DAGENS_VERS.length],u=DAGENS_UTFORDRING[i%DAGENS_UTFORDRING.length],fane=state.chat.dagtab||'vers',st=dagStat(),idag=isoDato(new Date()),gjort=st.sist===idag,streak=st.streak||0;
+  return '<div class="cdags"><div class="cdagtabs" role="group" aria-label="Dagens"><button type="button" class="'+(fane==='vers'?'on':'')+'" data-dagtab="vers">Dagens vers</button><button type="button" class="'+(fane==='utf'?'on':'')+'" data-dagtab="utf">Dagens utfordring</button></div>'
+   +(fane==='vers'?'<p class="cdagt">«'+esc(v[1])+'»</p><p class="small" style="margin:0"><b>'+esc(v[0])+'</b> · fritt gjengitt · <a href="https://www.bible.com/search/bible?q='+encodeURIComponent(v[0])+'" target="_blank" rel="noopener">Les i Bibelen</a></p>'
+    :'<p class="cdagt">'+esc(u)+'</p><div class="btns" style="align-items:center"><button type="button" class="btn'+(gjort?' on':'')+'" data-daggjort '+(gjort?'disabled':'')+'>'+(gjort?'✓ Gjort i dag':'Jeg gjorde den!')+'</button>'+(streak>0?'<span class="small">🔥 '+streak+(streak===1?' dag':' dager')+' på rad</span>':'')+'</div>')+'</div>'}
+function chatDagGjort(){const st=dagStat(),idag=isoDato(new Date());if(st.sist===idag)return;const i=new Date();i.setDate(i.getDate()-1);st.streak=st.sist===isoDato(i)?(st.streak||0)+1:1;st.sist=idag;lsSet('sm-dag',JSON.stringify(st));const el=document.querySelector('.cdags');if(el)el.outerHTML=chatDagensHtml();try{chatEffekt('konfetti')}catch(e){}}
+/* Spill: bibelquiz (alene, resultatet kan sendes i chatten), terningkast og myntkast. */
+const QUIZ=[['Hvem bygde arken?',['Noah','Moses','Abraham','David'],0],['Hvor mange disipler hadde Jesus?',['7','10','12','40'],2],['Hvilken by ble Jesus født i?',['Nasaret','Betlehem','Jerusalem','Jeriko'],1],['Hvem ble kastet i løvekulen?',['Daniel','Jona','Elia','Josef'],0],['Hva het Moses’ bror?',['Aron','Josva','Kaleb','Peter'],0],['Hvem svek Jesus?',['Peter','Johannes','Judas','Tomas'],2],['Hva heter første bok i Bibelen?',['Salmene','1. Mosebok','Matteus','Åpenbaringen'],1],['Hvem var Israels første konge?',['David','Salomo','Saul','Samuel'],2],['Hvem døpte Jesus?',['Johannes døperen','Peter','Paulus','Stefanus'],0],['Hvor mange bud ga Gud på Sinai-fjellet?',['5','7','10','12'],2],['Hvem ble slukt av en stor fisk?',['Jona','Noah','Elia','Jeremia'],0],['Hvem drepte kjempen Goliat?',['Saul','David','Jonatan','Josva'],1],['Hva het Jesu mor?',['Marta','Maria','Elisabet','Rut'],1],['Hvilken dag skapte Gud menneskene?',['Første','Tredje','Sjette','Sjuende'],2],['Hvor ble Jesus korsfestet?',['Golgata','Sinai','Karmel','Betel'],0],['Hvilken fugl sendte Noah ut med et olivenblad som tegn?',['Ørn','Due','Svale','Ravn'],1],['Hvem skrev mange av salmene?',['David','Paulus','Moses','Johannes'],0],['Hva het Abrahams kone?',['Sara','Rebekka','Lea','Ester'],0],['Hvilket land levde Israels folk som slaver i før utgangen?',['Babylon','Egypt','Persia','Hellas'],1],['Hva heter den siste boken i Bibelen?',['Judas','Hebreerne','Åpenbaringen','Apostlenes gjerninger'],2],['Hvem ble solgt av brødrene sine og endte som leder i Egypt?',['Josef','Benjamin','Esau','Isak'],0],['Hvilken apostel var tidligere skattefutt og tolloppkrever?',['Matteus','Filip','Andreas','Jakob'],0],['Hvem lovet Jesus å sende etter at han fór opp til himmelen?',['Engler','Den hellige ånd','En ny profet','En ny konge'],1],['Hvor mange brød og fisk mettet Jesus 5000 med?',['5 brød og 2 fisker','2 brød og 5 fisker','12 brød og 7 fisker','7 brød og 3 fisker'],0],['Hva heter apostelen som først var fariseer og forfulgte de kristne?',['Paulus','Peter','Barnabas','Timoteus'],0]];
+function chatQuiz(){
+  if(document.querySelector('dialog.pub'))return;
+  const spm=QUIZ.map((q,i)=>i).sort(()=>Math.random()-.5).slice(0,5).map(i=>{const q=QUIZ[i],alt=q[1].map((t,k)=>[t,k===q[2]]).sort(()=>Math.random()-.5);return {s:q[0],alt}});
+  let n=0,riktig=0;const dlg=document.createElement('dialog');dlg.className='lp pub';document.body.appendChild(dlg);
+  const tegn=svar=>{
+    if(n>=spm.length){const c=state.chat,kan=!!c.id;
+      dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Resultat</h3><p style="margin:0;font-size:var(--t-xl)"><b>'+riktig+' av '+spm.length+'</b> riktige '+(riktig===spm.length?'🏆':riktig>=3?'🎉':'🙂')+'</p><div class="btns" style="flex-direction:column;align-items:stretch">'+(kan?'<button class="btn primary" value="send">Send resultatet i chatten</button>':'')+'<button class="btn" value="igjen">Spill igjen</button><button class="btn" value="lukk" formnovalidate>Lukk</button></div></form>';return}
+    const q=spm[n];
+    dlg.innerHTML='<form class="form" method="dialog" onsubmit="return false"><p class="small" style="margin:0">Bibelquiz · spørsmål '+(n+1)+' av '+spm.length+'</p><h3 style="margin:0">'+esc(q.s)+'</h3><div class="btns" style="flex-direction:column;align-items:stretch">'+q.alt.map((a,k)=>'<button type="button" class="btn cqalt" data-qk="'+k+'">'+esc(a[0])+'</button>').join('')+'</div><div class="btns"><button type="button" class="btn" data-qlukk>Avslutt</button></div></form>'};
+  dlg.addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    if('qlukk' in b.dataset){dlg.close();return}
+    if(b.dataset.qk!==undefined&&!dlg.dataset.sv){const q=spm[n],k=+b.dataset.qk,ok=q.alt[k][1];dlg.dataset.sv='1';if(ok)riktig++;
+      dlg.querySelectorAll('.cqalt').forEach((x,j)=>{x.disabled=true;if(q.alt[j][1])x.classList.add('primary');else if(j===k)x.classList.add('danger')});
+      try{navigator.vibrate&&navigator.vibrate(ok?[10]:[20,40,20])}catch(er){}
+      setTimeout(()=>{delete dlg.dataset.sv;n++;tegn()},900)}});
+  dlg.addEventListener('close',()=>{const v=dlg.returnValue;dlg.remove();
+    if(v==='send')chatSendTekst('🧠 Bibelquiz: '+riktig+' av '+spm.length+' riktige '+(riktig===spm.length?'🏆':'🎉')).catch(()=>{});
+    else if(v==='igjen')setTimeout(chatQuiz,50)});
+  tegn();dlg.showModal()}
+function chatSpillSend(type){
+  const c=state.chat;if(!c.id&&!c.ny)return;
+  if(type==='terning')chatSendTekst('🎲 Terningkast: '+(1+Math.floor(Math.random()*6))).catch(()=>{});
+  else if(type==='mynt')chatSendTekst('🪙 Myntkast: '+(Math.random()<.5?'Krone':'Mynt')).catch(()=>{});
+  else if(type==='quiz')chatQuiz()}
+/* Sender samme melding (med eventuelle tillegg) som privat samtale til flere. */
+async function chatSendBulk(folk,gid,tekst,ekstra){
+  const meg=meEmail(),navn=nyBeskjedNavn();let ok=0,feil=0;
+  for(let i=0;i<folk.length;i+=4){
+    await Promise.all(folk.slice(i,i+4).map(async u=>{try{const t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(u.id)&&(x.parts||[]).includes(meg));if(t)await FB.addMsg(t,tekst,navn,ekstra);else await FB.newDm(u.id,u.name||u.id,gName(gid),tekst,navn,ekstra);ok++}catch(e){feil++}}))}
+  if(ok&&PUSH_URL)FB.sendPushStille(PUSH_URL,'Ny beskjed fra '+navn,kortTekst(tekst),'me',{type:'grupper',groups:[gid]}).catch(()=>{});
+  if(feil)push('Delvis sendt',ok+' fikk beskjeden, '+feil+' feilet.');
+  chatListe()}
 /* Ny melding: velg hele gruppen eller en person. Bare ledere og administratorer. */
 const chatFolkAlle=()=>(state.admin?members:leaderMem).filter(u=>u.id!==meEmail());
 const chatGrupper=()=>state.admin?GROUPS:GROUPS.filter(g=>(state.leads||[]).includes(g[0]));
@@ -2770,7 +2949,7 @@ function chatNyVelg(){
   const c=state.chat;chatStoppMsgs();c.vy='ny';c.id=null;c.ny=null;
   chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button><span class="ctit"><b>Ny melding</b></span></header><div class="cliste">'
    +'<div class="cseksj">Til hele gruppen</div>'+(chatGrupper().map(g=>{const n=chatGruppeFolk(g[0]).length;return '<button type="button" class="crad" data-chatgr="'+esc(g[0])+'">'+chatAv(g[1])+'<span class="ctx"><span class="cn">'+esc(g[1])+'</span><span class="cp">'+n+(n===1?' person':' personer')+' · alle får en privat samtale og svarer deg der</span></span></button>'}).join('')||'<p class="small" style="padding:0 14px">Du leder ingen grupper ennå.</p>')
-   +'<div class="cseksj">Til én person</div><div style="padding:0 14px 8px"><input type="search" id="cQ" placeholder="Søk etter navn eller e-post" autocomplete="off" aria-label="Søk etter person"></div><div id="cPers">'+chatNyPersonerHtml('')+'</div></div>'}
+   +(chatKan()?'<div class="cseksj">Avstemning</div><button type="button" class="crad" data-chatavstny><span class="cav" style="background:#7d55c7" aria-hidden="true">📊</span><span class="ctx"><span class="cn">Avstemning til en gruppe</span><span class="cp">Alle i gruppen får den og kan stemme</span></span></button>':'')+'<div class="cseksj">Til én person</div><div style="padding:0 14px 8px"><input type="search" id="cQ" placeholder="Søk etter navn eller e-post" autocomplete="off" aria-label="Søk etter person"></div><div id="cPers">'+chatNyPersonerHtml('')+'</div></div>'}
 function chatGruppeSkriv(g){
   const c=state.chat,folk=chatGruppeFolk(g);c.vy='samtale';c.id=null;c.ny={mode:'gruppe',gid:g,folk};
   chatRamme('Hele gruppen: '+gName(g),folk.length+(folk.length===1?' person':' personer')+' får meldingen som privat chat',chatAv(gName(g)),'<p class="small" style="align-self:center;text-align:center;margin:20px 10px">Skriv meldingen under. Hver person får den som en privat samtale med deg og kan svare der. Ingen ser hverandres svar.</p>','Melding til hele gruppen …')}
@@ -2784,7 +2963,7 @@ async function chatSendTekst(tekst,ekstra){
   const c=state.chat,meg=meEmail(),navn=nyBeskjedNavn();
   if(c.id){const t=chatTraad(c.id);if(!t)throw {code:'ikke-funnet'};await FB.addMsg(t,tekst,navn,ekstra);if(PUSH_URL)FB.notifyThread(PUSH_URL,c.id).catch(()=>{});return}
   const ny=c.ny;if(!ny)return;
-  if(ny.mode==='person'){const id=await FB.newDm(ny.til,ny.navn,ny.gid?gName(ny.gid):'Beskjed',tekst,navn);if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});chatVent(id,()=>chatSamtale(id));return}
+  if(ny.mode==='person'){const id=await FB.newDm(ny.til,ny.navn,ny.gid?gName(ny.gid):'Beskjed',tekst,navn,ekstra);if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});chatVent(id,()=>chatSamtale(id));return}
   if(ny.mode==='gruppe'){
     let ok=0,feil=0;const folk=ny.folk;
     for(let i=0;i<folk.length;i+=4){
@@ -2797,8 +2976,8 @@ async function chatSendTekst(tekst,ekstra){
 function chatMsgMeny(mid){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid);if(!m||m.slettet||document.querySelector('dialog.pub'))return;
   const meg=meEmail(),mine=m.by===meg,min=CHAT_REAK.find(([f])=>((m.reak||{})[f]||[]).includes(meg)),dlg=document.createElement('dialog');dlg.className='lp pub';
-  const tx=m.text||(m.img?'📷 Bilde':'');
-  dlg.innerHTML='<form class="form" method="dialog"><div class="cremo">'+CHAT_REAK.map(([f,e])=>'<button type="submit" class="'+(min&&min[0]===f?'on':'')+'" value="rx:'+f+'" aria-label="Reager med '+e+'">'+e+'</button>').join('')+'</div>'
+  const tx=m.text||(m.img?'📷 Bilde':m.lyd?'🎤 Stemmemelding':'');
+  dlg.innerHTML='<form class="form" method="dialog"><div class="cremo">'+CHAT_REAK.map(([f,e])=>'<button type="submit" class="'+(min&&min[0]===f?'on':'')+'" value="rx:'+f+'" aria-label="Reager med '+(e===':sion:'?'Sion-logo':e)+'">'+chatReakHtml(e)+'</button>').join('')+'</div>'
    +'<p class="small" style="margin:0;white-space:pre-wrap;max-height:5em;overflow:hidden">'+esc(tx.length>140?tx.slice(0,140)+' …':tx)+'</p>'
    +'<div class="btns" style="flex-direction:column;align-items:stretch"><button class="btn" value="svar">Svar</button>'+(m.text?'<button class="btn" value="kopier">Kopier tekst</button>':'')+(mine&&m.text&&!m.img?'<button class="btn" value="rediger">Rediger</button>':'')+(mine?'<button class="btn danger" value="angre">Angre melding</button>':'')+'<button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
@@ -2834,7 +3013,7 @@ async function chatReak(mid,felt){
   const fjernFra=CHAT_REAK.filter(([f])=>(m.reak[f]||[]).includes(meg)).map(x=>x[0]),fjern=fjernFra.includes(felt);
   fjernFra.forEach(f=>{m.reak[f]=m.reak[f].filter(x=>x!==meg)});if(!fjern)m.reak[felt]=[...(m.reak[felt]||[]),meg];chatMsgs(false);
   try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
-  const emo=(CHAT_REAK.find(([f])=>f===felt)||['','👍'])[1];
+  const emo0=(CHAT_REAK.find(([f])=>f===felt)||['','👍'])[1],emo=emo0===':sion:'?'Sion':emo0;
   try{await FB.reakMsg(c.id,mid,{fjernFra,legg:fjern?null:felt},(!fjern&&m.by!==meg)?{navn:nyBeskjedNavn(),tekst:m.text||'bildet ditt',emoji:emo,parts:t.parts}:null)}
   catch(e){m.reak=snap;chatMsgs(false);push('Kunne ikke reagere','Prøv igjen ('+((e&&e.code)||'feil')+').')}}
 const chatLik=mid=>chatReak(mid,'likes');
@@ -2880,6 +3059,21 @@ document.addEventListener('click',e=>{
   else if('cfoto' in d){const f=document.getElementById('cFil');if(f){f.value='';f.click()}}
   else if('cemoknapp' in d){const p=document.getElementById('cEmoji');if(p)p.hidden=!p.hidden}
   else if(d.cemo){const ta=document.getElementById('cT');if(ta){const a=ta.selectionStart==null?ta.value.length:ta.selectionStart,z=ta.selectionEnd==null?a:ta.selectionEnd;ta.value=ta.value.slice(0,a)+d.cemo+ta.value.slice(z);ta.selectionStart=ta.selectionEnd=a+d.cemo.length;ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus()}}
+  else if('chatfarge' in d)chatFargeMeny();
+  else if('chatbonn' in d)chatBonnVis();
+  else if('bonnlukk' in d)chatBonnStopp();
+  else if(d.bonnber){const b2=(state.chat.bonner||[]).find(x=>x.id===d.bonnber);if(b2)FB.bonnBer(state.chat.id,b2.id,!(b2.bedt||[]).includes(meEmail())).catch(()=>push('Kunne ikke lagre','Prøv igjen.'))}
+  else if(d.bonnbes){const b2=(state.chat.bonner||[]).find(x=>x.id===d.bonnbes);if(b2)FB.bonnBesvart(state.chat.id,b2.id,!b2.besvart).catch(()=>push('Kunne ikke lagre','Prøv igjen.'))}
+  else if(d.bonndel){FB.delBonn(state.chat.id,d.bonndel).catch(()=>push('Kunne ikke slette','Prøv igjen.'))}
+  else if('cmic' in d)chatMicStart();
+  else if('crecx' in d)chatMicAvbryt();
+  else if('crecsend' in d)chatMicSendKnapp();
+  else if(d.avstv)chatAvstStem(d.avstv);
+  else if('chatavstny' in d)chatAvstNy('gruppe');
+  else if('chatspill' in d)chatQuiz();
+  else if(d.cspill){if(d.cspill==='avst')chatAvstNy('person');else chatSpillSend(d.cspill)}
+  else if(d.dagtab){state.chat.dagtab=d.dagtab;const el=document.querySelector('.cdags');if(el)el.outerHTML=chatDagensHtml()}
+  else if('daggjort' in d)chatDagGjort();
   else if(d.cmal){const ta=document.getElementById('cT');if(ta){ta.value=d.cmal;ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus()}}
   else if('ctommel' in d){chatSendSkjema(true)}
   else if('cbarx' in d){const c=state.chat;if(c.red){const ta=document.getElementById('cT');if(ta){ta.value='';ta.style.height=''}}c.red=null;c.svar=null;chatBar()}});
@@ -2893,7 +3087,8 @@ async function chatSendSkjema(tommel){
     ta.value='';ta.style.height='';chatInpOppd()}
   catch(er){push('Kunne ikke sende','Prøv igjen ('+((er&&er.code)||'feil')+').')}
   c.sender=false;const b2=document.querySelector('#cForm .csend:not(.ctommel)');if(b2)b2.disabled=false;const t2=document.getElementById('cT');if(t2)t2.focus()}
-document.addEventListener('submit',e=>{if(!e.target||e.target.id!=='cForm')return;e.preventDefault();chatSendSkjema(false)});
+document.addEventListener('submit',async e=>{if(e.target&&e.target.id==='cBonnF'){e.preventDefault();const ta=document.getElementById('cBonnT'),t=(ta.value||'').trim();if(!t)return;try{await FB.addBonn(state.chat.id,t,nyBeskjedNavn());ta.value=''}catch(er){push('Kunne ikke legge til','Prøv igjen ('+((er&&er.code)||'feil')+').')}return}
+  if(!e.target||e.target.id!=='cForm')return;e.preventDefault();chatSendSkjema(false)});
 document.addEventListener('input',e=>{
   if(e.target.id==='cT'){const t=e.target;t.style.height='auto';t.style.height=Math.min(t.scrollHeight,120)+'px';chatInpOppd()}
   else if(e.target.id==='cQ'){const l=document.getElementById('cPers');if(l)l.innerHTML=chatNyPersonerHtml(e.target.value)}
@@ -3219,7 +3414,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='26.10.2026 kl. 16:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='26.10.2026 kl. 18:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];

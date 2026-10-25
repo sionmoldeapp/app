@@ -103,16 +103,35 @@ service cloud.firestore {
         && request.resource.data.gone is list && request.resource.data.gone.size() <= 8
         && request.resource.data.gone.toSet().difference(resource.data.get('gone', []).toSet()).hasOnly([request.auth.token.email])
         && resource.data.get('gone', []).toSet().difference(request.resource.data.gone.toSet()).hasOnly([request.auth.token.email]);
+      // Farge på samtalen: begge deltakerne kan velge en av de faste fargene.
+      allow update: if signedIn() && request.auth.token.email in resource.data.parts
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['farge'])
+        && request.resource.data.farge in ['blaa', 'rosa', 'gronn', 'lilla', 'oransje', 'rod', 'turkis', 'gull'];
       allow delete: if isAdmin() || (signedIn() && resource.data.from == request.auth.token.email);
+      // Bønneliste i samtalen: begge deltakerne legger til emner, ber (egen e-post i bedt) og merker som besvart.
+      match /bonner/{bid} {
+        allow read: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts;
+        allow create: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
+          && request.resource.data.keys().hasOnly(['t', 'by', 'navn', 'ms', 'bedt', 'besvart'])
+          && request.resource.data.by == request.auth.token.email
+          && request.resource.data.t is string && request.resource.data.t.size() >= 1 && request.resource.data.t.size() <= 200
+          && request.resource.data.navn is string && request.resource.data.navn.size() <= 60
+          && request.resource.data.ms is number && request.resource.data.bedt == [] && request.resource.data.besvart == false;
+        allow update: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
+          && ((request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bedt']) && lykOK('bedt'))
+              || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['besvart']) && request.resource.data.besvart is bool));
+        allow delete: if signedIn() && (resource.data.by == request.auth.token.email || isAdmin());
+      }
       match /messages/{mid} {
         allow read: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts;
         allow delete: if signedIn() && (isAdmin() || get(/databases/$(database)/documents/threads/$(id)).data.from == request.auth.token.email);
         // Angre en melding du selv har sendt: teksten tømmes og slettet settes.
         allow update: if signedIn() && resource.data.by == request.auth.token.email
           && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'slettet', 'img', 'svar'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'slettet', 'img', 'svar', 'lyd', 'lsek', 'avst'])
           && request.resource.data.slettet == true && request.resource.data.text == ''
-          && !('img' in request.resource.data) && !('svar' in request.resource.data);
+          && !('img' in request.resource.data) && !('svar' in request.resource.data)
+          && !('lyd' in request.resource.data) && !('lsek' in request.resource.data) && !('avst' in request.resource.data);
         // Rediger en melding du selv har sendt (bare tekstmeldinger).
         allow update: if signedIn() && resource.data.by == request.auth.token.email
           && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
@@ -122,20 +141,42 @@ service cloud.firestore {
           && !('slettet' in resource.data) && !('img' in resource.data);
         // 👍 på en melding: deltakerne kan bare legge til eller fjerne sin egen e-post i feltet likes.
         allow update: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'r_hjerte', 'r_ler', 'r_wow', 'r_trist', 'r_be'])
-          && lykOK('likes') && lykOK('r_hjerte') && lykOK('r_ler') && lykOK('r_wow') && lykOK('r_trist') && lykOK('r_be');
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'r_hjerte', 'r_ler', 'r_wow', 'r_trist', 'r_be', 'r_ild', 'r_hender', 'r_sion', 'r_amen'])
+          && lykOK('likes') && lykOK('r_hjerte') && lykOK('r_ler') && lykOK('r_wow') && lykOK('r_trist') && lykOK('r_be')
+          && lykOK('r_ild') && lykOK('r_hender') && lykOK('r_sion') && lykOK('r_amen');
         allow create: if signedIn() && request.auth.token.email in getAfter(/databases/$(database)/documents/threads/$(id)).data.parts
-          && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created', 'svar', 'img'])
+          && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created', 'svar', 'img', 'lyd', 'lsek', 'avst'])
           && request.resource.data.by == request.auth.token.email
           && request.resource.data.name is string && request.resource.data.name.size() <= 60
           && request.resource.data.text is string && request.resource.data.text.size() <= 1000
-          && (request.resource.data.text.size() >= 1 || ('img' in request.resource.data))
+          && (request.resource.data.text.size() >= 1 || ('img' in request.resource.data) || ('lyd' in request.resource.data) || ('avst' in request.resource.data))
+          && (!('lyd' in request.resource.data) || (request.resource.data.lyd is string && request.resource.data.lyd.size() <= 200000 && request.resource.data.lsek is number && request.resource.data.lsek <= 120))
+          && (!('avst' in request.resource.data) || (request.resource.data.avst is map && request.resource.data.avst.keys().hasOnly(['id'])))
           && (!('img' in request.resource.data) || (request.resource.data.img is string && request.resource.data.img.size() <= 200000))
           && (!('svar' in request.resource.data) || (request.resource.data.svar is map && request.resource.data.svar.keys().hasOnly(['id', 'navn', 'tekst'])
               && request.resource.data.svar.navn is string && request.resource.data.svar.navn.size() <= 60
               && request.resource.data.svar.tekst is string && request.resource.data.svar.tekst.size() <= 120))
           && request.resource.data.created == request.time;
       }
+    }
+    // Avstemninger i chatten: opprettes av administrator eller gruppeleder for egne grupper. Medlemmer i gruppene kan lese og stemme (egen e-post i v0 … v4).
+    function avstTilgang() {
+      return isMember() && (isAdmin() || resource.data.by == request.auth.token.email
+        || get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []).toSet().hasAny(resource.data.grupper.toSet()));
+    }
+    match /avst/{aid} {
+      allow get: if avstTilgang();
+      allow create: if isMember() && request.resource.data.by == request.auth.token.email
+        && request.resource.data.keys().hasOnly(['sp', 'val', 'by', 'byNavn', 'grupper', 'ms'])
+        && request.resource.data.sp is string && request.resource.data.sp.size() >= 1 && request.resource.data.sp.size() <= 120
+        && request.resource.data.val is list && request.resource.data.val.size() >= 2 && request.resource.data.val.size() <= 5
+        && request.resource.data.byNavn is string && request.resource.data.byNavn.size() <= 60
+        && request.resource.data.grupper is list && request.resource.data.ms is number
+        && (isAdmin() || (isLeader() && request.resource.data.grupper.size() > 0 && request.resource.data.grupper.hasOnly(myLeads())));
+      allow update: if avstTilgang()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['v0', 'v1', 'v2', 'v3', 'v4'])
+        && lykOK('v0') && lykOK('v1') && lykOK('v2') && lykOK('v3') && lykOK('v4');
+      allow delete: if signedIn() && (resource.data.by == request.auth.token.email || isAdmin());
     }
     // Bønneemner: alle medlemmer kan sende inn, men bare administratorer og medlemmer i gruppen bonneledere kan lese dem.
     // by bruker uid (ikke e-post). Forfatteren kan slette sitt eget emne, og leserne kan slette alle.
