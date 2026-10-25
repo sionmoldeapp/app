@@ -2713,8 +2713,8 @@ async function chatSendTekst(tekst,ekstra){
     for(let i=0;i<folk.length;i+=4){
       await Promise.all(folk.slice(i,i+4).map(async u=>{try{const t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(u.id)&&(x.parts||[]).includes(meg));if(t)await FB.addMsg(t,tekst,navn);else await FB.newDm(u.id,u.name||u.id,gName(ny.gid),tekst,navn);ok++}catch(e){feil++}}));
       const b=document.getElementById('cMsg');if(b)b.innerHTML='<p class="small" style="align-self:center;margin:20px">Sender … '+Math.min(i+4,folk.length)+' av '+folk.length+'</p>'}
-    if(ok&&PUSH_URL)FB.sendPush(PUSH_URL,'Ny beskjed fra '+navn,kortTekst(tekst),'me',{type:'grupper',groups:[ny.gid]}).catch(()=>{});
-    push(feil?'Delvis sendt':'Sendt',feil?ok+' fikk beskjeden, '+feil+' feilet.':'Beskjeden er sendt til '+ok+(ok===1?' person.':' personer.'));
+    if(ok&&PUSH_URL)FB.sendPushStille(PUSH_URL,'Ny beskjed fra '+navn,kortTekst(tekst),'me',{type:'grupper',groups:[ny.gid]}).catch(()=>{});
+    if(feil)push('Delvis sendt',ok+' fikk beskjeden, '+feil+' feilet.');
     chatListe()}}
 /* Hold på en melding: reaksjoner (👍 ❤️ 😂 😮 😢 🙏), svar, kopier, rediger og angre. Dobbelttrykk setter 👍 direkte. */
 function chatMsgMeny(mid){
@@ -2857,7 +2857,7 @@ function ansMsgAsk(roleId){
     const text=dlg.querySelector('#bT').value.trim();if(!text){dlg.querySelector('#bS').textContent='Skriv en beskjed.';return}
     try{const id=await FB.newThread(r,text,nyBeskjedNavn());dlg.close();
       if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});
-      chatApne(id);push('Sendt','Beskjeden er sendt. Svar kommer i Chat.')}
+      chatApne(id)}
     catch(er){dlg.querySelector('#bS').textContent='Kunne ikke sende ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 /* Privat beskjed fra gruppeleder til ett medlem (også som svar på et raskt svar). Finnes det allerede en samtale med personen, legges meldingen til i den. */
@@ -3141,7 +3141,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='26.10.2026 kl. 10:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='26.10.2026 kl. 11:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];

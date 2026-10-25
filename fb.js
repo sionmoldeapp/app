@@ -470,7 +470,8 @@ const FB={
     }
   };
   // Lagring og sending vises med «Lagrer …» / «Sender …» til databasen eller tjenesten har svart.
-  for(const n of ['setAttest','setPrivacy','setRole','newThread','addMsg','addPrayer','lrAdd','setContact','setGiving','setJul','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
+  for(const n of ['setAttest','setPrivacy','setRole','newThread','addPrayer','lrAdd','setContact','setGiving','setJul','add','set','setFastEx','setProfile','saveNote','setShift','addRequest','addScheduled','setCatDoc','setGroupDoc','setLtypeDoc','setLtype','setLeder','setLeads','setGroups','setRole','addUser','leaderAdd','leaderRemove']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Lagrer …')}
+  FB.sendPushStille=FB.sendPush;   // uten «Sender …»-dekket (brukes av chatten)
   for(const n of ['sendPush','sendNote','sendPrayers','sendSaker','sendWelcome','sendRsvpMail','sendMail']){const f=FB[n];if(f)FB[n]=(...a)=>sl(f.apply(FB,a),'Sender …')}
   window._fbRes(FB);
 }catch(e){console.warn('Firebase kunne ikke lastes, bruker JSON-filene',e);window._fbRes(null)}
