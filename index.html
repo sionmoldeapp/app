@@ -335,10 +335,10 @@ html[data-stil="android"] .btn,html[data-stil="android"] .chip,html[data-stil="a
 #nFotoX[hidden]{display:none}
 .nminitur{flex:none;width:44px;height:44px;border-radius:var(--r-s);object-fit:cover;display:block}
 /* Hvert notat og opptak er et eget kort med skygge, som kortene ellers i appen. */
-#noteList .item,.ospill .item{background:var(--surface);border:1px solid var(--line);box-shadow:0 1px 2px rgba(15,40,70,.10),0 6px 16px rgba(15,40,70,.12)}
-:root[data-theme="dark"] #noteList .item,:root[data-theme="dark"] .ospill .item{box-shadow:0 1px 2px rgba(0,0,0,.4),0 6px 16px rgba(0,0,0,.45)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #noteList .item,:root:not([data-theme="light"]) .ospill .item{box-shadow:0 1px 2px rgba(0,0,0,.4),0 6px 16px rgba(0,0,0,.45)}}
-#noteList,.ospill .list{gap:12px}
+#noteList .item,.ospill .item,#lrList .item,#lrListFerdig .item{background:var(--surface);border:1px solid var(--line);box-shadow:0 1px 2px rgba(15,40,70,.10),0 6px 16px rgba(15,40,70,.12)}
+:root[data-theme="dark"] #noteList .item,:root[data-theme="dark"] .ospill .item,:root[data-theme="dark"] #lrList .item,:root[data-theme="dark"] #lrListFerdig .item{box-shadow:0 1px 2px rgba(0,0,0,.4),0 6px 16px rgba(0,0,0,.45)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #noteList .item,:root:not([data-theme="light"]) .ospill .item,:root:not([data-theme="light"]) #lrList .item,:root:not([data-theme="light"]) #lrListFerdig .item{box-shadow:0 1px 2px rgba(0,0,0,.4),0 6px 16px rgba(0,0,0,.45)}}
+#noteList,.ospill .list,#lrList,#lrListFerdig{gap:12px}
 .oseks{border:2px solid var(--line);border-radius:var(--r-m);padding:12px;margin:0 0 14px}
 .oseks.orec{border-color:color-mix(in srgb,#e5484d 40%,var(--line));background:color-mix(in srgb,#e5484d 6%,transparent)}
 .oseks.orecpa{border-color:#e5484d;box-shadow:0 0 0 3px color-mix(in srgb,#e5484d 25%,transparent)}
@@ -1420,11 +1420,15 @@ function lrCard(){
   if(!lrTilgang())return '';
   const l=state.lr,apne=(l||[]).filter(x=>!x.done).sort((a,b)=>(a.ms||0)-(b.ms||0)),ferdige=(l||[]).filter(x=>x.done).sort((a,b)=>(b.doneMs||0)-(a.doneMs||0));
   const mine=x=>effAdmin()||(x.by&&state.user&&x.by===String(state.user.email||'').toLowerCase());
-  const rad=(x,grå)=>'<div class="r" style="display:block;'+(grå?'opacity:.55':'')+'">'+(x.tittel?'<b style="display:block;font-size:var(--t-b);margin-bottom:2px">'+esc(x.tittel)+'</b>':'')+'<div class="'+(x.bh?'rt':'')+'" style="'+(x.bh?'':'white-space:pre-wrap')+'">'+richVis({bh:x.bh,b:x.t})+'</div><div class="small" style="margin:4px 0 6px">'+esc(x.name||'')+' · '+esc(ago({ms:x.ms}))+'</div><div class="btns"><button class="btn" data-lrdone="'+esc(x.id)+'" data-v="'+(grå?'0':'1')+'">'+(grå?'Åpne igjen':'Behandlet')+'</button>'+(mine(x)?'<button class="btn" data-lrdel="'+esc(x.id)+'">Slett</button>':'')+'</div></div>';
+  /* Samme oppsett som møtenotatene: delt per dag, hvert innlegg et eget kort med datoboks. Trykk åpner saken. */
+  const rad=(x,grå)=>{const d=new Date(x.ms||Date.now()),id='lr_'+x.id,open=state.open[id],tit=x.tittel||String(x.t||'').split('\n')[0].slice(0,70)||'Sak';
+    return '<div class="item '+(open?'open':'')+'" style="'+(grå?'opacity:.7':'')+'"><button type="button" data-ev="'+esc(id)+'" aria-expanded="'+(!!open)+'">'+datoBoks(d)+'<div class="grow"><b>'+esc(tit)+'</b><span class="small">'+esc(x.name||'')+' · kl. '+esc(chatKl(x.ms||Date.now()))+'</span></div>'+(grå?'<span class="tag">Behandlet</span>':'')+'</button>'
+     +'<div class="detail"><div class="'+(x.bh?'rt':'')+'" style="'+(x.bh?'':'white-space:pre-wrap')+'">'+richVis({bh:x.bh,b:x.t})+'</div><div class="btns" style="margin-top:10px"><button class="btn" data-lrdone="'+esc(x.id)+'" data-v="'+(grå?'0':'1')+'">'+(grå?'Åpne igjen':'Behandlet')+'</button>'+(mine(x)?'<button class="btn" data-lrdel="'+esc(x.id)+'">Slett</button>':'')+'</div></div></div>'};
+  const gruppert=(l,grå)=>{let sist='',h='';l.slice().sort((p,q)=>(q.ms||0)-(p.ms||0)).forEach(x=>{const k=dagTekst(new Date(x.ms||Date.now()));if(k!==sist){h+='<div class="day">'+esc(k)+'</div>';sist=k}h+=rad(x,grå)});return h};
   const inn='<p class="small" style="margin:0 0 8px">Saker du vil ta opp i lederrådet. Alle i lederrådet ser dem.</p>'
    +'<div class="btns" style="margin:0 0 10px"><button class="btn primary" data-lradd style="width:auto">+ Ny sak</button><button class="btn" data-lrrefresh>Oppdater</button>'+(apne.length?'<button class="btn" data-lrcopy>Kopier saklisten</button>'+(PUSH_URL?'<button class="btn" data-lrmail>'+(effAdmin()?'Send til e-post':'Send til administrator')+'</button>':''):'')+'</div>'
-   +(l===undefined?'<p class="small">Henter saker …</p>':'<div class="reg">'+(apne.map(x=>rad(x,false)).join('')||'<p class="small">Ingen saker ennå.</p>')+'</div>'
-   +(ferdige.length?'<details class="acc sub" data-acc="lr_ferdige" '+(state.acc.lr_ferdige?'open':'')+' style="margin-top:12px"><summary><h3 style="font-size:var(--t-l)">Behandlet ('+ferdige.length+')</h3></summary><div class="reg">'+ferdige.map(x=>rad(x,true)).join('')+'</div></details>':''));
+   +(l===undefined?'<p class="small">Henter saker …</p>':'<div class="list" id="lrList">'+(gruppert(apne,false)||'<p class="small">Ingen saker ennå.</p>')+'</div>'
+   +(ferdige.length?'<details class="acc sub" data-acc="lr_ferdige" '+(state.acc.lr_ferdige?'open':'')+' style="margin-top:12px"><summary><h3 style="font-size:var(--t-l)">Behandlet ('+ferdige.length+')</h3></summary><div class="list" id="lrListFerdig" style="margin-top:8px">'+gruppert(ferdige,true)+'</div></details>':''));
   return '<details class="card acc" data-acc="lr" '+(state.acc.lr?'open':'')+'><summary><h2>Saker til lederrådet'+(l?bdg(lrNye().length):'')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.lrMsg||'')+'</p></details>'}
 async function loadLr(){
   try{state.lr=await FB.lrList();state.lrMsg=''}catch(e){state.lr=[];state.lrMsg='Kunne ikke hente sakene ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
@@ -2951,7 +2955,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 17:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 18:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
