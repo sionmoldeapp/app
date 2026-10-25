@@ -2979,7 +2979,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 19:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 20:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -3050,11 +3050,12 @@ function uiLagre(){try{localStorage.setItem('sm-ui',JSON.stringify(UI))}catch(e)
 applyFs();
 function settingsCard(){return subSorter('innst',settingsKort())}
 function settingsKort(){
-  const bryter=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${k==='nh'?UI[k]===true:UI[k]!==false}" aria-label="${l}" data-ui="${k}"></button></div>`;
+  const bryter=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${(k==='nh'||k==='vaken')?UI[k]===true:UI[k]!==false}" aria-label="${l}" data-ui="${k}"></button></div>`;
   const H=t=>`<h3 style="margin:14px 0 6px;font-size:var(--t-l)">${t}</h3>`;
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
   ${profSub('inpush','Varsler',pushInner())}
   ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Skjermvisning</h3><p class="small" style="margin:0 0 8px">På PC kan appen fylle hele nettleservinduet med sidemeny og flere kolonner. Automatisk betyr bred visning for administratorer på stor skjerm.</p><div class="btns" role="group" aria-label="Skjermvisning" style="margin-bottom:16px">${[['auto','Automatisk'],['bred','Bred (PC)'],['mobil','Mobilvisning']].map(([v,n])=>`<button type="button" class="btn ${(UI.vis||'auto')===v?'on':''}" data-vis="${v}" aria-pressed="${(UI.vis||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Meny</h3><p class="small" style="margin:0 0 8px">Når appen er utvidet til hele bredden, kan menyen stå på siden eller nederst som på mobil.</p><div class="btns" role="group" aria-label="Plassering av menyen" style="margin-bottom:16px">${[['side','På siden'],['bunn','Nederst']].map(([v,n])=>`<button type="button" class="btn ${(UI.meny||'side')===v?'on':''}" data-meny="${v}" aria-pressed="${(UI.meny||'side')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${[...PALETTER,egenPalEntry()].map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div>${egenEditor()}<p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
+  ${profSub('invaken','Skjerm',bryter('vaken','Hold skjermen våken','Skjermen slukker ikke så lenge appen er åpen og i forgrunnen. Bruker mer batteri.')+(navigator.wakeLock?'':'<p class="small" style="margin:6px 0 0">Denne nettleseren støtter ikke dette.</p>')+'<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>')}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('installer','Slik installerer du appen',installBody())}
@@ -3707,7 +3708,7 @@ document.addEventListener('click',async e=>{
   else if('rscancel' in c.dataset){$('#rsDlg').close();rsPending=null}
   else if(c.dataset.af){state.af=c.dataset.af;state.sel={};keep(()=>{})}
   else if(c.dataset.f){state.filter=c.dataset.f;keep(()=>{})}
-  else if(c.dataset.ui){keep(()=>{UI[c.dataset.ui]=UI[c.dataset.ui]===false;if(c.dataset.ui==='vk'&&UI.vk)lsSet('sm-viktig-skjult','');uiLagre()})}
+  else if(c.dataset.ui){keep(()=>{const k0=c.dataset.ui;UI[k0]=(k0==='nh'||k0==='vaken')?!UI[k0]:UI[k0]===false;if(k0==='vaken')vakenSett();if(c.dataset.ui==='vk'&&UI.vk)lsSet('sm-viktig-skjult','');uiLagre()})}
   else if('egenbruk' in c.dataset){setPal('egen');keep(()=>{})}
   else if(c.dataset.egenauto){const k=c.dataset.egenauto;let j={};try{j=JSON.parse(lsGet('sm-egen')||'{}')||{}}catch(e){}j[k]='';lsSet('sm-egen',JSON.stringify(j));egenBruk();keep(()=>{})}
   else if('egenreset' in c.dataset){lsSet('sm-egen','');egenBruk();keep(()=>{})}
@@ -4488,6 +4489,17 @@ async function start(){
 }
 start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()});
 /* Større skjerm (nettbrett eller PC): spør én gang om appen skal utvides til hele bredden eller beholde den smale visningen. Valget lagres i Innstillinger → Utseende → Skjermvisning (UI.vis). */
+/* Hold skjermen våken (Innstillinger → Skjerm): Screen Wake Lock så lenge appen er synlig. Slippes når appen skjules, og tas på nytt når den vises igjen. */
+let vakenLaas=null;
+async function vakenSett(){
+  try{
+    if(UI.vaken&&document.visibilityState==='visible'&&navigator.wakeLock){
+      if(!vakenLaas){const l=await navigator.wakeLock.request('screen');vakenLaas=l;l.addEventListener('release',()=>{if(vakenLaas===l)vakenLaas=null})}}
+    else if(vakenLaas){const l=vakenLaas;vakenLaas=null;await l.release()}
+  }catch(e){vakenLaas=null}}
+document.addEventListener('visibilitychange',vakenSett);
+document.addEventListener('pointerdown',()=>{if(UI.vaken&&!vakenLaas)vakenSett()},{passive:true});
+setTimeout(vakenSett,1500);
 function skjermStor(){return innerWidth>=700&&Math.min(innerWidth,innerHeight)>=500}
 function skjermSjekk(n){
   n=n||0;if(!skjermStor()||lsGet('sm-skjerm-spurt'))return;
