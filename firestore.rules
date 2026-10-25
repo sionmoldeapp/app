@@ -93,6 +93,12 @@ service cloud.firestore {
       match /messages/{mid} {
         allow read: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts;
         allow delete: if signedIn() && (isAdmin() || get(/databases/$(database)/documents/threads/$(id)).data.from == request.auth.token.email);
+        // 👍 på en melding: deltakerne kan bare legge til eller fjerne sin egen e-post i feltet likes.
+        allow update: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+          && request.resource.data.likes is list && request.resource.data.likes.size() <= 8
+          && request.resource.data.likes.toSet().difference(resource.data.get('likes', []).toSet()).hasOnly([request.auth.token.email])
+          && resource.data.get('likes', []).toSet().difference(request.resource.data.likes.toSet()).hasOnly([request.auth.token.email]);
         allow create: if signedIn() && request.auth.token.email in getAfter(/databases/$(database)/documents/threads/$(id)).data.parts
           && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created'])
           && request.resource.data.by == request.auth.token.email

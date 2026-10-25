@@ -538,6 +538,11 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .cb.me{align-self:flex-end;background:var(--brand);color:var(--brand-ink);border-bottom-right-radius:6px}
 .cb.de{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px}
 .cb a{color:inherit;text-decoration:underline}
+.cb{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.cb.lk{margin-bottom:12px}
+.clike{position:absolute;bottom:-12px;right:10px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:99px;padding:1px 7px;font-size:var(--t-s);line-height:1.4;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.cb.de .clike{right:auto;left:10px}
+.clike.mine{border-color:var(--lamp)}
 .ct{font-size:var(--t-xs);color:var(--muted);margin:0 6px 6px}
 .ct.me{align-self:flex-end}.ct.de{align-self:flex-start}
 .cinp{display:flex;gap:8px;align-items:flex-end;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface)}
@@ -2571,7 +2576,7 @@ function chatApne(id){
   if(!FB||!state.user||!state.member)return;
   const c=state.chat;c.vis=true;chatEl().hidden=false;chatPlasser();document.body.style.overflow='hidden';
   loadThreads();
-  if(id){chatVent(id,()=>chatSamtale(id));chatListe()}else chatListe()}
+  chatListe();if(id)chatVent(id,()=>chatSamtale(id))}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
 function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatListe();return}setTimeout(()=>chatVent(id,fn,n+1),250)}
 function chatLukk(){const c=state.chat;chatStoppMsgs();c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow=''}
@@ -2600,7 +2605,8 @@ function chatMsgs(sist){
   l.forEach((m,i)=>{
     if(!forrige||chatDg(m.ms)!==chatDg(forrige.ms))h+='<div class="cdag">'+esc(chatDag(m.ms))+'</div>';
     const mine=m.by===meg,neste=l[i+1],slutt=!neste||neste.by!==m.by||neste.ms-m.ms>3e5||chatDg(neste.ms)!==chatDg(m.ms);
-    h+='<div class="cb '+(mine?'me':'de')+'">'+linkify(esc(m.text))+'</div>'+(slutt?'<div class="ct '+(mine?'me':'de')+'">'+esc(chatKl(m.ms))+'</div>':'');forrige=m});
+    const lk=(m.likes||[]).length,meg_lik=(m.likes||[]).includes(meg);
+    h+='<div class="cb '+(mine?'me':'de')+(lk?' lk':'')+'" data-msg="'+esc(m.id)+'">'+linkify(esc(m.text))+(lk?'<span class="clike'+(meg_lik?' mine':'')+'" aria-label="'+lk+' liker">👍'+(lk>1?' '+lk:'')+'</span>':'')+'</div>'+(slutt?'<div class="ct '+(mine?'me':'de')+'">'+esc(chatKl(m.ms))+'</div>':'');forrige=m});
   box.innerHTML=h||'<p class="small" style="align-self:center;margin-top:20px">Ingen meldinger ennå. Skriv den første.</p>';
   if(nær||sist)box.scrollTop=box.scrollHeight}
 /* Ny melding: velg hele gruppen eller en person. Bare ledere og administratorer. */
@@ -2638,6 +2644,21 @@ async function chatSendTekst(tekst){
     if(ok&&PUSH_URL)FB.sendPush(PUSH_URL,'Ny beskjed fra '+navn,kortTekst(tekst),'me',{type:'grupper',groups:[ny.gid]}).catch(()=>{});
     push(feil?'Delvis sendt':'Sendt',feil?ok+' fikk beskjeden, '+feil+' feilet.':'Beskjeden er sendt til '+ok+(ok===1?' person.':' personer.'));
     chatListe()}}
+/* Hold på en melding (eller dobbelttrykk) for å sette 👍 på den; gjør du det igjen, fjernes den. */
+async function chatLik(mid){
+  const c=state.chat,m=c.msgs.find(x=>x.id===mid),t=c.id&&chatTraad(c.id);if(!m||!t)return;
+  const meg=meEmail(),paa=!(m.likes||[]).includes(meg);
+  m.likes=paa?[...(m.likes||[]),meg]:(m.likes||[]).filter(x=>x!==meg);chatMsgs(false);
+  try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
+  try{await FB.likeMsg(c.id,mid,paa)}catch(e){m.likes=paa?m.likes.filter(x=>x!==meg):[...m.likes,meg];chatMsgs(false);push('Kunne ikke sette like','Prøv igjen ('+((e&&e.code)||'feil')+').')}}
+{let tm=0,p0=null,brukt=false;
+  const stopp=()=>{clearTimeout(tm);tm=0;p0=null};
+  document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('#cMsg .cb[data-msg]');if(!b)return;p0=[e.clientX,e.clientY];const id=b.dataset.msg;tm=setTimeout(()=>{tm=0;brukt=true;chatLik(id)},520)});
+  document.addEventListener('pointermove',e=>{if(p0&&Math.hypot(e.clientX-p0[0],e.clientY-p0[1])>10)stopp()});
+  document.addEventListener('pointerup',stopp);document.addEventListener('pointercancel',stopp);
+  document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('#cMsg .cb[data-msg]'))e.preventDefault()});
+  document.addEventListener('dblclick',e=>{const b=e.target.closest&&e.target.closest('#cMsg .cb[data-msg]');if(b)chatLik(b.dataset.msg)});
+  document.addEventListener('click',e=>{if(brukt){brukt=false;if(e.target.closest&&e.target.closest('#cMsg .cb[data-msg]')){e.preventDefault();e.stopPropagation()}}},true)}
 document.addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('button');if(!b)return;const d=b.dataset;
   if('chattab' in d){chatApne()}
@@ -2979,7 +3000,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 20:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 21:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
