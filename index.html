@@ -2939,7 +2939,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 14:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 15:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2950,7 +2950,7 @@ function nullstillUtseende(){setStil('standard');setPal('premium')}
     const k=e.target.closest&&e.target.closest('.btn,.chip,nav.tabs button,.item>button,.nhero-b,.card.next[data-t]');if(!k)return;
     const r=k.getBoundingClientRect(),d=Math.max(r.width,r.height)*2.2,sp=document.createElement('span');sp.className='ripple';
     sp.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(e.clientX-r.left-d/2)+'px;top:'+(e.clientY-r.top-d/2)+'px';k.appendChild(sp);sp.addEventListener('animationend',()=>sp.remove());setTimeout(()=>sp.remove(),900)},{passive:true}) }
-function bredNa(){const v=UI.vis||'auto';return innerWidth>=1000&&(v==='bred'||(v==='auto'&&!!(state.admin||(state.real&&state.real.admin))))}
+function bredNa(){const v=UI.vis||'auto';return (v==='bred'&&innerWidth>=700)||(innerWidth>=1000&&v==='auto'&&!!(state.admin||(state.real&&state.real.admin)))}
 function settBred(){const r=document.documentElement;r.dataset.bred=bredNa()?'1':'0';r.dataset.tab=state.tab}
 addEventListener('resize',()=>settBred());
 /* Egen palett: brukeren velger noen få farger, resten (kort, tekst, linjer, mørk visning, kontrast) regnes ut. Lagres bare på enheten (sm-egen), og brukes som data-pal="egen". */
@@ -4368,6 +4368,19 @@ async function start(){
   else{await load();state.fast=false;state.authVent=false;first=false;render();splashBort()}
 }
 start().catch(()=>{$('#view').textContent='Kunne ikke laste program. Prøv igjen senere.';splashBort()});
+/* Større skjerm (nettbrett eller PC): spør én gang om appen skal utvides til hele bredden eller beholde den smale visningen. Valget lagres i Innstillinger → Utseende → Skjermvisning (UI.vis). */
+function skjermStor(){return innerWidth>=700&&Math.min(innerWidth,innerHeight)>=500}
+function skjermSjekk(n){
+  n=n||0;if(!skjermStor()||lsGet('sm-skjerm-spurt'))return;
+  if((UI.vis||'auto')!=='auto'){lsSet('sm-skjerm-spurt','1');return}
+  if(document.querySelector('dialog[open]')||first){if(n<6)setTimeout(()=>skjermSjekk(n+1),4000);return}
+  const dlg=document.createElement('dialog');dlg.className='lp';dlg.setAttribute('role','alertdialog');
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Større skjerm</h3><p class="small" style="margin:0">Appen ser ut til å kjøre på en større skjerm ('+innerWidth+' px bred). Vil du utvide appen til kanten av skjermen, eller beholde den smale visningen? Du kan endre det senere under Mer → Meg → Innstillinger → Utseende → Skjermvisning.</p><div class="btns"><button class="btn primary" value="bred" style="flex:1">Utvid bredden</button><button class="btn" value="mobil" style="flex:1">Behold</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.addEventListener('close',()=>{const v=dlg.returnValue==='bred'?'bred':'mobil';dlg.remove();UI.vis=v;uiLagre();lsSet('sm-skjerm-spurt','1');settBred();keep(()=>{})});
+  dlg.showModal()}
+setTimeout(skjermSjekk,3500);
+{let rt=0;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>skjermSjekk(),900)})}
 // Kald start fra et trykk på et varsel: gå til stedet varselet gjelder når innholdet er lastet (prøver noen ganger).
 if(state.pendingVarsel){[900,2500,5000,9000].forEach(ms=>setTimeout(()=>{const p=state.pendingVarsel;if(p&&!first&&apneFraVarsel(p.tab,p.tittel,p.tekst))state.pendingVarsel=null},ms))}
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});hentVarselFraSW();
