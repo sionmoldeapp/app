@@ -360,6 +360,13 @@ html[data-bred="1"] nav.tabs{left:0;top:0;bottom:0;transform:none;width:240px;ma
 html[data-bred="1"] nav.tabs::before{content:'Administrasjon';font-family:var(--f-display);font-size:26px;text-transform:uppercase;letter-spacing:.02em;padding:0 16px 18px;color:var(--ink)}
 html[data-bred="1"] nav.tabs button{flex-direction:row;justify-content:flex-start;gap:14px;padding:12px 16px;font-size:var(--t-b)}
 html[data-bred="1"] nav.tabs button .tab-bdg{position:static;margin-left:auto}
+/* Bred visning med menyen nederst i stedet for på siden (Innstillinger → Utseende → Meny). */
+html[data-bred="1"][data-meny="bunn"] .app{margin:0}
+html[data-bred="1"][data-meny="bunn"] main{padding-bottom:120px}
+html[data-bred="1"][data-meny="bunn"] nav.tabs{left:50%;top:auto;bottom:0;transform:translateX(-50%);width:100%;max-width:720px;display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);border-right:0;overflow:visible}
+html[data-bred="1"][data-meny="bunn"] nav.tabs::before{content:none}
+html[data-bred="1"][data-meny="bunn"] nav.tabs button{flex-direction:column;justify-content:center;gap:2px;padding:6px 0;font-size:var(--t-xs)}
+html[data-bred="1"][data-meny="bunn"] nav.tabs button .tab-bdg{position:absolute;top:4px;left:50%;margin-left:6px}
 .egenrad{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}.egenrad label{flex:1 1 150px;font-size:var(--t-m);font-weight:600}
 .egenrad input[type=color]{width:46px;height:38px;padding:2px;border:1px solid var(--line);border-radius:var(--r-s);background:var(--surface);cursor:pointer;flex:none}
 .egenrad input[type=text]{width:92px;flex:none;font-variant-numeric:tabular-nums}
@@ -2511,7 +2518,7 @@ function chatDag(ms){const d=new Date(ms),dg=chatDg(ms);return dg<=0?'I dag':dg=
 const chatTraad=id=>(state.threads||[]).find(t=>t.id===id);
 function chatPlasser(){
   const e=document.getElementById('chat'),n=document.getElementById('tabs');if(!e||!n)return;const r=n.getBoundingClientRect();
-  if(document.documentElement.dataset.bred==='1'){e.style.left=r.width+'px';e.style.bottom='0px'}
+  if(document.documentElement.dataset.bred==='1'&&document.documentElement.dataset.meny!=='bunn'){e.style.left=r.width+'px';e.style.bottom='0px'}
   else{e.style.left='0px';e.style.bottom=Math.max(0,innerHeight-r.top)+'px'}}
 addEventListener('resize',()=>{if(state.chat.vis)chatPlasser()});
 function chatEl(){let e=document.getElementById('chat');if(!e){e=document.createElement('div');e.id='chat';e.className='chat';e.hidden=true;e.innerHTML='<div class="cw" role="dialog" aria-modal="true" aria-label="Chat"></div>';document.body.appendChild(e)}return e}
@@ -2944,7 +2951,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 15:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 16:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -2956,7 +2963,7 @@ function nullstillUtseende(){setStil('standard');setPal('premium')}
     const r=k.getBoundingClientRect(),d=Math.max(r.width,r.height)*2.2,sp=document.createElement('span');sp.className='ripple';
     sp.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(e.clientX-r.left-d/2)+'px;top:'+(e.clientY-r.top-d/2)+'px';k.appendChild(sp);sp.addEventListener('animationend',()=>sp.remove());setTimeout(()=>sp.remove(),900)},{passive:true}) }
 function bredNa(){const v=UI.vis||'auto';return (v==='bred'&&innerWidth>=700)||(innerWidth>=1000&&v==='auto'&&!!(state.admin||(state.real&&state.real.admin)))}
-function settBred(){const r=document.documentElement;r.dataset.bred=bredNa()?'1':'0';r.dataset.tab=state.tab}
+function settBred(){const r=document.documentElement;r.dataset.bred=bredNa()?'1':'0';r.dataset.meny=UI.meny==='bunn'?'bunn':'side';r.dataset.tab=state.tab}
 addEventListener('resize',()=>settBred());
 /* Egen palett: brukeren velger noen få farger, resten (kort, tekst, linjer, mørk visning, kontrast) regnes ut. Lagres bare på enheten (sm-egen), og brukes som data-pal="egen". */
 const cHex=h=>{h=String(h||'').trim().replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');return /^[0-9a-f]{6}$/i.test(h)?'#'+h.toLowerCase():null};
@@ -3019,7 +3026,7 @@ function settingsKort(){
   const H=t=>`<h3 style="margin:14px 0 6px;font-size:var(--t-l)">${t}</h3>`;
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
   ${profSub('inpush','Varsler',pushInner())}
-  ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Skjermvisning</h3><p class="small" style="margin:0 0 8px">På PC kan appen fylle hele nettleservinduet med sidemeny og flere kolonner. Automatisk betyr bred visning for administratorer på stor skjerm.</p><div class="btns" role="group" aria-label="Skjermvisning" style="margin-bottom:16px">${[['auto','Automatisk'],['bred','Bred (PC)'],['mobil','Mobilvisning']].map(([v,n])=>`<button type="button" class="btn ${(UI.vis||'auto')===v?'on':''}" data-vis="${v}" aria-pressed="${(UI.vis||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${[...PALETTER,egenPalEntry()].map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div>${egenEditor()}<p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
+  ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Skjermvisning</h3><p class="small" style="margin:0 0 8px">På PC kan appen fylle hele nettleservinduet med sidemeny og flere kolonner. Automatisk betyr bred visning for administratorer på stor skjerm.</p><div class="btns" role="group" aria-label="Skjermvisning" style="margin-bottom:16px">${[['auto','Automatisk'],['bred','Bred (PC)'],['mobil','Mobilvisning']].map(([v,n])=>`<button type="button" class="btn ${(UI.vis||'auto')===v?'on':''}" data-vis="${v}" aria-pressed="${(UI.vis||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Meny</h3><p class="small" style="margin:0 0 8px">Når appen er utvidet til hele bredden, kan menyen stå på siden eller nederst som på mobil.</p><div class="btns" role="group" aria-label="Plassering av menyen" style="margin-bottom:16px">${[['side','På siden'],['bunn','Nederst']].map(([v,n])=>`<button type="button" class="btn ${(UI.meny||'side')===v?'on':''}" data-meny="${v}" aria-pressed="${(UI.meny||'side')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${[...PALETTER,egenPalEntry()].map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div>${egenEditor()}<p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('installer','Slik installerer du appen',installBody())}
@@ -3603,6 +3610,7 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.egenauto){const k=c.dataset.egenauto;let j={};try{j=JSON.parse(lsGet('sm-egen')||'{}')||{}}catch(e){}j[k]='';lsSet('sm-egen',JSON.stringify(j));egenBruk();keep(()=>{})}
   else if('egenreset' in c.dataset){lsSet('sm-egen','');egenBruk();keep(()=>{})}
   else if(c.dataset.vis){UI.vis=c.dataset.vis;uiLagre();settBred();keep(()=>{})}
+  else if(c.dataset.meny){UI.meny=c.dataset.meny;uiLagre();settBred();keep(()=>{})}
   else if(c.dataset.stil){setStil(c.dataset.stil);keep(()=>{})}
   else if('utsvReset' in c.dataset){nullstillUtseende();keep(()=>{})}
   else if('opptstart' in c.dataset){opptStart(false)}
@@ -4380,7 +4388,7 @@ function skjermSjekk(n){
   if((UI.vis||'auto')!=='auto'){lsSet('sm-skjerm-spurt','1');return}
   if(document.querySelector('dialog[open]')||first){if(n<6)setTimeout(()=>skjermSjekk(n+1),4000);return}
   const dlg=document.createElement('dialog');dlg.className='lp';dlg.setAttribute('role','alertdialog');
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Større skjerm</h3><p class="small" style="margin:0">Appen ser ut til å kjøre på en større skjerm ('+innerWidth+' px bred). Vil du utvide appen til kanten av skjermen, eller beholde den smale visningen? Du kan endre det senere under Mer → Meg → Innstillinger → Utseende → Skjermvisning.</p><div class="btns"><button class="btn primary" value="bred" style="flex:1">Utvid bredden</button><button class="btn" value="mobil" style="flex:1">Behold</button></div></form>';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Større skjerm</h3><p class="small" style="margin:0">Appen ser ut til å kjøre på en større skjerm ('+innerWidth+' px bred). Vil du utvide appen til kanten av skjermen, eller beholde den smale visningen? Du kan endre det senere, og velge om menyen skal stå på siden eller nederst, under Mer → Meg → Innstillinger → Utseende.</p><div class="btns"><button class="btn primary" value="bred" style="flex:1">Utvid bredden</button><button class="btn" value="mobil" style="flex:1">Behold</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('close',()=>{const v=dlg.returnValue==='bred'?'bred':'mobil';dlg.remove();UI.vis=v;uiLagre();lsSet('sm-skjerm-spurt','1');settBred();keep(()=>{})});
   dlg.showModal()}
