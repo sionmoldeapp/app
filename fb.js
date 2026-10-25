@@ -67,8 +67,9 @@ const FB={
       try{const ps=await S.getDocs(S.query(S.collection(db,'prayers'),S.where('by','==',u.uid)));for(const d of ps.docs)await S.deleteDoc(d.ref)}catch(e){}
       try{const ts=await S.getDocs(S.query(S.collection(db,'threads'),S.where('from','==',email)));for(const t of ts.docs){const ms=await S.getDocs(S.collection(db,'threads',t.id,'messages'));for(const m of ms.docs)await S.deleteDoc(m.ref);await S.deleteDoc(t.ref)}}catch(e){}
       try{await S.deleteDoc(S.doc(db,'userPrefs',email))}catch(e){}
-      try{await S.deleteDoc(S.doc(db,'attester',email))}catch(e){}
       await S.deleteDoc(S.doc(db,'members',email));
+      // Politiattest (dato, dokument og forslag) fjernes uten bekreftelse fra gruppeleder eller administrator når du sletter deg selv.
+      for(const c of ['attestfilny','attestfil','attestforslag','attester']){try{await S.deleteDoc(S.doc(db,c,email))}catch(e){}}
       await A.deleteUser(u);
     },
     // Innsyn (GDPR artikkel 15): alt appen har lagret om brukeren, som en fil.
@@ -78,7 +79,7 @@ const FB={
       o.profil=await prøv(async()=>{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()?s.data():null});
       o.notater=await prøv(async()=>(await S.getDocs(S.collection(db,'members',email,'notes'))).docs.map(d=>({id:d.id,...d.data()})));
       o.innstillinger=await prøv(async()=>{const s=await S.getDoc(S.doc(db,'userPrefs',email));return s.exists()?s.data():null});
-      o.politiattest=await prøv(async()=>{const s=await S.getDoc(S.doc(db,'attester',email));return s.exists()?{godkjent:s.data().dato}:null});
+      o.politiattest=await prøv(async()=>{const s=await S.getDoc(S.doc(db,'attester',email)),fo=await S.getDoc(S.doc(db,'attestforslag',email));if(!s.exists()&&!fo.exists())return null;const x=s.exists()?s.data():{},fil=x.fil===true?await S.getDoc(S.doc(db,'attestfil',email)):null;return {dato:x.dato||'',dokumentLagret:x.fil===true,forslag:fo.exists()?fo.data():null,dokument:fil&&fil.exists()?fil.data():null}});
       o.bonneemner=await prøv(async()=>(await S.getDocs(S.query(S.collection(db,'prayers'),S.where('by','==',u.uid)))).docs.map(d=>{const x=d.data();return {t:x.t,navn:x.name,tidspunkt:x.ms}}));
       o.beskjeder=await prøv(async()=>{const ts=await S.getDocs(S.query(S.collection(db,'threads'),S.where('parts','array-contains',email)));const ut=[];for(const t of ts.docs){const x=t.data(),ms=await S.getDocs(S.query(S.collection(db,'threads',t.id,'messages'),S.orderBy('created')));ut.push({ansvarsomrade:x.roleName,fra:x.fromName,deltakere:x.parts,meldinger:ms.docs.map(m=>{const y=m.data();return {fra:y.name,epost:y.by,tekst:y.text,tidspunkt:y.created&&y.created.toDate?y.created.toDate().toISOString():null}})})}return ut});
       return o;
@@ -132,12 +133,37 @@ const FB={
     markThreadRead:id=>S.updateDoc(S.doc(db,'threads',id),{unread:S.arrayRemove(auth.currentUser.email.toLowerCase())}),
     async notifyThread(url,id){const idToken=await auth.currentUser.getIdToken(true);const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'beskjed',threadId:id})});return r.json()},
     // Politiattest (attester/{e-post}): bare datoen den ble godkjent.
-    async getAttest(email){const s=await S.getDoc(S.doc(db,'attester',email));return s.exists()?{dato:s.data().dato||'',godkjent:s.data().godkjent!==false}:null},
+    async getAttest(email){const s=await S.getDoc(S.doc(db,'attester',email));return s.exists()?{dato:s.data().dato||'',godkjent:s.data().godkjent!==false,fil:s.data().fil===true}:null},
     // godkjent: bare administratorer kan sette true (reglene). Medlemmer og ledere lagrer false = venter godkjenning.
     setAttest:(email,dato,godkjent)=>S.setDoc(S.doc(db,'attester',email),{dato:String(dato).slice(0,10),by:auth.currentUser.email.toLowerCase(),updated:S.serverTimestamp(),godkjent:!!godkjent}),
     delAttest:email=>sl(S.deleteDoc(S.doc(db,'attester',email))),
-    async listAttester(){const s=await S.getDocs(S.collection(db,'attester'));return s.docs.map(d=>({id:d.id,dato:d.data().dato||'',godkjent:d.data().godkjent!==false}))},
-    async attesterFor(ids){const ut=[];for(const id of ids){try{const s=await S.getDoc(S.doc(db,'attester',id));if(s.exists())ut.push({id,dato:s.data().dato||'',godkjent:s.data().godkjent!==false})}catch(e){}}return ut},
+    async listAttester(){const s=await S.getDocs(S.collection(db,'attester'));return s.docs.map(d=>({id:d.id,dato:d.data().dato||'',godkjent:d.data().godkjent!==false,fil:d.data().fil===true}))},
+    // Politiattest med dokument og bekreftelse fra både medlem og gruppeleder (se reglene for attestforslag, attestfil og attestfilny).
+    async getForslag(email){const s=await S.getDoc(S.doc(db,'attestforslag',email));return s.exists()?{id:email,...s.data()}:null},
+    async listForslag(){const s=await S.getDocs(S.collection(db,'attestforslag'));return s.docs.map(d=>({id:d.id,...d.data()}))},
+    async forslagFor(ids){const ut=[];for(const id of ids){try{const s=await S.getDoc(S.doc(db,'attestforslag',id));if(s.exists())ut.push({id,...s.data()})}catch(e){}}return ut},
+    async getAttestFil(email,ny){const s=await S.getDoc(S.doc(db,ny?'attestfilny':'attestfil',email));return s.exists()?s.data():null},
+    async attForeslaa(email,f,fil){
+      const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db),d={k:f.k,by:me,okM:!!f.okM,okL:!!f.okL,okLby:f.okLby||'',fil:!!fil,ms:Date.now()};
+      if(f.k==='sett')d.dato=String(f.dato).slice(0,10);
+      b.set(S.doc(db,'attestforslag',email),d);
+      if(fil)b.set(S.doc(db,'attestfilny',email),{data:String(fil.data),ftype:String(fil.ftype||'').slice(0,40),fnavn:String(fil.fnavn||'').slice(0,80),ms:Date.now()});
+      await b.commit()},
+    attBekreft:(email,side)=>{const me=auth.currentUser.email.toLowerCase();return S.updateDoc(S.doc(db,'attestforslag',email),side==='m'?{okM:true}:{okL:true,okLby:me})},
+    async attAvslaa(email){const b=S.writeBatch(db);b.delete(S.doc(db,'attestforslag',email));b.delete(S.doc(db,'attestfilny',email));await b.commit()},
+    attLegacy:email=>S.updateDoc(S.doc(db,'attester',email),{godkjent:true,by:auth.currentUser.email.toLowerCase(),updated:S.serverTimestamp()}),
+    // Fullfører et forslag når begge har bekreftet: skriver attesten (eller sletter den) og rydder forslaget. Returnerer forslaget, eller null hvis det ikke er klart.
+    async attFullfor(email){
+      const fs=await S.getDoc(S.doc(db,'attestforslag',email));if(!fs.exists())return null;const f=fs.data();if(!(f.okM&&f.okL))return null;
+      const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db),aref=S.doc(db,'attester',email);
+      if(f.k==='slett'){b.delete(aref);b.delete(S.doc(db,'attestfil',email))}
+      else{
+        const ex=await S.getDoc(aref);let fil=f.fil===true||(ex.exists()&&ex.data().fil===true);
+        b.set(aref,{dato:f.dato,by:me,updated:S.serverTimestamp(),godkjent:true,fil});
+        if(f.fil){const n=await S.getDoc(S.doc(db,'attestfilny',email));if(!n.exists())throw {code:'dokument-mangler'};const x=n.data();b.set(S.doc(db,'attestfil',email),{data:x.data,ftype:x.ftype||'',fnavn:x.fnavn||'',ms:Date.now()});b.delete(S.doc(db,'attestfilny',email))}}
+      b.delete(S.doc(db,'attestforslag',email));
+      await b.commit();return f},
+    async attesterFor(ids){const ut=[];for(const id of ids){try{const s=await S.getDoc(S.doc(db,'attester',id));if(s.exists())ut.push({id,dato:s.data().dato||'',godkjent:s.data().godkjent!==false,fil:s.data().fil===true})}catch(e){}}return ut},
     // Bønneemner (prayers): bare medlemmer. by og ber bruker uid, ikke e-post.
     async prayersList(){const s=await S.getDocs(S.query(S.collection(db,'prayers'),S.orderBy('ms','desc'),S.limit(40)));return s.docs.map(d=>({id:d.id,...d.data()}))},
     markPrayed:ids=>sl((async()=>{const b=S.writeBatch(db),t=Date.now();ids.forEach(id=>b.update(S.doc(db,'prayers',id),{bedt:t}));await b.commit()})()),

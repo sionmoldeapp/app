@@ -1944,9 +1944,22 @@ function profilKort(){
   const p=state.profile,gs=state.groups||[];
   return '<details class="card acc" data-acc="profil" '+(state.acc.profil?'open':'')+'><summary><h2>Min profil</h2></summary>'
    +profSub('prnavn','Navn','<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre</button>')+profSub('prvarsel','Varsler fra gruppene mine',(gs.length?'<p class="small" style="margin:0 0 8px">Fjern haken for å slippe varsler som sendes bare til en gruppe. Du blir stående i gruppen.</p><div style="display:grid;gap:6px">'+gs.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-prmute="'+esc(g)+'" style="width:22px;height:22px;flex:none" '+((p.muted||[]).includes(g)?'':'checked')+'>'+esc(gName(g))+'</label>').join('')+'</div>':'<p class="small" style="margin:0">Du er ikke med i noen grupper ennå.</p>'))
-   +profSub('prdata','Mine data','<p class="small" style="margin:0 0 8px">Last ned alt appen har lagret om deg (profil, notater, forbønner du har sendt inn og beskjedene dine) som en fil.</p><button class="btn" data-prexport>Last ned mine data</button>')
+   +profSub('prdata','Mine data','<p class="small" style="margin:0 0 8px">Se eller last ned alt appen har lagret om deg (profil, politiattest med dokument, notater, forbønner du har sendt inn og beskjedene dine). Du kan når som helst slette deg selv under «Slett meg»; det trenger ingen godkjenning fra gruppeleder eller administrator.</p><div class="btns"><button class="btn" data-presee>Se mine data</button><button class="btn" data-prexport>Last ned mine data</button></div>')
    +profSub('prslett','Slett meg','<p class="small" style="margin:0 0 8px">Fjerner kontoen din, notatene, forbønnene dine, samtalene du har startet og varselkoden på denne telefonen. Dette kan ikke angres. Du kan alltid bli lagt til igjen av en leder.</p><button class="btn danger" data-prdel>Slett meg og dataene mine</button>')
    +'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
+/* Viser alt som er lagret om deg, i klartekst. */
+async function minDataVis(){
+  if(!FB||document.querySelector('dialog.pub'))return;
+  let o;try{o=await FB.exportMine()}catch(e){push('Kunne ikke hente','Prøv igjen om litt.');return}
+  const rad=(t,v)=>'<div class="r" style="display:block"><b>'+esc(t)+'</b><div class="small" style="white-space:pre-wrap">'+esc(v)+'</div></div>';
+  const pr=o.profil||{},at=o.politiattest,f=at&&at.forslag;
+  const deler=[rad('E-post',o.epost),rad('Navn',pr.name||'(ikke lagt inn)'),rad('Grupper',(pr.groups||[]).map(gName).join(', ')||'Ingen'),
+    rad('Politiattest',at?('Dato: '+noDato(at.dato)+'\nDokument lagret: '+(at.dokumentLagret?'ja':'nei')+(f?'\nVenter bekreftelse: '+attForslagTekst(f)+' ('+attSider(f)+')':'')):'Ingen er lagt inn'),
+    rad('Notater',(o.notater||[]).length+' lagret (bare du ser dem)'),rad('Forbønner du har sendt',(o.bonneemner||[]).length?o.bonneemner.map(x=>'• '+x.t).join('\n'):'Ingen'),
+    rad('Samtaler',(o.beskjeder||[]).length+' samtaler med '+(o.beskjeder||[]).reduce((n,t)=>n+(t.meldinger||[]).length,0)+' meldinger'),rad('Innstillinger',o.innstillinger?'Rekkefølge på kort og undermenyer er lagret':'Ingen')];
+  const dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Dette er lagret om deg</h3><div class="reg" style="max-height:55vh;overflow:auto">'+deler.join('')+'</div><p class="small" style="margin:0">Du kan slette alt ved å slette deg selv under Min profil → Slett meg.</p><div class="btns"><button class="btn primary" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';
+  document.body.appendChild(dlg);dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 function deleteSelfAsk(){
   const dlg=document.createElement('dialog');dlg.className='lp';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Slette deg selv?</h3><p class="small" style="margin:0">Kontoen, notatene, forbønnene dine, samtalene du har startet og varselkoden fjernes. Det kan ikke angres. Skriv passordet ditt for å bekrefte.</p><label class="f">Passord<input id="dsP" type="password" autocomplete="current-password"></label><p class="small" role="status" id="dsMsg" style="margin:0"></p><div class="btns"><button class="btn danger" value="slett">Slett meg</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
@@ -2714,7 +2727,7 @@ const PV_STD=`## Hvem er ansvarlig?
 - **Vakter:** navn og e-post på vaktlisten. Gruppens medlemmer og leder ser den.
 - **Varselkode:** en kode for telefonen din, koblet til e-posten din hvis du er innlogget, så vi kan sende varsler du har bedt om.
 - **Nyhetsbrev Sommerstevne:** e-postadressen din, i et regneark hos Google Drive, bare til informasjon om sommerstevnet.
-- **Politiattest:** bare datoen attesten ble godkjent, aldri selve attesten eller innholdet. Du ser den selv, og administratorer og ledere for gruppene dine ser den så de kan minne om fornyelse.
+- **Politiattest:** datoen attesten ble utstedt og, hvis du velger det, selve dokumentet (bilde eller PDF). Dato og dokument gjelder først når både du og gruppelederen din har bekreftet, og endring eller sletting må også bekreftes av begge. Bare du, gruppelederen din og administratorene ser den. Den slettes hvis du eller begge parter sletter den, og når du sletter deg selv.
 - **Innstillinger:** rekkefølge på kort og tekststørrelse. Noe lagres bare på telefonen din.
 
 Vi bruker ikke annonser eller sporing, og vi selger eller deler ikke opplysninger med andre. Dataene lagres og driftes hos Google på våre vegne.
@@ -2773,68 +2786,144 @@ function pvAsk(){
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 
 /* ---------- Politiattest ----------
-   attester/{e-post} {dato (ÅÅÅÅ-MM-DD, godkjent), by, updated}: bare datoen, aldri attesten eller innholdet i den. Gyldig i 3 år.
-   Eieren, administratorer og gruppeledere for medlemmets grupper leser og skriver. Apps Script minner om fornyelse 60 dager før. */
-const ATTEST_AAR=3,ATTEST_VARSEL_DAGER=60;
+   attester/{e-post} {dato, by, updated, godkjent:true, fil:bool}: godkjent dato (fil = at et dokument er lagret). Selve dokumentet (bilde eller PDF) ligger i attestfil/{e-post}.
+   Alle endringer går via et forslag, attestforslag/{e-post} {k:'sett'|'slett', dato, by, okM (medlemmet har bekreftet), okL (gruppeleder eller administrator har bekreftet), okLby, fil, ms},
+   med det foreslåtte dokumentet i attestfilny/{e-post}. Forslaget gjelder først når BÅDE medlemmet og en gruppeleder (eller administrator) har bekreftet; den som bekrefter sist, fullfører.
+   Administratorens egen attest bekreftes av administratoren selv. Å slette seg selv fra appen trenger ingen bekreftelse (alt fjernes). Gyldig i 3 år. Apps Script minner om fornyelse 60 dager før. */
+const ATTEST_AAR=3,ATTEST_VARSEL_DAGER=60,ATTEST_MAKS=900000;
 function attestStatus(dato){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(dato||''))return null;
   const d=new Date(dato+'T12:00');d.setFullYear(d.getFullYear()+ATTEST_AAR);
   const dager=Math.ceil((d.getTime()-Date.now())/864e5),utl=isoDato(d);
   return {utl,dager,tekst:dager<0?'Utløpt':dager<=ATTEST_VARSEL_DAGER?'Utløper snart':'Gyldig',farge:dager<0?'#b3261e':dager<=ATTEST_VARSEL_DAGER?'var(--lamp)':'var(--ok)'}}
-const attestVenter='<span class="tag" style="background:var(--lamp);color:var(--lamp-ink)">Venter godkjenning</span>';
+const attestVenter='<span class="tag" style="background:var(--lamp);color:var(--lamp-ink)">Venter bekreftelse</span>';
 const attestChip=st=>st?'<span class="tag" style="background:'+st.farge+';color:#fff">'+st.tekst+'</span>':'';
 const profSub=(k,tittel,html)=>'<details class="acc sub" data-acc="'+k+'" '+(state.acc[k]?'open':'')+' style="margin-top:10px"><summary><h3 style="font-size:var(--t-l)">'+tittel+'</h3></summary>'+html+'</details>';
-/* Politiattest er en egen undermeny under Meg (ikke lenger inni Min profil). Administratorer og medlemmer uten profil har den også. */
-function attestKort(){if(!state.user||!state.member)return '';return '<details class="card acc" data-acc="attest" '+(state.acc.attest?'open':'')+'><summary><h2>Politiattest</h2></summary>'+attestBody()+'</details>'}
-function attestBody(){
-  const a=state.attest,st=a?attestStatus(a.dato):null,idag=isoDato(new Date()),venter=!!a&&a.godkjent===false;
-  return '<p class="small" style="margin:0 0 8px">Legg inn datoen politiattesten din ble godkjent. Appen lagrer bare datoen, aldri selve attesten. En administrator må godkjenne datoen før den regnes som godkjent. Den er gyldig i '+ATTEST_AAR+' år, og du og lederne får en påminnelse '+ATTEST_VARSEL_DAGER+' dager før den går ut.</p>'
-   +(venter&&st?'<p style="margin:0 0 8px"><b>Registrert dato:</b> '+esc(noDato(a.dato))+' '+attestVenter+'<br><span class="small">Venter på at en administrator godkjenner datoen.</span></p>':st?'<p style="margin:0 0 8px"><b>Godkjent:</b> '+esc(noDato(a.dato))+'<br><b>Går ut:</b> '+esc(noDato(st.utl))+' '+attestChip(st)+'</p>':'<p class="small" style="margin:0 0 8px">Ingen dato er lagt inn.</p>')
-   +'<label class="f">Dato godkjent<input id="atD" type="date" max="'+idag+'" value="'+esc(a?a.dato:'')+'"></label>'
-   +'<div class="btns" style="margin-top:8px"><button class="btn primary" data-atsave style="flex:1">Lagre</button>'+(a?'<button class="btn" data-atdel style="flex:1">Fjern</button>':'')+'</div>'
-   +'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.atMsg||'')+'</p>'}
-async function loadAttester(){
-  try{
-    const ut={};
-    const gk={};
-    if(state.admin){(await FB.listAttester()).forEach(x=>{ut[x.id]=x.dato;gk[x.id]=x.godkjent})}
-    else{const ids=(leaderMem||[]).map(u=>u.id);(await FB.attesterFor(ids)).forEach(x=>{ut[x.id]=x.dato;gk[x.id]=x.godkjent})}
-    state.attester=ut;state.attGod=gk;state.atMsg2=''}
-  catch(e){state.attester={};state.atMsg2='Kunne ikke hente politiattester ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
+const attErMeg=email=>String(email).toLowerCase()===meEmail();
+const attKanLed=email=>!attErMeg(email)||!!state.admin;   // gruppeleder kan ikke bekrefte sin egen attest, administrator kan
+const attForslagTekst=p=>p.k==='slett'?'Forslag: slette politiattesten':'Forslag: dato '+noDato(p.dato)+(p.fil?' med dokument':'');
+const attSider=p=>'Medlem: '+(p.okM?'✓ bekreftet':'venter')+' · Gruppeleder: '+(p.okL?'✓ bekreftet':'venter');
+/* Leser en fil (bilde eller PDF) som tekst. Bilder krympes til en JPEG som får plass i databasen. */
+function attFilLes(f){
+  return new Promise((res,rej)=>{
+    if(!f)return res(null);
+    if(f.type==='application/pdf'){
+      if(f.size>600*1024)return rej({msg:'PDF-en er for stor (maks 600 kB). Ta heller et bilde av attesten.'});
+      const r=new FileReader();r.onload=()=>res({data:String(r.result),ftype:'application/pdf',fnavn:String(f.name||'politiattest.pdf').slice(0,80)});r.onerror=()=>rej({msg:'Kunne ikke lese filen.'});r.readAsDataURL(f);return}
+    if(!/^image\//.test(f.type))return rej({msg:'Velg et bilde eller en PDF.'});
+    const url=URL.createObjectURL(f),img=new Image();
+    img.onload=()=>{URL.revokeObjectURL(url);let dim=1500,q=.82,data='';
+      for(let i=0;i<8;i++){const s=Math.min(1,dim/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*s));c.height=Math.max(1,Math.round(img.height*s));
+        const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);data=c.toDataURL('image/jpeg',q);
+        if(data.length<=ATTEST_MAKS*.85)break;dim=Math.round(dim*.8);q=Math.max(.5,q-.06)}
+      if(data.length>ATTEST_MAKS*.9)return rej({msg:'Bildet er for stort. Prøv et mindre bilde.'});
+      res({data,ftype:'image/jpeg',fnavn:'politiattest.jpg'})};
+    img.onerror=()=>{URL.revokeObjectURL(url);rej({msg:'Kunne ikke lese bildet.'})};img.src=url})}
+/* Viser dokumentet i et vindu. mode: cur = godkjent dokument, ny = foreslått dokument. */
+async function attVis(email,mode){
+  if(!FB||document.querySelector('dialog.pub'))return;
+  let d=null;try{d=await FB.getAttestFil(email,mode==='ny')}catch(e){push('Kunne ikke åpne','Dokumentet kunne ikke hentes ('+((e&&e.code)||'feil')+').');return}
+  if(!d||!d.data){push('Ingen dokument','Det er ikke lagt inn noe dokument.');return}
+  const dlg=document.createElement('dialog');dlg.className='lp pub';
+  let url=d.data;try{const b=await (await fetch(d.data)).blob();url=URL.createObjectURL(b)}catch(e){}
+  const pdf=d.ftype==='application/pdf';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Politiattest</h3><p class="small" style="margin:0">Bare du, gruppelederen og administratorene kan se dokumentet.</p>'
+   +(pdf?'<iframe src="'+esc(url)+'" title="Politiattest" style="width:100%;height:60vh;border:1px solid var(--line);border-radius:var(--r-s)"></iframe>':'<img src="'+esc(url)+'" alt="Politiattest" style="max-width:100%;max-height:60vh;object-fit:contain;border-radius:var(--r-s)">')
+   +'<div class="btns"><a class="btn" href="'+esc(url)+'" download="'+esc(d.fnavn||'politiattest')+'">Last ned</a><button class="btn primary" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';
+  document.body.appendChild(dlg);dlg.addEventListener('close',()=>{dlg.remove();if(url.startsWith('blob:'))URL.revokeObjectURL(url)});dlg.showModal()}
+/* Foreslår ny dato/dokument eller sletting. Egen side bekreftes med en gang; administratorens egen attest er ferdig bekreftet. */
+async function attForeslaa(email,k,dato,fil){
+  const me=meEmail(),meg=attErMeg(email),adm=!!state.admin;
+  const side=meg&&adm?{okM:true,okL:true,okLby:me}:meg?{okM:true,okL:false,okLby:''}:{okM:false,okL:true,okLby:me};
+  await FB.attForeslaa(email,{k,dato,...side},fil);
+  if(side.okM&&side.okL)await FB.attFullfor(email);
+  await attOppfrisk(email)}
+async function attOppfrisk(email){
+  if(attErMeg(email)){try{state.attest=await FB.getAttest(email);state.attFors=await FB.getForslag(email)}catch(e){}}
+  if(state.attester!==undefined&&(state.admin||isLeader()))await loadAttester(true);
   keep(()=>{})}
+/* Politiattest er en egen undermeny under Meg (ikke lenger inni Min profil). Administratorer og medlemmer uten profil har den også. */
+function attestKort(){if(!state.user||!state.member)return '';return '<details class="card acc" data-acc="attest" '+(state.acc.attest?'open':'')+'><summary><h2>Politiattest'+(state.attFors&&!state.attFors.okM?bdg(1):'')+'</h2></summary>'+attestBody()+'</details>'}
+function attestBody(){
+  const a=state.attest,p=state.attFors,me=meEmail(),st=a?attestStatus(a.dato):null,idag=isoDato(new Date()),legacy=!!a&&a.godkjent===false;
+  let h='<p class="small" style="margin:0 0 8px">Legg inn datoen politiattesten din ble utstedt, og gjerne selve attesten (bilde eller PDF). Dato og dokument må bekreftes av både deg og gruppelederen din. Endring og sletting må også bekreftes av begge. Bare du, gruppelederen din og administratorene kan se den. Du får påminnelse '+ATTEST_VARSEL_DAGER+' dager før den går ut ('+ATTEST_AAR+' år).</p>';
+  if(st&&!legacy)h+='<p style="margin:0 0 8px"><b>Godkjent:</b> '+esc(noDato(a.dato))+'<br><b>Går ut:</b> '+esc(noDato(st.utl))+' '+attestChip(st)+'<br><span class="small">Bekreftet av deg og gruppelederen din.'+(a.fil?' Dokument er lagret.':' Ingen dokument er lagt inn.')+'</span></p>'+(a.fil?'<div class="btns" style="margin:0 0 8px"><button class="btn" data-atvis="'+esc(me+'|cur')+'">Vis dokument</button></div>':'');
+  else if(st&&legacy)h+='<p style="margin:0 0 8px"><b>Registrert dato:</b> '+esc(noDato(a.dato))+' '+attestVenter+'<br><span class="small">Venter på at gruppelederen bekrefter.</span></p>';
+  if(p){
+    h+='<div style="margin:0 0 10px;padding:10px;border:2px solid var(--lamp);border-radius:var(--r-s);background:var(--lamp-soft)"><b>Venter bekreftelse</b><br>'+esc(attForslagTekst(p))+'<br><span class="small">'+esc(attSider(p))+'</span>'
+     +'<div class="btns" style="margin-top:8px">'+(!p.okM?'<button class="btn primary" data-atbekreft="'+esc(me)+'">Bekreft</button>':'')+(p.fil?'<button class="btn" data-atvis="'+esc(me+'|ny')+'">Vis dokument</button>':'')+'<button class="btn" data-atavslaa="'+esc(me)+'">'+(p.by===me?'Trekk tilbake':'Avslå')+'</button></div></div>'}
+  else{
+    const skjema='<label class="f">Dato attesten ble utstedt<input id="atD" type="date" max="'+idag+'" value="'+esc(a?a.dato:'')+'"></label>'
+     +'<label class="f">Dokument (bilde eller PDF, maks ca. 600 kB)<input id="atF" type="file" accept="image/*,application/pdf"></label>'
+     +'<div class="btns" style="margin-top:8px"><button class="btn primary" data-atsave="'+esc(me)+'" style="flex:1">'+(state.admin?'Lagre':a?'Foreslå endring':'Send til bekreftelse')+'</button></div>'
+     +(a&&!legacy?'<div class="btns" style="margin-top:8px"><button class="btn" data-atslett="'+esc(me)+'" style="flex:1">Foreslå sletting</button></div>':'');
+    h+=a?'<details class="acc sub" data-acc="atform" '+(state.acc.atform?'open':'')+'><summary><h3 style="font-size:var(--t-l)">Endre eller slette</h3></summary>'+skjema+'</details>':'<p class="small" style="margin:0 0 8px">Ingen politiattest er lagt inn.</p>'+skjema}
+  return h+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.atMsg||'')+'</p>'}
+async function loadAttester(stille){
+  try{
+    const ut={},gk={},fl={},fo={};
+    if(state.admin){(await FB.listAttester()).forEach(x=>{ut[x.id]=x.dato;gk[x.id]=x.godkjent;fl[x.id]=x.fil});(await FB.listForslag()).forEach(x=>{fo[x.id]=x})}
+    else{const ids=(leaderMem||[]).map(u=>u.id);(await FB.attesterFor(ids)).forEach(x=>{ut[x.id]=x.dato;gk[x.id]=x.godkjent;fl[x.id]=x.fil});(await FB.forslagFor(ids)).forEach(x=>{fo[x.id]=x})}
+    state.attester=ut;state.attGod=gk;state.attFil=fl;state.attForsL=fo;state.atMsg2=''}
+  catch(e){state.attester={};state.attForsL={};state.atMsg2='Kunne ikke hente politiattester ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}
+  if(!stille)keep(()=>{})}
 const attestPersoner=()=>state.admin?(members||[]).map(u=>({id:u.id,navn:u.name||''})):(leaderMem||[]).map(u=>({id:u.id,navn:u.name||''}));
 function attesterCard(){
-  const l=state.attester;let inn;
+  const l=state.attester;let inn,nVent=0;
   if(l===undefined)inn='<p class="small">Henter politiattester …</p>';
   else{
-    const gkm=state.attGod||{},ps=attestPersoner().map(p=>({...p,dato:l[p.id]||'',st:attestStatus(l[p.id]),venter:!!attestStatus(l[p.id])&&gkm[p.id]===false}));
-    const vent=ps.filter(p=>p.venter),med=ps.filter(p=>p.st&&!p.venter).sort((a,b)=>a.st.dager-b.st.dager),uten=ps.filter(p=>!p.st);
-    const rad=p=>'<div class="r" style="flex-wrap:wrap"><div class="grow"><b>'+esc(p.navn||p.id)+'</b><span class="small" style="display:block">'+(p.venter?'Registrert '+esc(noDato(p.dato))+' · venter godkjenning':p.st?'Godkjent '+esc(noDato(p.dato))+' · går ut '+esc(noDato(p.st.utl)):'Ingen dato')+'</span></div>'+(p.venter?attestVenter:attestChip(p.st))+(p.venter&&state.admin?'<button class="btn primary" data-atgod="'+esc(p.id)+'">Godkjenn</button>':'')+'<button class="btn" data-atedit="'+esc(p.id)+'">'+(p.st?'Endre':'Legg inn')+'</button></div>';
-    inn='<p class="small" style="margin:0 0 8px">'+(state.admin?'Alle medlemmer. ':'Medlemmer i gruppene du leder. ')+'Sortert etter nærmest utløp. '+(state.admin?'Datoer medlemmene legger inn må godkjennes av deg.':'Datoer du legger inn må godkjennes av en administrator.')+'</p>'
-     +(vent.length?'<div style="margin:0 0 10px;padding:10px;border:2px solid var(--lamp);border-radius:var(--r-s);background:var(--lamp-soft)"><b>Venter godkjenning ('+vent.length+')</b><div class="reg">'+vent.map(rad).join('')+'</div></div>':'')
-     +'<div class="reg">'+(med.map(rad).join('')||'<p class="small">Ingen datoer er lagt inn ennå.</p>')+'</div>'
+    const gkm=state.attGod||{},fil=state.attFil||{},fo=state.attForsL||{},me=meEmail();
+    const ps=attestPersoner().map(p=>({...p,dato:l[p.id]||'',st:attestStatus(l[p.id]),f:fo[p.id]||null,legacy:!!attestStatus(l[p.id])&&gkm[p.id]===false,fil:!!fil[p.id]}));
+    const vent=ps.filter(p=>p.f||p.legacy),med=ps.filter(p=>p.st&&!p.f&&!p.legacy).sort((a,b)=>a.st.dager-b.st.dager),uten=ps.filter(p=>!p.st&&!p.f);nVent=vent.length;
+    const rad=p=>{const f=p.f;let tekst,kn='';
+      if(f){tekst=attForslagTekst(f)+' · '+attSider(f);
+        if((!f.okL&&attKanLed(p.id))||(!f.okM&&attErMeg(p.id)))kn+='<button class="btn primary" data-atbekreft="'+esc(p.id)+'">Bekreft</button>';
+        if(f.fil)kn+='<button class="btn" data-atvis="'+esc(p.id+'|ny')+'">Vis dokument</button>';
+        kn+='<button class="btn" data-atavslaa="'+esc(p.id)+'">'+(f.by===me?'Trekk tilbake':'Avslå')+'</button>'}
+      else if(p.legacy){tekst='Registrert '+noDato(p.dato)+' · venter bekreftelse fra gruppeleder';if(attKanLed(p.id))kn+='<button class="btn primary" data-atlegacy="'+esc(p.id)+'">Bekreft</button>'}
+      else if(p.st){tekst='Godkjent '+noDato(p.dato)+' · går ut '+noDato(p.st.utl)+(p.fil?' · dokument lagret':'');if(p.fil)kn+='<button class="btn" data-atvis="'+esc(p.id+'|cur')+'">Vis dokument</button>';kn+='<button class="btn" data-atedit="'+esc(p.id)+'">Endre</button><button class="btn" data-atslett="'+esc(p.id)+'">Slett</button>'}
+      else{tekst='Ingen dato';kn+='<button class="btn" data-atedit="'+esc(p.id)+'">Legg inn</button>'}
+      return '<div class="r" style="flex-wrap:wrap"><div class="grow" style="min-width:60%"><b>'+esc(p.navn||p.id)+'</b><span class="small" style="display:block">'+esc(tekst)+'</span></div>'+(f||p.legacy?attestVenter:attestChip(p.st))+'<div class="btns" style="flex-basis:100%;margin-top:6px">'+kn+'</div></div>'};
+    inn='<p class="small" style="margin:0 0 8px">'+(state.admin?'Alle medlemmer. ':'Medlemmer i gruppene du leder. ')+'Ny dato, endring og sletting gjelder først når både medlemmet og gruppeleder (eller administrator) har bekreftet.</p>'
+     +(vent.length?'<div style="margin:0 0 10px;padding:10px;border:2px solid var(--lamp);border-radius:var(--r-s);background:var(--lamp-soft)"><b>Venter bekreftelse ('+vent.length+')</b><div class="reg">'+vent.map(rad).join('')+'</div></div>':'')
+     +'<div class="reg">'+(med.map(rad).join('')||'<p class="small">Ingen godkjente datoer ennå.</p>')+'</div>'
      +(uten.length?'<details class="acc sub" data-acc="at_uten" '+(state.acc.at_uten?'open':'')+'><summary><h3 style="font-size:var(--t-l)">Mangler dato ('+uten.length+')</h3></summary><div class="reg">'+uten.map(rad).join('')+'</div></details>':'')}
-  return '<details class="card acc" data-acc="attester" '+(state.acc.attester?'open':'')+'><summary><h2>Politiattester</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.atMsg2||'')+'</p></details>'}
+  return '<details class="card acc" data-acc="attester" '+(state.acc.attester?'open':'')+'><summary><h2>Politiattester'+bdg(nVent)+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.atMsg2||'')+'</p></details>'}
+/* Gruppeleder eller administrator foreslår dato/dokument for et medlem (medlemmet må bekrefte). */
 function atAsk(email){
   if(document.querySelector('dialog.pub'))return;
   const p=attestPersoner().find(x=>x.id===email),nå=(state.attester||{})[email]||'',dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Politiattest</h3><p class="small" style="margin:0">'+esc((p&&p.navn)||email)+'</p>'
-   +'<label class="f">Dato godkjent<input id="atD2" type="date" max="'+isoDato(new Date())+'" value="'+esc(nå)+'"></label><p class="small" id="atS" role="status" style="margin:0"></p>'
-   +'<div class="btns"><button class="btn primary" value="lagre" style="flex:1">Lagre</button>'+(nå?'<button class="btn" value="fjern" formnovalidate style="flex:1">Fjern</button>':'')+'<button class="btn" value="avbryt" formnovalidate style="flex:1">Avbryt</button></div></form>';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Politiattest</h3><p class="small" style="margin:0">'+esc((p&&p.navn)||email)+'. '+(attErMeg(email)?'':'Medlemmet må bekrefte før den gjelder.')+'</p>'
+   +'<label class="f">Dato attesten ble utstedt<input id="atD2" type="date" max="'+isoDato(new Date())+'" value="'+esc(nå)+'"></label>'
+   +'<label class="f">Dokument (bilde eller PDF, valgfritt)<input id="atF2" type="file" accept="image/*,application/pdf"></label><p class="small" id="atS" role="status" style="margin:0"></p>'
+   +'<div class="btns"><button class="btn primary" value="lagre" style="flex:1">Send til bekreftelse</button><button class="btn" value="avbryt" formnovalidate style="flex:1">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.querySelector('form').addEventListener('submit',async e=>{
-    const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='fjern')return;e.preventDefault();
-    const dato=dlg.querySelector('#atD2').value;
-    try{
-      if(v==='fjern'){await FB.delAttest(email);delete state.attester[email];if(state.attGod)delete state.attGod[email]}
-      else{if(!/^\d{4}-\d{2}-\d{2}$/.test(dato)){dlg.querySelector('#atS').textContent='Velg en dato.';return}await FB.setAttest(email,dato,!!state.admin);state.attester[email]=dato;(state.attGod=state.attGod||{})[email]=!!state.admin}
-      dlg.close();keep(()=>{});push('Lagret',state.admin||v==='fjern'?'Politiattesten er oppdatert.':'Datoen er lagret og venter godkjenning fra en administrator.')}
-    catch(er){dlg.querySelector('#atS').textContent='Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
+    if(!e.submitter||e.submitter.value!=='lagre')return;e.preventDefault();
+    const dato=dlg.querySelector('#atD2').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(dato)){dlg.querySelector('#atS').textContent='Velg en dato.';return}
+    try{const fil=await attFilLes(dlg.querySelector('#atF2').files[0]);await attForeslaa(email,'sett',dato,fil);dlg.close();push('Sendt',attErMeg(email)&&state.admin?'Politiattesten er lagret.':'Forslaget venter bekreftelse.')}
+    catch(er){dlg.querySelector('#atS').textContent=er&&er.msg?er.msg:'Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+/* Klikk på knappene for politiattest. */
+document.addEventListener('click',async e=>{
+  const b=e.target.closest&&e.target.closest('button,a'),d=b&&b.dataset;if(!d)return;
+  try{
+    if(d.atsave){const email=d.atsave,dato=(document.getElementById('atD')||{}).value||'';
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(dato)){keep(()=>{state.atMsg='Velg en dato.'});return}
+      let fil=null;try{fil=await attFilLes((document.getElementById('atF')||{files:[]}).files[0])}catch(er){keep(()=>{state.atMsg=er&&er.msg||'Kunne ikke lese filen.'});return}
+      await attForeslaa(email,'sett',dato,fil);state.atMsg='';keep(()=>{});push('Lagret',state.admin?'Politiattesten er lagret.':'Datoen er sendt. Den gjelder når gruppelederen din også har bekreftet.')}
+    else if(d.atslett){const email=d.atslett;
+      if(!await bekreft('Foreslå å slette politiattesten'+(attErMeg(email)?'?':' for '+(((attestPersoner().find(x=>x.id===email)||{}).navn)||email)+'?')+' Både medlemmet og gruppeleder må bekrefte før den slettes.',{ok:'Foreslå sletting',fare:true}))return;
+      await attForeslaa(email,'slett','',null);push('Sendt',attErMeg(email)&&state.admin?'Politiattesten er slettet.':'Forslaget om sletting venter bekreftelse.')}
+    else if(d.atbekreft){const email=d.atbekreft;await FB.attBekreft(email,attErMeg(email)?'m':'l');await FB.attFullfor(email);await attOppfrisk(email);push('Bekreftet','Takk. Endringen gjelder når begge har bekreftet.')}
+    else if(d.atavslaa){const email=d.atavslaa;if(!await bekreft('Avslå eller trekke tilbake forslaget?',{ok:'Fjern forslaget',fare:true}))return;await FB.attAvslaa(email);await attOppfrisk(email)}
+    else if(d.atlegacy){const email=d.atlegacy;await FB.attLegacy(email);await attOppfrisk(email);push('Bekreftet','Politiattesten er bekreftet.')}
+    else if(d.atvis){const [email,mode]=d.atvis.split('|');attVis(email,mode)}
+  }catch(er){keep(()=>{state.atMsg2=state.atMsg='Kunne ikke fullføre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'})}});
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 10:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 12:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -3467,14 +3556,6 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.kopier){kopierTekst(c.dataset.kopier)}
   else if('pvedit' in c.dataset){pvAsk()}
   else if(c.dataset.atedit){atAsk(c.dataset.atedit)}
-  else if(c.dataset.atgod){const em=c.dataset.atgod,d=(state.attester||{})[em];if(!d)return;try{await FB.setAttest(em,d,true);(state.attGod=state.attGod||{})[em]=true;state.atMsg2='';keep(()=>{});push('Godkjent','Politiattesten er godkjent.')}catch(er){state.atMsg2=saveMsg(er&&er.code);keep(()=>{})}}
-  else if('atsave' in c.dataset){
-    const dato=($('#atD')||{}).value||'';if(!/^\d{4}-\d{2}-\d{2}$/.test(dato)){keep(()=>{state.atMsg='Velg en dato.'});return}
-    try{const ok=!!state.admin;await FB.setAttest(meEmail(),dato,ok);keep(()=>{state.attest={dato,godkjent:ok};state.atMsg=''});push('Lagret',ok?'Datoen er lagret. Du og lederne får påminnelse før den går ut.':'Datoen er lagret og venter godkjenning fra en administrator.')}
-    catch(er){keep(()=>{state.atMsg='Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'})}}
-  else if('atdel' in c.dataset){
-    if(!await bekreft('Fjerne datoen for politiattesten?',{ok:'Fjern',fare:true}))return;
-    try{await FB.delAttest(meEmail());keep(()=>{state.attest=null;state.atMsg=''})}catch(er){keep(()=>{state.atMsg=saveMsg(er&&er.code)})}}
   else if(c.dataset.rem){
     const id=c.dataset.rem,ev=rsEv(id);if(!ev||!FB)return;
     try{
@@ -3613,6 +3694,7 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ltedit){ltAsk(c.dataset.ltedit)}
   else if(c.dataset.ltdel){ltDel(c.dataset.ltdel)}
   else if('prsave' in c.dataset){const n=($('#prN').value||'').trim();try{await FB.setProfile(state.user.email,{name:n});state.profile.name=n;if(n)lsSet('sm-navn',n);state.prMsg='Navnet er lagret.';state.acc.profil=true;state.acc.prnavn=true}catch(er){state.prMsg=saveMsg(er.code)}keep(()=>{})}
+  else if('presee' in c.dataset){minDataVis()}
   else if('prdel' in c.dataset){deleteSelfAsk()}
   else if('prexport' in c.dataset){
     c.disabled=true;
@@ -4244,8 +4326,9 @@ async function start(){
     state.view='meg';state.real=null;
     if(state.admin)FB.ensureSnapshot('Automatisk',20*3600e3).then(()=>{state.snaps=null}).catch(()=>{});
     const med=!!u&&state.member,ikkeAdm=med&&!state.admin;
-    const [grp,lds,ldr,prof,pr,att]=await Promise.all([med?FB.myGroups(u.email):[],ikkeAdm?FB.myLeads(u.email):[],ikkeAdm?FB.myLeder(u.email):false,ikkeAdm?FB.myProfile(u.email):null,med?FB.myPrefs(u.email.toLowerCase()):null,med?FB.getAttest(u.email.toLowerCase()).catch(()=>null):null]);
-    state.attest=att;state.attester=undefined;
+    const [grp,lds,ldr,prof,pr,att,fors]=await Promise.all([med?FB.myGroups(u.email):[],ikkeAdm?FB.myLeads(u.email):[],ikkeAdm?FB.myLeder(u.email):false,ikkeAdm?FB.myProfile(u.email):null,med?FB.myPrefs(u.email.toLowerCase()):null,med?FB.getAttest(u.email.toLowerCase()).catch(()=>null):null,med?FB.getForslag(u.email.toLowerCase()).catch(()=>null):null]);
+    state.attest=att;state.attFors=fors;state.attester=undefined;
+    if(fors&&fors.okM&&fors.okL)FB.attFullfor(u.email.toLowerCase()).then(()=>attOppfrisk(u.email.toLowerCase())).catch(()=>{});
     state.groups=grp;state.leads=lds;state.leder=ldr;state.profile=prof;
     state.ltype=state.leder?((await FB.myLtype(u.email))||''):'';
     state.meorder=null;state.homeorder=null;if(pr&&Array.isArray(pr.meorder))state.meorder=pr.meorder;if(pr&&Array.isArray(pr.homeorder))state.homeorder=pr.homeorder;

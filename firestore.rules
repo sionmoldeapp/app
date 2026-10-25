@@ -141,25 +141,86 @@ service cloud.firestore {
         && (!('homeorder' in request.resource.data) || (request.resource.data.homeorder is list && request.resource.data.homeorder.size() <= 20))
         && (!('suborder' in request.resource.data) || (request.resource.data.suborder is string && request.resource.data.suborder.size() <= 1500));
     }
-    // Politiattest: bare datoen den ble godkjent (aldri attesten eller innholdet). Eieren (medlem), administratorer og gruppeledere for medlemmets grupper
-    // leser og skriver. Lister kan bare administratorer hente (gruppeledere leser ett dokument om gangen).
+    // Politiattest: godkjent dato (attester) og dokumentet (attestfil). Alle endringer går via et forslag (attestforslag) som må bekreftes av BÅDE medlemmet
+    // og en gruppeleder for medlemmets grupper (eller en administrator; en leder kan ikke bekrefte sin egen). Foreslått dokument ligger i attestfilny til forslaget er fullført.
+    // Når et medlem sletter seg selv (medlemsoppføringen er borte), kan eieren fjerne restene uten bekreftelse. Lister kan bare administratorer hente.
     function attestLeder(email) {
       return isLeader() && exists(/databases/$(database)/documents/members/$(email))
         && get(/databases/$(database)/documents/members/$(email)).data.get('groups', []).hasAny(myLeads());
     }
-    function attestTilgang(email) {
-      return signedIn() && ((request.auth.token.email == email && isMember()) || isAdmin() || attestLeder(email));
+    function attSelf(email) { return signedIn() && request.auth.token.email == email && isMember(); }
+    function attLed(email) { return signedIn() && (isAdmin() || (attestLeder(email) && request.auth.token.email != email)); }
+    function attParter(email) { return attSelf(email) || attLed(email); }
+    function attFors(email) { return get(/databases/$(database)/documents/attestforslag/$(email)).data; }
+    function attFerdig(email, k) {
+      return exists(/databases/$(database)/documents/attestforslag/$(email))
+        && attFors(email).okM == true && attFors(email).okL == true && attFors(email).k == k;
+    }
+    function attRydd(email) {
+      return signedIn() && !exists(/databases/$(database)/documents/members/$(email))
+        && (request.auth.token.email == email || isAdmin());
     }
     match /attester/{email} {
-      allow get, delete: if attestTilgang(email);
+      allow get: if attParter(email);
       allow list: if isAdmin();
-      allow create, update: if attestTilgang(email)
-        && request.resource.data.keys().hasOnly(['dato', 'by', 'updated', 'godkjent'])
-        && request.resource.data.godkjent is bool
-        && (isAdmin() || request.resource.data.godkjent == false)   // bare administratorer kan godkjenne; andre lagrer «venter godkjenning»
-        && request.resource.data.dato is string && request.resource.data.dato.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+      allow create: if attParter(email) && attFerdig(email, 'sett')
+        && request.resource.data.keys().hasOnly(['dato', 'by', 'updated', 'godkjent', 'fil'])
+        && request.resource.data.dato == attFors(email).dato && request.resource.data.godkjent == true
+        && request.resource.data.fil == attFors(email).fil
+        && request.resource.data.by == request.auth.token.email && request.resource.data.updated == request.time;
+      allow update: if (attParter(email) && attFerdig(email, 'sett')
+          && request.resource.data.keys().hasOnly(['dato', 'by', 'updated', 'godkjent', 'fil'])
+          && request.resource.data.dato == attFors(email).dato && request.resource.data.godkjent == true
+          && request.resource.data.fil == (attFors(email).fil || resource.data.get('fil', false))
+          && request.resource.data.by == request.auth.token.email && request.resource.data.updated == request.time)
+        // Eldre datoer som ventet på godkjenning: gruppeleder eller administrator kan bekrefte dem direkte.
+        || (attLed(email) && resource.data.get('godkjent', true) == false
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['godkjent', 'by', 'updated'])
+          && request.resource.data.godkjent == true && request.resource.data.by == request.auth.token.email
+          && request.resource.data.updated == request.time);
+      allow delete: if (attParter(email) && attFerdig(email, 'slett')) || attRydd(email);
+    }
+    match /attestforslag/{email} {
+      allow get: if attParter(email);
+      allow list: if isAdmin();
+      allow create: if attParter(email)
+        && request.resource.data.keys().hasOnly(['k', 'dato', 'by', 'okM', 'okL', 'okLby', 'fil', 'ms'])
+        && request.resource.data.k in ['sett', 'slett']
+        && (request.resource.data.k == 'slett' ? !('dato' in request.resource.data)
+            : (request.resource.data.dato is string && request.resource.data.dato.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')))
         && request.resource.data.by == request.auth.token.email
-        && request.resource.data.updated == request.time;
+        && request.resource.data.fil is bool && request.resource.data.ms is number
+        && request.resource.data.okM is bool && request.resource.data.okL is bool && request.resource.data.okLby is string
+        && ((attSelf(email) && attLed(email))
+            ? (request.resource.data.okM && request.resource.data.okL && request.resource.data.okLby == request.auth.token.email)
+            : attSelf(email)
+              ? (request.resource.data.okM && !request.resource.data.okL && request.resource.data.okLby == '')
+              : (!request.resource.data.okM && request.resource.data.okL && request.resource.data.okLby == request.auth.token.email));
+      allow update: if attParter(email)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['okM', 'okL', 'okLby'])
+        && ((attSelf(email) && !attLed(email))
+            ? (request.resource.data.okM == true && request.resource.data.okL == resource.data.okL && request.resource.data.okLby == resource.data.okLby)
+            : (attLed(email) && !attSelf(email))
+              ? (request.resource.data.okL == true && request.resource.data.okLby == request.auth.token.email && request.resource.data.okM == resource.data.okM)
+              : false);
+      allow delete: if attParter(email) || attRydd(email);
+    }
+    match /attestfil/{email} {
+      allow get: if attParter(email);
+      allow create, update: if attParter(email) && attFerdig(email, 'sett') && attFors(email).fil == true
+        && request.resource.data.keys().hasOnly(['data', 'ftype', 'fnavn', 'ms'])
+        && request.resource.data.data is string && request.resource.data.data.size() <= 950000;
+      allow delete: if (attParter(email) && attFerdig(email, 'slett')) || attRydd(email);
+    }
+    match /attestfilny/{email} {
+      allow get: if attParter(email);
+      allow create, update: if attParter(email)
+        && existsAfter(/databases/$(database)/documents/attestforslag/$(email))
+        && getAfter(/databases/$(database)/documents/attestforslag/$(email)).data.by == request.auth.token.email
+        && getAfter(/databases/$(database)/documents/attestforslag/$(email)).data.fil == true
+        && request.resource.data.keys().hasOnly(['data', 'ftype', 'fnavn', 'ms'])
+        && request.resource.data.data is string && request.resource.data.data.size() <= 950000;
+      allow delete: if attParter(email) || attRydd(email);
     }
     // Utleie av bygget: administratorer og medlemmer i gruppen utleie leser og endrer bookingene (de inneholder navn og kontaktinfo til leietakere).
     function utleieTilgang() {
