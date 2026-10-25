@@ -540,6 +540,8 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .cb a{color:inherit;text-decoration:underline}
 .cb{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .cb.lk{margin-bottom:12px}
+.cb{touch-action:manipulation}
+.cb.sl{background:transparent!important;border:1px dashed var(--line)!important;color:var(--muted)!important;font-style:italic;font-size:var(--t-m)}
 .clike{position:absolute;bottom:-12px;right:10px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:99px;padding:1px 7px;font-size:var(--t-s);line-height:1.4;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .cb.de .clike{right:auto;left:10px}
 .clike.mine{border-color:var(--lamp)}
@@ -2530,7 +2532,7 @@ async function loadRoles(){
    nye meldinger med en gang uten å hente alt på nytt. Gruppeledere og administratorer kan skrive til hele gruppen (hver person får en
    privat samtale og svarer der) eller til én person. Ingen nye regler: bruker de samme reglene som privat beskjed (kind dm). */
 state.chat=state.chat||{vis:false,vy:'liste',id:null,ny:null,msgs:[],unsub:null,sender:false};
-const chatUlest=()=>(state.threads||[]).filter(t=>(t.unread||[]).includes(meEmail())).length;
+const chatUlest=()=>(state.threads||[]).filter(t=>(t.unread||[]).includes(meEmail())&&!(t.gone||[]).includes(meEmail())).length;
 /* Kortet øverst under Mer som åpner chatten (viser antall uleste og siste melding). */
 function chatKort(){
   if(!state.user||!state.member)return '';
@@ -2581,7 +2583,7 @@ function chatApne(id){
 function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatListe();return}setTimeout(()=>chatVent(id,fn,n+1),250)}
 function chatLukk(){const c=state.chat;chatStoppMsgs();c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow=''}
 function chatListeInn(){
-  const meg=meEmail(),l=state.threads;
+  const meg=meEmail(),l=state.threads&&state.threads.filter(t=>!(t.gone||[]).includes(meg));
   if(l===undefined)return '<p class="small" style="padding:14px">Henter samtaler …</p>';
   if(!l.length)return tom('prat','Ingen samtaler ennå',chatKan()?'Trykk på blyanten oppe til høyre for å skrive til hele gruppen eller til én person.':'Når en leder skriver til deg, kommer samtalen her, og du kan svare.')+(state.meldMsg?'<p class="small" style="padding:0 14px">'+esc(state.meldMsg)+'</p>':'');
   return l.map(t=>{const ny=(t.unread||[]).includes(meg),n=chatNavn(t,meg);
@@ -2590,8 +2592,9 @@ function chatListe(){
   const c=state.chat;chatStoppMsgs();c.vy='liste';c.id=null;c.ny=null;
   chatW().innerHTML='<header class="chd"><h2>Chat</h2><span class="grow"></span>'+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatlukk aria-label="Lukk chat">✕</button></header><div class="cliste" id="cListe">'+chatListeInn()+'</div>'}
 const chatSend='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>';
+const TRASH='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 function chatRamme(tittel,under,av,innhold,hint){
-  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span></header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
+  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(state.chat.id?'<button type="button" class="cbtn" data-chatslett aria-label="Slett samtalen">'+TRASH+'</button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
    +'<form class="cinp" id="cForm"><textarea id="cT" rows="1" maxlength="1000" placeholder="'+esc(hint||'Skriv en melding …')+'" aria-label="Melding"></textarea><button type="submit" class="csend" aria-label="Send">'+chatSend+'</button></form>'}
 function chatSamtale(id){
   const c=state.chat,t=chatTraad(id);if(!t){chatListe();return}
@@ -2605,6 +2608,7 @@ function chatMsgs(sist){
   l.forEach((m,i)=>{
     if(!forrige||chatDg(m.ms)!==chatDg(forrige.ms))h+='<div class="cdag">'+esc(chatDag(m.ms))+'</div>';
     const mine=m.by===meg,neste=l[i+1],slutt=!neste||neste.by!==m.by||neste.ms-m.ms>3e5||chatDg(neste.ms)!==chatDg(m.ms);
+    if(m.slettet){h+='<div class="cb sl '+(mine?'me':'de')+'">'+(mine?'Du angret meldingen':esc(m.name||'Noen')+' angret meldingen')+'</div>'+(slutt?'<div class="ct '+(mine?'me':'de')+'">'+esc(chatKl(m.ms))+'</div>':'');forrige=m;return}
     const lk=(m.likes||[]).length,meg_lik=(m.likes||[]).includes(meg);
     h+='<div class="cb '+(mine?'me':'de')+(lk?' lk':'')+'" data-msg="'+esc(m.id)+'">'+linkify(esc(m.text))+(lk?'<span class="clike'+(meg_lik?' mine':'')+'" aria-label="'+lk+' liker">👍'+(lk>1?' '+lk:'')+'</span>':'')+'</div>'+(slutt?'<div class="ct '+(mine?'me':'de')+'">'+esc(chatKl(m.ms))+'</div>':'');forrige=m});
   box.innerHTML=h||'<p class="small" style="align-self:center;margin-top:20px">Ingen meldinger ennå. Skriv den første.</p>';
@@ -2644,6 +2648,35 @@ async function chatSendTekst(tekst){
     if(ok&&PUSH_URL)FB.sendPush(PUSH_URL,'Ny beskjed fra '+navn,kortTekst(tekst),'me',{type:'grupper',groups:[ny.gid]}).catch(()=>{});
     push(feil?'Delvis sendt':'Sendt',feil?ok+' fikk beskjeden, '+feil+' feilet.':'Beskjeden er sendt til '+ok+(ok===1?' person.':' personer.'));
     chatListe()}}
+/* Hold på en melding for å få opp en meny (👍, kopier, angre). Dobbelttrykk setter 👍 direkte; gjør du det igjen, fjernes den. */
+function chatMsgMeny(mid){
+  const c=state.chat,m=c.msgs.find(x=>x.id===mid);if(!m||m.slettet||document.querySelector('dialog.pub'))return;
+  const meg=meEmail(),mine=m.by===meg,lik=(m.likes||[]).includes(meg),dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><p class="small" style="margin:0;white-space:pre-wrap;max-height:6em;overflow:hidden">'+esc(m.text.length>140?m.text.slice(0,140)+' …':m.text)+'</p><div class="btns" style="flex-direction:column;align-items:stretch"><button class="btn" value="lik">'+(lik?'Fjern 👍':'👍 Lik')+'</button><button class="btn" value="kopier">Kopier tekst</button>'+(mine?'<button class="btn danger" value="angre">Angre melding</button>':'')+'<button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.addEventListener('close',()=>{const v=dlg.returnValue;dlg.remove();
+    if(v==='lik')chatLik(mid);
+    else if(v==='kopier'){try{navigator.clipboard.writeText(m.text);push('Kopiert','Meldingen er kopiert.')}catch(e){push('Kunne ikke kopiere','Prøv å markere teksten.')}}
+    else if(v==='angre')chatAngre(mid)});
+  dlg.showModal()}
+/* Angre en melding du har sendt: den blir stående som «Du angret meldingen» for begge. */
+async function chatAngre(mid){
+  const c=state.chat,m=c.msgs.find(x=>x.id===mid);if(!m||m.by!==meEmail())return;
+  if(!await bekreft('Angre meldingen? Den fjernes for begge i samtalen.',{ok:'Angre melding',fare:true}))return;
+  const sist=c.msgs[c.msgs.length-1]===m;
+  try{await FB.angreMsg(c.id,mid,sist);m.slettet=true;m.text='';chatMsgs(false)}catch(e){push('Kunne ikke angre','Prøv igjen ('+((e&&e.code)||'feil')+').')}}
+/* Slett samtalen: for deg selv (skjules til noen skriver igjen), eller for alle (den som startet samtalen og administrator). */
+function chatSlettMeny(){
+  const c=state.chat,t=chatTraad(c.id);if(!t||document.querySelector('dialog.pub'))return;
+  const kanAlle=t.from===meEmail()||state.admin,dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Slette samtalen?</h3><p class="small" style="margin:0"><b>Slett for meg</b> skjuler samtalen hos deg. Den kommer tilbake hvis noen skriver igjen.'+(kanAlle?' <b>Slett for alle</b> fjerner samtalen og alle meldingene for godt, også hos den andre.':'')+'</p><div class="btns" style="flex-direction:column;align-items:stretch"><button class="btn" value="meg">Slett for meg</button>'+(kanAlle?'<button class="btn danger" value="alle">Slett for alle</button>':'')+'<button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.addEventListener('close',async()=>{const v=dlg.returnValue,id=c.id;dlg.remove();
+    try{
+      if(v==='meg'){await FB.gjemChat(id,true);chatListe();push('Slettet','Samtalen er skjult hos deg.')}
+      else if(v==='alle'){if(!await bekreft('Slette hele samtalen for alle? Det kan ikke angres.',{ok:'Slett for alle',fare:true}))return;chatListe();await FB.slettChat(id);push('Slettet','Samtalen er fjernet for alle.')}
+    }catch(e){push('Kunne ikke slette','Prøv igjen ('+((e&&e.code)||'feil')+').')}});
+  dlg.showModal()}
 /* Hold på en melding (eller dobbelttrykk) for å sette 👍 på den; gjør du det igjen, fjernes den. */
 async function chatLik(mid){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid),t=c.id&&chatTraad(c.id);if(!m||!t)return;
@@ -2653,7 +2686,7 @@ async function chatLik(mid){
   try{await FB.likeMsg(c.id,mid,paa)}catch(e){m.likes=paa?m.likes.filter(x=>x!==meg):[...m.likes,meg];chatMsgs(false);push('Kunne ikke sette like','Prøv igjen ('+((e&&e.code)||'feil')+').')}}
 {let tm=0,p0=null,brukt=false;
   const stopp=()=>{clearTimeout(tm);tm=0;p0=null};
-  document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('#cMsg .cb[data-msg]');if(!b)return;p0=[e.clientX,e.clientY];const id=b.dataset.msg;tm=setTimeout(()=>{tm=0;brukt=true;chatLik(id)},520)});
+  document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('#cMsg .cb[data-msg]');if(!b)return;p0=[e.clientX,e.clientY];const id=b.dataset.msg;tm=setTimeout(()=>{tm=0;brukt=true;chatMsgMeny(id)},520)});
   document.addEventListener('pointermove',e=>{if(p0&&Math.hypot(e.clientX-p0[0],e.clientY-p0[1])>10)stopp()});
   document.addEventListener('pointerup',stopp);document.addEventListener('pointercancel',stopp);
   document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('#cMsg .cb[data-msg]'))e.preventDefault()});
@@ -2667,6 +2700,7 @@ document.addEventListener('click',e=>{
   else if('chatback' in d){const c=state.chat;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()}
   else if('chatnyv' in d)chatNyVelg();
   else if(d.chatopen)chatSamtale(d.chatopen);
+  else if('chatslett' in d)chatSlettMeny();
   else if(d.chatgr)chatGruppeSkriv(d.chatgr);
   else if(d.chatpers){const [em,g]=d.chatpers.split('|'),u=chatFolkAlle().find(x=>x.id===em);chatTil(em,g,u&&u.name)}});
 document.addEventListener('submit',async e=>{
@@ -3000,7 +3034,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 21:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 22:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];

@@ -113,7 +113,7 @@ const FB={
     async msgsList(id){const s=await S.getDocs(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)));return s.docs.map(d=>{const x=d.data();return {id:d.id,by:x.by,name:x.name,text:x.text,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})},
     // Lyttere for chat: nye samtaler og meldinger kommer med en gang (leser bare det som endres).
     watchThreads:(me,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads'),S.where('parts','array-contains',me),S.limit(50)),s=>cb(s.docs.map(d=>({id:d.id,...d.data({serverTimestamps:'estimate'})})).sort((x,y)=>(y.ms||0)-(x.ms||0))),e=>err&&err(e)),
-    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)),s=>cb(s.docs.map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,likes:Array.isArray(x.likes)?x.likes:[],ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
+    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)),s=>cb(s.docs.map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,likes:Array.isArray(x.likes)?x.likes:[],slettet:x.slettet===true,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
     likeMsg:(tid,mid,paa)=>S.updateDoc(S.doc(db,'threads',tid,'messages',mid),{likes:paa?S.arrayUnion(auth.currentUser.email.toLowerCase()):S.arrayRemove(auth.currentUser.email.toLowerCase())}),
     async newThread(role,text,name){
       const me=auth.currentUser.email.toLowerCase(),parts=[...new Set([me,...(role.emails||[])])],tref=S.doc(S.collection(db,'threads')),mref=S.doc(S.collection(db,'threads',tref.id,'messages')),b=S.writeBatch(db);
@@ -129,8 +129,15 @@ const FB={
     async addMsg(t,text,name){
       const me=auth.currentUser.email.toLowerCase(),tref=S.doc(db,'threads',t.id),mref=S.doc(S.collection(db,'threads',t.id,'messages')),b=S.writeBatch(db);
       b.set(mref,{by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()});
-      b.update(tref,{last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:t.parts.filter(p=>p!==me)});
+      b.update(tref,{last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:t.parts.filter(p=>p!==me),gone:[]});
       await b.commit()},
+    // Angre en melding du har sendt (teksten tømmes og meldingen merkes slettet), skjul/vis en samtale for deg selv, eller slett den for alle.
+    async angreMsg(tid,mid,sist){const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db);
+      b.update(S.doc(db,'threads',tid,'messages',mid),{text:'',slettet:true});
+      if(sist)b.update(S.doc(db,'threads',tid),{last:'Meldingen er angret',lastBy:me});
+      await b.commit()},
+    gjemChat:(tid,paa)=>{const me=auth.currentUser.email.toLowerCase();return S.updateDoc(S.doc(db,'threads',tid),{gone:paa?S.arrayUnion(me):S.arrayRemove(me)})},
+    async slettChat(tid){const ms=await S.getDocs(S.collection(db,'threads',tid,'messages'));for(const m of ms.docs)await S.deleteDoc(m.ref);await S.deleteDoc(S.doc(db,'threads',tid))},
     markThreadRead:id=>S.updateDoc(S.doc(db,'threads',id),{unread:S.arrayRemove(auth.currentUser.email.toLowerCase())}),
     async notifyThread(url,id){const idToken=await auth.currentUser.getIdToken(true);const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'beskjed',threadId:id})});return r.json()},
     // Politiattest (attester/{e-post}): bare datoen den ble godkjent.

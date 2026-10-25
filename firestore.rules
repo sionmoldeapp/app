@@ -85,14 +85,26 @@ service cloud.firestore {
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
         && request.resource.data.unread is list && request.resource.data.unread.toSet().difference(resource.data.parts.toSet()).size() == 0
         && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unread'])
-            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['last', 'lastBy', 'ms', 'unread'])
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['last', 'lastBy', 'ms', 'unread', 'gone'])
+                && (!('gone' in request.resource.data) || request.resource.data.gone == [])
                 && request.resource.data.lastBy == request.auth.token.email
                 && request.resource.data.last is string && request.resource.data.last.size() <= 140
                 && request.resource.data.ms is number));
+      // Skjule en samtale for seg selv: deltakeren kan bare legge til eller fjerne sin egen e-post i feltet gone.
+      allow update: if signedIn() && request.auth.token.email in resource.data.parts
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gone'])
+        && request.resource.data.gone is list && request.resource.data.gone.size() <= 8
+        && request.resource.data.gone.toSet().difference(resource.data.get('gone', []).toSet()).hasOnly([request.auth.token.email])
+        && resource.data.get('gone', []).toSet().difference(request.resource.data.gone.toSet()).hasOnly([request.auth.token.email]);
       allow delete: if isAdmin() || (signedIn() && resource.data.from == request.auth.token.email);
       match /messages/{mid} {
         allow read: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts;
         allow delete: if signedIn() && (isAdmin() || get(/databases/$(database)/documents/threads/$(id)).data.from == request.auth.token.email);
+        // Angre en melding du selv har sendt: teksten tømmes og slettet settes.
+        allow update: if signedIn() && resource.data.by == request.auth.token.email
+          && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'slettet'])
+          && request.resource.data.slettet == true && request.resource.data.text == '';
         // 👍 på en melding: deltakerne kan bare legge til eller fjerne sin egen e-post i feltet likes.
         allow update: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
