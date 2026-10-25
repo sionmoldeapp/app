@@ -3212,14 +3212,14 @@ function ansRad(r,red){
    +((r.tasks||[]).length?'<ul style="margin:8px 0 0;padding-left:20px;display:grid;gap:3px;font-size:var(--t-b)">'+r.tasks.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>':'')
    +(r.persons||[]).map(p=>'<div style="margin-top:8px">'+esc(p.n)+'<div class="small">'+(p.tlf?'<a href="'+esc(tlfHref(p.tlf))+'">'+esc(p.tlf)+'</a>':'')+(p.tlf&&p.e?' · ':'')+(p.e?'<a href="mailto:'+esc(p.e)+'">'+esc(p.e)+'</a>':'')+'</div></div>').join('')
    +((kanSende||red)?'<div class="btns" style="margin-top:10px">'+(kanSende?'<button class="btn primary" data-ansmsg="'+esc(r.id)+'" style="width:auto">Send beskjed</button>':'')+(red?'<button class="btn" data-ansedit="'+esc(r.id)+'">Endre</button>':'')+'</div>':'')+'</div>'}
-function ansvarCard(){
+function ansvarCard(tittel){
   if(!state.user||!state.member)return '';
   const l=state.roles,red=state.admin&&editOn();let inn;
   if(l===undefined)inn='<p class="small">Henter ansvarsområder …</p>';
   else inn='<p class="small" style="margin:0 0 8px">Hvem som har ansvar for hva i menigheten. Trykk «Send beskjed» for å skrive til de ansvarlige her i appen, og de kan svare deg i Chat.</p>'
     +(red?'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-ansnew style="width:auto">+ Nytt ansvarsområde</button></div>':'')
     +'<div class="reg">'+(l.length?l.map(r=>ansRad(r,red)).join(''):tom('folk','Ingen ansvarsområder ennå',state.admin?'Slå på redigering (blyanten) for å legge inn.':''))+'</div>';
-  return '<details class="card acc" data-acc="ansvar" '+(state.acc.ansvar?'open':'')+'><summary><h2>Ansvarsområder</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.ansMsg||'')+'</p></details>'}
+  return '<details class="card acc" data-acc="ansvar" '+(state.acc.ansvar?'open':'')+'><summary><h2>'+esc(tittel||'Ansvarsområder')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.ansMsg||'')+'</p></details>'}
 function meldCard(){
   if(!state.user||!state.member)return '';
   const l=state.threads,meg=meEmail(),nye=l?l.filter(t=>(t.unread||[]).includes(meg)).length:0;let inn;
@@ -3523,7 +3523,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 11:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 12:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -3917,18 +3917,26 @@ function subFlytt(cid,key,d){const ord=(state.subVis[cid]||[]).slice(),i=ord.ind
 /* Tunge kort (mange brukere) bygges bare når de er åpne; lukket vises bare tittelen. Åpning tegner siden på nytt (toggle-lytteren). */
 const ADM_LAT=['brukere','tilh'];
 const admLat=(acc,tittel,bygg)=>state.acc[acc]?bygg():'<details class="card acc" data-acc="'+acc+'"><summary><h2>'+tittel+'</h2></summary></details>';
-const ADM_KORT={
+/* Alt om ansvarsområder og brukere ligger samlet i kortet Ansvarsområder: oversikten, brukere, grupper, tilhørighet og varsler, gruppelederens grupper og politiattester. */
+const ANSVAR_KORT={
   medlem:()=>state.view==='meg'&&state.admin?admLat('brukere','Brukere ('+members.length+')',memberCard):'',grupper:()=>state.view==='meg'&&state.admin?groupsCard():'',
   tilh:()=>state.view==='meg'&&(state.admin||isLeader())?admLat('tilh','Tilhørighet og varsler',tilhKort):'',
   ledergr:()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():'',
+  attester:()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''};
+function ansvarKort(){
+  const ekstra=Object.values(ANSVAR_KORT).map(f=>f()).filter(x=>x&&String(x).trim());
+  if(!ekstra.length)return ansvarCard();
+  const tekst=state.admin?'Ansvarsområder, brukere, grupper, tilhørighet og varsler og politiattester samlet på ett sted.':'Gruppene du leder, medlemmene i dem og politiattester.';
+  return subSorter('ansv','<details class="card acc" data-acc="ansvarkort" '+(state.acc.ansvarkort?'open':'')+'><summary><h2>Ansvarsområder</h2></summary><p class="small" style="margin:0 0 4px">'+tekst+' Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+ansvarCard('Hvem har ansvar for hva')+ekstra.join('')+'</div></details>','.megboks')}
+const ADM_KORT={
   gruppebesk:()=>gruppeBeskjedCard(),publiser:()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'',
   utleie:()=>state.admin?utleieCard():'',jul:()=>state.admin?julCard():'',
-  attester:()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():'',stat:()=>statCard(),
+  stat:()=>statCard(),
   kategorier:()=>state.admin?katCard():'',snap:()=>state.view==='meg'&&state.admin?snapCard():'',share:()=>shareCard()};
 function admCard(){
   const deler=Object.values(ADM_KORT).map(f=>f()).filter(x=>x&&String(x).trim());
   if(!deler.length)return '';
-  const tekst=state.admin?'Brukere, grupper, varsler, utleie og andre verktøy for å styre appen.':'Verktøy for gruppene du har ansvar for: medlemmer, varsler og beskjeder.';
+  const tekst=state.admin?'Utleie, statistikk, sikkerhetskopi og andre verktøy for å styre appen. Brukere, grupper og politiattester ligger under Ansvarsområder.':'Verktøy for gruppene du leder: beskjeder og publisering. Medlemmer og tilhørighet ligger under Ansvarsområder.';
   return subSorter('adm','<details class="card acc" data-acc="admkort" '+(state.acc.admkort?'open':'')+'><summary><h2>Administrer</h2></summary><p class="small" style="margin:0 0 4px">'+tekst+' Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>','.megboks')}
 function megCard(){return subSorter('meg',megKort(),'.megboks')}
 function megKort(){
@@ -3937,7 +3945,7 @@ function megKort(){
   return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, innstillinger, vakter og møteverktøy. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
 const ME_KORT={
   chat:['Chat',()=>chatKort()],meg:['Meg',()=>megCard()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],lr:['Saker til lederrådet',()=>lrCard()],utleie:['Utleie',()=>state.admin?'':utleieCard()],
-  ansvar:['Ansvarsområder',()=>ansvarCard()],
+  ansvar:['Ansvarsområder',()=>ansvarKort()],
   personvern:['Personvern',()=>personvernCard()]};
 /* Kortene under Mer og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
 const ORD={me:{felt:'meorder',ls:'sm-meorder'},home:{felt:'homeorder',ls:'sm-homeorder'}};
