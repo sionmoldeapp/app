@@ -334,6 +334,13 @@ html[data-stil="android"] .btn,html[data-stil="android"] .chip,html[data-stil="a
 #nFotoX{all:unset;position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--surface);display:grid;place-items:center;font-size:12px;cursor:pointer}
 #nFotoX[hidden]{display:none}
 .nminitur{flex:none;width:44px;height:44px;border-radius:var(--r-s);object-fit:cover;display:block}
+.oseks{border:2px solid var(--line);border-radius:var(--r-m);padding:12px;margin:0 0 14px}
+.oseks.orec{border-color:color-mix(in srgb,#e5484d 40%,var(--line));background:color-mix(in srgb,#e5484d 6%,transparent)}
+.oseks.orecpa{border-color:#e5484d;box-shadow:0 0 0 3px color-mix(in srgb,#e5484d 25%,transparent)}
+.oseks.ospill{background:var(--surface)}
+.ohd{display:flex;align-items:center;gap:8px;font:700 var(--t-b)/1.2 var(--f-body,inherit);text-transform:uppercase;letter-spacing:.05em;margin:0 0 10px}
+.orec .ohd{color:#c0343a}
+.orecdot{width:12px;height:12px;border-radius:50%;background:#e5484d;display:inline-block}
 .opptmini{flex:none;width:56px;height:56px;border-radius:var(--r-s);overflow:hidden;background:var(--chip);color:var(--muted);display:grid;place-items:center}
 /* Bred PC-visning (html[data-bred="1"]): sidemeny til venstre og kortene i flere kolonner over hele nettleservinduet. Slås på automatisk for administratorer på skjermer ≥ 1000 px, eller velges under Innstillinger → Utseende. */
 html[data-bred="1"] .app{max-width:none;margin:0 0 0 240px;display:block;min-height:100vh}
@@ -2923,7 +2930,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='25.10.2026 kl. 12:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='25.10.2026 kl. 13:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -3111,7 +3118,8 @@ document.addEventListener('change',async e=>{const t=e.target,id=t.dataset&&(t.d
   const rad=document.querySelector('[data-opptapne="'+o.id+'"]');if(rad){const b=rad.querySelector('b'),sm=rad.querySelector('.small');if(b)b.textContent=oTittel(o);if(sm)sm.textContent=o.taler?o.taler:'Taler ikke oppgitt'}});
 function opptInner(typ){
   if(OPPT.liste===null){OPPT.liste=[];opptLastListe()}
-  let h='<p class="small" style="margin:0 0 10px">'+(typ==='video'?'Film med kameraet i appen. Kameraet åpnes først, og opptaket starter ikke før du trykker Start opptak eller trykker i bildet.':'Ta opp lyd i appen.')+' Opptaket lagres på telefonen din, og med «Send til Google Drive» velger du Drive i telefonens delingsmeny. Ingenting går til menigheten. Ta bare opp når alle som snakker vet om det og har sagt ja.</p>';
+  const opptPa=OPPT.state==='opptak'&&OPPT.type===typ;
+  let h='<div class="oseks orec'+(opptPa?' orecpa':'')+'"><div class="ohd"><i class="orecdot" aria-hidden="true"></i>'+(typ==='video'?'Nytt videoopptak':'Nytt lydopptak')+'</div><p class="small" style="margin:0 0 10px">'+(typ==='video'?'Film med kameraet i appen. Kameraet åpnes først, og opptaket starter ikke før du trykker Start opptak eller trykker i bildet.':'Ta opp lyd i appen.')+' Opptaket lagres på telefonen din, og med «Send til Google Drive» velger du Drive i telefonens delingsmeny. Ingenting går til menigheten. Ta bare opp når alle som snakker vet om det og har sagt ja.</p>';
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><label class="f">Tittel<input id="opptTit_'+typ+'" maxlength="80" value="'+esc(OPPT.tittel||'')+'" placeholder="Tema (valgfritt)"></label><label class="f">Taler<input id="opptTal_'+typ+'" maxlength="80" value="'+esc(OPPT.taler||'')+'" placeholder="Hvem taler?"></label></div>';
   const vfelt=klar=>'<div id="opptVf" style="position:relative;overflow:hidden;border-radius:var(--r-m);background:#000;margin-top:10px;touch-action:none"><video id="opptForh" muted playsinline autoplay style="width:100%;max-height:50vh;display:block;transform-origin:center;pointer-events:none"></video>'
     +(klar?'<div style="position:absolute;inset:0;display:grid;place-items:center;pointer-events:none"><span style="background:rgba(0,0,0,.55);color:#fff;padding:8px 14px;border-radius:99px;font-size:var(--t-m);font-weight:600">Trykk i bildet for å starte opptak</span></div>'
@@ -3126,7 +3134,9 @@ function opptInner(typ){
   const L=(OPPT.liste||[]).filter(o=>(o.type||'lyd')===typ),meg=OPPT.type===typ;
   if(OPPT.msg&&meg)h+='<p class="small" role="status" style="margin:10px 0 0">'+esc(OPPT.msg)+'</p>';
   if(OPPT.feil&&meg)h+='<p class="small" role="alert" style="margin:10px 0 0;color:#b3261e">'+esc(OPPT.feil)+'</p>';
-  if(L.length){h+='<h3 style="margin:16px 0 6px;font-size:var(--t-b)">'+(typ==='video'?'Mine videoer':'Mine lydopptak')+' ('+L.length+')</h3><div class="list">'+L.map(o=>{
+  h+='</div><div class="oseks ospill"><div class="ohd"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>'+(typ==='video'?'Spill av video':'Spill av lyd')+(L.length?' ('+L.length+')':'')+'</div>';
+  if(!L.length)h+='<p class="small" style="margin:0">Ingen '+(typ==='video'?'videoopptak':'lydopptak')+' ennå. Det du tar opp over, dukker opp her, og her spiller du det av.</p>';
+  if(L.length){h+='<p class="small" style="margin:0 0 8px">Trykk på et opptak for å spille det av, endre tittel, sende det til Drive eller slette det.</p><div class="list">'+L.map(o=>{
     const id=String(o.id),open=OPPT.apen===id,spiller=String(OPPT.spill)===id&&OPPT.urls[o.id];
     return '<div class="item '+(open?'open':'')+'"><button type="button" data-opptapne="'+id+'" aria-expanded="'+open+'"><span class="opptmini">'+(o.img?'<img src="'+o.img+'" alt="">':(o.type==='video'?VIDEO_IKON:BILDE_IKON))+'</span>'
       +'<div class="grow"><b>'+esc(oTittel(o))+'</b><span class="small">'+esc(o.taler?o.taler:'Taler ikke oppgitt')+'</span></div><span class="tag">'+(o.type==='video'?'Video':'Lyd')+'</span></button>'
@@ -3134,7 +3144,7 @@ function opptInner(typ){
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0"><label class="f">Tittel<input data-opptt="'+id+'" maxlength="80" value="'+esc(o.tittel||'')+'" placeholder="'+esc(oTittel(o))+'"></label><label class="f">Taler<input data-opptp="'+id+'" maxlength="80" value="'+esc(o.taler||'')+'" placeholder="Hvem taler?"></label></div>'
       +(spiller?(o.type==='video'?'<video controls autoplay playsinline src="'+OPPT.urls[o.id]+'" style="width:100%;max-height:60vh;margin-bottom:8px;border-radius:var(--r-m);background:#000"></video>':'<audio controls autoplay src="'+OPPT.urls[o.id]+'" style="width:100%;margin-bottom:8px"></audio>'):'')
       +'<div class="btns"><button type="button" class="btn primary" data-opptdel="'+id+'" style="width:auto">Send til Google Drive</button><button type="button" class="btn" data-opptspill="'+id+'">'+(spiller?'Skjul spiller':'Spill av')+'</button><button type="button" class="btn" data-opptfotoid="'+id+'">'+(o.img?'Nytt bilde':'Ta bilde')+'</button><button type="button" class="btn" data-opptlast="'+id+'">Lagre på telefonen</button><button type="button" class="btn danger" data-opptslett="'+id+'">Slett</button></div></div></div>'}).join('')+'</div>'}
-  return h}
+  h+='</div>';return h}
 /* Feilsøking: viser det siste varselet denne telefonen fikk (tittel, tekst og hvilke felt det inneholdt), så vi kan se om innholdet kom frem. */
 async function fyllSistVarsel(){const e=document.getElementById('sistVarsel');if(!e||!window.caches)return;
   try{const ca=await caches.open('sion-varsel'),r=await ca.match(new URL('varsel.json',location.href).href);if(!r){e.textContent='Ingen varsler er mottatt på denne telefonen ennå.';return}
