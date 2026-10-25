@@ -51,6 +51,13 @@ service cloud.firestore {
     }
     // Beskjeder mellom et medlem og de ansvarlige for et område. parts er e-postadressene til deltakerne (avsenderen og personene på området), og bare
     // de kan lese og skrive. Ved opprettelse må alle andre deltakere stå på ansvarsområdet (roles/{roleId}.emails).
+    // Reaksjonsfelt på en melding: en deltaker kan bare legge til eller fjerne sin egen e-post i listen f.
+    function lykOK(f) {
+      return !(f in request.resource.data.diff(resource.data).affectedKeys())
+        || (request.resource.data[f] is list && request.resource.data[f].size() <= 8
+            && request.resource.data[f].toSet().difference(resource.data.get(f, []).toSet()).hasOnly([request.auth.token.email])
+            && resource.data.get(f, []).toSet().difference(request.resource.data[f].toSet()).hasOnly([request.auth.token.email]));
+    }
     match /threads/{id} {
       allow read: if signedIn() && request.auth.token.email in resource.data.parts;
       allow create: if isMember()
@@ -103,19 +110,30 @@ service cloud.firestore {
         // Angre en melding du selv har sendt: teksten tømmes og slettet settes.
         allow update: if signedIn() && resource.data.by == request.auth.token.email
           && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'slettet'])
-          && request.resource.data.slettet == true && request.resource.data.text == '';
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'slettet', 'img', 'svar'])
+          && request.resource.data.slettet == true && request.resource.data.text == ''
+          && !('img' in request.resource.data) && !('svar' in request.resource.data);
+        // Rediger en melding du selv har sendt (bare tekstmeldinger).
+        allow update: if signedIn() && resource.data.by == request.auth.token.email
+          && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'redigert'])
+          && request.resource.data.redigert == true
+          && request.resource.data.text is string && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 1000
+          && !('slettet' in resource.data) && !('img' in resource.data);
         // 👍 på en melding: deltakerne kan bare legge til eller fjerne sin egen e-post i feltet likes.
         allow update: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
-          && request.resource.data.likes is list && request.resource.data.likes.size() <= 8
-          && request.resource.data.likes.toSet().difference(resource.data.get('likes', []).toSet()).hasOnly([request.auth.token.email])
-          && resource.data.get('likes', []).toSet().difference(request.resource.data.likes.toSet()).hasOnly([request.auth.token.email]);
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'r_hjerte', 'r_ler', 'r_wow', 'r_trist', 'r_be'])
+          && lykOK('likes') && lykOK('r_hjerte') && lykOK('r_ler') && lykOK('r_wow') && lykOK('r_trist') && lykOK('r_be');
         allow create: if signedIn() && request.auth.token.email in getAfter(/databases/$(database)/documents/threads/$(id)).data.parts
-          && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created'])
+          && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created', 'svar', 'img'])
           && request.resource.data.by == request.auth.token.email
           && request.resource.data.name is string && request.resource.data.name.size() <= 60
-          && request.resource.data.text is string && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 1000
+          && request.resource.data.text is string && request.resource.data.text.size() <= 1000
+          && (request.resource.data.text.size() >= 1 || ('img' in request.resource.data))
+          && (!('img' in request.resource.data) || (request.resource.data.img is string && request.resource.data.img.size() <= 200000))
+          && (!('svar' in request.resource.data) || (request.resource.data.svar is map && request.resource.data.svar.keys().hasOnly(['id', 'navn', 'tekst'])
+              && request.resource.data.svar.navn is string && request.resource.data.svar.navn.size() <= 60
+              && request.resource.data.svar.tekst is string && request.resource.data.svar.tekst.size() <= 120))
           && request.resource.data.created == request.time;
       }
     }

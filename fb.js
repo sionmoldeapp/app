@@ -113,8 +113,20 @@ const FB={
     async msgsList(id){const s=await S.getDocs(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)));return s.docs.map(d=>{const x=d.data();return {id:d.id,by:x.by,name:x.name,text:x.text,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})},
     // Lyttere for chat: nye samtaler og meldinger kommer med en gang (leser bare det som endres).
     watchThreads:(me,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads'),S.where('parts','array-contains',me),S.limit(50)),s=>cb(s.docs.map(d=>({id:d.id,...d.data({serverTimestamps:'estimate'})})).sort((x,y)=>(y.ms||0)-(x.ms||0))),e=>err&&err(e)),
-    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)),s=>cb(s.docs.map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,likes:Array.isArray(x.likes)?x.likes:[],slettet:x.slettet===true,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
-    // 👍 på en melding. Når noen liker en annens melding, oppdateres også samtalen (siste melding og ulest), så den andre ser det i listen og på fanen.
+    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)),s=>cb(s.docs.map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,reak:Object.fromEntries(['likes','r_hjerte','r_ler','r_wow','r_trist','r_be'].map(k=>[k,Array.isArray(x[k])?x[k]:[]])),svar:x.svar&&typeof x.svar==='object'?x.svar:null,img:typeof x.img==='string'?x.img:'',redigert:x.redigert===true,slettet:x.slettet===true,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
+    // Reaksjon på en melding (👍 ❤️ 😂 😮 😢 🙏): fjerner din e-post fra feltene du hadde, og legger den til i det nye. Den andre får beskjed i samtalelisten.
+    async reakMsg(tid,mid,r,info){
+      const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db),u={};
+      (r.fjernFra||[]).forEach(k=>{u[k]=S.arrayRemove(me)});if(r.legg)u[r.legg]=S.arrayUnion(me);
+      b.update(S.doc(db,'threads',tid,'messages',mid),u);
+      if(info)b.update(S.doc(db,'threads',tid),{last:((info.emoji||'👍')+' '+String(info.navn||'Noen').slice(0,40)+' reagerte på «'+String(info.tekst||'').slice(0,50)+'»').slice(0,140),lastBy:me,ms:Date.now(),unread:(info.parts||[]).filter(p=>p!==me),gone:[]});
+      await b.commit()},
+    // Rediger en melding du har sendt.
+    async redigerMsg(tid,mid,tekst,sist){const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db);
+      b.update(S.doc(db,'threads',tid,'messages',mid),{text:String(tekst).slice(0,1000),redigert:true});
+      if(sist)b.update(S.doc(db,'threads',tid),{last:String(tekst).slice(0,140),lastBy:me});
+      await b.commit()},
+    // 👍 på en melding (eldre). Når noen liker en annens melding, oppdateres også samtalen (siste melding og ulest), så den andre ser det i listen og på fanen.
     async likeMsg(tid,mid,paa,info){
       const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db);
       b.update(S.doc(db,'threads',tid,'messages',mid),{likes:paa?S.arrayUnion(me):S.arrayRemove(me)});
@@ -131,14 +143,17 @@ const FB={
       b.set(tref,{roleId:'dm',roleName:String(groupName||'Beskjed').slice(0,60),kind:'dm',toName:String(toName||to).slice(0,60),from:me,fromName:String(name).slice(0,60),parts,last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:[to],created:S.serverTimestamp()});
       b.set(mref,{by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()});
       await b.commit();return tref.id},
-    async addMsg(t,text,name){
+    async addMsg(t,text,name,ekstra){
       const me=auth.currentUser.email.toLowerCase(),tref=S.doc(db,'threads',t.id),mref=S.doc(S.collection(db,'threads',t.id,'messages')),b=S.writeBatch(db);
-      b.set(mref,{by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()});
-      b.update(tref,{last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:t.parts.filter(p=>p!==me),gone:[]});
+      const d={by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()};
+      if(ekstra&&ekstra.svar)d.svar={id:String(ekstra.svar.id||'').slice(0,40),navn:String(ekstra.svar.navn||'').slice(0,60),tekst:String(ekstra.svar.tekst||'').slice(0,120)};
+      if(ekstra&&ekstra.img)d.img=String(ekstra.img);
+      b.set(mref,d);
+      b.update(tref,{last:(String(text).trim()?String(text):'📷 Bilde').slice(0,140),lastBy:me,ms:Date.now(),unread:t.parts.filter(p=>p!==me),gone:[]});
       await b.commit()},
     // Angre en melding du har sendt (teksten tømmes og meldingen merkes slettet), skjul/vis en samtale for deg selv, eller slett den for alle.
     async angreMsg(tid,mid,sist){const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db);
-      b.update(S.doc(db,'threads',tid,'messages',mid),{text:'',slettet:true});
+      b.update(S.doc(db,'threads',tid,'messages',mid),{text:'',slettet:true,img:S.deleteField(),svar:S.deleteField()});
       if(sist)b.update(S.doc(db,'threads',tid),{last:'Meldingen er angret',lastBy:me});
       await b.commit()},
     gjemChat:(tid,paa)=>{const me=auth.currentUser.email.toLowerCase();return S.updateDoc(S.doc(db,'threads',tid),{gone:paa?S.arrayUnion(me):S.arrayRemove(me)})},
