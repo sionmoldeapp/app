@@ -385,6 +385,15 @@ html[data-bred="1"][data-meny="bunn"] nav.tabs button .tab-bdg{position:absolute
 .tlramme .grow{flex:1 0 auto;max-width:100%}
 .tlover{display:block;font-size:var(--t-s);letter-spacing:.06em;text-transform:uppercase;opacity:.75}
 .tlnavn{display:block;overflow-wrap:anywhere;font-size:var(--t-xl,22px);line-height:1.15;margin-top:2px}
+.tlsek{display:flex;align-items:center;gap:6px;margin:14px 0 4px;padding:6px 10px;border-radius:10px;font-weight:700;font-size:var(--t-m)}
+.tlsek b{margin-left:auto;min-width:26px;text-align:center;border-radius:99px;padding:1px 8px;background:rgba(0,0,0,.12)}
+.tlsek.tlsm{background:color-mix(in srgb,#1f9d55 18%,transparent);color:var(--ink)}
+.tlsek.tlsi{background:var(--chip);color:var(--muted)}
+.tlsum{display:flex;flex-wrap:wrap;gap:6px 14px;margin:2px 0 4px;font-size:var(--t-m)}
+.tlsum b{font-size:var(--t-l)}
+.tlsum .ok b{color:#1f9d55}
+.tlr.tlmed{border-left:4px solid #1f9d55;padding-left:10px}
+.tlr.tlikke{border-left:4px solid transparent;padding-left:10px;opacity:.9}
 .tlsws{display:flex;gap:16px}
 .tlsw{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;text-align:center;width:64px}
 .tlsw .small{line-height:1.2;min-height:1.2em}
@@ -1399,15 +1408,24 @@ const tlG=()=>tlLeder()?GROUPS.filter(g=>(state.leads||[]).includes(g[0])):GROUP
 const tlM=()=>tlLeder()?leaderMem:members;
 const tlVar=(u,g)=>(u.groups||[]).includes(g)?!(u.muted||[]).includes(g):(u.extra||[]).includes(g);
 function tlBryter(attr,on,etikett,navn){return '<label class="tlsw"><span class="small">'+esc(etikett)+'</span><button type="button" class="tg" role="switch" aria-checked="'+(!!on)+'" aria-label="'+esc(etikett+' – '+navn)+'" '+attr+'></button></label>'}
+/* Tydelig oversikt: «Med i gruppen» og «Ikke med» som hver sin liste med antall, og en oppsummering øverst. Brytere som før (Med og Varsel). */
+const tlSek=(ikon,tittel,n,klasse)=>'<div class="tlsek '+klasse+'" role="heading" aria-level="4"><span>'+ikon+'</span> '+esc(tittel)+' <b>'+n+'</b></div>';
 function tlRader(){
   const t=state.tl,gs=tlG();if(!t.g||!gs.some(x=>x[0]===t.g))t.g=(gs[0]||[''])[0];
   if(t.mode==='person'){
     const lst=tlM().slice().sort((a,b)=>tlNavn(a).localeCompare(tlNavn(b),'nb'));if(!lst.length)return '<p class="small">Ingen brukere ennå.</p>';
     const u=lst.find(x=>x.id===t.p)||lst[0];t.p=u.id;
-    return gs.map(g=>'<div class="r tlr"><div class="grow"><b>'+esc(g[1])+'</b></div><div class="tlsws">'+tlBryter('data-tlmed="'+esc(u.id+'|'+g[0])+'"',(u.groups||[]).includes(g[0]),'Med',tlNavn(u))+tlBryter('data-tlvar="'+esc(u.id+'|'+g[0])+'"',tlVar(u,g[0]),'Varsel',tlNavn(u))+'</div></div>').join('')}
-  const q=norm(t.q||'').trim(),lst=tlM().filter(u=>!q||norm(tlNavn(u)+' '+u.id).includes(q)).sort((a,b)=>{const am=(a.groups||[]).includes(t.g),bm=(b.groups||[]).includes(t.g);return (bm-am)||tlNavn(a).localeCompare(tlNavn(b),'nb')});
-  if(!lst.length)return '<p class="small">Ingen treff.</p>';
-  return lst.map(u=>'<div class="r tlr"><div class="grow"><b>'+esc(tlNavn(u))+'</b>'+(u.name?'<span class="small" style="display:block">'+esc(u.id)+'</span>':'')+((u.leads||[]).includes(t.g)?'<span class="tag m" style="margin-top:2px">Leder</span>':'')+'</div><div class="tlsws">'+tlBryter('data-tlmed="'+esc(u.id+'|'+t.g)+'"',(u.groups||[]).includes(t.g),'Med',tlNavn(u))+tlBryter('data-tlvar="'+esc(u.id+'|'+t.g)+'"',tlVar(u,t.g),'Varsel',tlNavn(u))+'</div></div>').join('')}
+    const rad=g=>'<div class="r tlr '+((u.groups||[]).includes(g[0])?'tlmed':'tlikke')+'"><div class="grow"><b>'+esc(g[1])+'</b>'+((u.leads||[]).includes(g[0])?'<span class="tag m" style="margin-left:6px">Leder</span>':'')+'</div><div class="tlsws">'+tlBryter('data-tlmed="'+esc(u.id+'|'+g[0])+'"',(u.groups||[]).includes(g[0]),'Med',tlNavn(u))+tlBryter('data-tlvar="'+esc(u.id+'|'+g[0])+'"',tlVar(u,g[0]),'Varsel',tlNavn(u))+'</div></div>';
+    const med=gs.filter(g=>(u.groups||[]).includes(g[0])),ikke=gs.filter(g=>!(u.groups||[]).includes(g[0]));
+    return tlSek('✔','Er med i',med.length,'tlsm')+(med.map(rad).join('')||'<p class="small" style="margin:4px 0 10px">Ingen grupper.</p>')+tlSek('○','Er ikke med i',ikke.length,'tlsi')+(ikke.map(rad).join('')||'<p class="small">Er med i alle.</p>')}
+  const alle=tlM(),q=norm(t.q||'').trim(),lst=alle.filter(u=>!q||norm(tlNavn(u)+' '+u.id).includes(q)).sort((a,b)=>tlNavn(a).localeCompare(tlNavn(b),'nb'));
+  const erMed=u=>(u.groups||[]).includes(t.g),antMed=alle.filter(erMed).length,antIkke=alle.length-antMed,antExtra=alle.filter(u=>!erMed(u)&&(u.extra||[]).includes(t.g)).length;
+  if(!alle.length)return '<p class="small">Ingen brukere ennå.</p>';
+  const sum='<div class="tlsum" role="status"><span class="ok"><b>'+antMed+'</b> med</span><span><b>'+antIkke+'</b> ikke med</span>'+(antExtra?'<span><b>'+antExtra+'</b> får varsel uten å være med</span>':'')+'</div>';
+  const rad=u=>'<div class="r tlr '+(erMed(u)?'tlmed':'tlikke')+'"><div class="grow"><b>'+esc(tlNavn(u))+'</b>'+(u.name?'<span class="small" style="display:block">'+esc(u.id)+'</span>':'')+((u.leads||[]).includes(t.g)?'<span class="tag m" style="margin-top:2px">Leder</span>':'')+(!erMed(u)&&(u.extra||[]).includes(t.g)?'<span class="tag" style="margin-top:2px">Varsel uten å være med</span>':'')+'</div><div class="tlsws">'+tlBryter('data-tlmed="'+esc(u.id+'|'+t.g)+'"',erMed(u),'Med',tlNavn(u))+tlBryter('data-tlvar="'+esc(u.id+'|'+t.g)+'"',tlVar(u,t.g),'Varsel',tlNavn(u))+'</div></div>';
+  const med=lst.filter(erMed),ikke=lst.filter(u=>!erMed(u));
+  if(!lst.length)return sum+'<p class="small">Ingen treff.</p>';
+  return sum+tlSek('✔','Med i gruppen',med.length,'tlsm')+(med.map(rad).join('')||'<p class="small" style="margin:4px 0 10px">Ingen ennå.</p>')+tlSek('○','Ikke med',ikke.length,'tlsi')+(ikke.map(rad).join('')||'<p class="small">Alle er med.</p>')}
 function tilhKort(){
   const t=state.tl,gs=tlG();if(!t.g||!gs.some(x=>x[0]===t.g))t.g=(gs[0]||[''])[0];
   const modus='<div class="btns" role="group" aria-label="Visning" style="margin:0 0 10px">'+[['gruppe','Per gruppe'],['person','Per person']].map(([v,n])=>'<button type="button" class="btn '+(t.mode===v?'on':'')+'" data-tlmode="'+v+'" aria-pressed="'+(t.mode===v)+'">'+n+'</button>').join('')+'</div>';
@@ -3505,7 +3523,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 10:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 11:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
