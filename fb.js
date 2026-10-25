@@ -113,6 +113,16 @@ const FB={
     async msgsList(id){const s=await S.getDocs(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)));return s.docs.map(d=>{const x=d.data();return {id:d.id,by:x.by,name:x.name,text:x.text,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})},
     // Chat: farge per samtale, avstemninger (avst), bønneliste (threads/{id}/bonner).
     setFarge:(tid,farge)=>S.updateDoc(S.doc(db,'threads',tid),{farge}),
+    setUtseende:(tid,felt,verdi)=>S.updateDoc(S.doc(db,'threads',tid),{[felt==='bakgrunn'?'bakgrunn':'farge']:verdi}),
+    // Stjernemerke (bare egen e-post i stjerne), dempe en samtale (egen e-post i dempet), moderator sletter en melding, og ny gruppesamtale (kind gruppe, opptil 40 deltakere).
+    stjerneMsg:(tid,mid,paa)=>{const me=auth.currentUser.email.toLowerCase();return S.updateDoc(S.doc(db,'threads',tid,'messages',mid),{stjerne:paa?S.arrayUnion(me):S.arrayRemove(me)})},
+    dempChat:(tid,paa)=>{const me=auth.currentUser.email.toLowerCase();return S.updateDoc(S.doc(db,'threads',tid),{dempet:paa?S.arrayUnion(me):S.arrayRemove(me)})},
+    slettMsg:(tid,mid)=>S.deleteDoc(S.doc(db,'threads',tid,'messages',mid)),
+    async newGruppe(gid,tittel,emails,text,name){
+      const me=auth.currentUser.email.toLowerCase(),parts=[me,...[...new Set(emails.map(e=>String(e).toLowerCase()))].filter(e=>e!==me)].slice(0,40),tref=S.doc(S.collection(db,'threads')),mref=S.doc(S.collection(db,'threads',tref.id,'messages')),b=S.writeBatch(db);
+      b.set(tref,{roleId:'gruppe',roleName:String(tittel).slice(0,60),kind:'gruppe',gid:String(gid).slice(0,40),from:me,fromName:String(name).slice(0,60),parts,last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:parts.filter(p=>p!==me),created:S.serverTimestamp()});
+      b.set(mref,{by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()});
+      await b.commit();return tref.id},
     async newAvst(d){const me=auth.currentUser.email.toLowerCase(),r=await S.addDoc(S.collection(db,'avst'),{sp:String(d.sp).slice(0,120),val:d.val.slice(0,5).map(x=>String(x).slice(0,40)),by:me,byNavn:String(d.navn||'').slice(0,60),grupper:d.grupper||[],ms:Date.now()});return r.id},
     watchAvst:(id,cb,err)=>S.onSnapshot(S.doc(db,'avst',id),s=>cb(s.exists()?{id,...s.data()}:null),e=>err&&err(e)),
     voteAvst:(id,ny,gammel)=>{const me=auth.currentUser.email.toLowerCase(),u={};if(gammel>=0)u['v'+gammel]=S.arrayRemove(me);if(ny>=0&&ny!==gammel)u['v'+ny]=S.arrayUnion(me);return S.updateDoc(S.doc(db,'avst',id),u)},
@@ -123,7 +133,7 @@ const FB={
     delBonn:(tid,bid)=>S.deleteDoc(S.doc(db,'threads',tid,'bonner',bid)),
     // Lyttere for chat: nye samtaler og meldinger kommer med en gang (leser bare det som endres).
     watchThreads:(me,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads'),S.where('parts','array-contains',me),S.limit(50)),s=>cb(s.docs.map(d=>({id:d.id,...d.data({serverTimestamps:'estimate'})})).sort((x,y)=>(y.ms||0)-(x.ms||0))),e=>err&&err(e)),
-    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)),s=>cb(s.docs.map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,reak:Object.fromEntries(['likes','r_hjerte','r_ler','r_wow','r_trist','r_be','r_ild','r_hender','r_sion','r_amen'].map(k=>[k,Array.isArray(x[k])?x[k]:[]])),avst:x.avst&&typeof x.avst==='object'?x.avst:null,lyd:typeof x.lyd==='string'?x.lyd:'',lsek:typeof x.lsek==='number'?x.lsek:0,svar:x.svar&&typeof x.svar==='object'?x.svar:null,img:typeof x.img==='string'?x.img:'',redigert:x.redigert===true,slettet:x.slettet===true,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
+    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)),s=>cb(s.docs.map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,reak:Object.fromEntries(['likes','r_hjerte','r_ler','r_wow','r_trist','r_be','r_ild','r_hender','r_sion','r_amen'].map(k=>[k,Array.isArray(x[k])?x[k]:[]])),stjerne:Array.isArray(x.stjerne)?x.stjerne:[],avst:x.avst&&typeof x.avst==='object'?x.avst:null,lyd:typeof x.lyd==='string'?x.lyd:'',lsek:typeof x.lsek==='number'?x.lsek:0,svar:x.svar&&typeof x.svar==='object'?x.svar:null,img:typeof x.img==='string'?x.img:'',redigert:x.redigert===true,slettet:x.slettet===true,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
     // Reaksjon på en melding (👍 ❤️ 😂 😮 😢 🙏): fjerner din e-post fra feltene du hadde, og legger den til i det nye. Den andre får beskjed i samtalelisten.
     async reakMsg(tid,mid,r,info){
       const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db),u={};

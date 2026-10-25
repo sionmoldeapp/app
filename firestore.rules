@@ -88,6 +88,20 @@ service cloud.firestore {
         && request.resource.data.last is string && request.resource.data.last.size() <= 140
         && request.resource.data.ms is number && request.resource.data.unread is list
         && request.resource.data.created == request.time;
+      // Gruppesamtale: administrator eller gruppeleder for gruppen (gid) oppretter en felles samtale med opptil 40 deltakere. Alle deltakerne kan skrive.
+      allow create: if isMember()
+        && request.resource.data.keys().hasOnly(['roleId', 'roleName', 'kind', 'gid', 'from', 'fromName', 'parts', 'last', 'lastBy', 'ms', 'unread', 'created'])
+        && request.resource.data.kind == 'gruppe' && request.resource.data.roleId == 'gruppe'
+        && request.resource.data.from == request.auth.token.email && request.resource.data.lastBy == request.auth.token.email
+        && request.resource.data.roleName is string && request.resource.data.roleName.size() >= 1 && request.resource.data.roleName.size() <= 60
+        && request.resource.data.fromName is string && request.resource.data.fromName.size() <= 60
+        && request.resource.data.gid is string
+        && request.resource.data.parts is list && request.resource.data.parts.size() >= 3 && request.resource.data.parts.size() <= 40
+        && request.resource.data.parts[0] == request.auth.token.email
+        && (isAdmin() || (isLeader() && request.resource.data.gid in myLeads()))
+        && request.resource.data.last is string && request.resource.data.last.size() <= 140
+        && request.resource.data.ms is number && request.resource.data.unread is list
+        && request.resource.data.created == request.time;
       // Ny melding (last, lastBy, ms, unread) eller markering som lest (bare unread).
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
         && request.resource.data.unread is list && request.resource.data.unread.toSet().difference(resource.data.parts.toSet()).size() == 0
@@ -105,8 +119,13 @@ service cloud.firestore {
         && resource.data.get('gone', []).toSet().difference(request.resource.data.gone.toSet()).hasOnly([request.auth.token.email]);
       // Farge på samtalen: begge deltakerne kan velge en av de faste fargene.
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['farge'])
-        && request.resource.data.farge in ['blaa', 'rosa', 'gronn', 'lilla', 'oransje', 'rod', 'turkis', 'gull'];
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['farge', 'bakgrunn'])
+        && request.resource.data.get('farge', 'blaa') in ['blaa', 'rosa', 'gronn', 'lilla', 'oransje', 'rod', 'turkis', 'gull']
+        && request.resource.data.get('bakgrunn', 'ingen') in ['ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion'];
+      // Dempe en samtale for seg selv: bare egen e-post i feltet dempet.
+      allow update: if signedIn() && request.auth.token.email in resource.data.parts
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dempet'])
+        && lykOK('dempet');
       allow delete: if isAdmin() || (signedIn() && resource.data.from == request.auth.token.email);
       // Bønneliste i samtalen: begge deltakerne legger til emner, ber (egen e-post i bedt) og merker som besvart.
       match /bonner/{bid} {
@@ -144,6 +163,10 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'r_hjerte', 'r_ler', 'r_wow', 'r_trist', 'r_be', 'r_ild', 'r_hender', 'r_sion', 'r_amen'])
           && lykOK('likes') && lykOK('r_hjerte') && lykOK('r_ler') && lykOK('r_wow') && lykOK('r_trist') && lykOK('r_be')
           && lykOK('r_ild') && lykOK('r_hender') && lykOK('r_sion') && lykOK('r_amen');
+        // Stjernemerke: bare egen e-post i feltet stjerne.
+        allow update: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stjerne'])
+          && lykOK('stjerne');
         allow create: if signedIn() && request.auth.token.email in getAfter(/databases/$(database)/documents/threads/$(id)).data.parts
           && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created', 'svar', 'img', 'lyd', 'lsek', 'avst'])
           && request.resource.data.by == request.auth.token.email
