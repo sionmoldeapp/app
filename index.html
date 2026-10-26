@@ -247,7 +247,6 @@ html[data-stil="ios"] nav.tabs{background:color-mix(in srgb,var(--surface) 78%,t
 html[data-stil="ios"] nav.tabs button[aria-current="page"]{background:none;color:var(--brand)}
 html[data-stil="ios"] nav.tabs button{font-weight:500}
 html[data-stil="android"] nav.tabs button[aria-current="page"]{background:none;color:var(--ink)}
-html[data-stil="android"] nav.tabs button[aria-current="page"] svg{box-sizing:content-box;padding:4px 18px;margin:-4px 0;border-radius:16px;background:color-mix(in srgb,var(--brand) 22%,transparent);width:24px;height:24px}
 html[data-stil="android"] nav.tabs button{gap:6px}
 html[data-stil="android"] .chip{border-radius:8px}
 html[data-stil="ios"] .tg{width:51px;height:31px;border-radius:99px}
@@ -913,9 +912,18 @@ nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;
 /* Android-PWA: systemlinjen nederst (navigasjonsfeltet/bevegelsesstreken) kan ligge over appen uten at telefonen oppgir sikker sone. Gi fanene ekstra plass nederst. */
 @media (display-mode:standalone) and (pointer:coarse){nav.tabs{padding-bottom:calc(6px + max(env(safe-area-inset-bottom,0px),8px))}main{padding-bottom:118px}}
 nav.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:var(--t-xs);font-weight:600;color:var(--muted);border-radius:var(--r-s)}
-nav.tabs button{transition:transform .14s ease,background .25s ease,color .25s ease}
-nav.tabs button[aria-current="page"]{background:var(--brand);color:var(--brand-ink);font-weight:700}   /* valgt fane: fylt, tydelig kontrast */
+nav.tabs button{transition:transform .14s ease,color 320ms cubic-bezier(0.22,1,0.36,1);position:relative;z-index:1}
+nav.tabs button[aria-current="page"]{background:transparent;color:var(--brand-ink);font-weight:700}   /* valgt fane: fylt, tydelig kontrast */
 nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
+/* Aktiv-indikator som glir mellom menypunktene (flyttes av tabIndFlytt) */
+.tab-ind{position:absolute;left:0;top:0;z-index:0;pointer-events:none;border-radius:var(--r-s);background:var(--brand);will-change:transform}
+.tab-ind[data-klar]{transition:transform 320ms cubic-bezier(0.22,1,0.36,1),opacity 150ms linear}
+.tab-ind[data-f="bar"]{border-radius:0 0 3px 3px}
+.tab-ind[data-f="pill"]{border-radius:16px;background:color-mix(in srgb,var(--brand) 22%,transparent)}
+.tab-ind[data-f="tone"]{background:color-mix(in srgb,var(--brand) 16%,transparent)}
+nav.tabs svg{transition:transform 320ms cubic-bezier(0.22,1,0.36,1)}
+nav.tabs button[aria-current="page"] svg{transform:scale(1.08)}
+@media (prefers-reduced-motion:reduce){.tab-ind[data-klar]{transition:opacity 150ms linear}nav.tabs svg{transition:none}}
 nav.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #push{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-160%);width:calc(100% - 24px);max-width:440px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-left:6px solid var(--lamp);border-radius:8px 18px 18px 8px;padding:16px 18px;box-shadow:0 14px 40px rgba(0,0,0,.35),0 2px 8px rgba(0,0,0,.2);z-index:20;transition:transform .4s cubic-bezier(.2,.9,.3,1.2);display:flex;gap:14px;align-items:center;cursor:pointer}
 #push.show{transform:translate(-50%,0)}
@@ -1047,10 +1055,37 @@ let sistFane=null;
 function nyhMarkerSett(){
   // Bare nyheter som allerede sto i listen da du åpnet fanen regnes som sett. En nyhet du selv legger ut mens du er der, forblir ulest og vises på Hjem.
   try{nyhFiltrert(posts.filter(p=>!postSkjult(p))).slice(0,state.nyhN||NYH_SIDE).forEach(p=>{if(p.ms&&!(p.m&&!state.member)&&(!state.nyhInn||p.ms<=state.nyhInn))lest[p.id]=1});lagreLest()}catch(e){}}
+/* Bunnmenyen oppdateres på stedet (knappene byttes ikke ut), slik at aktiv-indikatoren kan gli og ikonet skalere med samme timing som sideovergangen. */
+let tabInd=null;
+function tabsSync(knapper){
+  const n=document.getElementById('tabs');if(!n)return;
+  const tpl=document.createElement('template');tpl.innerHTML=knapper.join('');
+  const nye=[...tpl.content.children],gamle=[...n.querySelectorAll(':scope>button')],nk=b=>b.dataset.t||'chat';
+  if(nye.length&&nye.length===gamle.length&&nye.every((b,i)=>nk(b)===nk(gamle[i]))){
+    nye.forEach((b,i)=>{const g=gamle[i];
+      ['aria-current','aria-label'].forEach(a=>{const v=b.getAttribute(a);if(v===null)g.removeAttribute(a);else if(g.getAttribute(a)!==v)g.setAttribute(a,v)});
+      const bn=b.querySelector('.tab-bdg'),bg=g.querySelector('.tab-bdg');
+      if((bn?bn.outerHTML:'')!==(bg?bg.outerHTML:'')){if(bg)bg.remove();if(bn)g.appendChild(bn)}})
+  }else{n.replaceChildren(...nye);tabInd=null}
+  if(!tabInd||tabInd.parentNode!==n){tabInd=document.createElement('span');tabInd.className='tab-ind';tabInd.setAttribute('aria-hidden','true');n.appendChild(tabInd)}
+  tabIndFlytt()}
+function tabIndFlytt(){
+  const n=document.getElementById('tabs');if(!n||!tabInd)return;
+  const a=n.querySelector(':scope>button[aria-current="page"]');
+  if(!a||!a.offsetWidth){tabInd.style.opacity='0';return}
+  const d=document.documentElement.dataset,stil=d.stil,side=d.bred==='1'&&d.meny!=='bunn';
+  let x=a.offsetLeft,y=a.offsetTop,w=a.offsetWidth,h=a.offsetHeight,f='fyll';
+  if(side){f=(stil==='ios'||stil==='android')?'tone':'fyll'}
+  else if(stil==='ios'){f='bar';x+=w/2-14;y=0;w=28;h=3}
+  else if(stil==='android'){f='pill';x+=w/2-30;y+=2;w=60;h=32}
+  tabInd.dataset.f=f;tabInd.style.width=w+'px';tabInd.style.height=h+'px';tabInd.style.opacity='1';
+  tabInd.style.transform='translate3d('+x+'px,'+y+'px,0)';
+  if(!tabInd.dataset.klar){void tabInd.offsetWidth;tabInd.dataset.klar='1'}}
+addEventListener('resize',()=>tabIndFlytt());
 function drawTabs(){try{settBred()}catch(e){}
   if(sistFane==='news'&&state.tab!=='news')nyhMarkerSett();if(state.tab==='news'&&sistFane!=='news')state.nyhInn=Date.now();sistFane=state.tab;const chatApen=!!(state.chat&&state.chat.vis);const knapper=TABS.map(([k,l,i])=>`<button data-t="${k}" ${state.tab===k&&!chatApen?'aria-current="page"':''}><svg viewBox="0 0 24 24">${ICON[i]}</svg>${l}${k==='me'&&meTall().sum>0?`<span class="tab-bdg" aria-label="${meTall().sum} å sjekke">${meTall().sum}</span>`:''}${k==='news'&&state.tab!=='news'&&nyhUlest()>0?`<span class="tab-bdg" aria-label="${nyhUlest()} uleste nyheter">${nyhUlest()}</span>`:''}</button>`);
   if(state.user&&state.member){const nC=chatUlest();knapper.splice(knapper.length-1,0,`<button data-chattab ${chatApen?'aria-current="page"':''} aria-label="Sionchat${nC?', '+nC+' uleste':''}"><svg viewBox="0 0 24 24">${ICON.chat}</svg>Sionchat${nC>0?`<span class="tab-bdg" aria-label="${nC} uleste">${nC}</span>`:''}</button>`)}
-  $('#tabs').innerHTML=knapper.join('')}
+  tabsSync(knapper)}
 
 function when(d){const diff=Math.round((new Date(d).setHours(0,0,0,0)-new Date(now).setHours(0,0,0,0))/864e5);
   return diff===0?'I dag':diff===1?'I morgen':cap(DAYS[d.getDay()])}
@@ -2844,8 +2879,6 @@ function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unre
 function chatApne(id){
   if(!FB||!state.user||!state.member)return;
   const c=state.chat;c.vis=true;chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';document.documentElement.style.overflow='hidden';try{drawTabs()}catch(e){}
-  /* Samme overgang som de andre fanene (glid/zoom etter valgt stil). */
-  {const st=document.documentElement.dataset.stil,el=chatEl();if((st==='ios'||st==='android')&&!matchMedia('(prefers-reduced-motion:reduce)').matches){try{el.animate([{opacity:0,transform:st==='ios'?'translateX(18px)':'scale(.96)'},{opacity:1,transform:'none'}],{duration:st==='ios'?380:300,easing:'cubic-bezier(.2,.8,.2,1)'})}catch(x){}}}
   loadThreads();
   chatListe();if(id)chatVent(id,()=>chatSamtale(id))}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
@@ -3309,8 +3342,7 @@ document.addEventListener('click',e=>{
   const im=e.target.closest&&e.target.closest('img[data-cbilde]');
   if(im&&!document.querySelector('dialog.pub')){const dlg=document.createElement('dialog');dlg.className='lp pub cvis';dlg.innerHTML='<form method="dialog" class="form"><img src="'+im.src+'" alt="Bilde" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--r-s)"><div class="btns"><a class="btn" href="'+im.src+'" download="bilde.jpg">Last ned</a><button class="btn primary" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';document.body.appendChild(dlg);dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();return}
   const b=e.target.closest&&e.target.closest('button');if(!b)return;const d=b.dataset;
-  if('chattab' in d){if(!state.chat.vis)chatApne()}
-  else if('t' in d&&state.chat.vis)chatLukk();
+  if('chattab' in d){byttFane('chat',false)}
   else if('chatlukk' in d)chatLukk();
   else if('chatback' in d){const c=state.chat;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()}
   else if('chatnyv' in d)chatNyVelg();
@@ -3702,7 +3734,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 20:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 21:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -4162,7 +4194,7 @@ function badge(){
 }
 const viewBanner=()=>'';
 function chipScroll(){const a=document.querySelector('.chips.scroll [aria-pressed="true"]'),r=document.querySelector('.chips.scroll');if(a&&r)r.scrollTo({left:a.offsetLeft-(r.clientWidth-a.offsetWidth)/2,behavior:'auto'})}
-function render(){drawTabs();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();badge();window.scrollTo(0,0);chipScroll()}
+function render(){visTab=state.tab;drawTabs();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();badge();window.scrollTo(0,0);chipScroll()}
 /* «Sletter …»: en sirkel som snurrer til databasen har bekreftet slettingen. Vises i åpen dialog hvis det finnes en, ellers over hele siden. */
 let busyN=0,busyT=null,busyIv=null,busyRm=null,busyTekst='Sletter …',busyVist=0;
 function busyVis(){
@@ -5082,7 +5114,7 @@ let first=true;
     const lg=e.target.closest('header.top .logo');
     if(lg){   // logoen og navnet i toppen er en lenke til Hjem (og til toppen av Hjem hvis du allerede er der)
       const lm=lg.querySelector('.logo-mark');if(lm&&!lite()){lm.classList.remove('hopp');void lm.offsetWidth;lm.classList.add('hopp');setTimeout(()=>lm.classList.remove('hopp'),600);try{navigator.vibrate&&navigator.vibrate(8)}catch(x){}}
-      if(state.tab==='home'){scrollTo({top:0,behavior:lite()?'auto':'smooth'})}else{state.tab='home';state.reorder=false;fadeRender()}
+      byttFane('home',true)
       return}
     if(!lite()&&e.target.closest('[data-rsvp],[data-rem],[data-atsave],[data-prnew],[data-prdone],.btn.primary')){try{navigator.vibrate&&navigator.vibrate(8)}catch(x){}}
     const sm=e.target.closest('details.acc>summary');
@@ -5172,13 +5204,67 @@ function viktigApne(id){
     if(id)setTimeout(()=>{const b=document.querySelector('.item>button[data-ev="'+id+'"]'),it=b&&b.parentElement;if(!it)return;it.style.scrollMarginTop='84px';it.scrollIntoView({block:'start',behavior:'auto'})},matchMedia('(prefers-reduced-motion:reduce)').matches?30:380)};
   document.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest('.card.next[data-t]');if(k)til(k)});
   document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('next')&&e.target.dataset.t){e.preventDefault();til(e.target)}}) }
-/* Skifte mellom Hjem, Program, Nyheter og Meg: innholdet tones ut og det nye tones inn. */
-let fadeT=null;
-function fadeRender(){
-  const v=$('#view');
-  if(matchMedia('(prefers-reduced-motion:reduce)').matches){render();return}
-  clearTimeout(fadeT);drawTabs();v.classList.remove('fadeinn');v.style.transition='opacity .16s ease';v.style.opacity='0';
-  fadeT=setTimeout(()=>{render();const st=document.documentElement.dataset.stil;if(st==='ios'||st==='android'){try{v.animate([{transform:st==='ios'?'translateX(18px)':'scale(.96)'},{transform:'none'}],{duration:st==='ios'?380:300,easing:'cubic-bezier(.2,.8,.2,1)'})}catch(x){}}v.style.transition='opacity .3s ease';v.style.opacity='1';setTimeout(()=>{v.style.transition='';v.style.opacity=''},330)},160)}
+/* ===== Felles sideovergang for alle faner i bunnmenyen (Hjem, Program, Nyheter, Sionchat, Mer) =====
+   Én løsning: byttFane(). Retningen følger rekkefølgen i menyen (til høyre = ny side glir inn fra høyre).
+   Kun transform + opacity (Web Animations). Raske trykk avbryter forrige overgang. Redusert bevegelse = rask fade. */
+const OVG_MS=320,OVG_EASE='cubic-bezier(0.22, 1, 0.36, 1)',OVG_GLID=24;
+var visTab='home';
+let ovgAnim=[],ovgRydde=[],ovgScroll={},ovgChatId=null;
+const ovgRedusert=()=>matchMedia('(prefers-reduced-motion:reduce)').matches;
+const ovgSideNa=()=>(state.chat&&state.chat.vis)?'chat':(visTab||state.tab);
+const ovgNokler=()=>[...document.querySelectorAll('#tabs>button')].map(b=>('chattab' in b.dataset)?'chat':b.dataset.t);
+function ovgRydd(){ovgAnim.forEach(a=>{try{a.cancel()}catch(e){}});ovgAnim=[];const l=ovgRydde;ovgRydde=[];l.forEach(f=>{try{f()}catch(e){}})}
+function ovgInn(el,dir,rb){
+  const a=rb?el.animate([{opacity:0},{opacity:1}],{duration:150,easing:'ease-out'})
+    :el.animate([{opacity:0,transform:'translate3d('+dir*OVG_GLID+'px,0,0) scale(.98)'},{opacity:1,transform:'none'}],{duration:OVG_MS,easing:OVG_EASE});
+  ovgAnim.push(a)}
+function ovgUt(el,dir,ferdig){
+  const a=el.animate([{opacity:1,transform:'none'},{opacity:0,transform:'translate3d('+(-dir*OVG_GLID)+'px,0,0) scale(.98)'}],{duration:OVG_MS,easing:OVG_EASE,fill:'forwards'});
+  ovgAnim.push(a);a.onfinish=()=>{try{ferdig()}catch(e){}}}
+/* Et stillbilde av siden som forlates (en kopi av innholdet), som glir ut mens den nye glir inn. */
+function ovgSpok(){
+  const v=document.getElementById('view');if(!v)return null;
+  const r=v.getBoundingClientRect(),h=document.querySelector('header.top'),n=document.getElementById('tabs'),d=document.documentElement.dataset;
+  const topp=h?Math.max(0,h.getBoundingClientRect().bottom):0,side=d.bred==='1'&&d.meny!=='bunn',bunn=(!n||side)?innerHeight:n.getBoundingClientRect().top;
+  const w=document.createElement('div');w.setAttribute('aria-hidden','true');w.inert=true;
+  w.style.cssText='position:fixed;overflow:hidden;pointer-events:none;z-index:4;left:'+r.left+'px;width:'+r.width+'px;top:'+topp+'px;height:'+Math.max(0,bunn-topp)+'px';
+  const k=v.cloneNode(true);k.removeAttribute('aria-live');k.style.cssText='position:absolute;margin:0;left:0;width:'+r.width+'px;top:'+(r.top-topp)+'px;min-height:0';
+  w.appendChild(k);document.body.appendChild(w);return w}
+function ovgTilToppen(side){
+  const b=ovgRedusert()?'auto':'smooth';
+  if(side==='chat'){const e=document.getElementById('cMsg')||document.getElementById('cListe');if(e)e.scrollTo({top:0,behavior:b})}
+  else scrollTo({top:0,behavior:b})}
+function byttFane(til,fraNav){
+  const fra=ovgSideNa();
+  if(fraNav){try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
+  if(til===fra){if(fraNav)ovgTilToppen(fra);else if(til!=='chat')render();return}
+  if(til==='chat'&&(!FB||!state.user||!state.member))return;
+  ovgRydd();
+  const rb=ovgRedusert(),k=ovgNokler(),i0=k.indexOf(fra),i1=k.indexOf(til),dir=(i0>=0&&i1>=0&&i1<i0)?-1:1;
+  if(fra==='chat')ovgChatId=state.chat.id;else ovgScroll[fra]=scrollY;
+  const spok=(fra!=='chat'&&!rb)?ovgSpok():null;
+  let inn,ut=null,utFerdig=null;
+  if(til==='chat'){
+    chatApne(ovgChatId||undefined);inn=chatEl();
+    if(spok){ut=spok;utFerdig=()=>spok.remove()}
+  }else{
+    let el=null;
+    if(fra==='chat'){el=chatEl();try{document.activeElement&&document.activeElement.blur()}catch(e){}chatLukk();
+      if(!rb){el.hidden=false;el.style.pointerEvents='none';ut=el;utFerdig=()=>{el.hidden=true;el.style.pointerEvents=''}}}
+    state.tab=til;state.reorder=false;if(til==='news'&&fraNav){try{markSeen();countViews()}catch(e){}}
+    render();scrollTo(0,ovgScroll[til]||0);inn=document.getElementById('view');
+    if(spok){ut=spok;utFerdig=()=>spok.remove()}
+  }
+  if(utFerdig)ovgRydde.push(utFerdig);
+  if(inn)ovgInn(inn,dir,rb);
+  if(ut&&utFerdig)ovgUt(ut,dir,utFerdig)}
+/* Alle sidebytter som ikke kommer fra menyen (lenker, varsler, logoen) går også gjennom byttFane. */
+function fadeRender(){byttFane(state.tab,false)}
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('#tabs>button');if(!b)return;
+  if(typeof kamEl==='function'&&kamEl()&&OPPT.state==='klar')opptAvbryt();
+  e.preventDefault();e.stopPropagation();
+  const k=('chattab' in b.dataset)?'chat':b.dataset.t;if(k)byttFane(k,true)},true)
 /* Oppstartsskjermen (logoen) tones ut og siden tones inn når første innlasting er ferdig. */
 function splashBort(){
   const sp=document.getElementById('splash');if(!sp||sp.dataset.bort)return;sp.dataset.bort='1';
