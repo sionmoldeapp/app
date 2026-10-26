@@ -963,6 +963,10 @@ html[data-bred="1"] #view.ututv{columns:1;max-width:none}
 .utbl2.lost{z-index:6;overflow:visible;outline:2px solid var(--brand);box-shadow:0 10px 26px rgba(0,0,0,.3);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;background-color:var(--surface)!important}
 .utgrep{position:absolute;left:50%;width:44px;height:20px;margin-left:-22px;touch-action:none;cursor:ns-resize}
 .utgrep::after{content:"";position:absolute;left:6px;right:6px;top:6px;height:8px;border-radius:99px;background:var(--brand);box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.utgrep.l,.utgrep.r{top:50%;width:20px;height:44px;margin:-22px 0 0}
+.utgrep.l{left:-6px}.utgrep.r{left:auto;right:-6px}
+.utgrep.l::after,.utgrep.r::after{left:6px;right:auto;top:6px;bottom:6px;width:8px;height:auto}
+.utghost{position:absolute;left:2px;right:2px;border:2px dashed var(--brand);border-radius:8px;background:color-mix(in srgb,var(--brand) 14%,transparent);pointer-events:none;z-index:4}
 .utgrep.t{top:-14px}.utgrep.b{bottom:-14px}
 #utDbar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 84px);z-index:60;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.28)}
 html[data-bred="1"] #utDbar{max-width:560px;margin:0 auto}
@@ -1498,7 +1502,7 @@ function utUtvInnhold(u,perDag,idag){
     const nå=new Date(),nm=nå.getHours()*60+nå.getMinutes(),naa=naaK&&nm>=h0*60&&nm<h1*60?'<div class="utnu2" style="top:'+Math.round((nm-h0*60)*K)+'px" aria-hidden="true"></div>':'';
     return '<div class="utg" style="--n:'+n+'"><div class="utg-in"><div class="utg-rad utg-hode"><span class="utg-t0"></span>'+kol.map(c=>'<div class="utg-kh" style="border-top-color:'+c.farge+'">'+c.hode+'</div>').join('')+'</div>'
       +'<div class="utg-rad utg-kropp" style="height:'+H+'px"><div class="utg-tid">'+timer.join('')+'</div>'+kol.map(c=>'<div class="utg-kol'+(c.idag?' idag':'')+'"'+(utTilgang()&&c.d?' data-utcell="'+c.d+'|'+esc(c.r||'')+'" data-h0="'+h0+'" title="Trykk for å legge inn en booking"':'')+'>'+(c.idag?naa:'')+c.html+'</div>').join('')+'</div></div></div>'};
-  const tips=utTilgang()?'<p class="small utghint">Trykk på et tomt felt for å legge inn en booking. Trykk på en booking for å se detaljer, endre eller dele. Hold inne på en booking for å flytte den eller gjøre den lengre eller kortere.</p>':'<p class="small utghint">Trykk på en booking for å se detaljer.</p>';
+  const tips=utTilgang()?'<p class="small utghint">Trykk på et tomt felt for å legge inn en booking. Trykk på en booking for å se detaljer, endre eller dele. Hold inne på en booking for å flytte den eller gjøre den lengre eller kortere. I Uke kan du dra i sidene for å utvide den til flere dager.</p>':'<p class="small utghint">Trykk på en booking for å se detaljer.</p>';
   if(v==='uke'){
     const dager=utUkeDager(u.dag),a=new Date(dager[0]+'T12:00'),z=new Date(dager[6]+'T12:00'),[h0,h1]=tider(dager.map(k=>[perDag[k]||[],k]));
     const kol=dager.map(k=>{const w=new Date(k+'T12:00');return {hode:'<button type="button" data-utdagvisn="'+k+'" class="utg-dagk" aria-label="Vis '+cap(DAYS[w.getDay()])+' '+w.getDate()+'. '+MON[w.getMonth()]+' som dag">'+esc(cap(DAYS[w.getDay()]).slice(0,3))+' '+w.getDate()+'.</button>',farge:k===idag?'var(--brand)':'var(--line)',idag:k===idag,d:k,r:(u.rom&&u.rom!=='Alle')?u.rom:'',html:blokker(perDag[k]||[],k,h0)}});
@@ -1651,23 +1655,34 @@ document.addEventListener('click',e=>{
     min=Math.max(0,Math.min(23*60,h0*60+Math.floor(y/(56/60)/30)*30)),sl=Math.min(23*60+30,min+60),t=x=>utPad2(Math.floor(x/60))+':'+utPad2(x%60);
   const mark=document.createElement('div');mark.className='utnyfelt';mark.style.top=Math.round((min-h0*60)*56/60)+'px';kol.appendChild(mark);setTimeout(()=>mark.remove(),700);
   state.ut.dag=dag;utAsk(null,dag,{fra:t(min),til:t(sl),rom:rom?[rom]:[]})});
-/* Flytt og forleng: hold inne på en booking (0,5 s) så løsner den. Dra den til et annet tidspunkt (eller rom/dag), eller dra i håndtakene øverst og nederst for å endre lengden. Ingenting lagres før du trykker Lagre. */
+/* Flytt og forleng: hold inne på en booking (0,5 s) så løsner den. Dra den til et annet tidspunkt (eller rom/dag), dra i håndtakene øverst og nederst for å endre lengden, og i Uke dra i håndtakene på sidene for å legge til eller fjerne dager (flerdagsbooking). Ingenting lagres før du trykker Lagre. */
 const UTD={t:0,lost:null,drag:null,sup:0,p:null};
 const utDMin=15,utDK=56/60,utDT=m=>m>=1440?'23:59':utPad2(Math.floor(m/60))+':'+utPad2(m%60);
+const utDDagNavn=x=>{const d=new Date(x+'T12:00');return cap(DAYS[d.getDay()]).slice(0,3)+' '+d.getDate()+'. '+MON[d.getMonth()]};
+/* Dagene bookingen får etter dragingen: dagene i området som allerede var med eller er nye (opphold som fantes før beholdes). */
+function utDSet(L){const b=L.b,old=utDager(b),oS=b.dato,oE=b.dato2&&b.dato2>b.dato?b.dato2:b.dato,ut=[];let d=new Date(L.nStart+'T12:00');
+  for(let i=0;i<62;i++){const k=dkey(d);if(k>L.nEnd)break;if(old.includes(k)||k<oS||k>oE)ut.push(k);d.setDate(d.getDate()+1)}return ut}
 function utDBar(){let b=document.getElementById('utDbar');
   if(!b){b=document.createElement('div');b.id='utDbar';b.setAttribute('role','status');
     b.innerHTML='<div class="utdtxt"></div><div class="btns"><button type="button" class="btn primary" data-utdlagre style="width:auto">Lagre</button><button type="button" class="btn" data-utdavbryt style="width:auto">Avbryt</button></div>';document.body.appendChild(b)}
-  const L=UTD.lost,k=L.kol.dataset.utcell.split('|'),d=new Date(k[0]+'T12:00');
-  b.querySelector('.utdtxt').innerHTML='<b>'+esc(L.b.tittel||'Booking')+'</b><br>'+esc(cap(DAYS[d.getDay()]).slice(0,3)+' '+d.getDate()+'. '+MON[d.getMonth()]+(k[1]?' · '+k[1]:'')+' · '+utDT(L.s)+'–'+utDT(L.e))+'<br><span class="small">Dra for å flytte. Dra i håndtakene for å endre lengden.</span>'}
+  const L=UTD.lost,k=L.kol.dataset.utcell.split('|'),n=utDSet(L).length,
+    dag=L.nStart===L.nEnd?utDDagNavn(L.nStart):utDDagNavn(L.nStart)+' – '+utDDagNavn(L.nEnd)+' ('+n+' dager)',
+    hint=L.multi?'Dra i håndtaket til venstre eller høyre for å legge til eller fjerne dager.':L.uke?'Dra for å flytte. Håndtak øverst og nederst endrer lengden, håndtak på sidene legger til dager.':'Dra for å flytte. Dra i håndtakene for å endre lengden. Åpne Uke for å utvide over flere dager.';
+  b.querySelector('.utdtxt').innerHTML='<b>'+esc(L.b.tittel||'Booking')+'</b><br>'+esc(dag+(k[1]?' · '+k[1]:'')+' · '+utDT(L.s)+'–'+utDT(L.e))+'<br><span class="small">'+hint+'</span>'}
 function utDAvbryt(oppdater){const L=UTD.lost;UTD.lost=null;UTD.drag=null;const b=document.getElementById('utDbar');if(b)b.remove();if(L&&oppdater!==false)keep(()=>{})}
 function utDLoft(el){
-  const [id,k]=(()=>{const p=el.dataset.utblokk,i=p.lastIndexOf('|');return [p.slice(0,i),p.slice(i+1)]})(),b=(state.ut.liste||[]).find(x=>x.id===id),kol=el.parentNode,h0=Number(kol.dataset.h0)||0;
-  const s0=utMin(b.fra),e0=Math.max(utMin(b.til),s0+utDMin);
-  UTD.lost={el,id,k,b,h0,kol0:kol,kol,s:s0,e:e0,s0,e0};
+  const p=el.dataset.utblokk,i=p.lastIndexOf('|'),id=p.slice(0,i),k=p.slice(i+1),b=(state.ut.liste||[]).find(x=>x.id===id),kol=el.parentNode,h0=Number(kol.dataset.h0)||0,
+    multi=!!(b.dato2&&b.dato2>b.dato),uke=state.ut.visn==='uke',dg=utDager(b),[f,t]=utDagTid(b,k),s0=utMin(f),e0=Math.max(utMin(t),s0+utDMin);
+  UTD.lost={el,id,k,b,h0,kol0:kol,kol,s:s0,e:e0,s0,e0,multi,uke,nStart:dg[0],nEnd:dg[dg.length-1]};
   try{navigator.vibrate&&navigator.vibrate(15)}catch(x){}
-  el.classList.add('lost');el.insertAdjacentHTML('beforeend','<i class="utgrep t" data-utg="top"></i><i class="utgrep b" data-utg="bot"></i>');
+  const L=UTD.lost;
+  el.classList.add('lost');
+  el.insertAdjacentHTML('beforeend',(multi?'':'<i class="utgrep t" data-utg="top"></i><i class="utgrep b" data-utg="bot"></i>')+(uke&&k===dg[0]?'<i class="utgrep l" data-utg="venstre"></i>':'')+(uke&&k===dg[dg.length-1]?'<i class="utgrep r" data-utg="hoyre"></i>':''));
   UTD.sup=Date.now();utDBar()}
-function utDVis(){const L=UTD.lost;L.el.style.top=Math.round((L.s-L.h0*60)*utDK)+'px';L.el.style.height=Math.max(34,Math.round((L.e-L.s)*utDK)-2)+'px';utDBar()}
+function utDSpok(){const L=UTD.lost,g=L.el.closest('.utg');if(!g)return;g.querySelectorAll('.utghost').forEach(x=>x.remove());
+  const mitt=L.kol.dataset.utcell.split('|')[0],dg=utDSet(L);L.el.style.opacity=dg.includes(mitt)?'':'.35';
+  dg.forEach(k=>{if(k===mitt)return;const col=g.querySelector('[data-utcell^="'+k+'|"]');if(!col)return;const gh=document.createElement('div');gh.className='utghost';gh.style.top=L.el.style.top;gh.style.height=L.el.style.height;col.appendChild(gh)})}
+function utDVis(){const L=UTD.lost;L.el.style.top=Math.round((L.s-L.h0*60)*utDK)+'px';L.el.style.height=Math.max(34,Math.round((L.e-L.s)*utDK)-2)+'px';utDSpok();utDBar()}
 {
   const stopp=()=>{clearTimeout(UTD.t);UTD.t=0;UTD.p=null};
   document.addEventListener('pointerdown',e=>{
@@ -1678,19 +1693,23 @@ function utDVis(){const L=UTD.lost;L.el.style.top=Math.round((L.s-L.h0*60)*utDK)
       else if(!(t.closest&&t.closest('#utDbar')))utDAvbryt();
       return}
     const el=t.closest&&t.closest('.utbl2[data-utblokk]');if(!el||!utTilgang()||!el.parentNode.dataset.utcell)return;
-    const p=el.dataset.utblokk,i=p.lastIndexOf('|'),b=(state.ut.liste||[]).find(x=>x.id===p.slice(0,i));if(!b||b.program||(b.dato2&&b.dato2>b.dato))return;
+    const p=el.dataset.utblokk,i=p.lastIndexOf('|'),b=(state.ut.liste||[]).find(x=>x.id===p.slice(0,i));if(!b||b.program)return;
+    if(b.dato2&&b.dato2>b.dato&&state.ut.visn!=='uke')return;
     stopp();UTD.p={x:e.clientX,y:e.clientY,id:e.pointerId};
     UTD.t=setTimeout(()=>{UTD.t=0;if(!el.isConnected)return;utDLoft(el);const L=UTD.lost;UTD.drag={mode:'flytt',x0:UTD.p?UTD.p.x:0,y0:UTD.p?UTD.p.y:0,s:L.s,e:L.e,id:UTD.p&&UTD.p.id};try{el.setPointerCapture(UTD.drag.id)}catch(x){}},500)},true);
   document.addEventListener('pointermove',e=>{
     if(UTD.t&&UTD.p&&Math.hypot(e.clientX-UTD.p.x,e.clientY-UTD.p.y)>10){stopp();return}
     const D=UTD.drag,L=UTD.lost;if(!D||!L)return;
-    const dy=(e.clientY-D.y0)/utDK,r=v=>Math.round(v/utDMin)*utDMin,lo=L.h0*60,hi=Math.min(1440,lo+Math.round(L.kol.offsetHeight/utDK));
-    if(D.mode==='flytt'){const len=D.e-D.s;L.s=Math.max(lo,Math.min(hi-len,r(D.s+dy)));L.e=L.s+len;
-      const under=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.matches&&x.matches('[data-utcell]')&&x.closest('.utg')===L.el.closest('.utg'));
-      if(under&&under!==L.kol){L.kol=under;under.appendChild(L.el)}}
+    e.preventDefault();
+    const dy=(e.clientY-D.y0)/utDK,r=v=>Math.round(v/utDMin)*utDMin,lo=L.h0*60,hi=Math.min(1440,lo+Math.round(L.kol.offsetHeight/utDK)),
+      under=()=>document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.matches&&x.matches('[data-utcell]')&&x.closest('.utg')===L.el.closest('.utg'));
+    if(D.mode==='flytt'){if(L.multi)return;const len=D.e-D.s;L.s=Math.max(lo,Math.min(hi-len,r(D.s+dy)));L.e=L.s+len;
+      const u=under();if(u&&u!==L.kol){L.kol=u;u.appendChild(L.el);L.nStart=L.nEnd=u.dataset.utcell.split('|')[0]}}
     else if(D.mode==='top')L.s=Math.max(lo,Math.min(D.e-utDMin,r(D.s+dy)));
-    else L.e=Math.min(hi,Math.max(D.s+utDMin,r(D.e+dy)));
-    utDVis();e.preventDefault()},true);
+    else if(D.mode==='bot')L.e=Math.min(hi,Math.max(D.s+utDMin,r(D.e+dy)));
+    else{const u=under();if(!u)return;const dag=u.dataset.utcell.split('|')[0];
+      if(D.mode==='hoyre')L.nEnd=dag<L.nStart?L.nStart:dag;else L.nStart=dag>L.nEnd?L.nEnd:dag}
+    utDVis()},true);
   const slipp=()=>{stopp();if(UTD.drag){UTD.drag=null;UTD.sup=Date.now()}};
   document.addEventListener('pointerup',slipp,true);document.addEventListener('pointercancel',slipp,true);
   document.addEventListener('touchmove',e=>{if(UTD.drag&&e.cancelable)e.preventDefault()},{passive:false});
@@ -1702,11 +1721,17 @@ function utDVis(){const L=UTD.lost;L.el.style.top=Math.round((L.s-L.h0*60)*utDK)
     if(!('utdlagre' in b.dataset)||!UTD.lost)return;
     const L=UTD.lost,k=L.kol.dataset.utcell.split('|'),r0=L.kol0.dataset.utcell.split('|')[1],orig=L.b;
     let rom=(orig.rom||[]).slice();if(r0&&k[1]&&k[1]!==r0&&rom.includes(r0))rom=[...new Set(rom.map(x=>x===r0?k[1]:x))];
-    const d={...orig,rom,dato:k[0],dato2:'',tider:[],fra:utDT(L.s),til:utDT(L.e)};delete d.id;
-    if(d.fra===orig.fra&&d.til===orig.til&&d.dato===orig.dato&&rom.join()===(orig.rom||[]).join()){utDAvbryt();return}
+    const dg=utDSet(L);if(!dg.length){push('Ikke lagret','Minst én dag må være med.');return}
+    const gml=utDager(orig),mal=L.multi?utDagTid(orig,gml[0]):[utDT(L.s),utDT(L.e)],tid=x=>L.multi&&gml.includes(x)?utDagTid(orig,x):mal,d={...orig,rom};
+    if(dg.length===1){const [f,t]=tid(dg[0]);Object.assign(d,{dato:dg[0],dato2:'',tider:[],fra:f,til:t})}
+    else{const t2=dg.map(x=>{const [f,t]=tid(x);return x+'|'+f+'|'+t});Object.assign(d,{dato:dg[0],dato2:dg[dg.length-1],tider:t2,fra:t2[0].split('|')[1],til:t2[t2.length-1].split('|')[2]})}
+    delete d.id;
+    if(JSON.stringify([d.dato,d.dato2||'',d.fra,d.til,d.tider||[],d.rom])===JSON.stringify([orig.dato,orig.dato2||'',orig.fra,orig.til,orig.tider||[],orig.rom])){utDAvbryt();return}
     const kf=utKonflikt(d,L.id);
     if(kf.length&&!await bekreft('Dobbeltbooking: '+kf.map(x=>(x.tittel||'Utleie')+' '+x.fra+'–'+x.til).join('; ')+'. Lagre likevel?',{ok:'Lagre likevel',fare:false}))return;
-    try{await FB.utSave(L.id,{...d,by:meEmail()});{const pe=utProgEv(L.id);if(state.admin&&pe)utProgSync(L.id,d,pe.cat).catch(()=>{})}state.ut.alle=undefined;state.ut.liste=(state.ut.liste||[]).map(x=>x.id===L.id?{id:L.id,...d}:x).sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;utDAvbryt();push('Lagret','Bookingen er flyttet til '+d.fra+'–'+d.til+'.')}
+    try{await FB.utSave(L.id,{...d,by:meEmail()});{const pe=utProgEv(L.id);if(state.admin&&pe)utProgSync(L.id,d,pe.cat).catch(()=>{})}
+      state.ut.alle=undefined;state.ut.liste=(state.ut.liste||[]).map(x=>x.id===L.id?{id:L.id,...d}:x).sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;utDAvbryt();
+      push('Lagret',dg.length>1?'Bookingen gjelder nå '+dg.length+' dager.':'Bookingen er flyttet til '+d.fra+'–'+d.til+'.')}
     catch(er){push('Kunne ikke lagre','Prøv igjen ('+((er&&er.code)||'feil')+').')}})
 }
 /* Detaljvindu for en booking i kalenderen: alle opplysninger, Endre og Del. */
@@ -3991,7 +4016,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 19:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 20:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
