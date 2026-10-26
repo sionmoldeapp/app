@@ -601,15 +601,13 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .cmsg[data-bg=himmel] .cdag,.cmsg[data-bg=himmel] .ct,.cmsg[data-bg=solnedgang] .cdag,.cmsg[data-bg=solnedgang] .ct,.cmsg[data-bg=skog] .cdag,.cmsg[data-bg=skog] .ct,.cmsg[data-bg=natt] .cdag,.cmsg[data-bg=natt] .ct,.cmsg[data-bg=rosa] .cdag,.cmsg[data-bg=rosa] .ct{background:rgba(255,255,255,.75);color:#333;padding:1px 9px;border-radius:99px;width:fit-content}
 .cmsg[data-bg=sion]{background-size:190px 190px}
 /* Messenger-lignende utseende */
-/* Chatvinduet er hvitt eller svart etter telefonens lys/mørk-valg (ikke appens eget tema). */
+/* Chatvinduet er hvitt eller svart etter valgt tema i appen (lys/mørk-knappen). Står temaet på automatisk, følger det telefonen. */
 .chat{--bg:#fff;--surface:#fff;--ink:#050505;--muted:#65676b;--line:#e4e6eb;--chip:#f0f2f5;color:#050505;color-scheme:light}
 .chat .cw{background:#fff;color:var(--ink)}
-@media (prefers-color-scheme:dark){
-  .chat{--bg:#000;--surface:#000;--ink:#e4e6eb;--muted:#b0b3b8;--line:#2d2e30;--chip:#242526;color:#e4e6eb;color-scheme:dark;background:#000}
-  .chat .cw{background:#000}
-  .chat .cb.de{background:#3a3b3c;color:#e4e6eb}
-  .chat .cinp textarea,.chat .csokl input{background:#242526;color:#e4e6eb}
-}
+  .chat[data-mork="1"]{--bg:#000;--surface:#000;--ink:#e4e6eb;--muted:#b0b3b8;--line:#2d2e30;--chip:#242526;color:#e4e6eb;color-scheme:dark;background:#000}
+  .chat[data-mork="1"] .cw{background:#000}
+  .chat[data-mork="1"] .cb.de{background:#3a3b3c;color:#e4e6eb}
+  .chat[data-mork="1"] .cinp textarea,.chat[data-mork="1"] .csokl input{background:#242526;color:#e4e6eb}
 .cmsg{padding:10px 10px 4px;gap:1px}
 .crow{display:flex;align-items:flex-end;gap:6px;max-width:100%}
 .crow.me{justify-content:flex-end}
@@ -647,7 +645,7 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .sionx svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .cb.cstor .sionx{width:112px;height:112px;vertical-align:middle;margin:4px}
 .cb.cstor .sionx .sione{color:#14304f}
-@media (prefers-color-scheme:dark){.chat .sionx .sione,.chat .cb.cstor .sionx .sione{color:#cfe3fa;filter:drop-shadow(0 0 1px rgba(0,0,0,.6))}}
+.chat[data-mork="1"] .sionx .sione,.chat[data-mork="1"] .cb.cstor .sionx .sione{color:#cfe3fa;filter:drop-shadow(0 0 1px rgba(0,0,0,.6))}
 .ceff{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6}
 .chat .cw{position:relative}
 .cemoji button{all:unset;font-size:24px;text-align:center;padding:4px;cursor:pointer;border-radius:8px}
@@ -667,7 +665,8 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .cfelt textarea{background:transparent!important;border:0!important;flex:1;min-width:0;border-radius:0;padding:10px 14px;margin:0;min-height:42px}
 .cverk .cik{font-size:24px}
 .cemi{all:unset;flex:none;width:40px;height:42px;display:grid;place-items:center;font-size:21px;cursor:pointer}
-@media (prefers-color-scheme:dark){.chat .cfelt{background:#242526}.chat .cfelt textarea{color:#e4e6eb}}
+.chat[data-mork="1"] .cfelt{background:#242526}
+.chat[data-mork="1"] .cfelt textarea{color:#e4e6eb}
 .csend{background:transparent;color:#0084ff;width:40px;height:40px}
 .chat .cb.me{background:var(--cfarge,var(--brand));color:var(--cfarge-ink,var(--brand-ink))}
 .chat .cb.me a{color:inherit}
@@ -2807,6 +2806,7 @@ function navPlasser(e){
   if(document.documentElement.dataset.bred==='1'&&document.documentElement.dataset.meny!=='bunn'){e.style.left=r.width+'px';e.style.bottom='0px'}
   else{e.style.left='0px';e.style.bottom=Math.max(0,innerHeight-r.top)+'px'}}
 addEventListener('resize',()=>{if(state.chat.vis)chatPlasser()});
+const chatTemaOppd=()=>{const e=document.getElementById('chat');if(e)e.dataset.mork=isDark()?'1':'0';try{chatFargeBruk()}catch(x){}};
 function chatEl(){let e=document.getElementById('chat');if(!e){e=document.createElement('div');e.id='chat';e.className='chat';e.hidden=true;e.innerHTML='<div class="cw" role="dialog" aria-modal="true" aria-label="Chat"></div>';document.body.appendChild(e)}return e}
 const chatW=()=>chatEl().querySelector('.cw');
 function chatStoppMsgs(){const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}c.unsub=null}c.msgs=[];try{chatAvstStopp();chatBonnStopp();chatMicAvbryt(true)}catch(e){}}
@@ -2827,7 +2827,7 @@ function chatTraadEndret(){
 function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unread||[]).includes(meg)){t.unread=t.unread.filter(x=>x!==meg);FB.markThreadRead(t.id).catch(()=>{});try{drawTabs()}catch(e){}}}
 function chatApne(id){
   if(!FB||!state.user||!state.member)return;
-  const c=state.chat;c.vis=true;chatEl().hidden=false;chatPlasser();document.body.style.overflow='hidden';
+  const c=state.chat;c.vis=true;chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';
   loadThreads();
   chatListe();if(id)chatVent(id,()=>chatSamtale(id))}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
@@ -2979,7 +2979,7 @@ function chatTile(mork){
 function chatFargeBruk(){
   const w=chatW(),t=state.chat.id&&chatTraad(state.chat.id);if(w){if(t&&t.farge&&CHAT_FARGER.some(f=>f[0]===t.farge)){w.style.setProperty('--cfarge',chatFargeHex(t));w.style.setProperty('--cfarge-ink','#fff')}else{w.style.removeProperty('--cfarge');w.style.removeProperty('--cfarge-ink')}}
   const m=document.getElementById('cMsg');if(!m)return;const bg=(t&&t.bakgrunn)||'ingen';m.dataset.bg=bg;m.style.backgroundImage='';
-  if(bg==='sion'){let mork=false;try{mork=matchMedia('(prefers-color-scheme:dark)').matches}catch(e){}chatTile(mork).then(u=>{const mm=document.getElementById('cMsg');if(mm&&mm.dataset.bg==='sion'&&u)mm.style.backgroundImage='url('+u+')'})}}
+  if(bg==='sion'){let mork=false;try{mork=isDark()}catch(e){}chatTile(mork).then(u=>{const mm=document.getElementById('cMsg');if(mm&&mm.dataset.bg==='sion'&&u)mm.style.backgroundImage='url('+u+')'})}}
 function chatUtseendeMeny(){
   const c=state.chat,t=chatTraad(c.id);if(!t||document.querySelector('dialog.pub'))return;
   const dlg=document.createElement('dialog');dlg.className='lp pub';
@@ -3669,7 +3669,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 10:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 11:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -4120,8 +4120,8 @@ const VIEWS={home,prog,news,me};
 const SUN='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
 const MOON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
 const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches};
-function themeIcon(){const d=isDark(),b=$('#themeBtn');b.innerHTML=d?SUN:MOON;b.setAttribute('aria-label',d?'Bytt til lys visning':'Bytt til mørk visning');document.querySelector('meta[name=theme-color]').content=(window.PAL_BG&&PAL_BG[document.documentElement.dataset.pal]||['#f6f4ef','#0a1b2e'])[d?1:0]}
-themeIcon();matchMedia('(prefers-color-scheme:dark)').addEventListener('change',themeIcon);
+function themeIcon(){try{chatTemaOppd()}catch(e){}const d=isDark(),b=$('#themeBtn');b.innerHTML=d?SUN:MOON;b.setAttribute('aria-label',d?'Bytt til lys visning':'Bytt til mørk visning');document.querySelector('meta[name=theme-color]').content=(window.PAL_BG&&PAL_BG[document.documentElement.dataset.pal]||['#f6f4ef','#0a1b2e'])[d?1:0]}
+themeIcon();matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{themeIcon();chatTemaOppd()});
 function badge(){
   const nBell=(state.unread||0)+(state.utNye||0);$('#badge').textContent=nBell;$('#badge').hidden=!nBell;{const bb=$('#bellBtn');if(bb)bb.setAttribute('aria-label',nBell?'Varsler: '+(state.unread||0)+' nye nyheter'+(state.utNye?' og '+state.utNye+' nye bookinger':''):'Varsler')}
   const eb=$('#editBtn');if(eb){if(!eb.innerHTML)eb.innerHTML=PEN;eb.hidden=!canEdit();eb.classList.toggle('on',state.edit);eb.setAttribute('aria-pressed',String(state.edit));eb.setAttribute('aria-label',state.edit?'Skjul knappene for å opprette og redigere':'Vis knappene for å opprette og redigere')}
