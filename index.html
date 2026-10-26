@@ -966,6 +966,16 @@ html[data-bred="1"] #view.ututv{columns:1;max-width:none}
 .utgrep.t{top:-14px}.utgrep.b{bottom:-14px}
 #utDbar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 84px);z-index:60;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:0 10px 30px rgba(0,0,0,.28)}
 html[data-bred="1"] #utDbar{max-width:560px;margin:0 auto}
+.utsek{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.utsek>summary{display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:48px;cursor:pointer;list-style:none}
+.utsek>summary::-webkit-details-marker{display:none}
+.utsek>summary::after{content:"›";margin-left:auto;font-size:22px;color:var(--muted);transition:transform .2s}
+.utsek[open]>summary::after{transform:rotate(90deg)}
+.utsek[open]>summary{background:var(--chip)}
+.utsek .utsn{flex:none;width:24px;height:24px;border-radius:50%;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;font-size:var(--t-xs);font-weight:700}
+.utsek .utsum{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.utsek[open] .utsum{display:none}
+.utsb{padding:12px 14px;display:grid;gap:10px}
 .utg-kol.idag{background-color:color-mix(in srgb,var(--brand) 5%,transparent)}
 .utbl2{all:unset;box-sizing:border-box;position:absolute;overflow:hidden;cursor:pointer;border-left:4px solid;border-radius:8px;padding:4px 6px;font-size:var(--t-xs);line-height:1.25;color:var(--ink);display:flex;flex-direction:column}
 .utbl2 span{overflow:hidden;text-overflow:ellipsis}.utbl2 .small{opacity:.8}
@@ -1538,26 +1548,41 @@ function utleieCard(){
      +(utTilgang()?'<div class="btns" style="margin-top:10px"><button type="button" class="btn primary" data-utny style="width:auto">+ Ny booking</button>'+utLedereKnapp()+'</div>':'<p class="small" style="margin:10px 0 0">Du ser bookingene som vertskap, og får varsel når det kommer en ny.</p>')
      +utFakEpostLinje()+(kommende.length?'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Kommende</h3><div class="list">'+(()=>{let sist='',ut='';kommende.forEach(b=>{const dag=b.dato<idag?idag:b.dato,w=new Date(dag+'T12:00'),k=when(w)+' '+w.getDate()+'. '+MON[w.getMonth()];if(k!==sist){ut+='<div class="day">'+k+'</div>';sist=k}ut+=utItem(b,dag)});return ut})()+'</div>':'')}
   return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie?'open':'')+'><summary><h2>Utleie</h2></summary><div class="switch utbryter"><div><b>Utvidet visning</b><div class="small">Skjuler de andre kortene</div></div><button type="button" class="tg" role="switch" aria-checked="'+(!!u.utv)+'" aria-label="Utvidet visning av kalenderen" data-ututv></button></div>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
+/* Bookingskjemaet er delt i seksjoner (trekkspill): bare én er åpen om gangen. */
+const utSekO=(n,t,apen)=>'<details class="utsek" data-i="'+n+'"'+(apen?' open':'')+'><summary><span class="utsn">'+n+'</span><b>'+t+'</b><span class="small utsum"></span></summary><div class="utsb">';
+const utSekL=neste=>(neste===false?'':'<button type="button" class="btn" data-utnext style="width:auto;justify-self:start">Neste ›</button>')+'</div></details>';
 function utAsk(id,dato,pre){
   if(!utTilgang()||document.querySelector('dialog.pub'))return;
   const ex=id?(state.ut.liste||[]).find(x=>x.id===id):null,b={tittel:'',rom:[],fakturert:false,fakturaVentH:24,fakturaUtsattTil:0,gjester:0,servering:'',allergener:[],allergenNotat:'',remindH:24,dato:dato||state.ut.dag,dato2:'',fra:'10:00',til:'12:00',leier:'',kontakt:'',pris:'',status:'bekreftet',notat:'',...(ex||{}),...(!ex&&pre?pre:{})};
   const dlg=document.createElement('dialog');dlg.className='lp pub';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(ex?'Endre booking':'Ny booking')+'</h3>'
-   +'<label class="f">Tittel / hva skal det brukes til<input id="uT" maxlength="100" value="'+esc(b.tittel)+'" placeholder="For eksempel Bursdagsselskap"></label>'
+   +utSekO(1,'Hva og når',true)+'<label class="f">Tittel / hva skal det brukes til<input id="uT" maxlength="100" value="'+esc(b.tittel)+'" placeholder="For eksempel Bursdagsselskap"></label>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:var(--t-m);margin-bottom:4px">Rom</legend>'+utRomListe().map(r=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utr="'+esc(r)+'" style="width:22px;height:22px;flex:none" '+((b.rom||[]).includes(r)?'checked':'')+'>'+esc(r)+'</label>').join('')+(state.admin?'<button type="button" class="pmore" id="uRomEdit" style="margin-top:4px">Endre romlisten</button>':'')+'</fieldset>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Første dag<input id="uD" type="date" value="'+esc(b.dato)+'"></label><label class="f">Siste dag<input id="uD2" type="date" value="'+esc(b.dato2||'')+'"></label></div><p class="small" style="margin:-4px 0 0">Lar du «Siste dag» stå tom, gjelder bookingen bare én dag. Velger du flere dager, kan du sette eget tidspunkt for hver dag.</p>'
    +'<div id="uEn" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Fra<input id="uF" type="time" value="'+esc(b.fra)+'"></label><label class="f">Til<input id="uTi" type="time" value="'+esc(b.til)+'"></label></div><div id="uTider" style="display:grid;gap:4px"></div>'
-   +'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px"><label class="f">Antall gjester<input id="uG" type="number" min="0" max="2000" inputmode="numeric" value="'+(b.gjester||'')+'"></label><label class="f">Matrett som skal serveres<input id="uM" maxlength="200" value="'+esc(b.servering||'')+'" placeholder="For eksempel kjøttkaker, kaffe og kake"></label></div>'
+   +utSekL()+utSekO(2,'Gjester, servering og allergener')+'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px"><label class="f">Antall gjester<input id="uG" type="number" min="0" max="2000" inputmode="numeric" value="'+(b.gjester||'')+'"></label><label class="f">Matrett som skal serveres<input id="uM" maxlength="200" value="'+esc(b.servering||'')+'" placeholder="For eksempel kjøttkaker, kaffe og kake"></label></div>'
    +'<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:var(--t-m);margin-bottom:4px">Allergener blant gjestene</legend><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">'+UT_ALLERGENER.map(a=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utal="'+esc(a)+'" style="width:22px;height:22px;flex:none" '+((b.allergener||[]).includes(a)?'checked':'')+'>'+esc(a)+'</label>').join('')+'</div><label class="f" style="margin-top:6px">Andre allergier eller kosthold<input id="uAn" maxlength="200" value="'+esc(b.allergenNotat||'')+'" placeholder="For eksempel vegetar eller nøtteallergi hos barn"></label></fieldset>'
-   +'<label class="f">Leietaker<input id="uL" maxlength="100" value="'+esc(b.leier)+'" placeholder="Navn på person eller organisasjon"></label>'
+   +utSekL()+utSekO(3,'Leietaker, pris og status')+'<label class="f">Leietaker<input id="uL" maxlength="100" value="'+esc(b.leier)+'" placeholder="Navn på person eller organisasjon"></label>'
    +'<label class="f">Telefon eller e-post<input id="uK" maxlength="100" value="'+esc(b.kontakt)+'"></label>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Pris<input id="uP" maxlength="30" value="'+esc(/^Eget/.test(b.pris)?'':b.pris)+'" placeholder="'+(/^Eget/.test(b.pris)?'Gratis':'kr')+'" '+(/^Eget/.test(b.pris)?'disabled':'')+'></label><label class="f">Status<select id="uS"><option value="bekreftet" '+(b.status==='bekreftet'?'selected':'')+'>Bekreftet</option><option value="foresporsel" '+(b.status==='foresporsel'?'selected':'')+'>Forespørsel</option></select></label></div>'
-   +'<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="uEget" style="width:auto" '+(/^Eget/.test(b.pris)?'checked':'')+'>Eget arrangement (gratis)</label>'+utFakSkjema(b)+'<label class="f">Merknad<textarea id="uN" rows="3" maxlength="500">'+esc(b.notat)+'</textarea></label>'
+   +'<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="uEget" style="width:auto" '+(/^Eget/.test(b.pris)?'checked':'')+'>Eget arrangement (gratis)</label>'+utSekL()+utSekO(4,'Faktura')+utFakSkjema(b)+utSekL()+utSekO(5,'Merknad og varsler')+'<label class="f">Merknad<textarea id="uN" rows="3" maxlength="500">'+esc(b.notat)+'</textarea></label>'
    +'<label class="f">Automatisk påminnelse til vertskapet<select id="uRem">'+UT_PAAMINN.map(([h,t])=>'<option value="'+h+'" '+(Number(b.remindH==null?24:b.remindH)===h?'selected':'')+'>'+t+'</option>').join('')+'</select></label><p class="small" style="margin:-4px 0 0">Vertskapet får et varsel automatisk før bookingen starter (gjelder bekreftede bookinger). Du kan endre eller slå av.</p>'
    +'<label class="f" style="flex-direction:row;align-items:flex-start;gap:8px"><input type="checkbox" id="uVarsle" style="width:auto;margin-top:4px" '+(ex?'':'checked')+'><span>Send varsel til vertskapet (gruppen Vertskap) om bookingen. <span class="small">Varselet viser tittel, tid, rom, antall gjester og servering, aldri leietakerens navn. Skriv derfor ikke navn på avdøde eller andre privatpersoner i tittelen.</span></span></label>'
-   +'<p class="small" style="margin:0">Legg ikke inn opplysninger om barn under 13 år.</p><p class="small" id="uMsg" role="status" style="margin:0"></p>'
+   +utSekL(false)+'<p class="small" style="margin:0">Legg ikke inn opplysninger om barn under 13 år.</p><p class="small" id="uMsg" role="status" style="margin:0"></p>'
    +'<div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button>'+(ex?'<button class="btn danger" value="slett" formnovalidate>Slett</button>':'')+'<button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
+  { const sek=[...dlg.querySelectorAll('.utsek')],q=x=>dlg.querySelector(x),S=i=>dlg.querySelector('.utsek[data-i="'+i+'"] .utsum'),
+      apne=i=>{const e=dlg.querySelector('.utsek[data-i="'+i+'"]');if(e&&!e.open){e.open=true}};
+    sek.forEach(e=>e.addEventListener('toggle',()=>{if(e.open){sek.forEach(o=>{if(o!==e)o.open=false});setTimeout(()=>e.querySelector('summary').scrollIntoView({block:'nearest',behavior:'smooth'}),30)}}));
+    dlg.addEventListener('click',ev=>{const n=ev.target.closest&&ev.target.closest('[data-utnext]');if(n){ev.preventDefault();const e=n.closest('.utsek');apne(Number(e.dataset.i)+1)}});
+    const sum=()=>{const rom=[...dlg.querySelectorAll('[data-utr]')].filter(x=>x.checked).map(x=>x.dataset.utr),a=q('#uD').value,z=q('#uD2').value,g=parseInt(q('#uG').value,10)||0,al=dlg.querySelectorAll('[data-utal]:checked').length,pris=q('#uEget').checked?'Gratis':q('#uP').value.trim();
+      S(1).textContent=[rom.join(', ')||'Velg rom',a?utDatoKort(a)+(z&&z>a?' – '+utDatoKort(z):''):'',z&&z>a?'':(q('#uF').value+'–'+q('#uTi').value)].filter(Boolean).join(' · ');
+      S(2).textContent=[g?g+' gjester':'',q('#uM').value.trim(),al?al+' allergener':''].filter(Boolean).join(' · ')||'Valgfritt';
+      S(3).textContent=[q('#uL').value.trim(),pris,q('#uS').selectedOptions[0].textContent].filter(Boolean).join(' · ');
+      S(4).textContent=q('#uFak').checked?'Faktura sendt':'Ikke sendt';
+      S(5).textContent=q('#uRem').selectedOptions[0].textContent+(q('#uVarsle').checked?' · varsler vertskap':'')};
+    dlg.addEventListener('input',sum);dlg.addEventListener('change',sum);sum();dlg.__apne=apne;
+  }
   { const q=x=>dlg.querySelector(x),tm0=utTiderMap(b);
     const bygg=()=>{const a=q('#uD').value,z=q('#uD2').value,flere=a&&z&&z>a&&Math.round((Date.parse(z)-Date.parse(a))/864e5)<=60;q('#uEn').style.display=flere?'none':'grid';const box=q('#uTider');
       if(!flere){box.innerHTML='';return}
@@ -1568,7 +1593,7 @@ function utAsk(id,dato,pre){
     q('#uEget').addEventListener('change',e=>{const p=q('#uP');p.disabled=e.target.checked;if(e.target.checked){p.value='';p.placeholder='Gratis'}else p.placeholder='kr'}) }
   const re=dlg.querySelector('#uRomEdit');if(re)re.addEventListener('click',()=>{dlg.close();setTimeout(utRomAsk,450)});
   dlg.querySelector('form').addEventListener('submit',async e=>{
-    const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='slett')return;e.preventDefault();const msg=t=>{dlg.querySelector('#uMsg').textContent=t};
+    const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='slett')return;e.preventDefault();const msg=t=>{dlg.querySelector('#uMsg').textContent=t;if(/dag|rom|Sluttid|klokke/i.test(t)&&dlg.__apne)dlg.__apne(1)};
     if(v==='slett'){if(!await bekreft('Slette denne bookingen?'))return;
       try{await FB.utDel(id);state.ut.alle=undefined;state.ut.liste=state.ut.liste.filter(x=>x.id!==id);dlg.close();keep(()=>{});push('Slettet','Bookingen er fjernet.')}catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}return}
     const d={tittel:dlg.querySelector('#uT').value.trim(),rom:[...dlg.querySelectorAll('[data-utr]')].filter(x=>x.checked).map(x=>x.dataset.utr),dato:dlg.querySelector('#uD').value,dato2:dlg.querySelector('#uD2').value,fra:dlg.querySelector('#uF').value,til:dlg.querySelector('#uTi').value,
@@ -3934,7 +3959,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 16:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 17:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
