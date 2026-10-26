@@ -2803,6 +2803,10 @@ function chatTid(ms){if(!ms)return '';const d=new Date(ms),dg=chatDg(ms);return 
 function chatDag(ms){const d=new Date(ms),dg=chatDg(ms);return dg<=0?'I dag':dg===1?'I går':cap(DAYS[d.getDay()])+' '+d.getDate()+'. '+MON[d.getMonth()]}
 const chatTraad=id=>(state.threads||[]).find(t=>t.id===id);
 function chatPlasser(){navPlasser(document.getElementById('chat'))}
+/* Med tastaturet oppe kan nettleseren skrolle siden (f.eks. når 👍 sender og feltet får fokus igjen). Da forsvant toppen og starten av chatten. Hold siden i ro og plasser vinduet på nytt. */
+function chatHold(){if(!state.chat.vis)return;if(scrollY||scrollX)scrollTo(0,0);if(document.scrollingElement&&document.scrollingElement.scrollTop)document.scrollingElement.scrollTop=0;chatPlasser();const e=document.getElementById('chat');if(e)e.scrollTop=0}
+addEventListener('scroll',()=>{if(state.chat.vis)chatHold()},{passive:true});
+if(window.visualViewport){visualViewport.addEventListener('resize',()=>{if(state.chat.vis)chatHold()});visualViewport.addEventListener('scroll',()=>{if(state.chat.vis)chatHold()})}
 /* Fullskjermvisninger (chat, kamera) legges over innholdet, men aldri over menylinjen (nederst, eller på siden i bred visning). */
 function navPlasser(e){
   const n=document.getElementById('tabs');if(!e||!n)return;const r=n.getBoundingClientRect();
@@ -2832,12 +2836,12 @@ function chatTraadEndret(){
 function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unread||[]).includes(meg)){t.unread=t.unread.filter(x=>x!==meg);FB.markThreadRead(t.id).catch(()=>{});try{drawTabs()}catch(e){}}}
 function chatApne(id){
   if(!FB||!state.user||!state.member)return;
-  const c=state.chat;c.vis=true;chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';try{drawTabs()}catch(e){}
+  const c=state.chat;c.vis=true;chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';document.documentElement.style.overflow='hidden';try{drawTabs()}catch(e){}
   loadThreads();
   chatListe();if(id)chatVent(id,()=>chatSamtale(id))}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
 function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatListe();return}setTimeout(()=>chatVent(id,fn,n+1),250)}
-function chatLukk(){const c=state.chat;chatStoppMsgs();c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
+function chatLukk(){const c=state.chat;chatStoppMsgs();c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';document.documentElement.style.overflow='';try{drawTabs()}catch(e){}}
 function chatListeInn(){
   const q=norm((state.chat&&state.chat.q)||'').trim(),meg=meEmail(),l=state.threads&&state.threads.filter(t=>!(t.gone||[]).includes(meg)&&(!q||norm(chatNavn(t,meg)+' '+(t.last||'')).includes(q)));
   if(l===undefined)return '<p class="small" style="padding:14px">Henter samtaler …</p>';
@@ -3361,7 +3365,7 @@ async function chatSendSkjema(tommel){
     else{await chatSendTekst(tekst,c.svar?{svar:c.svar}:null);c.svar=null;chatBar()}
     ta.value='';ta.style.height='';state.chat.verk=false;chatInpOppd()}
   catch(er){push('Kunne ikke sende','Prøv igjen ('+((er&&er.code)||'feil')+').')}
-  c.sender=false;const b2=document.querySelector('#cForm .csend:not(.ctommel)');if(b2)b2.disabled=false;const t2=document.getElementById('cT');if(t2)t2.focus()}
+  c.sender=false;const b2=document.querySelector('#cForm .csend:not(.ctommel)');if(b2)b2.disabled=false;const t2=document.getElementById('cT');if(t2)t2.focus({preventScroll:true});chatHold()}
 document.addEventListener('submit',async e=>{if(e.target&&e.target.id==='cBonnF'){e.preventDefault();const ta=document.getElementById('cBonnT'),t=(ta.value||'').trim();if(!t)return;try{await FB.addBonn(state.chat.id,t,nyBeskjedNavn());ta.value='';chatBonnMelding('🙏 Nytt bønneemne: '+t)}catch(er){push('Kunne ikke legge til','Prøv igjen ('+((er&&er.code)||'feil')+').')}return}
   if(!e.target||e.target.id!=='cForm')return;e.preventDefault();chatSendSkjema(false)});
 document.addEventListener('input',e=>{
@@ -3689,7 +3693,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 14:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 13:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
