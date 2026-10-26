@@ -709,7 +709,9 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .cdagtabs button.on{background:#0084ff;color:#fff}
 .cdagt{margin:0 0 6px;font-size:var(--t-b)}
 .csend[hidden]{display:none}
-.ctommel{font-size:24px}
+.ctommel{font-size:26px}
+.chat .csend.ctommel{background:transparent!important;border:0;box-shadow:none;color:inherit;-webkit-touch-callout:none;user-select:none}
+.ctommel .sione{width:28px;height:28px;color:var(--cfarge,var(--lamp))}
 .csokl{padding:8px 12px 2px}.csokl input{border-radius:20px;background:#f0f2f5;border:0;margin:0}
 .cremo{display:flex;justify-content:space-around;gap:2px}
 .cremo button{all:unset;font-size:28px;padding:6px 8px;border-radius:50%;cursor:pointer}
@@ -2905,7 +2907,7 @@ function chatRamme(tittel,under,av,innhold,hint){
   const c=state.chat;c.svar=null;c.red=null;c.verk=false;
   chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(c.id?'<button type="button" class="cbtn" data-chatmeny aria-label="Samtaleinnstillinger">⋮</button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
    +'<div class="cbar" id="cBar" hidden></div>'+chatPanelHtml()
-   +'<div class="crec" id="cRec" hidden></div><form class="cinp" id="cForm"><button type="button" class="cik cchev" data-cchev aria-label="Vis flere valg: bilde, lyd og mer" hidden>'+CHEVIKON+'</button><div class="cverk" id="cVerk"><button type="button" class="cik" data-cemoknapp aria-label="Emoji, klistremerker, spill og avstemning">😊</button><button type="button" class="cik" data-cfoto aria-label="Ta bilde" '+(c.id?'':'disabled')+'>'+KAMIKON+'</button><button type="button" class="cik" data-cgalleri aria-label="Velg bilde fra galleriet" '+(c.id?'':'disabled')+'>'+GALLERIKON+'</button><button type="button" class="cik cmic" data-cmic aria-label="Send stemmemelding" '+(c.id?'':'disabled')+'>'+MIKIKON+'</button></div><input type="file" id="cFil" accept="image/*" hidden><input type="file" id="cKam" accept="image/*" capture="environment" hidden><div class="cfelt"><textarea id="cT" rows="1" maxlength="1000" aria-label="'+esc(hint||'Skriv en melding')+'"></textarea></div><button type="submit" class="csend" aria-label="Send" hidden>'+chatSend+'</button><button type="button" class="csend ctommel" data-ctommel aria-label="Send tommel opp">👍</button></form></form>'}
+   +'<div class="crec" id="cRec" hidden></div><form class="cinp" id="cForm"><button type="button" class="cik cchev" data-cchev aria-label="Vis flere valg: bilde, lyd og mer" hidden>'+CHEVIKON+'</button><div class="cverk" id="cVerk"><button type="button" class="cik" data-cemoknapp aria-label="Emoji, klistremerker, spill og avstemning">😊</button><button type="button" class="cik" data-cfoto aria-label="Ta bilde" '+(c.id?'':'disabled')+'>'+KAMIKON+'</button><button type="button" class="cik" data-cgalleri aria-label="Velg bilde fra galleriet" '+(c.id?'':'disabled')+'>'+GALLERIKON+'</button><button type="button" class="cik cmic" data-cmic aria-label="Send stemmemelding" '+(c.id?'':'disabled')+'>'+MIKIKON+'</button></div><input type="file" id="cFil" accept="image/*" hidden><input type="file" id="cKam" accept="image/*" capture="environment" hidden><div class="cfelt"><textarea id="cT" rows="1" maxlength="1000" aria-label="'+esc(hint||'Skriv en melding')+'"></textarea></div><button type="submit" class="csend" aria-label="Send" hidden>'+chatSend+'</button><button type="button" class="csend ctommel" data-ctommel aria-label="Send hurtigemoji. Hold inne for å bytte ikon." title="Hold inne for å bytte ikon">'+chatHurtigHtml()+'</button></form></form>'}
 /* Bytter mellom send-knapp (når det står tekst) og 👍 (når feltet er tomt), som i Messenger. */
 function chatInpOppd(){const ta=document.getElementById('cT'),s=document.querySelector('#cForm .csend:not(.ctommel)'),t=document.querySelector('#cForm .ctommel');if(!ta||!s||!t)return;const tom=!ta.value.trim()&&!state.chat.red;s.hidden=tom;t.hidden=!tom;
   /* Som i Messenger: tomt felt viser alle verktøyene (+, kamera, galleri, mikrofon) og 👍; når du skriver, trekkes de inn til en pil og feltet får mer plass. Pilen åpner dem igjen. */
@@ -3324,17 +3326,32 @@ document.addEventListener('click',e=>{
   else if('chatspill' in d)chatQuiz();
   else if(d.cspill){if(d.cspill==='avst')chatAvstNy('person');else chatSpillSend(d.cspill)}
   else if(d.cmal){const ta=document.getElementById('cT');if(ta){ta.value=d.cmal;ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus()}}
-  else if('ctommel' in d){chatSendSkjema(true)}
+  else if('ctommel' in d){if(ctLangt){ctLangt=false;return}chatSendSkjema(true)}
   else if('cbarx' in d){const c=state.chat;if(c.red){const ta=document.getElementById('cT');if(ta){ta.value='';ta.style.height=''}}c.red=null;c.svar=null;chatBar()}});
 /* Emoji-panelet legges ned og skjules av seg selv når du begynner å skrive eller trykker i meldingsfeltet (ikke når du setter inn en emoji fra panelet). */
 function chatPanelLukk(){const p=document.getElementById('cEmoji');if(p&&!p.hidden)p.hidden=true}
 document.addEventListener('pointerdown',e=>{if(e.target&&e.target.id==='cT')chatPanelLukk()});
+/* Hurtigknappen (standard 👍): send-ikonet når feltet er tomt. Hold den inne for å velge et annet ikon (lagres på enheten). */
+const CHAT_HURTIG=['👍','❤️','😂','😮','😢','🙏','🔥','🙌','🎉','😊',':sion:'];
+const chatHurtig=()=>{const v=lsGet('sm-hurtig');return CHAT_HURTIG.includes(v)?v:'👍'};
+const chatHurtigHtml=()=>{const v=chatHurtig();return v===':sion:'?sionHtml():v};
+let ctLangt=false;
+function chatHurtigMeny(){
+  if(document.querySelector('dialog.pub'))return;const dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Velg ikon for hurtigknappen</h3><p class="small" style="margin:0">Dette ikonet sendes når du trykker på knappen med tomt felt. Valget gjelder bare på denne enheten.</p><div class="cremo">'+CHAT_HURTIG.map(e=>'<button type="submit" class="'+(e===chatHurtig()?'on':'')+'" value="'+e+'" aria-label="'+(e===':sion:'?'Sion-logo':e)+'">'+(e===':sion:'?sionHtml():e)+'</button>').join('')+'</div><div class="btns"><button class="btn" value="avbryt" formnovalidate>Lukk</button></div></form>';
+  document.body.appendChild(dlg);
+  dlg.addEventListener('close',()=>{const v=dlg.returnValue;dlg.remove();if(CHAT_HURTIG.includes(v)){lsSet('sm-hurtig',v);const b=document.querySelector('#cForm .ctommel');if(b)b.innerHTML=chatHurtigHtml()}});
+  dlg.showModal()}
+{let tm=0;const stopp=()=>{clearTimeout(tm);tm=0};
+  document.addEventListener('pointerdown',e=>{if(e.target.closest&&e.target.closest('#cForm .ctommel')){stopp();tm=setTimeout(()=>{tm=0;ctLangt=true;try{navigator.vibrate&&navigator.vibrate(15)}catch(x){}chatHurtigMeny()},520)}});
+  document.addEventListener('pointerup',stopp);document.addEventListener('pointercancel',stopp);document.addEventListener('pointermove',e=>{if(tm&&e.target.closest&&!e.target.closest('#cForm .ctommel'))stopp()});
+  document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('#cForm .ctommel'))e.preventDefault()})}
 /* Pilen til venstre for skrivefeltet skal ikke ta fokus fra feltet, så tastaturet blir stående. */
 /* Bare mousedown (ikke touchstart, som ville stoppet selve trykket): hindrer at knappen tar fokus fra feltet. */
 document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('#cForm .cchev,#cForm .cverk button,#cForm .cemi'))e.preventDefault()});
 document.addEventListener('change',e=>{if(e.target&&(e.target.id==='cFil'||e.target.id==='cKam')&&e.target.files&&e.target.files[0])chatSendBilde(e.target.files[0])});
 async function chatSendSkjema(tommel){
-  const c=state.chat,ta=document.getElementById('cT');if(!ta)return;let tekst=(ta.value||'').trim();if(!tekst&&tommel)tekst='👍';if(!tekst||c.sender)return;
+  const c=state.chat,ta=document.getElementById('cT');if(!ta)return;let tekst=(ta.value||'').trim();if(!tekst&&tommel)tekst=chatHurtig();if(!tekst||c.sender)return;
   c.sender=true;const btn=document.querySelector('#cForm .csend:not(.ctommel)');if(btn)btn.disabled=true;
   try{
     if(c.red){const m=c.msgs.find(x=>x.id===c.red.id),sist=c.msgs[c.msgs.length-1]===m;await FB.redigerMsg(c.id,c.red.id,tekst,sist);if(m){m.text=tekst;m.redigert=true}c.red=null;chatBar();chatMsgs(false)}
@@ -3669,7 +3686,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 11:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 12:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
