@@ -3252,23 +3252,37 @@ function chatEffektFor(tekst){
   if(/halleluja|hallelujah|\bamen\b|🕊|:sion-amen:|:sion-hender:/.test(t))return 'duer';
   if(/:sion-hjerte:|💖|💕/.test(t))return 'hjerter';
   return null}
+/* Feiringseffekter (rolige og eksklusive): gullfolie som sakte faller, myke lyspunkter, lysstråler og små glødende hjerter. Tones inn og ut, ingen tegneseriefigurer. */
 function chatEffekt(type){
   try{if(matchMedia('(prefers-reduced-motion:reduce)').matches)return}catch(e){}
   const w=chatW();if(!w)return;
   w.querySelectorAll('.ceff').forEach(x=>x.remove());
-  const cv=document.createElement('canvas');cv.className='ceff';cv.setAttribute('aria-hidden','true');const r=w.getBoundingClientRect();cv.width=Math.max(200,Math.round(r.width));cv.height=Math.max(300,Math.round(r.height));
-  w.appendChild(cv);const cx=cv.getContext('2d');
-  const farger=['#ff5a8a','#ffd400','#0084ff','#2ecc71','#ff8c1a','#a259ff'];
-  const medKonfetti=type==='bursdag'||type==='konfetti';
-  const P=medKonfetti?Array.from({length:type==='bursdag'?130:100},()=>({x:Math.random()*cv.width,y:-Math.random()*cv.height*.7,vx:(Math.random()-.5)*2.2,vy:2.2+Math.random()*3.2,r:3+Math.random()*4,c:farger[(Math.random()*farger.length)|0],a:Math.random()*6,va:(Math.random()-.5)*.35})):[];
-  const emo=type==='bursdag'?'🎈':type==='duer'?'🕊️':type==='hjerter'?'❤️':'';
-  const E=emo?Array.from({length:type==='duer'?10:14},()=>({x:Math.random()*cv.width,y:cv.height+Math.random()*cv.height*.6,v:1.6+Math.random()*2.2,s:26+Math.random()*20,w:Math.random()*6})):[];
-  const t0=performance.now();
-  const tegn=t=>{
-    cx.clearRect(0,0,cv.width,cv.height);
-    P.forEach(q=>{q.x+=q.vx;q.y+=q.vy;q.a+=q.va;cx.save();cx.translate(q.x,q.y);cx.rotate(q.a);cx.fillStyle=q.c;cx.fillRect(-q.r,-q.r/2,q.r*2,q.r);cx.restore()});
-    E.forEach(e=>{e.y-=e.v;e.x+=Math.sin(e.y/28+e.w)*.9;cx.font=Math.round(e.s)+'px serif';cx.fillText(emo,e.x,e.y)});
-    if(t-t0<4200&&cv.isConnected)requestAnimationFrame(tegn);else cv.remove()};
+  const cv=document.createElement('canvas');cv.className='ceff';cv.setAttribute('aria-hidden','true');
+  const r=w.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1),W=Math.max(200,Math.round(r.width)),H=Math.max(300,Math.round(r.height));
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);w.appendChild(cv);const cx=cv.getContext('2d');cx.scale(dpr,dpr);
+  const R=(p,q)=>p+Math.random()*(q-p),DUR=type==='duer'?5600:4800,
+    GULL=['#d9b45a','#f0dca0','#fff4d6','#c99a3c','#e9edf4'],
+    folie=type==='bursdag'||type==='konfetti'?Array.from({length:type==='bursdag'?80:64},()=>({x:R(0,W),y:R(-H*.1,H*.55),vy:R(1,2),sw:R(0,6),vs:R(.012,.03),w:R(3,6.5),h:R(1.6,3),a:R(0,6),va:R(-.04,.04),fl:R(0,6),vf:R(.04,.11),c:GULL[(Math.random()*GULL.length)|0]})):[],
+    lys=type==='bursdag'||type==='hjerter'||type==='konfetti'?Array.from({length:type==='bursdag'?16:type==='hjerter'?10:8},()=>({x:R(0,W),y:R(H*.45,H*1.1),r:R(14,42),v:R(.35,.9),sw:R(0,6),vs:R(.006,.014)})):[],
+    stoev=type==='duer'?Array.from({length:46},()=>({x:R(0,W),y:R(H*.35,H*1.05),r:R(.8,2.4),v:R(.3,.95),sw:R(0,6),vs:R(.01,.03),a:R(.5,1)})):[],
+    strale=type==='duer'?Array.from({length:4},(_,i)=>({x:W*(.14+i*.24)+R(-20,20),b:R(36,70),sk:R(-.12,.12),a:R(.12,.2),ph:R(0,6)})):[],
+    hjerter=type==='hjerter'?Array.from({length:12},()=>({x:R(0,W),y:R(H*.5,H*1.1),s:R(11,20),v:R(.5,1.1),sw:R(0,6),vs:R(.01,.022),ph:R(0,6)})):[],
+    hjerte=(x,y,sz)=>{cx.beginPath();cx.moveTo(x,y+sz*.35);cx.bezierCurveTo(x-sz*1.1,y-sz*.35,x-sz*.5,y-sz*1.05,x,y-sz*.4);cx.bezierCurveTo(x+sz*.5,y-sz*1.05,x+sz*1.1,y-sz*.35,x,y+sz*.35);cx.closePath()};
+  let sist=performance.now();const t0=sist;
+  const tegn=nu=>{
+    const t=nu-t0,dt=Math.min(3,(nu-sist)/16.7);sist=nu;
+    const env=Math.max(0,Math.min(1,t/600,(DUR-t)/1100));
+    cx.clearRect(0,0,W,H);
+    strale.forEach(q=>{const x=q.x+Math.sin(t/2600+q.ph)*14,g=cx.createLinearGradient(0,0,0,H*.78);g.addColorStop(0,'rgba(255,240,200,'+(q.a*env)+')');g.addColorStop(1,'rgba(255,240,200,0)');
+      cx.fillStyle=g;cx.beginPath();cx.moveTo(x-q.b*.25,0);cx.lineTo(x+q.b*.25,0);cx.lineTo(x+q.b+q.sk*H*.78,H*.78);cx.lineTo(x-q.b+q.sk*H*.78,H*.78);cx.closePath();cx.fill()});
+    lys.forEach(q=>{q.y-=q.v*dt;q.sw+=q.vs*dt;const x=q.x+Math.sin(q.sw)*18,g=cx.createRadialGradient(x,q.y,0,x,q.y,q.r);g.addColorStop(0,'rgba(255,236,180,'+(.42*env)+')');g.addColorStop(.6,'rgba(240,205,130,'+(.16*env)+')');g.addColorStop(1,'rgba(240,205,130,0)');cx.fillStyle=g;cx.beginPath();cx.arc(x,q.y,q.r,0,7);cx.fill()});
+    stoev.forEach(q=>{q.y-=q.v*dt;q.sw+=q.vs*dt;const x=q.x+Math.sin(q.sw)*10,g=cx.createRadialGradient(x,q.y,0,x,q.y,q.r*4);g.addColorStop(0,'rgba(255,246,220,'+(q.a*env)+')');g.addColorStop(1,'rgba(255,230,170,0)');cx.fillStyle=g;cx.beginPath();cx.arc(x,q.y,q.r*4,0,7);cx.fill()});
+    folie.forEach(q=>{q.y+=q.vy*dt;q.sw+=q.vs*dt;q.a+=q.va*dt;q.fl+=q.vf*dt;const x=q.x+Math.sin(q.sw)*22,glim=Math.abs(Math.cos(q.fl));
+      cx.save();cx.globalAlpha=env*(.35+.65*glim);cx.translate(x,q.y);cx.rotate(q.a);cx.scale(1,.2+.8*glim);cx.fillStyle=q.c;cx.fillRect(-q.w/2,-q.h/2,q.w,q.h);cx.restore()});
+    hjerter.forEach(q=>{q.y-=q.v*dt;q.sw+=q.vs*dt;const x=q.x+Math.sin(q.sw)*16,p=1+.06*Math.sin(t/300+q.ph),sz=q.s*p;
+      cx.save();cx.globalAlpha=env*.85;cx.shadowColor='rgba(255,140,170,.7)';cx.shadowBlur=14;
+      const g=cx.createLinearGradient(x,q.y-sz,x,q.y+sz*.4);g.addColorStop(0,'#ffb3c8');g.addColorStop(1,'#e8638c');cx.fillStyle=g;hjerte(x,q.y,sz*.6);cx.fill();cx.restore()});
+    if(t<DUR&&cv.isConnected)requestAnimationFrame(tegn);else cv.remove()};
   requestAnimationFrame(tegn)}
 const chatForh=t=>String(t||'').replace(SION_TOKEN,'[Sion]');
 const chatTekstHtml=t=>linkify(esc(t)).replace(SION_TOKEN,(m,v)=>sionHtml(v));
@@ -4075,7 +4089,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='31.10.2026 kl. 00:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='31.10.2026 kl. 01:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
