@@ -3740,7 +3740,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 08:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 09:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -4376,14 +4376,17 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.ev){
     // Arrangementer på Hjem og i Program åpner og lukker seg jevnt (høyde og gjennomsiktighet), i stedet for å sprette opp.
     const id=c.dataset.ev,det=c.parentElement&&c.parentElement.querySelector('.detail');
-    if(!det||matchMedia('(prefers-reduced-motion:reduce)').matches){keep(()=>state.open[id]=!state.open[id]);return}
+    /* Bare én kalenderoppføring er åpen om gangen: åpnes en ny, lukkes den som var åpen. Knappen holdes på samme sted på skjermen. */
+    const andre=state.open[id]?[]:[...document.querySelectorAll('.item.open>button[data-ev]')].map(b=>b.dataset.ev).filter(x=>x!==id);
+    const y0=c.getBoundingClientRect().top,lukk=()=>{andre.forEach(o=>{state.open[o]=false})},hold=()=>{if(!andre.length)return;const nb=[...document.querySelectorAll('.item>button[data-ev]')].find(b=>b.dataset.ev===id);if(nb){const d=nb.getBoundingClientRect().top-y0;if(d)scrollBy(0,d)}};
+    if(!det||matchMedia('(prefers-reduced-motion:reduce)').matches){keep(()=>{lukk();state.open[id]=!state.open[id]});hold();return}
     if(det.dataset.anim)return;
     if(state.open[id]){
       det.dataset.anim='1';det.style.overflow='hidden';
       const a=det.animate({height:[det.offsetHeight+'px','0px'],paddingBottom:['14px','0px'],opacity:[1,0]},{duration:220,easing:'cubic-bezier(.4,0,.2,1)'});
       a.onfinish=a.oncancel=()=>keep(()=>{state.open[id]=false})}
     else{
-      keep(()=>{state.open[id]=true});
+      keep(()=>{lukk();state.open[id]=true});hold();
       const ny=[...document.querySelectorAll('.item>button[data-ev]')].find(b=>b.dataset.ev===id),d2=ny&&ny.parentElement.querySelector('.detail');
       if(d2){const h=d2.offsetHeight;d2.style.overflow='hidden';d2.dataset.anim='1';
         const a=d2.animate({height:['0px',h+'px'],paddingBottom:['0px','14px'],opacity:[0,1]},{duration:280,easing:'cubic-bezier(.2,.7,.2,1)'});
