@@ -625,6 +625,9 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .cb.cstor .sione.sort,.cb.cstor .sione.hvit{color:inherit}
 .cb.cstor .sione{width:46px;height:46px;color:#0084ff;vertical-align:middle}
 .cb.cstor{background:transparent!important;font-size:34px;padding:0 4px;line-height:1.1}
+.chat .cb.cbild{background:transparent!important;padding:0;border-radius:0}
+.cb.cbild .cimg{margin:0;border-radius:14px}
+.cb.cbild .cnvn{padding:0 2px}
 .cqt{border-left:3px solid rgba(255,255,255,.75);padding:2px 8px;margin:0 0 5px;font-size:var(--t-s);opacity:.9;display:flex;flex-direction:column}
 .cb.de .cqt{border-left-color:#0084ff}
 .cqt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
@@ -2950,7 +2953,7 @@ function chatMsgs(sist){
     if(m.slettet)inn='<div class="'+kl+' sl">'+(mine?'Du angret meldingen':esc(m.name||'Noen')+' angret meldingen')+'</div>';
     else{
       const rk=chatReaksjoner(m),tot=rk.reduce((n,x)=>n+x[2].length,0),minRk=rk.some(x=>x[2].includes(meg)),stor=chatBareEmoji(m.text)&&!m.img&&!m.svar&&!m.lyd&&!m.avst;
-      inn='<div class="'+kl+(rk.length?' lk':'')+(stor?' cstor':'')+'" data-msg="'+esc(m.id)+'">'+(gr&&!mine&&!sammeFor?'<div class="cnvn">'+esc(m.name||'')+'</div>':'')
+      inn='<div class="'+kl+(rk.length?' lk':'')+(stor?' cstor':'')+(m.img&&!m.text&&!m.svar&&!m.lyd&&!m.avst?' cbild':'')+'" data-msg="'+esc(m.id)+'">'+(gr&&!mine&&!sammeFor?'<div class="cnvn">'+esc(m.name||'')+'</div>':'')
        +(m.svar?'<div class="cqt"><b>'+esc(m.svar.navn||'')+'</b><span>'+esc(m.svar.tekst||'')+'</span></div>':'')
        +(m.img?'<img class="cimg" src="'+m.img+'" alt="Bilde" data-cbilde>':'')
        +(m.text?chatTekstHtml(m.text):'')+(/^📅 /.test(m.text||'')&&chatKan()?'<button type="button" class="cvid" data-bokvid="'+esc(m.id)+'">📤 Send videre til teamet</button>':'')+(m.avst&&m.avst.id?'<div class="cavst" data-avst="'+esc(m.avst.id)+'">'+chatAvstInn(m.avst.id)+'</div>':'')+(m.lyd?'<audio class="clyd" controls preload="metadata" src="'+m.lyd+'"></audio>':'')
@@ -3696,7 +3699,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 17:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 18:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
