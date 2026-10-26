@@ -2844,6 +2844,8 @@ function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unre
 function chatApne(id){
   if(!FB||!state.user||!state.member)return;
   const c=state.chat;c.vis=true;chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';document.documentElement.style.overflow='hidden';try{drawTabs()}catch(e){}
+  /* Samme overgang som de andre fanene (glid/zoom etter valgt stil). */
+  {const st=document.documentElement.dataset.stil,el=chatEl();if((st==='ios'||st==='android')&&!matchMedia('(prefers-reduced-motion:reduce)').matches){try{el.animate([{opacity:0,transform:st==='ios'?'translateX(18px)':'scale(.96)'},{opacity:1,transform:'none'}],{duration:st==='ios'?380:300,easing:'cubic-bezier(.2,.8,.2,1)'})}catch(x){}}}
   loadThreads();
   chatListe();if(id)chatVent(id,()=>chatSamtale(id))}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
@@ -3307,7 +3309,7 @@ document.addEventListener('click',e=>{
   const im=e.target.closest&&e.target.closest('img[data-cbilde]');
   if(im&&!document.querySelector('dialog.pub')){const dlg=document.createElement('dialog');dlg.className='lp pub cvis';dlg.innerHTML='<form method="dialog" class="form"><img src="'+im.src+'" alt="Bilde" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--r-s)"><div class="btns"><a class="btn" href="'+im.src+'" download="bilde.jpg">Last ned</a><button class="btn primary" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';document.body.appendChild(dlg);dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();return}
   const b=e.target.closest&&e.target.closest('button');if(!b)return;const d=b.dataset;
-  if('chattab' in d){if(state.chat.vis)chatLukk();else chatApne()}
+  if('chattab' in d){if(!state.chat.vis)chatApne()}
   else if('t' in d&&state.chat.vis)chatLukk();
   else if('chatlukk' in d)chatLukk();
   else if('chatback' in d){const c=state.chat;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()}
@@ -3700,7 +3702,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 19:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 20:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
