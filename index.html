@@ -666,12 +666,16 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .cemi{all:unset;flex:none;width:40px;height:42px;display:grid;place-items:center;font-size:21px;cursor:pointer}
 @media (prefers-color-scheme:dark){.chat .cfelt{background:#242526}.chat .cfelt textarea{color:#e4e6eb}}
 .csend{background:transparent;color:#0084ff;width:40px;height:40px}
-.chat .cb.me{background:var(--cfarge,#0084ff)}
-.chat .cik,.chat .csend{color:var(--cfarge,#0084ff)}
-.chat .cbar .cbt,.chat .cb.de .cqt{border-left-color:var(--cfarge,#0084ff)}
+.chat .cb.me{background:var(--cfarge,var(--brand));color:var(--cfarge-ink,var(--brand-ink))}
+.chat .cb.me a{color:inherit}
+.chat .cik,.chat .csend{color:var(--cfarge,var(--lamp))}
+.chat .csend:not(.ctommel){background:var(--cfarge,var(--brand));color:var(--cfarge-ink,var(--brand-ink));border-radius:50%}
+.chat .csend:not(.ctommel) svg{display:block}
+.chat .cbar .cbt,.chat .cb.de .cqt{border-left-color:var(--cfarge,var(--lamp))}
 .cik[hidden]{display:none}
 .cfarger{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .cfarger button{all:unset;width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;box-sizing:border-box;border:3px solid transparent}
+.cfarger .ctemafarge{font-size:11px;font-weight:700;display:grid;place-items:center}
 .cfarger button.on{border-color:var(--ink,#000);box-shadow:inset 0 0 0 3px #fff}
 .camen{font-size:.78em;letter-spacing:.04em}
 .cremo{flex-wrap:wrap;justify-content:center}
@@ -691,7 +695,7 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .cbi{padding:10px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
 .cbi.ferdig .cbit b{text-decoration:line-through;opacity:.6}
 .cbit{display:flex;flex-direction:column}
-.cbi .btn.on{background:var(--cfarge,#0084ff);color:#fff}
+.cbi .btn.on{background:var(--cfarge,var(--brand));color:var(--cfarge-ink,var(--brand-ink))}
 .crec{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line);background:var(--surface)}
 .crec[hidden]{display:none}
 .crecd{width:12px;height:12px;border-radius:50%;background:#e5484d;animation:recblink 1s infinite}
@@ -2970,20 +2974,20 @@ function chatTile(mork){
     [[8,8],[103,103]].forEach(([a,b])=>{x.save();x.globalAlpha=mork?.1:.07;x.drawImage(im,a,b,80,80*im.height/im.width);x.restore()});
     x.globalCompositeOperation='source-in';x.fillStyle=mork?'#fff':'#000';x.fillRect(0,0,190,190);chatTileCache[k]=c.toDataURL();res(chatTileCache[k])};im.onerror=()=>res('');im.src='logo-512.png'})}
 function chatFargeBruk(){
-  const w=chatW(),t=state.chat.id&&chatTraad(state.chat.id);if(w)w.style.setProperty('--cfarge',chatFargeHex(t));
+  const w=chatW(),t=state.chat.id&&chatTraad(state.chat.id);if(w){if(t&&t.farge&&CHAT_FARGER.some(f=>f[0]===t.farge)){w.style.setProperty('--cfarge',chatFargeHex(t));w.style.setProperty('--cfarge-ink','#fff')}else{w.style.removeProperty('--cfarge');w.style.removeProperty('--cfarge-ink')}}
   const m=document.getElementById('cMsg');if(!m)return;const bg=(t&&t.bakgrunn)||'ingen';m.dataset.bg=bg;m.style.backgroundImage='';
   if(bg==='sion'){let mork=false;try{mork=matchMedia('(prefers-color-scheme:dark)').matches}catch(e){}chatTile(mork).then(u=>{const mm=document.getElementById('cMsg');if(mm&&mm.dataset.bg==='sion'&&u)mm.style.backgroundImage='url('+u+')'})}}
 function chatUtseendeMeny(){
   const c=state.chat,t=chatTraad(c.id);if(!t||document.querySelector('dialog.pub'))return;
   const dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Farge og bakgrunn</h3><p class="small" style="margin:0"><b>Farge</b> på meldingene dine. Begge i samtalen ser valgene.</p><div class="cfarger">'+CHAT_FARGER.map(f=>'<button type="submit" value="f:'+f[0]+'" style="background:'+f[2]+'" aria-label="'+f[1]+'" class="'+((t.farge||'blaa')===f[0]?'on':'')+'"></button>').join('')+'</div>'
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Farge og bakgrunn</h3><p class="small" style="margin:0"><b>Farge</b> på meldingene dine. Begge i samtalen ser valgene.</p><div class="cfarger"><button type="submit" value="f:tema" style="background:var(--brand);color:var(--brand-ink)" aria-label="Appens farge" title="Appens farge" class="ctemafarge'+(!t.farge?' on':'')+'">Tema</button>'+CHAT_FARGER.map(f=>'<button type="submit" value="f:'+f[0]+'" style="background:'+f[2]+'" aria-label="'+f[1]+'" class="'+(t.farge===f[0]?'on':'')+'"></button>').join('')+'</div>'
    +'<p class="small" style="margin:0"><b>Bakgrunn</b></p><div class="cbgvalg">'+CHAT_BG.map(b=>'<button type="submit" value="b:'+b[0]+'" class="cbgp'+((t.bakgrunn||'ingen')===b[0]?' on':'')+'" data-bgp="'+b[0]+'">'+b[1]+'</button>').join('')+'</div><div class="btns"><button class="btn" value="avbryt" formnovalidate>Lukk</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('close',async()=>{const v=dlg.returnValue;dlg.remove();
     const m=/^([fb]):(.+)$/.exec(v);if(!m)return;const felt=m[1]==='f'?'farge':'bakgrunn',ny=m[2],gammel=t[felt];
-    if(felt==='farge'&&!CHAT_FARGER.some(f=>f[0]===ny))return;if(felt==='bakgrunn'&&!CHAT_BG.some(b=>b[0]===ny))return;
-    t[felt]=ny;chatFargeBruk();
-    try{await FB.setUtseende(t.id,felt,ny)}catch(e){t[felt]=gammel;chatFargeBruk();push('Kunne ikke endre','Prøv igjen ('+((e&&e.code)||'feil')+').')}});
+    if(felt==='farge'&&ny!=='tema'&&!CHAT_FARGER.some(f=>f[0]===ny))return;if(felt==='bakgrunn'&&!CHAT_BG.some(b=>b[0]===ny))return;
+    const verdi=felt==='farge'&&ny==='tema'?null:ny;t[felt]=verdi;if(verdi===null)delete t[felt];chatFargeBruk();
+    try{await FB.setUtseende(t.id,felt,verdi)}catch(e){t[felt]=gammel;chatFargeBruk();push('Kunne ikke endre','Prøv igjen ('+((e&&e.code)||'feil')+').')}});
   dlg.showModal()}
 /* Stjernemerke: hold på en melding og velg Stjernemerk. Bare du ser stjernene dine. */
 async function chatStjerne(mid){
@@ -3656,7 +3660,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 19:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 20:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
