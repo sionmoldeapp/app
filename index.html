@@ -1510,7 +1510,7 @@ function utUtvInnhold(u,perDag,idag){
     const nå=new Date(),nm=nå.getHours()*60+nå.getMinutes(),naa=naaK&&nm>=h0*60&&nm<h1*60?'<div class="utnu2" style="top:'+Math.round((nm-h0*60)*K)+'px" aria-hidden="true"></div>':'';
     return '<div class="utg" style="--n:'+n+'"><div class="utg-in"><div class="utg-rad utg-hode"><span class="utg-t0"></span>'+kol.map(c=>'<div class="utg-kh" style="border-top-color:'+c.farge+'">'+c.hode+'</div>').join('')+'</div>'
       +'<div class="utg-rad utg-kropp" style="height:'+H+'px"><div class="utg-tid">'+timer.join('')+'</div>'+kol.map(c=>'<div class="utg-kol'+(c.idag?' idag':'')+'"'+(utTilgang()&&c.d?' data-utcell="'+c.d+'|'+esc(c.r||'')+'" data-h0="'+h0+'" title="Trykk for å legge inn en booking"':'')+'>'+(c.idag?naa:'')+c.html+'</div>').join('')+'</div></div></div>'};
-  const tips=utTilgang()?'<p class="small utghint">Trykk på et tomt felt for å legge inn en booking. Trykk på en booking for å se detaljer, endre eller dele. Hold inne på en booking for å flytte den eller gjøre den lengre eller kortere. I Uke kan du dra i sidene for å utvide den til flere dager. Trykk på et rom i fargeforklaringen for å skjule eller vise det.</p>':'<p class="small utghint">Trykk på en booking for å se detaljer.</p>';
+  const tips=utTilgang()?'<p class="small utghint">Trykk på et tomt felt for å legge inn en booking. Trykk på en booking for å se detaljer, endre eller dele. Hold inne på en booking for å flytte den eller gjøre den lengre eller kortere. I Uke kan du dra i sidene for å utvide den til flere dager, og deretter løsne hver dag for å gi den sitt eget tidspunkt. Trykk på et rom i fargeforklaringen for å skjule eller vise det.</p>':'<p class="small utghint">Trykk på en booking for å se detaljer.</p>';
   if(v==='uke'){
     const dager=utUkeDager(u.dag),a=new Date(dager[0]+'T12:00'),z=new Date(dager[6]+'T12:00'),[h0,h1]=tider(dager.map(k=>[perDag[k]||[],k]));
     const kol=dager.map(k=>{const w=new Date(k+'T12:00');return {hode:'<button type="button" data-utdagvisn="'+k+'" class="utg-dagk" aria-label="Vis '+cap(DAYS[w.getDay()])+' '+w.getDate()+'. '+MON[w.getMonth()]+' som dag">'+esc(cap(DAYS[w.getDay()]).slice(0,3))+' '+w.getDate()+'.</button>',farge:k===idag?'var(--brand)':'var(--line)',idag:k===idag,d:k,r:(u.rom&&u.rom!=='Alle')?u.rom:'',html:blokker(perDag[k]||[],k,h0)}});
@@ -1675,8 +1675,8 @@ function utDBar(){let b=document.getElementById('utDbar');
     b.innerHTML='<div class="utdtxt"></div><div class="btns"><button type="button" class="btn primary" data-utdlagre style="width:auto">Lagre</button><button type="button" class="btn" data-utdavbryt style="width:auto">Avbryt</button></div>';document.body.appendChild(b)}
   const L=UTD.lost,k=L.kol.dataset.utcell.split('|'),n=utDSet(L).length,
     dag=L.nStart===L.nEnd?utDDagNavn(L.nStart):utDDagNavn(L.nStart)+' – '+utDDagNavn(L.nEnd)+' ('+n+' dager)',
-    hint=L.multi?'Dra i håndtaket til venstre eller høyre for å legge til eller fjerne dager.':L.uke?'Dra for å flytte. Håndtak øverst og nederst endrer lengden, håndtak på sidene legger til dager.':'Dra for å flytte. Dra i håndtakene for å endre lengden. Åpne Uke for å utvide over flere dager.';
-  b.querySelector('.utdtxt').innerHTML='<b>'+esc(L.b.tittel||'Booking')+'</b><br>'+esc(dag+(k[1]?' · '+k[1]:'')+' · '+utDT(L.s)+'–'+utDT(L.e))+'<br><span class="small">'+hint+'</span>'}
+    hint=L.multi?'Dra for å flytte tidspunktet for denne dagen, eller dra i håndtakene øverst og nederst for å endre lengden. Håndtak på sidene legger til eller fjerner dager.':L.uke?'Dra for å flytte. Håndtak øverst og nederst endrer lengden, håndtak på sidene legger til dager.':'Dra for å flytte. Dra i håndtakene for å endre lengden. Åpne Uke for å utvide over flere dager.';
+  b.querySelector('.utdtxt').innerHTML='<b>'+esc(L.b.tittel||'Booking')+'</b><br>'+esc(dag+(k[1]?' · '+k[1]:'')+(L.multi?' · tid for '+utDDagNavn(L.k)+': ':' · ')+utDT(L.s)+'–'+utDT(L.e))+'<br><span class="small">'+hint+'</span>'}
 function utDAvbryt(oppdater){const L=UTD.lost;UTD.lost=null;UTD.drag=null;const b=document.getElementById('utDbar');if(b)b.remove();if(L&&oppdater!==false)keep(()=>{})}
 function utDLoft(el){
   const p=el.dataset.utblokk,i=p.lastIndexOf('|'),id=p.slice(0,i),k=p.slice(i+1),b=(state.ut.liste||[]).find(x=>x.id===id),kol=el.parentNode,h0=Number(kol.dataset.h0)||0,
@@ -1685,11 +1685,13 @@ function utDLoft(el){
   try{navigator.vibrate&&navigator.vibrate(15)}catch(x){}
   const L=UTD.lost;
   el.classList.add('lost');
-  el.insertAdjacentHTML('beforeend',(multi?'':'<i class="utgrep t" data-utg="top"></i><i class="utgrep b" data-utg="bot"></i>')+(uke&&k===dg[0]?'<i class="utgrep l" data-utg="venstre"></i>':'')+(uke&&k===dg[dg.length-1]?'<i class="utgrep r" data-utg="hoyre"></i>':''));
+  el.insertAdjacentHTML('beforeend','<i class="utgrep t" data-utg="top"></i><i class="utgrep b" data-utg="bot"></i>'+(uke&&k===dg[0]?'<i class="utgrep l" data-utg="venstre"></i>':'')+(uke&&k===dg[dg.length-1]?'<i class="utgrep r" data-utg="hoyre"></i>':''));
   UTD.sup=Date.now();utDBar()}
 function utDSpok(){const L=UTD.lost,g=L.el.closest('.utg');if(!g)return;g.querySelectorAll('.utghost').forEach(x=>x.remove());
   const mitt=L.kol.dataset.utcell.split('|')[0],dg=utDSet(L);L.el.style.opacity=dg.includes(mitt)?'':'.35';
-  dg.forEach(k=>{if(k===mitt)return;const col=g.querySelector('[data-utcell^="'+k+'|"]');if(!col)return;const gh=document.createElement('div');gh.className='utghost';gh.style.top=L.el.style.top;gh.style.height=L.el.style.height;col.appendChild(gh)})}
+  const gml=utDager(L.b),f0=utDagTid(L.b,gml[0]);
+  dg.forEach(k=>{if(k===mitt||(L.multi&&gml.includes(k)))return;const col=g.querySelector('[data-utcell^="'+k+'|"]');if(!col)return;const gh=document.createElement('div');gh.className='utghost';
+    if(L.multi){const a=utMin(f0[0]),z=Math.max(utMin(f0[1]),a+utDMin);gh.style.top=Math.round((a-L.h0*60)*utDK)+'px';gh.style.height=Math.max(34,Math.round((z-a)*utDK)-2)+'px'}else{gh.style.top=L.el.style.top;gh.style.height=L.el.style.height}col.appendChild(gh)})}
 function utDVis(){const L=UTD.lost;L.el.style.top=Math.round((L.s-L.h0*60)*utDK)+'px';L.el.style.height=Math.max(34,Math.round((L.e-L.s)*utDK)-2)+'px';utDSpok();utDBar()}
 {
   const stopp=()=>{clearTimeout(UTD.t);UTD.t=0;UTD.p=null};
@@ -1711,8 +1713,8 @@ function utDVis(){const L=UTD.lost;L.el.style.top=Math.round((L.s-L.h0*60)*utDK)
     e.preventDefault();
     const dy=(e.clientY-D.y0)/utDK,r=v=>Math.round(v/utDMin)*utDMin,lo=L.h0*60,hi=Math.min(1440,lo+Math.round(L.kol.offsetHeight/utDK)),
       under=()=>document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.matches&&x.matches('[data-utcell]')&&x.closest('.utg')===L.el.closest('.utg'));
-    if(D.mode==='flytt'){if(L.multi)return;const len=D.e-D.s;L.s=Math.max(lo,Math.min(hi-len,r(D.s+dy)));L.e=L.s+len;
-      const u=under();if(u&&u!==L.kol){L.kol=u;u.appendChild(L.el);L.nStart=L.nEnd=u.dataset.utcell.split('|')[0]}}
+    if(D.mode==='flytt'){const len=D.e-D.s;L.s=Math.max(lo,Math.min(hi-len,r(D.s+dy)));L.e=L.s+len;
+      const u=L.multi?null:under();if(u&&u!==L.kol){L.kol=u;u.appendChild(L.el);L.nStart=L.nEnd=u.dataset.utcell.split('|')[0]}}
     else if(D.mode==='top')L.s=Math.max(lo,Math.min(D.e-utDMin,r(D.s+dy)));
     else if(D.mode==='bot')L.e=Math.min(hi,Math.max(D.s+utDMin,r(D.e+dy)));
     else{const u=under();if(!u)return;const dag=u.dataset.utcell.split('|')[0];
@@ -1730,7 +1732,7 @@ function utDVis(){const L=UTD.lost;L.el.style.top=Math.round((L.s-L.h0*60)*utDK)
     const L=UTD.lost,k=L.kol.dataset.utcell.split('|'),r0=L.kol0.dataset.utcell.split('|')[1],orig=L.b;
     let rom=(orig.rom||[]).slice();if(r0&&k[1]&&k[1]!==r0&&rom.includes(r0))rom=[...new Set(rom.map(x=>x===r0?k[1]:x))];
     const dg=utDSet(L);if(!dg.length){push('Ikke lagret','Minst én dag må være med.');return}
-    const gml=utDager(orig),mal=L.multi?utDagTid(orig,gml[0]):[utDT(L.s),utDT(L.e)],tid=x=>L.multi&&gml.includes(x)?utDagTid(orig,x):mal,d={...orig,rom};
+    const gml=utDager(orig),mal=L.multi?utDagTid(orig,gml[0]):[utDT(L.s),utDT(L.e)],tid=x=>L.multi&&x===L.k?[utDT(L.s),utDT(L.e)]:L.multi&&gml.includes(x)?utDagTid(orig,x):mal,d={...orig,rom};
     if(dg.length===1){const [f,t]=tid(dg[0]);Object.assign(d,{dato:dg[0],dato2:'',tider:[],fra:f,til:t})}
     else{const t2=dg.map(x=>{const [f,t]=tid(x);return x+'|'+f+'|'+t});Object.assign(d,{dato:dg[0],dato2:dg[dg.length-1],tider:t2,fra:t2[0].split('|')[1],til:t2[t2.length-1].split('|')[2]})}
     delete d.id;
@@ -1739,7 +1741,7 @@ function utDVis(){const L=UTD.lost;L.el.style.top=Math.round((L.s-L.h0*60)*utDK)
     if(kf.length&&!await bekreft('Dobbeltbooking: '+kf.map(x=>(x.tittel||'Utleie')+' '+x.fra+'–'+x.til).join('; ')+'. Lagre likevel?',{ok:'Lagre likevel',fare:false}))return;
     try{await FB.utSave(L.id,{...d,by:meEmail()});{const pe=utProgEv(L.id);if(state.admin&&pe)utProgSync(L.id,d,pe.cat).catch(()=>{})}
       state.ut.alle=undefined;state.ut.liste=(state.ut.liste||[]).map(x=>x.id===L.id?{id:L.id,...d}:x).sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;utDAvbryt();
-      push('Lagret',dg.length>1?'Bookingen gjelder nå '+dg.length+' dager.':'Bookingen er flyttet til '+d.fra+'–'+d.til+'.')}
+      push('Lagret',L.multi&&dg.join()===gml.join()?'Tidspunktet for '+utDDagNavn(L.k)+' er endret.':dg.length>1?'Bookingen gjelder nå '+dg.length+' dager.':'Bookingen er flyttet til '+d.fra+'–'+d.til+'.')}
     catch(er){push('Kunne ikke lagre','Prøv igjen ('+((er&&er.code)||'feil')+').')}})
 }
 /* Detaljvindu for en booking i kalenderen: alle opplysninger, Endre og Del. */
@@ -4024,7 +4026,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 20:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 21:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
