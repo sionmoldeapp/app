@@ -1634,8 +1634,8 @@ function utAsk(id,dato,pre){
   const re=dlg.querySelector('#uRomEdit');if(re)re.addEventListener('click',()=>{dlg.close();setTimeout(utRomAsk,450)});
   dlg.querySelector('form').addEventListener('submit',async e=>{
     const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='slett')return;e.preventDefault();const msg=t=>{dlg.querySelector('#uMsg').textContent=t;if(/dag|rom|Sluttid|klokke/i.test(t)&&dlg.__apne)dlg.__apne(1)};
-    if(v==='slett'){if(!await bekreft('Slette denne bookingen?'))return;
-      try{await FB.utDel(id);utProgFjern(id);state.ut.alle=undefined;state.ut.liste=state.ut.liste.filter(x=>x.id!==id);dlg.close();keep(()=>{});push('Slettet','Bookingen er fjernet.')}catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}return}
+    if(v==='slett'){if(!await bekreft('Slette denne bookingen? Vertskap og ledere får beskjed om at den er slettet.'))return;
+      try{await FB.utDel(id);utProgFjern(id);if(ex){utBeskjedLedere(ex,'slett');utVarsle(ex,'slett').then(t=>{if(t)push('Varsel',t)}).catch(()=>{})}state.ut.alle=undefined;state.ut.liste=state.ut.liste.filter(x=>x.id!==id);dlg.close();keep(()=>{});push('Slettet','Bookingen er fjernet.')}catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}return}
     const d={tittel:dlg.querySelector('#uT').value.trim(),rom:[...dlg.querySelectorAll('[data-utr]')].filter(x=>x.checked).map(x=>x.dataset.utr),dato:dlg.querySelector('#uD').value,dato2:dlg.querySelector('#uD2').value,fra:dlg.querySelector('#uF').value,til:dlg.querySelector('#uTi').value,
       remindH:parseInt(dlg.querySelector('#uRem').value,10)||0,fakturert:dlg.querySelector('#uFak').checked,fakturertMs:dlg.querySelector('#uFak').checked?((ex&&ex.fakturert&&ex.fakturertMs)||Date.now()):0,fakturaVentH:parseInt(dlg.querySelector('#uFakV').value,10)||24,fakturaUtsattTil:(parseInt(dlg.querySelector('#uFakU').value,10)>0?Date.now()+parseInt(dlg.querySelector('#uFakU').value,10)*864e5:((ex&&ex.fakturaUtsattTil)||0)),allergener:[...dlg.querySelectorAll('[data-utal]')].filter(x=>x.checked).map(x=>x.dataset.utal),allergenNotat:dlg.querySelector('#uAn').value.trim(),gjester:Math.max(0,Math.min(2000,parseInt(dlg.querySelector('#uG').value,10)||0)),servering:dlg.querySelector('#uM').value.trim(),leier:dlg.querySelector('#uL').value.trim(),kontakt:dlg.querySelector('#uK').value.trim(),pris:dlg.querySelector('#uEget').checked?'Eget arrangement (gratis)':dlg.querySelector('#uP').value.trim(),status:dlg.querySelector('#uS').value,notat:dlg.querySelector('#uN').value.trim()};
     const flere=d.dato&&d.dato2&&d.dato2>d.dato&&Math.round((Date.parse(d.dato2)-Date.parse(d.dato))/864e5)<=60;
@@ -1774,7 +1774,7 @@ function utBokTekst(d,ny){
   const dd=new Date(d.dato+'T12:00'),flere=d.dato2&&d.dato2>d.dato;
   const dager=flere?utDager(d).map(k=>{const [f,t]=utDagTid(d,k),w=new Date(k+'T12:00');return cap(DAYS[w.getDay()]).slice(0,3)+' '+w.getDate()+'. '+MON[w.getMonth()]+' kl. '+f+'–'+t}).join('\n   '):cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+' kl. '+d.fra+'–'+d.til;
   const al=[...(d.allergener||[]),d.allergenNotat].filter(Boolean).join(', ');
-  const hoved=['📅 '+(ny?'Ny booking':'Endret booking')+(d.status==='foresporsel'?' (forespørsel)':'')+': '+(d.tittel||'Utleie'),'Når: '+dager,'Rom: '+(d.rom||[]).join(', '),d.gjester?'Gjester: '+d.gjester:'',d.servering?'Servering: '+d.servering:'',al?'Allergener: '+al:''].filter(Boolean);
+  const hoved=['📅 '+(ny==='slett'?'Slettet booking':ny?'Ny booking':'Endret booking')+(d.status==='foresporsel'?' (forespørsel)':'')+': '+(d.tittel||'Utleie'),'Når: '+dager,'Rom: '+(d.rom||[]).join(', '),d.gjester?'Gjester: '+d.gjester:'',d.servering?'Servering: '+d.servering:'',al?'Allergener: '+al:''].filter(Boolean);
   const detaljer=['Leietaker: '+(d.leier||'–'),d.kontakt?'Kontakt: '+d.kontakt:'',d.pris?'Pris: '+(/^Eget/.test(d.pris)?'Eget arrangement (gratis)':d.pris):'','Status: '+(d.status==='foresporsel'?'Forespørsel':'Bekreftet'),d.notat?'Merknad: '+d.notat:'','Booket av: '+nyBeskjedNavn()].filter(Boolean);
   return (hoved.join('\n')+'\n'+UT_DETALJ+'\n'+detaljer.join('\n')).slice(0,990)}
 async function utBeskjedLedere(d,ny){
@@ -1789,8 +1789,8 @@ async function utBeskjedLedere(d,ny){
       const t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(e)&&(x.parts||[]).includes(meEmail()));
       const id=t?(await FB.addMsg(t,tekst,navn),t.id):await FB.newDm(e,(members.find(u=>u.id===e)||{}).name||e,'Vertskap',tekst,navn);
       if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});ok++}catch(er){}}
-    if(!ok)push('Beskjed til leder ble ikke sendt','Bookingen er lagret. Er de nye reglene publisert i Firebase?')}
-  catch(e){push('Beskjed til leder ble ikke sendt','Bookingen er lagret.')}}
+    if(!ok)push('Beskjed til leder ble ikke sendt',(ny==='slett'?'Bookingen er slettet.':'Bookingen er lagret.')+' Er de nye reglene publisert i Firebase?')}
+  catch(e){push('Beskjed til leder ble ikke sendt',ny==='slett'?'Bookingen er slettet.':'Bookingen er lagret.')}}
 const utLedereKnapp=()=>state.admin?'<button type="button" class="btn" data-utledere>Hvem får beskjed?</button>':'';
 /* Administrator velger hvem som får beskjed (med alle detaljer) når en booking legges inn eller endres. */
 function utLedereAsk(){
@@ -1812,7 +1812,7 @@ async function utVarsle(d,ny){
   if(!FB||!PUSH_URL)return 'Varsel er ikke satt opp.';
   const dd=new Date(d.dato+'T12:00'),flere=d.dato2&&d.dato2>d.dato,dag=cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+(flere?'–'+utDatoKort(d.dato2):''),
     deler=[dag+(flere?'':' kl. '+d.fra+'–'+d.til),(d.rom||[]).join(', '),d.gjester?d.gjester+' gjester':'',d.servering?'Servering: '+d.servering:'',(d.allergener||[]).length||d.allergenNotat?'Allergener: '+[...(d.allergener||[]),d.allergenNotat].filter(Boolean).join(', '):''].filter(Boolean);
-  try{const r=await FB.sendPush(PUSH_URL,((ny?'Ny booking: ':'Endret booking: ')+(d.tittel||'Utleie')).slice(0,60),deler.join(' · ').slice(0,300),'me',{type:'grupper',groups:['vertskap']});
+  try{const r=await FB.sendPush(PUSH_URL,((ny==='slett'?'Slettet booking: ':ny?'Ny booking: ':'Endret booking: ')+(d.tittel||'Utleie')).slice(0,60),deler.join(' · ').slice(0,300),'me',{type:'grupper',groups:['vertskap']});
     return r.ok?(r.sendt?'Varsel sendt til vertskapet ('+r.sendt+' enheter).':'Ingen i gruppen Vertskap har slått på varsler ennå.'):'Varselet ble ikke sendt: '+r.feil}
   catch(e){return 'Varselet kunne ikke sendes. Bookingen er lagret.'}}
 function utFakSkjema(b){return '<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:var(--t-m);margin-bottom:4px">Faktura</legend><label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="uFak" style="width:auto" '+(b.fakturert?'checked':'')+'>Faktura er sendt</label>'
@@ -4027,7 +4027,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 21:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 22:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
