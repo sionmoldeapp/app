@@ -3270,7 +3270,7 @@ const chatBareEmoji=t=>{t=String(t||'').trim();const u=t.replace(SION_TOKEN,'�
 
 function chatRamme(tittel,under,av,innhold,hint){
   const c=state.chat;c.svar=null;c.red=null;c.verk=false;
-  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(c.id?'<button type="button" class="cbtn" data-chatmeny aria-label="Samtaleinnstillinger">⋮</button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
+  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(c.id?'<button type="button" class="cbtn" data-chatdelt aria-label="Se hvem som er med i samtalen" title="Hvem er med?">👥</button><button type="button" class="cbtn" data-chatmeny aria-label="Samtaleinnstillinger">⋮</button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
    +'<div class="cbar" id="cBar" hidden></div>'+chatPanelHtml()
    +'<div class="crec" id="cRec" hidden></div><form class="cinp" id="cForm"><button type="button" class="cik cchev" data-cchev aria-label="Vis flere valg: bilde, lyd og mer" hidden>'+CHEVIKON+'</button><div class="cverk" id="cVerk"><button type="button" class="cik" data-cemoknapp aria-label="Emoji, klistremerker, spill og avstemning">😊</button><button type="button" class="cik" data-cfoto aria-label="Ta bilde" '+(c.id?'':'disabled')+'>'+KAMIKON+'</button><button type="button" class="cik" data-cgalleri aria-label="Velg bilde fra galleriet" '+(c.id?'':'disabled')+'>'+GALLERIKON+'</button><button type="button" class="cik cmic" data-cmic aria-label="Send stemmemelding" '+(c.id?'':'disabled')+'>'+MIKIKON+'</button></div><input type="file" id="cFil" accept="image/*" hidden><input type="file" id="cKam" accept="image/*" capture="environment" hidden><div class="cfelt"><textarea id="cT" rows="1" maxlength="1000" aria-label="'+esc(hint||'Skriv en melding')+'"></textarea></div><button type="submit" class="csend" aria-label="Send" hidden>'+chatSend+'</button><button type="button" class="csend ctommel" data-ctommel aria-label="Send hurtigemoji. Hold inne for å bytte ikon." title="Hold inne for å bytte ikon">'+chatHurtigHtml()+'</button></form></form>'}
 /* Bytter mellom send-knapp (når det står tekst) og 👍 (når feltet er tomt), som i Messenger. */
@@ -3325,14 +3325,29 @@ const MIKIKON='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" strok
 const CHAT_FARGER=[['blaa','Blå','#0084ff'],['rosa','Rosa','#ff5a8a'],['gronn','Grønn','#1f9d55'],['lilla','Lilla','#7d55c7'],['oransje','Oransje','#f57c00'],['rod','Rød','#e5484d'],['turkis','Turkis','#00a3b4'],['gull','Gull','#c9971c']];
 const chatFargeHex=t=>(CHAT_FARGER.find(f=>f[0]===(t&&t.farge))||CHAT_FARGER[0])[2];
 /* Samtalemeny (⋮): bønneliste, farge og bakgrunn, stjernemerkede meldinger, dempe varsler og slette samtalen. */
+/* Hvem som er med i samtalen (privat eller gruppe). Navn hentes fra det vi allerede vet: samtalen, meldingene og medlemslisten hvis den er lastet. */
+function chatDeltakere(){
+  const c=state.chat,t=c&&chatTraad(c.id);if(!t||document.querySelector('dialog.pub'))return;
+  const meg=meEmail(),navn={};
+  (members||[]).forEach(u=>{if(u.name)navn[u.id]=u.name});
+  (c.msgs||[]).forEach(x=>{if(x.by&&x.name)navn[x.by]=x.name});
+  if(t.from&&t.fromName)navn[t.from]=t.fromName;
+  if(t.kind==='dm'&&t.toName){const til=(t.parts||[]).find(p=>p!==t.from);if(til&&!navn[til])navn[til]=t.toName}
+  const del=(t.parts||[]).slice().sort((a,b)=>(a===meg?-1:b===meg?1:a===t.from?-1:b===t.from?1:String(navn[a]||a).localeCompare(String(navn[b]||b),'nb'))),
+    visNavn=p=>navn[p]||p.split('@')[0],
+    dlg=document.createElement('dialog');dlg.className='lp pub';
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Hvem er med? ('+del.length+')</h3><p class="small" style="margin:0">'+esc(chatNavn(t,meg))+(t.kind==='gruppe'?' er en gruppesamtale. Alle her kan skrive og se meldingene.':': bare disse ser samtalen.')+'</p>'
+   +'<div class="reg">'+del.map(p=>'<div class="r" style="display:flex;gap:12px;align-items:center">'+chatAv(visNavn(p))+'<div class="grow"><b>'+esc(visNavn(p))+'</b>'+(p===meg?' <span class="small">(deg)</span>':'')+(state.admin?'<span class="small" style="display:block">'+esc(p)+'</span>':'')+'</div>'+(p===t.from?'<span class="tag m">Startet samtalen</span>':'')+'</div>').join('')+'</div>'
+   +'<div class="btns"><button class="btn" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';
+  document.body.appendChild(dlg);dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 function chatMeny(){
   const c=state.chat,t=chatTraad(c.id);if(!t||document.querySelector('dialog.pub'))return;
   const meg=meEmail(),dempet=(t.dempet||[]).includes(meg),stj=(c.msgs||[]).filter(m=>(m.stjerne||[]).includes(meg)).length,dlg=document.createElement('dialog');dlg.className='lp pub';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+esc(chatNavn(t,meg))+'</h3>'+(t.kind==='gruppe'?'<p class="small" style="margin:0">Gruppesamtale med '+(t.parts||[]).length+' deltakere. Alle kan skrive, og den som startet den kan fjerne meldinger.</p>':'')
-   +'<div class="btns" style="flex-direction:column;align-items:stretch"><button class="btn" value="bonn">🙏 Bønneliste</button><button class="btn" value="utseende">🎨 Farge og bakgrunn</button><button class="btn" value="stjerner">⭐ Stjernemerkede meldinger'+(stj?' ('+stj+')':'')+'</button><button class="btn" value="demp">'+(dempet?'🔔 Slå på varsler':'🔕 Dempe varsler')+'</button><button class="btn danger" value="slett">Slett samtalen</button><button class="btn" value="avbryt" formnovalidate>Lukk</button></div></form>';
+   +'<div class="btns" style="flex-direction:column;align-items:stretch"><button class="btn" value="delt">👥 Se hvem som er med</button><button class="btn" value="bonn">🙏 Bønneliste</button><button class="btn" value="utseende">🎨 Farge og bakgrunn</button><button class="btn" value="stjerner">⭐ Stjernemerkede meldinger'+(stj?' ('+stj+')':'')+'</button><button class="btn" value="demp">'+(dempet?'🔔 Slå på varsler':'🔕 Dempe varsler')+'</button><button class="btn danger" value="slett">Slett samtalen</button><button class="btn" value="avbryt" formnovalidate>Lukk</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('close',async()=>{const v=dlg.returnValue;dlg.remove();
-    if(v==='bonn')chatBonnVis();else if(v==='utseende')chatUtseendeMeny();else if(v==='stjerner')chatStjerneVis();else if(v==='slett')chatSlettMeny();
+    if(v==='delt')chatDeltakere();else if(v==='bonn')chatBonnVis();else if(v==='utseende')chatUtseendeMeny();else if(v==='stjerner')chatStjerneVis();else if(v==='slett')chatSlettMeny();
     else if(v==='demp'){const ny=!dempet,gammel=t.dempet||[];t.dempet=ny?[...gammel,meg]:gammel.filter(x=>x!==meg);try{await FB.dempChat(t.id,ny);push(ny?'Varsler dempet':'Varsler på',ny?'Du får ikke varsler fra denne samtalen. Meldingene vises fortsatt her.':'Du får varsler fra samtalen igjen.');chatTraadEndret()}catch(e){t.dempet=gammel;push('Kunne ikke endre','Prøv igjen ('+((e&&e.code)||'feil')+').')}}});
   dlg.showModal()}
 /* Farge og bakgrunn per samtale (feltene farge og bakgrunn på samtalen; begge ser dem). */
@@ -3671,6 +3686,7 @@ document.addEventListener('click',e=>{
   else if('cchev' in d){state.chat.verk=true;chatInpOppd();const ta0=document.getElementById('cT');if(ta0)ta0.focus({preventScroll:true})}
   else if('cemoknapp' in d){const p=document.getElementById('cEmoji');if(p)p.hidden=!p.hidden}
   else if(d.cemo){const ta=document.getElementById('cT');if(ta){const a=ta.selectionStart==null?ta.value.length:ta.selectionStart,z=ta.selectionEnd==null?a:ta.selectionEnd;ta.value=ta.value.slice(0,a)+d.cemo+ta.value.slice(z);ta.selectionStart=ta.selectionEnd=a+d.cemo.length;ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus()}}
+  else if('chatdelt' in d)chatDeltakere();
   else if('chatmeny' in d)chatMeny();
   else if('stjlukk' in d){const el=document.getElementById('cStj');if(el)el.remove()}
   else if(d.stjgo)chatStjerneGo(d.stjgo);
@@ -4053,7 +4069,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 23:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='31.10.2026 kl. 00:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
