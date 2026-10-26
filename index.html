@@ -1389,7 +1389,10 @@ async function utLast(){if(!FB)return;try{const fra=new Date();fra.setDate(fra.g
 const utTiderMap=b=>Object.fromEntries((b.tider||[]).map(x=>String(x).split('|')).filter(a=>a.length===3).map(([k,f,t])=>[k,[f,t]]));
 const utDagTid=(b,k)=>{const m=utTiderMap(b);if(m[k])return m[k];if(!(b.dato2&&b.dato2>b.dato))return [b.fra,b.til];return k===b.dato?[b.fra,'23:59']:k===b.dato2?['00:00',b.til]:['00:00','23:59']};
 const utIntervaller=b=>utDager(b).map(k=>{const [f,t]=utDagTid(b,k);return [Date.parse(k+'T'+f+':00'),Date.parse(k+'T'+t+':00')]});
-function utDager(b){const ut=[],e=b.dato2&&b.dato2>b.dato?b.dato2:b.dato;let d=new Date(b.dato+'T12:00');for(let i=0;i<62;i++){const k=dkey(d);ut.push(k);if(k>=e)break;d.setDate(d.getDate()+1)}return ut}
+function utDager(b){const ut=[],e=b.dato2&&b.dato2>b.dato?b.dato2:b.dato;let d=new Date(b.dato+'T12:00');for(let i=0;i<62;i++){const k=dkey(d);ut.push(k);if(k>=e)break;d.setDate(d.getDate()+1)}
+  /* Flere dager med tider: bare dagene som står i tider er med. Dager som mangler er opphold (for eksempel helgen). */
+  if(ut.length>1){const tm=utTiderMap(b),p=ut.filter(k=>tm[k]);if(p.length&&p.length<ut.length)return p}
+  return ut}
 /* Arrangementer og faste samlinger fra Program vises automatisk i utleiekalenderen (bare visning, endres under Program). Rommet hentes fra feltet Sted/tittel hvis et romnavn (for eksempel «Hovedsal») står der; ellers vises de uten rom. Sluttid er ikke satt i Program, så to timer regnes som varighet. */
 function utProgram(fra,til){
   const ut=[],rom=utRomListe().filter(r=>r!=='Hele bygget'),finn=t=>{const lc=String(t||'').toLowerCase();return rom.filter(r=>lc.includes(r.toLowerCase()))},
@@ -1586,10 +1589,15 @@ function utAsk(id,dato,pre){
   { const q=x=>dlg.querySelector(x),tm0=utTiderMap(b);
     const bygg=()=>{const a=q('#uD').value,z=q('#uD2').value,flere=a&&z&&z>a&&Math.round((Date.parse(z)-Date.parse(a))/864e5)<=60;q('#uEn').style.display=flere?'none':'grid';const box=q('#uTider');
       if(!flere){box.innerHTML='';return}
-      const forr={};box.querySelectorAll('[data-utf]').forEach(i=>{forr[i.dataset.utf]=[i.value,box.querySelector('[data-utt="'+i.dataset.utf+'"]').value]});
-      box.innerHTML='<p class="small" style="margin:0"><b>Tidspunkt hver dag</b></p>'+utDager({dato:a,dato2:z}).map(k=>{const [f,t]=forr[k]||tm0[k]||[q('#uF').value||'10:00',q('#uTi').value||'12:00'],dd=new Date(k+'T12:00');
-        return '<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:6px;align-items:end"><span class="small" style="padding-bottom:12px">'+esc(cap(DAYS[dd.getDay()]).slice(0,3)+' '+dd.getDate()+'. '+MON[dd.getMonth()])+'</span><label class="f">Fra<input type="time" data-utf="'+k+'" value="'+esc(f)+'"></label><label class="f">Til<input type="time" data-utt="'+k+'" value="'+esc(t)+'"></label></div>'}).join('')};
+      const forr={};box.querySelectorAll('[data-utf]').forEach(i=>{forr[i.dataset.utf]=[i.value,box.querySelector('[data-utt="'+i.dataset.utf+'"]').value,box.querySelector('[data-utp="'+i.dataset.utf+'"]').checked]});
+      const har=Object.keys(tm0).length>0,e0=b.dato2&&b.dato2>b.dato?b.dato2:b.dato;
+      box.innerHTML='<p class="small" style="margin:0"><b>Dager og tidspunkt</b></p><p class="small" style="margin:0">Fjern haken for dager bookingen ikke gjelder (opphold), for eksempel lørdag og søndag.</p><div class="btns" style="margin:0"><button type="button" class="btn" data-utheelg style="width:auto">Hopp over lørdag og søndag</button><button type="button" class="btn" data-utalle style="width:auto">Bruk alle dager</button></div>'+utDager({dato:a,dato2:z}).map(k=>{const [f,t]=forr[k]||tm0[k]||[q('#uF').value||'10:00',q('#uTi').value||'12:00'],paa=forr[k]?forr[k][2]:!(har&&k>=b.dato&&k<=e0&&!tm0[k]),dd=new Date(k+'T12:00');
+        return '<div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:6px;align-items:end'+(paa?'':';opacity:.5')+'"><label style="display:flex;gap:8px;align-items:center;padding-bottom:12px;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utp="'+k+'" style="width:22px;height:22px;flex:none" '+(paa?'checked':'')+' aria-label="Bruk denne dagen">'+esc(cap(DAYS[dd.getDay()]).slice(0,3)+' '+dd.getDate()+'. '+MON[dd.getMonth()])+'</label><label class="f">Fra<input type="time" data-utf="'+k+'" value="'+esc(f)+'" '+(paa?'':'disabled')+'></label><label class="f">Til<input type="time" data-utt="'+k+'" value="'+esc(t)+'" '+(paa?'':'disabled')+'></label></div>'}).join('')};
     q('#uD').addEventListener('change',bygg);q('#uD2').addEventListener('change',bygg);bygg();
+    const sett=(c,v)=>{if(c.checked===v)return;c.checked=v;c.dispatchEvent(new Event('change',{bubbles:true}))};
+    q('#uTider').addEventListener('change',ev=>{const c=ev.target.closest&&ev.target.closest('[data-utp]');if(!c)return;['utf','utt'].forEach(a=>{const i=q('#uTider [data-'+a+'="'+c.dataset.utp+'"]');if(i)i.disabled=!c.checked});c.closest('div').style.opacity=c.checked?'':'.5'});
+    q('#uTider').addEventListener('click',ev=>{const kn=ev.target.closest&&ev.target.closest('button');if(!kn)return;ev.preventDefault();
+      q('#uTider').querySelectorAll('[data-utp]').forEach(c=>{const w=new Date(c.dataset.utp+'T12:00').getDay();if('utheelg' in kn.dataset)sett(c,!(w===0||w===6));else if('utalle' in kn.dataset)sett(c,true)})});
     q('#uEget').addEventListener('change',e=>{const p=q('#uP');p.disabled=e.target.checked;if(e.target.checked){p.value='';p.placeholder='Gratis'}else p.placeholder='kr'}) }
   const re=dlg.querySelector('#uRomEdit');if(re)re.addEventListener('click',()=>{dlg.close();setTimeout(utRomAsk,450)});
   dlg.querySelector('form').addEventListener('submit',async e=>{
@@ -1599,9 +1607,12 @@ function utAsk(id,dato,pre){
     const d={tittel:dlg.querySelector('#uT').value.trim(),rom:[...dlg.querySelectorAll('[data-utr]')].filter(x=>x.checked).map(x=>x.dataset.utr),dato:dlg.querySelector('#uD').value,dato2:dlg.querySelector('#uD2').value,fra:dlg.querySelector('#uF').value,til:dlg.querySelector('#uTi').value,
       remindH:parseInt(dlg.querySelector('#uRem').value,10)||0,fakturert:dlg.querySelector('#uFak').checked,fakturertMs:dlg.querySelector('#uFak').checked?((ex&&ex.fakturert&&ex.fakturertMs)||Date.now()):0,fakturaVentH:parseInt(dlg.querySelector('#uFakV').value,10)||24,fakturaUtsattTil:(parseInt(dlg.querySelector('#uFakU').value,10)>0?Date.now()+parseInt(dlg.querySelector('#uFakU').value,10)*864e5:((ex&&ex.fakturaUtsattTil)||0)),allergener:[...dlg.querySelectorAll('[data-utal]')].filter(x=>x.checked).map(x=>x.dataset.utal),allergenNotat:dlg.querySelector('#uAn').value.trim(),gjester:Math.max(0,Math.min(2000,parseInt(dlg.querySelector('#uG').value,10)||0)),servering:dlg.querySelector('#uM').value.trim(),leier:dlg.querySelector('#uL').value.trim(),kontakt:dlg.querySelector('#uK').value.trim(),pris:dlg.querySelector('#uEget').checked?'Eget arrangement (gratis)':dlg.querySelector('#uP').value.trim(),status:dlg.querySelector('#uS').value,notat:dlg.querySelector('#uN').value.trim()};
     const flere=d.dato&&d.dato2&&d.dato2>d.dato&&Math.round((Date.parse(d.dato2)-Date.parse(d.dato))/864e5)<=60;
-    if(flere){const rader=[...dlg.querySelectorAll('[data-utf]')];d.tider=rader.map(i=>i.dataset.utf+'|'+i.value+'|'+dlg.querySelector('[data-utt="'+i.dataset.utf+'"]').value);
+    if(flere){const rader=[...dlg.querySelectorAll('[data-utf]')].filter(i=>dlg.querySelector('[data-utp="'+i.dataset.utf+'"]').checked);
+      if(!rader.length){msg('Velg minst én dag.');return}
+      d.tider=rader.map(i=>i.dataset.utf+'|'+i.value+'|'+dlg.querySelector('[data-utt="'+i.dataset.utf+'"]').value);
       if(d.tider.some(x=>{const [,f,t]=x.split('|');return !f||!t||utMin(t)<=utMin(f)})){msg('Hver dag må ha gyldige klokkeslett, og «Til» må være etter «Fra».');return}
-      d.fra=d.tider[0].split('|')[1];d.til=d.tider[d.tider.length-1].split('|')[2]}else d.tider=[];
+      d.fra=d.tider[0].split('|')[1];d.til=d.tider[d.tider.length-1].split('|')[2];
+      d.dato=d.tider[0].split('|')[0];d.dato2=d.tider[d.tider.length-1].split('|')[0];if(d.dato2===d.dato)d.dato2=''}else d.tider=[];
     if(!d.dato||!d.fra||!d.til){msg('Velg dato og klokkeslett.');return}
     if(d.dato2&&d.dato2<d.dato){msg('Siste dag kan ikke være før første dag.');return}
     if(!d.dato2||d.dato2===d.dato){d.dato2='';d.tider=[];if(utMin(d.til)<=utMin(d.fra)){msg('Sluttid må være etter starttid.');return}}
@@ -3959,7 +3970,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 18:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 18:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
