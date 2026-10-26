@@ -3763,7 +3763,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 23:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 09:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -4381,7 +4381,9 @@ document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.targe
   document.addEventListener('contextmenu',e=>{if(e.target.closest('.merow'))e.preventDefault()})}
 /* Åpnet kalenderoppføring rulles til midten av det synlige området (mellom toppen og menyen). Er den høyere enn området, ligger toppen like under toppmenyen. Kalles når oppføringen har sin endelige høyde, før åpne-animasjonen starter. */
 function sentrerItem(id,anim){
-  const b=[...document.querySelectorAll('.item>button[data-ev]')].find(x=>x.dataset.ev===id),it=b&&b.parentElement;if(!it)return;
+  const b=[...document.querySelectorAll('.item>button[data-ev]')].find(x=>x.dataset.ev===id);sentrerEl(b&&b.parentElement,anim)}
+function sentrerEl(it,anim){
+  if(!it)return;
   const h=document.querySelector('header.top'),n=document.getElementById('tabs'),d=document.documentElement.dataset,side=d.bred==='1'&&d.meny!=='bunn';
   const topp=h?h.getBoundingClientRect().bottom:0,bunn=(!n||side)?innerHeight:n.getBoundingClientRect().top,r=it.getBoundingClientRect();
   const mal=r.height>=bunn-topp-16?topp+8:topp+(bunn-topp-r.height)/2,delta=r.top-mal;
@@ -4672,8 +4674,9 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.postopen){
     // Nyheter og Pastorens hilsen åpner og lukker seg like jevnt som arrangementene (samme tid og kurve).
     const id=c.dataset.postopen,k='p_'+id,boks=c.closest('.nrad,.nhero'),det=boks&&boks.querySelector('.ndetalj');
-    const aapne=()=>{keep(()=>{state.open[k]=true;markLest(id)});svarLast(id)};
-    if(matchMedia('(prefers-reduced-motion:reduce)').matches){if(state.open[k])keep(()=>{state.open[k]=false});else aapne();return}
+    /* Bare én nyhet/hilsen er åpen om gangen: åpnes en ny, lukkes de andre. */
+    const aapne=()=>{keep(()=>{Object.keys(state.open).forEach(x=>{if(x!==k&&x.startsWith('p_'))delete state.open[x]});state.open[k]=true;markLest(id)});svarLast(id)};
+    if(matchMedia('(prefers-reduced-motion:reduce)').matches){if(state.open[k])keep(()=>{state.open[k]=false});else{aapne();const q=document.querySelector('[data-postopen="'+id+'"]');sentrerEl(q&&q.closest('.nrad,.nhero'),false)}return}
     if(det&&det.dataset.anim)return;
     if(state.open[k]&&det){
       det.dataset.anim='1';det.style.overflow='hidden';const pb=getComputedStyle(det).paddingBottom;
@@ -4683,6 +4686,7 @@ document.addEventListener('click',async e=>{
     else{
       aapne();
       const nb=document.querySelector('[data-postopen="'+id+'"]'),b2=nb&&nb.closest('.nrad,.nhero'),d2=b2&&b2.querySelector('.ndetalj');
+      sentrerEl(b2,true);
       if(d2){const h=d2.offsetHeight,pb=getComputedStyle(d2).paddingBottom;d2.style.overflow='hidden';d2.dataset.anim='1';
         const an=d2.animate({height:['0px',h+'px'],paddingBottom:['0px',pb],opacity:[0,1]},{duration:280,easing:'cubic-bezier(.2,.7,.2,1)'});
         an.onfinish=an.oncancel=()=>{d2.style.overflow='';delete d2.dataset.anim}}}
