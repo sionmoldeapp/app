@@ -905,7 +905,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 label.f{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:var(--t-m)}
 input,textarea,select{font:inherit;font-size:var(--t-b);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--r-s);padding:10px;width:100%}
 .form{display:flex;flex-direction:column;gap:12px}
-nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
+nav.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
 /* Android-PWA: systemlinjen nederst (navigasjonsfeltet/bevegelsesstreken) kan ligge over appen uten at telefonen oppgir sikker sone. Gi fanene ekstra plass nederst. */
 @media (display-mode:standalone) and (pointer:coarse){nav.tabs{padding-bottom:calc(6px + max(env(safe-area-inset-bottom,0px),8px))}main{padding-bottom:118px}}
 nav.tabs button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:var(--t-xs);font-weight:600;color:var(--muted);border-radius:var(--r-s)}
@@ -1035,7 +1035,7 @@ function meTall(){
   const meg=meEmail(),meld=(state.threads||[]).filter(t=>(t.unread||[]).includes(meg)).length;
   const vakt=Object.keys(state.reqs||{}).reduce((n,g)=>n+(kanStyre(g)?((state.reqs[g]||[]).length):0),0);
   const lr=lrTilgang()?lrNye().length:0;
-  return {meld,vakt,lr,sum:meld+vakt+lr}}
+  return {meld,vakt,lr,sum:vakt+lr}}
 const nyhUlest=()=>posts.filter(p=>ulest(p)&&!postSkjult(p)).length;
 const bdg=n=>n>0?'<span class="bdg" role="status" aria-label="'+n+' å sjekke">'+n+'</span>':'';
 let sistFane=null;
@@ -1044,7 +1044,8 @@ function nyhMarkerSett(){
   // Bare nyheter som allerede sto i listen da du åpnet fanen regnes som sett. En nyhet du selv legger ut mens du er der, forblir ulest og vises på Hjem.
   try{nyhFiltrert(posts.filter(p=>!postSkjult(p))).slice(0,state.nyhN||NYH_SIDE).forEach(p=>{if(p.ms&&!(p.m&&!state.member)&&(!state.nyhInn||p.ms<=state.nyhInn))lest[p.id]=1});lagreLest()}catch(e){}}
 function drawTabs(){try{settBred()}catch(e){}
-  if(sistFane==='news'&&state.tab!=='news')nyhMarkerSett();if(state.tab==='news'&&sistFane!=='news')state.nyhInn=Date.now();sistFane=state.tab;const knapper=TABS.map(([k,l,i])=>`<button data-t="${k}" ${state.tab===k?'aria-current="page"':''}><svg viewBox="0 0 24 24">${ICON[i]}</svg>${l}${k==='me'&&meTall().sum>0?`<span class="tab-bdg" aria-label="${meTall().sum} å sjekke">${meTall().sum}</span>`:''}${k==='news'&&state.tab!=='news'&&nyhUlest()>0?`<span class="tab-bdg" aria-label="${nyhUlest()} uleste nyheter">${nyhUlest()}</span>`:''}</button>`);
+  if(sistFane==='news'&&state.tab!=='news')nyhMarkerSett();if(state.tab==='news'&&sistFane!=='news')state.nyhInn=Date.now();sistFane=state.tab;const chatApen=!!(state.chat&&state.chat.vis);const knapper=TABS.map(([k,l,i])=>`<button data-t="${k}" ${state.tab===k&&!chatApen?'aria-current="page"':''}><svg viewBox="0 0 24 24">${ICON[i]}</svg>${l}${k==='me'&&meTall().sum>0?`<span class="tab-bdg" aria-label="${meTall().sum} å sjekke">${meTall().sum}</span>`:''}${k==='news'&&state.tab!=='news'&&nyhUlest()>0?`<span class="tab-bdg" aria-label="${nyhUlest()} uleste nyheter">${nyhUlest()}</span>`:''}</button>`);
+  if(state.user&&state.member){const nC=chatUlest();knapper.splice(knapper.length-1,0,`<button data-chattab ${chatApen?'aria-current="page"':''} aria-label="Sionchat${nC?', '+nC+' uleste':''}"><svg viewBox="0 0 24 24">${ICON.chat}</svg>Sionchat${nC>0?`<span class="tab-bdg" aria-label="${nC} uleste">${nC}</span>`:''}</button>`)}
   $('#tabs').innerHTML=knapper.join('')}
 
 function when(d){const diff=Math.round((new Date(d).setHours(0,0,0,0)-new Date(now).setHours(0,0,0,0))/864e5);
@@ -1469,7 +1470,7 @@ function utLedereAsk(){
   const valgt=(state.utLedere&&state.utLedere.length?state.utLedere:members.filter(u=>(u.leads||[]).includes('vertskap')).map(u=>u.id)).map(x=>String(x).toLowerCase());
   const kand=members.filter(u=>u.role!=='admin'&&((u.leads||[]).length||valgt.includes(u.id))).sort((a,b)=>(a.name||a.id).localeCompare(b.name||b.id,'nb'));
   const dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Hvem får beskjed om bookinger?</h3><p class="small" style="margin:0">De du velger får en privat melding i Chat med alle detaljer hver gang en booking legges inn (og når den endres). De kan sende det viktigste videre til teamet. Bare gruppeledere og medlemmer kan velges.</p>'
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Hvem får beskjed om bookinger?</h3><p class="small" style="margin:0">De du velger får en privat melding i Sionchat med alle detaljer hver gang en booking legges inn (og når den endres). De kan sende det viktigste videre til teamet. Bare gruppeledere og medlemmer kan velges.</p>'
    +'<div class="reg">'+(kand.map(u=>'<label class="r" style="display:flex;gap:10px;align-items:center"><input type="checkbox" data-utl="'+esc(u.id)+'" style="width:22px;height:22px;flex:none" '+(valgt.includes(u.id)?'checked':'')+'><span class="grow"><b>'+esc(u.name||u.id)+'</b>'+(u.name?'<span class="small" style="display:block">'+esc(u.id)+'</span>':'')+((u.leads||[]).length?'<span class="small" style="display:block">Leder for '+esc((u.leads||[]).map(gName).join(', '))+'</span>':'')+'</span></label>').join('')||'<p class="small">Ingen gruppeledere ennå. Gjør noen til leder for gruppen Vertskap under Ansvarsområder → Brukere.</p>')+'</div>'
    +'<p class="small" id="ulS" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="lagre" style="flex:1">Lagre</button><button class="btn" value="avbryt" formnovalidate style="flex:1">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
@@ -2829,12 +2830,12 @@ function chatTraadEndret(){
 function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unread||[]).includes(meg)){t.unread=t.unread.filter(x=>x!==meg);FB.markThreadRead(t.id).catch(()=>{});try{drawTabs()}catch(e){}}}
 function chatApne(id){
   if(!FB||!state.user||!state.member)return;
-  const c=state.chat;c.vis=true;chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';
+  const c=state.chat;c.vis=true;chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';try{drawTabs()}catch(e){}
   loadThreads();
   chatListe();if(id)chatVent(id,()=>chatSamtale(id))}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
 function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatListe();return}setTimeout(()=>chatVent(id,fn,n+1),250)}
-function chatLukk(){const c=state.chat;chatStoppMsgs();c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow=''}
+function chatLukk(){const c=state.chat;chatStoppMsgs();c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
 function chatListeInn(){
   const q=norm((state.chat&&state.chat.q)||'').trim(),meg=meEmail(),l=state.threads&&state.threads.filter(t=>!(t.gone||[]).includes(meg)&&(!q||norm(chatNavn(t,meg)+' '+(t.last||'')).includes(q)));
   if(l===undefined)return '<p class="small" style="padding:14px">Henter samtaler …</p>';
@@ -2843,7 +2844,7 @@ function chatListeInn(){
     return '<button type="button" class="crad'+(ny?' ny':'')+'" data-chatopen="'+esc(t.id)+'">'+chatAv(n)+'<span class="ctx"><span class="cn">'+esc(n)+'</span><span class="cp">'+esc((t.lastBy===meg?'Du: ':'')+chatForh(t.last||''))+'</span></span><span class="cm"><span>'+esc(chatTid(t.ms))+'</span>'+((t.dempet||[]).includes(meg)?'<span aria-label="Varsler er dempet">🔕</span>':'')+(ny?'<span class="cdot" aria-label="Ny melding"></span>':'')+'</span></button>'}).join('')}
 function chatListe(){
   const c=state.chat;chatStoppMsgs();c.vy='liste';c.id=null;c.ny=null;
-  chatW().innerHTML='<header class="chd"><h2>Chat</h2><span class="grow"></span>'+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatspill aria-label="Spill">🎮</button><button type="button" class="cbtn" data-chatlukk aria-label="Lukk chat">✕</button></header><div class="csokl"><input id="cSokL" type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc(c.q||'')+'"></div><div class="cliste" id="cListe">'+chatListeInn()+'</div>'}
+  chatW().innerHTML='<header class="chd"><h2>Sionchat</h2><span class="grow"></span>'+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatspill aria-label="Spill">🎮</button><button type="button" class="cbtn" data-chatlukk aria-label="Lukk Sionchat">✕</button></header><div class="csokl"><input id="cSokL" type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc(c.q||'')+'"></div><div class="cliste" id="cListe">'+chatListeInn()+'</div>'}
 const chatSend='<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.5-7.5a1 1 0 0 0 0-1.8L3.4 3.6a1 1 0 0 0-1.4 1.2L4 11l9 1-9 1-2 6.2a1 1 0 0 0 1.4 1.2z"/></svg>';
 const TRASH='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const KAMIKON='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
@@ -3293,7 +3294,7 @@ document.addEventListener('click',e=>{
   const im=e.target.closest&&e.target.closest('img[data-cbilde]');
   if(im&&!document.querySelector('dialog.pub')){const dlg=document.createElement('dialog');dlg.className='lp pub cvis';dlg.innerHTML='<form method="dialog" class="form"><img src="'+im.src+'" alt="Bilde" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--r-s)"><div class="btns"><a class="btn" href="'+im.src+'" download="bilde.jpg">Last ned</a><button class="btn primary" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';document.body.appendChild(dlg);dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();return}
   const b=e.target.closest&&e.target.closest('button');if(!b)return;const d=b.dataset;
-  if('chattab' in d){chatApne()}
+  if('chattab' in d){if(state.chat.vis)chatLukk();else chatApne()}
   else if('t' in d&&state.chat.vis)chatLukk();
   else if('chatlukk' in d)chatLukk();
   else if('chatback' in d){const c=state.chat;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()}
@@ -3379,7 +3380,7 @@ function ansvarCard(tittel){
   if(!state.user||!state.member)return '';
   const l=state.roles,red=state.admin&&editOn();let inn;
   if(l===undefined)inn='<p class="small">Henter ansvarsområder …</p>';
-  else inn='<p class="small" style="margin:0 0 8px">Hvem som har ansvar for hva i menigheten. Trykk «Send beskjed» for å skrive til de ansvarlige her i appen, og de kan svare deg i Chat.</p>'
+  else inn='<p class="small" style="margin:0 0 8px">Hvem som har ansvar for hva i menigheten. Trykk «Send beskjed» for å skrive til de ansvarlige her i appen, og de kan svare deg i Sionchat.</p>'
     +(red?'<div class="btns" style="margin:0 0 8px"><button class="btn primary" data-ansnew style="width:auto">+ Nytt ansvarsområde</button></div>':'')
     +'<div class="reg">'+(l.length?l.map(r=>ansRad(r,red)).join(''):tom('folk','Ingen ansvarsområder ennå',state.admin?'Slå på redigering (blyanten) for å legge inn.':''))+'</div>';
   return '<details class="card acc" data-acc="ansvar" '+(state.acc.ansvar?'open':'')+'><summary><h2>'+esc(tittel||'Ansvarsområder')+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.ansMsg||'')+'</p></details>'}
@@ -3394,7 +3395,7 @@ const nyBeskjedNavn=()=>(state.profile&&state.profile.name)||lsGet('sm-navn')||m
 function ansMsgAsk(roleId){
   const r=(state.roles||[]).find(x=>x.id===roleId);if(!r||document.querySelector('dialog.pub'))return;
   const dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Beskjed til «'+esc(r.name)+'»</h3><p class="small" style="margin:0">Til: '+esc((r.persons||[]).map(p=>p.n).join(', '))+'. Navnet og e-postadressen din følger med, og de kan svare deg i Chat.</p>'
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Beskjed til «'+esc(r.name)+'»</h3><p class="small" style="margin:0">Til: '+esc((r.persons||[]).map(p=>p.n).join(', '))+'. Navnet og e-postadressen din følger med, og de kan svare deg i Sionchat.</p>'
    +'<label class="f">Beskjed<textarea id="bT" rows="5" maxlength="1000" placeholder="Skriv beskjeden her …"></textarea></label><p class="small" id="bS" role="status" style="margin:0"></p><div class="btns"><button class="btn primary" value="send" style="width:auto">Send</button><button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.querySelector('form').addEventListener('submit',async e=>{
@@ -3686,7 +3687,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 12:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 13:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -4107,7 +4108,7 @@ function megKort(){
   if(!deler.length)return '';
   return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, innstillinger, vakter, saker til lederrådet og møteverktøy. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
 const ME_KORT={
-  chat:['Chat',()=>chatKort()],meg:['Meg',()=>megCard()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],utleie:['Utleie',()=>utleieCard()],
+  meg:['Meg',()=>megCard()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],utleie:['Utleie',()=>utleieCard()],
   ansvar:['Ansvarsområder',()=>ansvarKort()],
   personvern:['Personvern',()=>personvernCard()]};
 /* Kortene under Mer og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
