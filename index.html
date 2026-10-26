@@ -936,12 +936,16 @@ nav.tabs button[aria-current="page"] svg{transform:scale(1.08)}
 @media (prefers-reduced-motion:reduce){.tab-ind[data-klar]{transition:opacity 150ms linear}nav.tabs svg{transition:none}}
 nav.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #push{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,-160%);width:calc(100% - 24px);max-width:440px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-left:6px solid var(--lamp);border-radius:8px 18px 18px 8px;padding:16px 18px;box-shadow:0 14px 40px rgba(0,0,0,.35),0 2px 8px rgba(0,0,0,.2);z-index:20;transition:transform .4s cubic-bezier(.2,.9,.3,1.2);display:flex;gap:14px;align-items:center;cursor:pointer}
-#push.show{transform:translate(-50%,0)}
+#push.show{transform:translate(-50%,0) scale(1);opacity:1}
 #push{touch-action:none}
 #push.drag{transition:none}
-#push .logo-mark{width:34px;height:42px;flex:none}
-#push b{display:block;font-size:var(--t-l);line-height:1.25}
-#push span{display:block;font-size:var(--t-b);color:var(--ink);opacity:.85;margin-top:2px}
+/* Meldingsboksen: frostet glass, mykere former og rolig inngang (ingen sprett). */
+#push{border:0;border-radius:22px;padding:12px 18px 12px 12px;gap:12px;background:var(--surface);background:color-mix(in srgb,var(--surface) 84%,transparent);-webkit-backdrop-filter:saturate(1.8) blur(24px);backdrop-filter:saturate(1.8) blur(24px);box-shadow:0 0 0 .5px color-mix(in srgb,var(--ink) 12%,transparent),0 12px 32px rgba(15,40,70,.18),0 2px 6px rgba(15,40,70,.08);transform:translate(-50%,-140%) scale(.96);opacity:0;transition:transform 420ms cubic-bezier(0.22,1,0.36,1),opacity 260ms ease}
+#push .logo-mark{width:40px;height:40px;flex:none;border-radius:11px;background:color-mix(in srgb,var(--brand) 10%,var(--surface));display:grid;place-items:center}
+#push .logo-mark img{width:28px;height:28px;object-fit:contain}
+#push b{display:block;font-size:var(--t-m);font-weight:700;line-height:1.25;letter-spacing:.005em}
+#push span{display:block;font-size:var(--t-s);color:var(--muted);margin-top:1px;line-height:1.3}
+#push span:empty{display:none}
 @media (prefers-reduced-motion:reduce){#push,.tg,.tg::after{transition:none}}
 </style></head><body>
 
@@ -3749,7 +3753,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 13:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 14:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -4249,7 +4253,7 @@ function visTekst(tittel,tekst){
     dlg.querySelector('.bmsg').textContent=tittel;const i=dlg.querySelector('.btekst');i.value=tekst;i.addEventListener('focus',()=>i.select());
     dlg.addEventListener('close',()=>{dlg.remove();res()});document.body.appendChild(dlg);dlg.showModal();i.focus();i.select()})}
 let pt;
-function push(t,b){try{if(!matchMedia('(prefers-reduced-motion:reduce)').matches&&navigator.vibrate)navigator.vibrate(8)}catch(e){}$('#pushT').textContent=t;$('#pushB').textContent=b;$('#push').classList.add('show');clearTimeout(pt);pt=setTimeout(()=>$('#push').classList.remove('show'),5000)}
+function push(t,b){try{if(!matchMedia('(prefers-reduced-motion:reduce)').matches&&navigator.vibrate)navigator.vibrate(8)}catch(e){}$('#pushT').textContent=t;$('#pushB').textContent=b;$('#push').classList.add('show');clearTimeout(pt);pt=setTimeout(()=>$('#push').classList.remove('show'),4000)}
 /* Meldingsboksen kan sveipes bort (opp eller til siden) eller trykkes bort. */
 {const pb=$('#push');let sx=0,sy=0,dx=0,dy=0,on=false,moved=false;
   const hide=()=>{pb.classList.remove('drag','show');pb.style.transform='';pb.style.opacity=''};
