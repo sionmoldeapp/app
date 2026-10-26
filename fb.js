@@ -244,7 +244,7 @@ const FB={
     setUtleieEpost:e=>S.setDoc(S.doc(db,'settings','utleie'),{fakturaEpost:String(e||'').slice(0,100)},{merge:true}),
     utDel:id=>S.deleteDoc(S.doc(db,'bookinger',id)),
     async getUtleie(){const s=await S.getDoc(S.doc(db,'settings','utleie'));return s.exists()?s.data():null},
-    setUtleie:d=>S.setDoc(S.doc(db,'settings','utleie'),{rom:(d.rom||[]).slice(0,20).map(x=>String(x).slice(0,40))},{merge:true}),
+    setUtleie:d=>S.setDoc(S.doc(db,'settings','utleie'),{...(d.rom?{rom:d.rom.slice(0,20).map(x=>String(x).slice(0,40))}:{}),...(d.vertskapLedere?{vertskapLedere:d.vertskapLedere.slice(0,6).map(x=>String(x).toLowerCase().slice(0,100))}:{})},{merge:true}),
     async getJul(){const s=await S.getDoc(S.doc(db,'settings','julemesse'));return s.exists()?s.data():null},
     setJul:d=>S.setDoc(S.doc(db,'settings','julemesse'),{on:!!d.on,tittel:String(d.tittel||'').slice(0,80),tid:String(d.tid||'').slice(0,80),sted:String(d.sted||'').slice(0,80),tekst:String(d.tekst||'').slice(0,1500),loddOn:!!d.loddOn,loddFra:Math.max(0,parseInt(d.loddFra,10)||0),loddTil:Math.max(0,parseInt(d.loddTil,10)||0),loddInfo:String(d.loddInfo||'').slice(0,600),premier:String(d.premier||'').slice(0,1500),trukket:(Array.isArray(d.trukket)?d.trukket:[]).slice(0,50).map(x=>({p:String(x.p).slice(0,100),n:parseInt(x.n,10)||0})),trukketMs:Number(d.trukketMs)||0}),
     async getGiving(){const s=await S.getDoc(S.doc(db,'settings','giving'));return s.exists()?s.data():null},

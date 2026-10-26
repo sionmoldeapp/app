@@ -84,7 +84,9 @@ service cloud.firestore {
         && request.resource.data.parts is list && request.resource.data.parts.size() == 2
         && request.resource.data.parts[0] == request.auth.token.email && request.resource.data.parts[1] != request.auth.token.email
         && exists(/databases/$(database)/documents/members/$(request.resource.data.parts[1]))
-        && (isAdmin() || (isLeader() && get(/databases/$(database)/documents/members/$(request.resource.data.parts[1])).data.get('groups', []).toSet().hasAny(myLeads().toSet())))
+        && (isAdmin() || (isLeader() && get(/databases/$(database)/documents/members/$(request.resource.data.parts[1])).data.get('groups', []).toSet().hasAny(myLeads().toSet()))
+            // Beskjed om en booking: medlemmer i gruppen utleie kan skrive til ledere for gruppen vertskap.
+            || (utleieTilgang() && 'vertskap' in get(/databases/$(database)/documents/members/$(request.resource.data.parts[1])).data.get('leads', [])))
         && request.resource.data.last is string && request.resource.data.last.size() <= 140
         && request.resource.data.ms is number && request.resource.data.unread is list
         && request.resource.data.created == request.time;
@@ -378,7 +380,8 @@ service cloud.firestore {
             && request.resource.data.loddFra is number && request.resource.data.loddTil is number
             && request.resource.data.trukket is list && request.resource.data.trukket.size() <= 50
             && request.resource.data.trukketMs is number)
-        || (id == 'utleie' && request.resource.data.keys().hasOnly(['rom', 'fakturaEpost'])
+        || (id == 'utleie' && request.resource.data.keys().hasOnly(['rom', 'fakturaEpost', 'vertskapLedere'])
+            && (!('vertskapLedere' in request.resource.data) || (request.resource.data.vertskapLedere is list && request.resource.data.vertskapLedere.size() <= 6))
             && (!('rom' in request.resource.data) || (request.resource.data.rom is list && request.resource.data.rom.size() <= 20))
             && (!('fakturaEpost' in request.resource.data) || (request.resource.data.fakturaEpost is string && request.resource.data.fakturaEpost.size() <= 100)))
         || (id == 'personvern' && request.resource.data.keys().hasOnly(['text', 'updated'])
