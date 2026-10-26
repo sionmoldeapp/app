@@ -938,6 +938,37 @@ nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 /* Aktiv-indikator som glir mellom menypunktene (flyttes av tabIndFlytt) */
 /* Utleie: utvidet visning skjuler de andre kortene på Mer (menyen nederst står igjen). */
 #view.ututv>*:not(h1):not(details[data-acc="utleie"]){display:none}
+/* Utvidet visning: kalenderen bruker hele skjermbredden, og rommene er fargekodet. */
+#view.ututv{padding-left:4px;padding-right:4px}
+#view.ututv>h1{padding:0 12px}
+#view.ututv>details[data-acc="utleie"]{padding:12px 8px;border-radius:14px}
+html[data-bred="1"] #view.ututv{columns:1;max-width:none}
+.utnavrad{margin:0 0 8px;align-items:center}.utnavrad b{flex:1;text-align:center;min-width:120px}
+.utlegende{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 10px;font-size:var(--t-s)}
+.utlegende span{display:inline-flex;align-items:center;gap:6px}.utlegende i{width:12px;height:12px;border-radius:4px;display:block}
+.utg{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.utg-in{min-width:calc(46px + var(--n) * 100px)}
+.utg-rad{display:grid;grid-template-columns:46px repeat(var(--n),minmax(100px,1fr))}
+.utg-hode{border-bottom:1px solid var(--line)}
+.utg-kh{padding:8px 4px;text-align:center;font-weight:700;font-size:var(--t-s);border-top:4px solid var(--line);border-left:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.utg-dagk{all:unset;cursor:pointer}
+.utg-t0,.utg-tid{position:sticky;left:0;background:var(--surface);z-index:2}
+.utg-tid{position:sticky}.utg-tid span{position:absolute;right:6px;margin-top:3px;font-size:var(--t-xs);color:var(--muted);font-variant-numeric:tabular-nums}
+.utg-kol{position:relative;border-left:1px solid var(--line);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 55px,var(--line) 55px,var(--line) 56px)}
+.utg-kol.idag{background-color:color-mix(in srgb,var(--brand) 5%,transparent)}
+.utbl2{all:unset;box-sizing:border-box;position:absolute;overflow:hidden;cursor:pointer;border-left:4px solid;border-radius:8px;padding:4px 6px;font-size:var(--t-xs);line-height:1.25;color:var(--ink);display:flex;flex-direction:column}
+.utbl2 span{overflow:hidden;text-overflow:ellipsis}.utbl2 .small{opacity:.8}
+.utnu2{position:absolute;left:0;right:0;height:2px;background:#e11d48;z-index:1}
+.utmrutenett{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.utmuker,.utmdager{display:grid;grid-template-columns:repeat(7,1fr)}
+.utmuker span{text-align:center;padding:6px 0;font-size:var(--t-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.utmc{all:unset;box-sizing:border-box;min-height:92px;padding:4px;border-top:1px solid var(--line);border-left:1px solid var(--line);display:flex;flex-direction:column;gap:2px;cursor:pointer;overflow:hidden;min-width:0}
+.utmc:nth-child(7n+1){border-left:0}
+.utmc.tom{cursor:default}
+.utmc b{font-size:var(--t-s);font-weight:700}
+.utmc.idag b{color:var(--brand-ink);background:var(--brand);border-radius:50%;width:22px;height:22px;display:grid;place-items:center}
+.utmch{display:block;border-left:3px solid;border-radius:4px;padding:1px 4px;font-size:10px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.utmmer{font-size:10px;color:var(--muted)}
 .utbryter{margin:2px 0 12px;padding:10px 12px;border:0;border-radius:var(--r-s);background:var(--chip)}
 .tab-ind{position:absolute;left:0;top:0;z-index:0;pointer-events:none;border-radius:var(--r-s);background:var(--brand);will-change:transform}
 .tab-ind[data-klar]{transition:transform 320ms cubic-bezier(0.22,1,0.36,1),opacity 150ms linear}
@@ -1418,6 +1449,42 @@ function utVisnInnhold(u,perDag,idag){
   return navKnapper(esc(cap(DAYS[dd.getDay()]))+' '+dd.getDate()+'. '+esc(MON[dd.getMonth()])+(dd.getFullYear()!==new Date().getFullYear()?' '+dd.getFullYear():''),1,'dag')+romSel
    +'<div class="uttl" style="height:'+((h1-h0)*HH)+'px">'+timer.join('')+naa+blokker+'</div>'
    +(b.length?'<h3 style="margin:12px 0 6px;font-size:var(--t-l)">Detaljer</h3><div class="list">'+b.map(x=>utItem(x,u.dag)).join('')+'</div>':'<p class="small">Ingen bookinger denne dagen.</p>')+ny}
+/* Utvidet visning av utleiekalenderen (bryteren øverst i Utleie): fyller hele bredden og fargekoder rommene.
+   Dag: ett felt per rom med klokkeslett ned langs siden. Uke: ett felt per dag. Måned: store dager med fargede bookinger. */
+function utUtvInnhold(u,perDag,idag){
+  const v=u.visn||'mnd',HH=56,K=HH/60,alleRom=utRomListe(),visRom=(u.rom&&u.rom!=='Alle')?[u.rom]:alleRom.filter(r=>r!=='Hele bygget'),PROG='__prog';
+  const farger=x=>utFarge((x.rom&&x.rom.length)?x.rom[0]:PROG);
+  const legende='<div class="utlegende" role="list" aria-label="Fargekoder for rom">'+alleRom.map(r=>'<span role="listitem"><i style="background:'+utFarge(r)+'"></i>'+esc(r)+'</span>').join('')+'<span role="listitem"><i style="background:'+utFarge(PROG)+'"></i>Program</span></div>';
+  const nav=(tekst,n,aria)=>'<div class="btns utnavrad"><button type="button" class="btn" data-utnav="-'+n+'" aria-label="Forrige '+aria+'">‹</button><b>'+tekst+'</b><button type="button" class="btn" data-utnav="'+n+'" aria-label="Neste '+aria+'">›</button><button type="button" class="btn" data-utidag>I dag</button></div>';
+  const ny=utTilgang()?'<div class="btns" style="margin-top:12px"><button type="button" class="btn primary" data-utny style="width:auto">+ Ny booking</button>'+utLedereKnapp()+'</div>':'<p class="small" style="margin:10px 0 0">Du ser bookingene som vertskap, og får varsel når det kommer en ny.</p>';
+  const iv=(liste,k)=>{const o=liste.map(x=>{const [f,t]=utDagTid(x,k),s=utMin(f);return {x,f,t,s,e:Math.max(utMin(t)||s+60,s+30)}}).sort((p,q)=>p.s-q.s),lanes=[];
+    o.forEach(a=>{let l=lanes.findIndex(e=>e<=a.s);if(l<0){l=lanes.length;lanes.push(0)}lanes[l]=a.e;a.l=l});return {o,nl:Math.max(1,lanes.length)}};
+  const blokker=(liste,k,h0,fast)=>{const r=iv(liste,k);return r.o.map(a=>{const c=fast||farger(a.x);
+      return '<button type="button" class="utbl2" data-utblokk="'+esc(a.x.id+'|'+k)+'" style="top:'+Math.round((a.s-h0*60)*K)+'px;height:'+Math.max(34,Math.round((a.e-a.s)*K)-2)+'px;left:calc('+a.l+' * 100% / '+r.nl+' + 2px);width:calc(100% / '+r.nl+' - 4px);border-left-color:'+c+';background:'+c+'2e"><b>'+esc(a.f)+'–'+esc(a.t)+'</b><span>'+esc(a.x.tittel||'Booking')+'</span>'+(fast?'':'<span class="small">'+esc((a.x.rom||[]).join(', ')||'Program')+'</span>')+'</button>'}).join('')};
+  const tider=(lister,k0)=>{let a=8*60,b=21*60;lister.forEach(([liste,k])=>liste.forEach(x=>{const [f,t]=utDagTid(x,k),s=utMin(f);if(s<a)a=s;const e=utMin(t)||s+60;if(e>b)b=e}));return [Math.max(0,Math.floor(a/60)),Math.min(24,Math.ceil(b/60)+1)]};
+  const rutenett=(kol,h0,h1,naaK)=>{
+    const n=kol.length,H=(h1-h0)*HH,timer=[];for(let h=h0;h<h1;h++)timer.push('<span style="top:'+((h-h0)*HH)+'px">'+utPad2(h)+':00</span>');
+    const nå=new Date(),nm=nå.getHours()*60+nå.getMinutes(),naa=naaK&&nm>=h0*60&&nm<h1*60?'<div class="utnu2" style="top:'+Math.round((nm-h0*60)*K)+'px" aria-hidden="true"></div>':'';
+    return '<div class="utg" style="--n:'+n+'"><div class="utg-in"><div class="utg-rad utg-hode"><span class="utg-t0"></span>'+kol.map(c=>'<div class="utg-kh" style="border-top-color:'+c.farge+'">'+c.hode+'</div>').join('')+'</div>'
+      +'<div class="utg-rad utg-kropp" style="height:'+H+'px"><div class="utg-tid">'+timer.join('')+'</div>'+kol.map(c=>'<div class="utg-kol'+(c.idag?' idag':'')+'">'+(c.idag?naa:'')+c.html+'</div>').join('')+'</div></div></div>'};
+  if(v==='uke'){
+    const dager=utUkeDager(u.dag),a=new Date(dager[0]+'T12:00'),z=new Date(dager[6]+'T12:00'),[h0,h1]=tider(dager.map(k=>[perDag[k]||[],k]));
+    const kol=dager.map(k=>{const w=new Date(k+'T12:00');return {hode:'<button type="button" data-utdagvisn="'+k+'" class="utg-dagk" aria-label="Vis '+cap(DAYS[w.getDay()])+' '+w.getDate()+'. '+MON[w.getMonth()]+' som dag">'+esc(cap(DAYS[w.getDay()]).slice(0,3))+' '+w.getDate()+'.</button>',farge:k===idag?'var(--brand)':'var(--line)',idag:k===idag,html:blokker(perDag[k]||[],k,h0)}});
+    return nav('Uke '+isoUke(a)+' · '+a.getDate()+'. '+esc(MON[a.getMonth()])+' – '+z.getDate()+'. '+esc(MON[z.getMonth()]),7,'uke')+legende+rutenett(kol,h0,h1,true)+ny}
+  if(v==='dag'){
+    const dd=new Date(u.dag+'T12:00'),b=perDag[u.dag]||[],medRom=r=>b.filter(x=>(x.rom||[]).includes(r)||(x.rom||[]).includes('Hele bygget')),utenRom=b.filter(x=>!(x.rom||[]).length);
+    const [h0,h1]=tider([[b,u.dag]]);
+    const kol=visRom.map(r=>({hode:esc(r),farge:utFarge(r),idag:u.dag===idag,html:blokker(medRom(r),u.dag,h0,utFarge(r))}));
+    if(utenRom.length)kol.push({hode:'Program',farge:utFarge(PROG),idag:u.dag===idag,html:blokker(utenRom,u.dag,h0,utFarge(PROG))});
+    return nav(esc(cap(DAYS[dd.getDay()]))+' '+dd.getDate()+'. '+esc(MON[dd.getMonth()])+(dd.getFullYear()!==new Date().getFullYear()?' '+dd.getFullYear():''),1,'dag')+legende+rutenett(kol,h0,h1,true)+(b.length?'':'<p class="small">Ingen bookinger denne dagen.</p>')+ny}
+  /* måned */
+  const [år,mm]=u.mnd.split('-').map(Number),første=new Date(år,mm-1,1),dager=new Date(år,mm,0).getDate(),forskyv=(første.getDay()+6)%7,celler=[];
+  for(let i=0;i<forskyv;i++)celler.push('<span class="utmc tom"></span>');
+  for(let d=1;d<=dager;d++){const k=u.mnd+'-'+utPad2(d),b=(perDag[k]||[]).slice().sort((x,y)=>utMin(utDagTid(x,k)[0])-utMin(utDagTid(y,k)[0]));
+    celler.push('<button type="button" class="utmc'+(k===idag?' idag':'')+'" data-utdagvisn="'+k+'" aria-label="'+d+'. '+UT_MND[mm-1]+(b.length?', '+b.length+' booking'+(b.length>1?'er':''):'')+'"><b>'+d+'</b>'
+      +b.slice(0,3).map(x=>{const c=farger(x);return '<span class="utmch" style="border-left-color:'+c+';background:'+c+'2e">'+esc(utDagTid(x,k)[0])+' '+esc(x.tittel||'Booking')+'</span>'}).join('')+(b.length>3?'<span class="utmmer">+'+(b.length-3)+' til</span>':'')+'</button>')}
+  return '<div class="btns utnavrad"><button type="button" class="btn" data-utmnd="-1" aria-label="Forrige måned">‹</button><b>'+cap(UT_MND[mm-1])+' '+år+'</b><button type="button" class="btn" data-utmnd="1" aria-label="Neste måned">›</button><button type="button" class="btn" data-utidag>I dag</button></div>'+legende
+    +'<div class="utmrutenett"><div class="utmuker">'+['man','tir','ons','tor','fre','lør','søn'].map(x=>'<span>'+x+'</span>').join('')+'</div><div class="utmdager">'+celler.join('')+'</div></div>'+ny}
 function utleieCard(){
   if(!utLes())return '';
   const u=state.ut,nå=new Date(),idag=dkey(nå);
@@ -1440,7 +1507,8 @@ function utleieCard(){
     const kommende=alle.filter(b=>(b.dato2||b.dato)>=idag).sort((a,b)=>(a.dato+a.fra).localeCompare(b.dato+b.fra))
     .slice(0,10);
     const fakChips=utTilgang()?'<p class="small" style="margin:0 0 4px"><b>Faktura</b></p><div class="btns" style="margin:0 0 8px" role="group" aria-label="Faktura">'+[['alle','Alle'],['ikke','Ikke fakturerte'],['ja','Fakturerte']].map(([v,n])=>'<button type="button" class="btn '+((u.fil||'alle')===v?'on':'')+'" data-utfil="'+v+'" aria-pressed="'+((u.fil||'alle')===v)+'">'+n+'</button>').join('')+'</div>':'';
-    if(utTilgang()&&(u.fil||'alle')!=='alle'){
+    if(u.utv&&!(utTilgang()&&(u.fil||'alle')!=='alle'))inn=visChips+utVisnKnapper(u)+utUtvInnhold(u,perDag,idag)+utFakEpostLinje();
+    else if(utTilgang()&&(u.fil||'alle')!=='alle'){
       if(u.alle===undefined){utLastAlle();inn=visChips+fakChips+'<p class="small">Henter alle bookinger …</p>'}
       else{const ikke=u.fil==='ikke',lis=u.alle.filter(filter).filter(b=>utFakRel(b)&&(ikke?!b.fakturert:!!b.fakturert)).sort((a,b)=>ikke?(a.dato+a.fra).localeCompare(b.dato+b.fra):(b.dato+b.fra).localeCompare(a.dato+a.fra));
         inn=visChips+fakChips+'<label class="f" style="margin:0 0 8px">Vis rom<select id="utRomSel">'+['Alle',...utRomListe()].map(r=>'<option '+(u.rom===r?'selected':'')+'>'+esc(r)+'</option>').join('')+'</select></label>'
@@ -3767,7 +3835,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 12:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 14:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -4482,7 +4550,7 @@ document.addEventListener('click',async e=>{
   else if('givingedit' in c.dataset){givingAsk()}
   else if('juledit' in c.dataset){julAsk()}
   else if(c.dataset.utdag){keep(()=>{state.ut.dag=c.dataset.utdag});}
-  else if('ututv' in c.dataset){const pa=!state.ut.utv;keep(()=>{state.ut.utv=pa;if(pa)state.acc.utleie=true});const k=document.querySelector('#view details[data-acc="utleie"]');if(k)requestAnimationFrame(()=>kortTilToppen(k))}
+  else if('ututv' in c.dataset){const pa=!state.ut.utv;keep(()=>{state.ut.utv=pa;if(pa){state.acc.utleie=true;if(!state.ut.visn||state.ut.visn==='mnd')state.ut.visn='dag'}});const k=document.querySelector('#view details[data-acc="utleie"]');if(k)requestAnimationFrame(()=>kortTilToppen(k))}
   else if(c.dataset.utmnd){const [y,m]=state.ut.mnd.split('-').map(Number),d=new Date(y,m-1+parseInt(c.dataset.utmnd,10),1);keep(()=>{state.ut.mnd=dkey(d).slice(0,7)})}
   else if(c.dataset.utvisn){keep(()=>{const u=state.ut;u.visn=c.dataset.utvisn;if(u.visn==='mnd')u.mnd=u.dag.slice(0,7)})}
   else if(c.dataset.utnav){const n=parseInt(c.dataset.utnav,10),d=new Date(state.ut.dag+'T12:00');d.setDate(d.getDate()+n);keep(()=>{state.ut.dag=dkey(d);state.ut.mnd=state.ut.dag.slice(0,7)})}
