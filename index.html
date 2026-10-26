@@ -658,6 +658,13 @@ h3{font-size:var(--t-xl);line-height:1.1}
 #cT,.cinp textarea,#cBonnT{resize:none!important;overflow:hidden;scrollbar-width:none}
 #cT::-webkit-scrollbar,.cinp textarea::-webkit-scrollbar,#cBonnT::-webkit-scrollbar{display:none;width:0;height:0}
 #cT::-webkit-resizer,.cinp textarea::-webkit-resizer,#cBonnT::-webkit-resizer{display:none}
+.cinp{align-items:center;gap:4px}
+.cverk{display:flex;align-items:center;gap:0;flex:none}
+.cverk[hidden],.cchev[hidden]{display:none}
+.cfelt{flex:1;min-width:0;display:flex;align-items:flex-end;background:#f0f2f5;border-radius:22px;transition:flex .15s}
+.cfelt textarea{background:transparent!important;border:0!important;flex:1;min-width:0;border-radius:0;padding:10px 4px 10px 14px;margin:0;min-height:42px}
+.cemi{all:unset;flex:none;width:40px;height:42px;display:grid;place-items:center;font-size:21px;cursor:pointer}
+@media (prefers-color-scheme:dark){.chat .cfelt{background:#242526}.chat .cfelt textarea{color:#e4e6eb}}
 .csend{background:transparent;color:#0084ff;width:40px;height:40px}
 .chat .cb.me{background:var(--cfarge,#0084ff)}
 .chat .cik,.chat .csend{color:var(--cfarge,#0084ff)}
@@ -2888,12 +2895,14 @@ const chatTekstHtml=t=>linkify(esc(t)).replace(SION_TOKEN,(m,v)=>sionHtml(v));
 const chatBareEmoji=t=>{t=String(t||'').trim();const u=t.replace(SION_TOKEN,'🕊');return !!u&&/^[\p{Extended_Pictographic}️‍\s]+$/u.test(u)&&[...u.matchAll(/\p{Extended_Pictographic}/gu)].length<=3};
 
 function chatRamme(tittel,under,av,innhold,hint){
-  const c=state.chat;c.svar=null;c.red=null;
+  const c=state.chat;c.svar=null;c.red=null;c.verk=false;
   chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake">‹</button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(c.id?'<button type="button" class="cbtn" data-chatmeny aria-label="Samtaleinnstillinger">⋮</button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
    +'<div class="cbar" id="cBar" hidden></div>'+chatPanelHtml()
-   +'<div class="crec" id="cRec" hidden></div><form class="cinp" id="cForm"><button type="button" class="cik" data-cfoto aria-label="Send bilde" '+(c.id?'':'disabled')+'>'+KAMIKON+'</button><input type="file" id="cFil" accept="image/*" hidden><button type="button" class="cik" data-cemoknapp aria-label="Emoji">😊</button><button type="button" class="cik cmic" data-cmic aria-label="Send stemmemelding" '+(c.id?'':'disabled')+'>'+MIKIKON+'</button><textarea id="cT" rows="1" maxlength="1000" placeholder="'+esc(hint||'Skriv en melding …')+'" aria-label="Melding"></textarea><button type="submit" class="csend" aria-label="Send" hidden>'+chatSend+'</button><button type="button" class="csend ctommel" data-ctommel aria-label="Send tommel opp">👍</button></form>'}
+   +'<div class="crec" id="cRec" hidden></div><form class="cinp" id="cForm"><button type="button" class="cik cchev" data-cchev aria-label="Vis flere valg: bilde, lyd og mer" hidden>'+CHEVIKON+'</button><div class="cverk" id="cVerk"><button type="button" class="cik" data-cemoknapp aria-label="Flere valg: klistremerker, spill og avstemning">'+PLUSIKON+'</button><button type="button" class="cik" data-cfoto aria-label="Ta bilde" '+(c.id?'':'disabled')+'>'+KAMIKON+'</button><button type="button" class="cik" data-cgalleri aria-label="Velg bilde fra galleriet" '+(c.id?'':'disabled')+'>'+GALLERIKON+'</button><button type="button" class="cik cmic" data-cmic aria-label="Send stemmemelding" '+(c.id?'':'disabled')+'>'+MIKIKON+'</button></div><input type="file" id="cFil" accept="image/*" hidden><input type="file" id="cKam" accept="image/*" capture="environment" hidden><div class="cfelt"><textarea id="cT" rows="1" maxlength="1000" placeholder="'+esc(hint||'Skriv en melding …')+'" aria-label="Melding"></textarea><button type="button" class="cemi" data-cemoknapp aria-label="Emoji og klistremerker">😊</button></div><button type="submit" class="csend" aria-label="Send" hidden>'+chatSend+'</button><button type="button" class="csend ctommel" data-ctommel aria-label="Send tommel opp">👍</button></form></form>'}
 /* Bytter mellom send-knapp (når det står tekst) og 👍 (når feltet er tomt), som i Messenger. */
-function chatInpOppd(){const ta=document.getElementById('cT'),s=document.querySelector('#cForm .csend:not(.ctommel)'),t=document.querySelector('#cForm .ctommel');if(!ta||!s||!t)return;const tom=!ta.value.trim()&&!state.chat.red;s.hidden=tom;t.hidden=!tom;const mic=document.querySelector('#cForm .cmic');if(mic)mic.hidden=!tom}
+function chatInpOppd(){const ta=document.getElementById('cT'),s=document.querySelector('#cForm .csend:not(.ctommel)'),t=document.querySelector('#cForm .ctommel');if(!ta||!s||!t)return;const tom=!ta.value.trim()&&!state.chat.red;s.hidden=tom;t.hidden=!tom;
+  /* Som i Messenger: tomt felt viser alle verktøyene (+, kamera, galleri, mikrofon) og 👍; når du skriver, trekkes de inn til en pil og feltet får mer plass. Pilen åpner dem igjen. */
+  if(tom)state.chat.verk=false;const vis=tom||!!state.chat.verk,vk=document.getElementById('cVerk'),ch=document.querySelector('#cForm .cchev');if(vk)vk.hidden=!vis;if(ch)ch.hidden=vis}
 function chatBar(){
   const b=document.getElementById('cBar');if(!b)return;const c=state.chat;
   if(c.red){b.hidden=false;b.innerHTML='<span class="cbt"><b>Redigerer melding</b><span>'+esc(String(c.red.tekst||'').slice(0,80))+'</span></span><button type="button" class="cbtn" data-cbarx aria-label="Avbryt redigering">✕</button>'}
@@ -2934,6 +2943,9 @@ function chatMsgs(sist){
   if(nær||sist)box.scrollTop=box.scrollHeight}
 /* ---------- Chat: egne reaksjoner, farge per samtale, avstemninger, bønneliste, stemmemeldinger, dagens vers/utfordring og spill ---------- */
 const chatReakHtml=e=>e===':sion:'?sionHtml():e==='Amen'?'<b class="camen">Amen</b>':e;
+const PLUSIKON='<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z"/></svg>';
+const GALLERIKON='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>';
+const CHEVIKON='<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
 const MIKIKON='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
 /* Farge per samtale (feltet farge på samtalen; begge ser den). */
 const CHAT_FARGER=[['blaa','Blå','#0084ff'],['rosa','Rosa','#ff5a8a'],['gronn','Grønn','#1f9d55'],['lilla','Lilla','#7d55c7'],['oransje','Oransje','#f57c00'],['rod','Rød','#e5484d'],['turkis','Turkis','#00a3b4'],['gull','Gull','#c9971c']];
@@ -3281,7 +3293,9 @@ document.addEventListener('click',e=>{
   else if('chatslett' in d)chatSlettMeny();
   else if(d.chatgr)chatGruppeSkriv(d.chatgr);
   else if(d.chatpers){const [em,g]=d.chatpers.split('|'),u=chatFolkAlle().find(x=>x.id===em);chatTil(em,g,u&&u.name)}
-  else if('cfoto' in d){const f=document.getElementById('cFil');if(f){f.value='';f.click()}}
+  else if('cfoto' in d){const f=document.getElementById('cKam');if(f){f.value='';f.click()}}
+  else if('cgalleri' in d){const f=document.getElementById('cFil');if(f){f.value='';f.click()}}
+  else if('cchev' in d){state.chat.verk=true;chatInpOppd()}
   else if('cemoknapp' in d){const p=document.getElementById('cEmoji');if(p)p.hidden=!p.hidden}
   else if(d.cemo){const ta=document.getElementById('cT');if(ta){const a=ta.selectionStart==null?ta.value.length:ta.selectionStart,z=ta.selectionEnd==null?a:ta.selectionEnd;ta.value=ta.value.slice(0,a)+d.cemo+ta.value.slice(z);ta.selectionStart=ta.selectionEnd=a+d.cemo.length;ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus()}}
   else if('chatmeny' in d)chatMeny();
@@ -3305,14 +3319,14 @@ document.addEventListener('click',e=>{
   else if(d.cmal){const ta=document.getElementById('cT');if(ta){ta.value=d.cmal;ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus()}}
   else if('ctommel' in d){chatSendSkjema(true)}
   else if('cbarx' in d){const c=state.chat;if(c.red){const ta=document.getElementById('cT');if(ta){ta.value='';ta.style.height=''}}c.red=null;c.svar=null;chatBar()}});
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='cFil'&&e.target.files&&e.target.files[0])chatSendBilde(e.target.files[0])});
+document.addEventListener('change',e=>{if(e.target&&(e.target.id==='cFil'||e.target.id==='cKam')&&e.target.files&&e.target.files[0])chatSendBilde(e.target.files[0])});
 async function chatSendSkjema(tommel){
   const c=state.chat,ta=document.getElementById('cT');if(!ta)return;let tekst=(ta.value||'').trim();if(!tekst&&tommel)tekst='👍';if(!tekst||c.sender)return;
   c.sender=true;const btn=document.querySelector('#cForm .csend:not(.ctommel)');if(btn)btn.disabled=true;
   try{
     if(c.red){const m=c.msgs.find(x=>x.id===c.red.id),sist=c.msgs[c.msgs.length-1]===m;await FB.redigerMsg(c.id,c.red.id,tekst,sist);if(m){m.text=tekst;m.redigert=true}c.red=null;chatBar();chatMsgs(false)}
     else{await chatSendTekst(tekst,c.svar?{svar:c.svar}:null);c.svar=null;chatBar()}
-    ta.value='';ta.style.height='';chatInpOppd()}
+    ta.value='';ta.style.height='';state.chat.verk=false;chatInpOppd()}
   catch(er){push('Kunne ikke sende','Prøv igjen ('+((er&&er.code)||'feil')+').')}
   c.sender=false;const b2=document.querySelector('#cForm .csend:not(.ctommel)');if(b2)b2.disabled=false;const t2=document.getElementById('cT');if(t2)t2.focus()}
 document.addEventListener('submit',async e=>{if(e.target&&e.target.id==='cBonnF'){e.preventDefault();const ta=document.getElementById('cBonnT'),t=(ta.value||'').trim();if(!t)return;try{await FB.addBonn(state.chat.id,t,nyBeskjedNavn());ta.value='';chatBonnMelding('🙏 Nytt bønneemne: '+t)}catch(er){push('Kunne ikke legge til','Prøv igjen ('+((er&&er.code)||'feil')+').')}return}
@@ -3642,7 +3656,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 18:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 19:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
