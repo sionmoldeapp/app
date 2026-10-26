@@ -781,6 +781,12 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .item.open>button .tag{margin-top:2px}
 .item>button .date{width:80px;font-size:var(--t-m);min-height:46px;display:flex;flex-direction:column;justify-content:center}
 .item>button:focus-visible{outline:3px solid var(--lamp);outline-offset:-3px}
+/* Åpnet hendelse får en svak fargetone; «Neste hovedsamling» er alltid litt tydeligere, med strek og merke. */
+.item{transition:background-color .32s cubic-bezier(0.22,1,0.36,1),box-shadow .32s cubic-bezier(0.22,1,0.36,1)}
+.item.open{background-color:color-mix(in srgb,var(--brand) 7%,var(--surface));background-image:linear-gradient(180deg,color-mix(in srgb,var(--brand) 5%,transparent),transparent 60%)}
+.item.neste{background-color:color-mix(in srgb,var(--brand) 12%,var(--surface));background-image:linear-gradient(135deg,color-mix(in srgb,var(--brand) 10%,transparent),transparent 70%);box-shadow:inset 4px 0 0 var(--brand)}
+.item.neste.open{background-color:color-mix(in srgb,var(--brand) 16%,var(--surface))}
+.nstm{display:block;font-size:var(--t-xs);font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--lamp);margin-bottom:2px}
 [data-lp]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 dialog.lp{border:0;border-radius:var(--r-l);padding:20px;max-width:380px;width:calc(100% - 32px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.4)}
 dialog.note{width:min(96vw,680px);max-height:94vh;overflow:auto}
@@ -1116,13 +1122,13 @@ const fastId=(r,w)=>'f_'+r.id+'_'+dkey(w);
 /* Enkeltdato på en fast samling kan ha egen tittel, tid, sted, taler, merknad og beskrivelse (ex[dato] med k:'endret'). */
 const fastInfo=(r,ex)=>{const e=ex&&ex.k==='endret'?ex:{};return {title:e.title||r.title,place:e.place||'',who:e.who||'',note:e.note||r.note||'',text:e.text||''}};
 function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',inf=fastInfo(r,ex),note=inf.note;
-  return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(inf.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${inf.place?' · '+esc(inf.place):''}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'&&TIDOK(ex.time)&&ex.time!==r.time?'<span class="tag avl" style="background:var(--lamp);color:var(--lamp-ink)">Endret</span>':'<span class="tag">Fast</span>'}</button>
+  return `<div class="item ${open?'open':''} ${avl?'avl':''} ${nesteHovedId()===String(id)?'neste':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow">${nesteMerke(id)}<b>${esc(inf.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${inf.place?' · '+esc(inf.place):''}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'&&TIDOK(ex.time)&&ex.time!==r.time?'<span class="tag avl" style="background:var(--lamp);color:var(--lamp-ink)">Endret</span>':'<span class="tag">Fast</span>'}</button>
    <div class="detail">${omDager(w)}${inf.text?'<div>'+linkify(esc(inf.text))+'</div>':''}${inf.who?'<div class="small">'+esc(inf.who)+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}${ukeTekst(r)}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
 function evItem(e){
   if(e.m&&!state.member)return `<div class="item"><div class="locked" style="padding:12px">${dateBox(e)}<div class="grow"><b>${e.t}</b><span class="small">Kun for medlemmer. Logg inn under «Mer».</span></div></div></div>`;
   const open=state.open[e.id],r=state.rsvp[e.id];
-  return `<div class="item ${open?'open':''}"${state.admin&&editOn()?` data-lp="events:${e.id}"`:''}><button data-ev="${e.id}" aria-expanded="${!!open}">${dateBox(e)}
-   <div class="grow"><b>${e.t}</b><span class="small">${when(e.w)} ${tm(e)}${statusTag(e)}${e.place?' · '+esc(e.place):''}${e.groups&&e.groups.length?' · '+esc(e.groups.map(gName).join(', ')):''}</span></div>
+  return `<div class="item ${open?'open':''} ${nesteHovedId()===String(e.id)?'neste':''}"${state.admin&&editOn()?` data-lp="events:${e.id}"`:''}><button data-ev="${e.id}" aria-expanded="${!!open}">${dateBox(e)}
+   <div class="grow">${nesteMerke(e.id)}<b>${e.t}</b><span class="small">${when(e.w)} ${tm(e)}${statusTag(e)}${e.place?' · '+esc(e.place):''}${e.groups&&e.groups.length?' · '+esc(e.groups.map(gName).join(', ')):''}</span></div>
    ${e.m?'<span class="tag m">Medlem</span>':`<span class="tag">${esc(normCat(e.cat))}</span>`}</button>
    <div class="detail">${omDager(e.w)}<div>${e.d}</div><div class="small">${esc(e.who)}</div>
    <div class="btns"><button class="btn ${r?'on':''}" data-rsvp="${e.id}">${r?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(e.id)}
@@ -1809,12 +1815,17 @@ function hjemNyhet(){
   const kand=posts.filter(p=>(!p.m||state.member)&&!p.hideHome&&!postSkjult(p)&&ulest(p)),v=sisteVarsel();
   if(v&&v.ms>lestFra&&!lest['varsel'+v.ms]&&!posts.some(p=>p.t===v.t&&Math.abs((p.ms||0)-v.ms)<2*36e5))kand.push({id:'varsel'+v.ms,t:v.t,b:v.b,ms:v.ms,m:false,pseudo:true});
   return kand.sort((x,y)=>(y.ms||0)-(x.ms||0))[0]||null}
-function homeDeler(){
-  const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome),fast=nextFast();
-  /* «Neste hovedsamling» er neste søndagsmøte eller neste arrangement i kategoriene Møter, Stevne eller Happeninger, den som kommer først. */
+/* «Neste hovedsamling» er neste søndagsmøte eller neste arrangement i kategoriene Møter, Stevne eller Happeninger, den som kommer først. */
+function nesteHoved(vis,fast){
   let n=vis.find(e=>['Møter','Møte','Stevne','Happeninger'].includes(normCat(e.cat)));
   {const fn=fast.filter(f=>/søndagsmøte/i.test(f.fast.title)&&!(f.ex&&f.ex.k==='avlyst')).sort((x,y)=>x.w-y.w)[0];
     if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:inf.place}}}
+  return n}
+const nesteHovedId=()=>{try{const n=nesteHoved(events.filter(e=>(!e.m||state.member)&&!e.hideHome),nextFast());return n?String(n.id):''}catch(x){return ''}};
+const nesteMerke=id=>String(id)===nesteHovedId()?'<span class="nstm">Neste hovedsamling</span>':'';
+function homeDeler(){
+  const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome),fast=nextFast();
+  const n=nesteHoved(vis,fast);
   const wk=[...vis.slice(0,5).map(e=>({ev:e,w:e.w,id:e.id})),...fast.map(f=>({fast:f.fast,w:f.w,ex:f.ex,id:fastId(f.fast,f.w)}))].filter(x=>!(n&&x.id===n.id)).sort((a,b)=>a.w-b.w).slice(0,4);
   const post=hjemNyhet();
   return {
@@ -3734,7 +3745,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 22:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 23:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
