@@ -936,6 +936,9 @@ nav.tabs button{transition:transform .14s ease,color 320ms cubic-bezier(0.22,1,0
 nav.tabs button[aria-current="page"]{background:transparent;color:var(--brand-ink);font-weight:700}   /* valgt fane: fylt, tydelig kontrast */
 nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 /* Aktiv-indikator som glir mellom menypunktene (flyttes av tabIndFlytt) */
+/* Utleie: utvidet visning skjuler de andre kortene på Mer (menyen nederst står igjen). */
+#view.ututv>*:not(h1):not(details[data-acc="utleie"]){display:none}
+.utbryter{margin:2px 0 12px;padding:10px 12px;border:0;border-radius:var(--r-s);background:var(--chip)}
 .tab-ind{position:absolute;left:0;top:0;z-index:0;pointer-events:none;border-radius:var(--r-s);background:var(--brand);will-change:transform}
 .tab-ind[data-klar]{transition:transform 320ms cubic-bezier(0.22,1,0.36,1),opacity 150ms linear}
 .tab-ind[data-f="bar"]{border-radius:0 0 3px 3px}
@@ -1454,7 +1457,7 @@ function utleieCard(){
      +'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">'+cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+'</h3><div class="list">'+(valgteB.length?valgteB.map(b=>utItem(b,u.dag)).join(''):'<p class="small">Ingen bookinger denne dagen.</p>')+'</div>'
      +(utTilgang()?'<div class="btns" style="margin-top:10px"><button type="button" class="btn primary" data-utny style="width:auto">+ Ny booking</button>'+utLedereKnapp()+'</div>':'<p class="small" style="margin:10px 0 0">Du ser bookingene som vertskap, og får varsel når det kommer en ny.</p>')
      +utFakEpostLinje()+(kommende.length?'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Kommende</h3><div class="list">'+(()=>{let sist='',ut='';kommende.forEach(b=>{const dag=b.dato<idag?idag:b.dato,w=new Date(dag+'T12:00'),k=when(w)+' '+w.getDate()+'. '+MON[w.getMonth()];if(k!==sist){ut+='<div class="day">'+k+'</div>';sist=k}ut+=utItem(b,dag)});return ut})()+'</div>':'')}
-  return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie?'open':'')+'><summary><h2>Utleie</h2></summary>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
+  return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie?'open':'')+'><summary><h2>Utleie</h2></summary><div class="switch utbryter"><div><b>Utvidet visning</b><div class="small">Skjuler de andre kortene</div></div><button type="button" class="tg" role="switch" aria-checked="'+(!!u.utv)+'" aria-label="Utvidet visning av kalenderen" data-ututv></button></div>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
 function utAsk(id,dato){
   if(!utTilgang()||document.querySelector('dialog.pub'))return;
   const ex=id?(state.ut.liste||[]).find(x=>x.id===id):null,b={tittel:'',rom:[],fakturert:false,fakturaVentH:24,fakturaUtsattTil:0,gjester:0,servering:'',allergener:[],allergenNotat:'',remindH:24,dato:dato||state.ut.dag,dato2:'',fra:'10:00',til:'12:00',leier:'',kontakt:'',pris:'',status:'bekreftet',notat:'',...(ex||{})};
@@ -3764,7 +3767,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 11:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 12:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
@@ -4224,7 +4227,8 @@ function badge(){
 }
 const viewBanner=()=>'';
 function chipScroll(){const a=document.querySelector('.chips.scroll [aria-pressed="true"]'),r=document.querySelector('.chips.scroll');if(a&&r)r.scrollTo({left:a.offsetLeft-(r.clientWidth-a.offsetWidth)/2,behavior:'auto'})}
-function render(){visTab=state.tab;drawTabs();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();badge();window.scrollTo(0,0);chipScroll()}
+const utvKlasse=()=>$('#view').classList.toggle('ututv',state.tab==='me'&&!!(state.ut&&state.ut.utv)&&!!document.querySelector('#view details[data-acc="utleie"]'));
+function render(){visTab=state.tab;drawTabs();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();utvKlasse();badge();window.scrollTo(0,0);chipScroll()}
 /* «Sletter …»: en sirkel som snurrer til databasen har bekreftet slettingen. Vises i åpen dialog hvis det finnes en, ellers over hele siden. */
 let busyN=0,busyT=null,busyIv=null,busyRm=null,busyTekst='Sletter …',busyVist=0;
 function busyVis(){
@@ -4275,7 +4279,7 @@ function push(t,b){try{if(!matchMedia('(prefers-reduced-motion:reduce)').matches
     else{pb.classList.remove('drag');pb.style.transform='';pb.style.opacity='';if(!moved)hide();else pt=setTimeout(hide,2500)}};
   pb.addEventListener('pointerup',end);pb.addEventListener('pointercancel',end)}
 function keep(fn){const y=scrollY;fn();if(first)return;   // ikke tegn siden på nytt før innholdet er lastet første gang (ellers vises «Ingen planlagt» et øyeblikk)
-  $('#view').innerHTML=viewBanner()+VIEWS[state.tab]();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
+  $('#view').innerHTML=viewBanner()+VIEWS[state.tab]();utvKlasse();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
 /* Dra ned fra toppen for å hente siste innhold (ikke oftere enn hvert 10. sekund, for å spare lesinger i databasen) */
 (function(){let el,y0=null,d=0,sist=0;
   function mk(){if(el)return;el=document.createElement('div');el.id='ptr';el.setAttribute('aria-hidden','true');el.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v10M7 11l5 5 5-5"/></svg>';document.body.appendChild(el)}
@@ -4478,6 +4482,7 @@ document.addEventListener('click',async e=>{
   else if('givingedit' in c.dataset){givingAsk()}
   else if('juledit' in c.dataset){julAsk()}
   else if(c.dataset.utdag){keep(()=>{state.ut.dag=c.dataset.utdag});}
+  else if('ututv' in c.dataset){const pa=!state.ut.utv;keep(()=>{state.ut.utv=pa;if(pa)state.acc.utleie=true});const k=document.querySelector('#view details[data-acc="utleie"]');if(k)requestAnimationFrame(()=>kortTilToppen(k))}
   else if(c.dataset.utmnd){const [y,m]=state.ut.mnd.split('-').map(Number),d=new Date(y,m-1+parseInt(c.dataset.utmnd,10),1);keep(()=>{state.ut.mnd=dkey(d).slice(0,7)})}
   else if(c.dataset.utvisn){keep(()=>{const u=state.ut;u.visn=c.dataset.utvisn;if(u.visn==='mnd')u.mnd=u.dag.slice(0,7)})}
   else if(c.dataset.utnav){const n=parseInt(c.dataset.utnav,10),d=new Date(state.ut.dag+'T12:00');d.setDate(d.getDate()+n);keep(()=>{state.ut.dag=dkey(d);state.ut.mnd=state.ut.dag.slice(0,7)})}
@@ -5131,7 +5136,7 @@ function kortTilToppen(el){
   const y0=scrollY;if(matchMedia('(prefers-reduced-motion:reduce)').matches){scrollTo(0,y0+delta);return}
   const t0=performance.now(),ease=t=>1-Math.pow(1-t,4);
   const steg=t=>{const p=Math.min(1,(t-t0)/OVG_MS);scrollTo(0,y0+delta*ease(p));if(p<1)requestAnimationFrame(steg)};requestAnimationFrame(steg)}
-document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(e.target.open&&e.target.matches('details.card.acc')&&performance.now()-accKlikk<800)requestAnimationFrame(()=>kortTilToppen(e.target));if(ADM_LAT.includes(k)&&e.target.open&&!e.target.querySelector('p,div'))keep(()=>{});if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='vnotat'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='utleie'&&e.target.open){utMarkerSett();if(state.ut.liste===undefined&&FB&&utLes())utLast()}if(k==='lr'&&e.target.open&&FB&&lrTilgang()){if(state.lr===undefined)loadLr();else lrMarkerSett()}if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB&&prayLes())loadPrayers();if(k==='ansvar'&&e.target.open&&state.roles===undefined&&FB)loadRoles();if(k==='attester'&&e.target.open&&state.attester===undefined&&FB)loadAttester();if(k==='meld'&&e.target.open&&state.threads===undefined&&FB)loadThreads();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
+document.addEventListener('toggle',e=>{const k=e.target&&e.target.dataset&&e.target.dataset.acc;if(k){state.acc[k]=e.target.open;if(k==='utleie'&&!e.target.open&&state.ut&&state.ut.utv){state.ut.utv=false;keep(()=>{})}if(e.target.open&&e.target.matches('details.card.acc')&&performance.now()-accKlikk<800)requestAnimationFrame(()=>kortTilToppen(e.target));if(ADM_LAT.includes(k)&&e.target.open&&!e.target.querySelector('p,div'))keep(()=>{});if(k==='tilbake'&&e.target.open&&state.snaps===null&&FB&&state.admin)loadSnaps();if(k==='vnotat'&&e.target.open&&state.notes===undefined&&FB)loadNotes();if(k==='utleie'&&e.target.open){utMarkerSett();if(state.ut.liste===undefined&&FB&&utLes())utLast()}if(k==='lr'&&e.target.open&&FB&&lrTilgang()){if(state.lr===undefined)loadLr();else lrMarkerSett()}if(k==='bonn'&&e.target.open&&state.prayers===undefined&&FB&&prayLes())loadPrayers();if(k==='ansvar'&&e.target.open&&state.roles===undefined&&FB)loadRoles();if(k==='attester'&&e.target.open&&state.attester===undefined&&FB)loadAttester();if(k==='meld'&&e.target.open&&state.threads===undefined&&FB)loadThreads();if(k==='vakter'&&e.target.open&&state.shifts===undefined&&FB)loadShifts();if(k.startsWith('rs_')&&e.target.open&&state.rsList[k.slice(3)]===undefined&&FB)loadRs(k.slice(3))}},true);
 document.addEventListener('change',async e=>{
   const d=e.target.dataset||{};
   if('prmute' in d){const m=new Set(state.profile.muted||[]);e.target.checked?m.delete(d.prmute):m.add(d.prmute);try{await FB.setProfile(state.user.email,{muted:[...m]},state.admin);state.profile.muted=[...m];state.prMsg='Lagret.';state.acc.profil=true}catch(er){state.prMsg=saveMsg(er.code);e.target.checked=!e.target.checked}keep(()=>{});return}
