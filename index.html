@@ -3362,13 +3362,13 @@ document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest(
 document.addEventListener('change',e=>{if(e.target&&(e.target.id==='cFil'||e.target.id==='cKam')&&e.target.files&&e.target.files[0])chatSendBilde(e.target.files[0])});
 async function chatSendSkjema(tommel){
   const c=state.chat,ta=document.getElementById('cT');if(!ta)return;let tekst=(ta.value||'').trim();if(!tekst&&tommel)tekst=chatHurtig();if(!tekst||c.sender)return;
-  chatPanelLukk();c.sender=true;const btn=document.querySelector('#cForm .csend:not(.ctommel)');if(btn)btn.disabled=true;
+  const harFokus=document.activeElement===ta;chatPanelLukk();c.sender=true;const btn=document.querySelector('#cForm .csend:not(.ctommel)');if(btn)btn.disabled=true;
   try{
     if(c.red){const m=c.msgs.find(x=>x.id===c.red.id),sist=c.msgs[c.msgs.length-1]===m;await FB.redigerMsg(c.id,c.red.id,tekst,sist);if(m){m.text=tekst;m.redigert=true}c.red=null;chatBar();chatMsgs(false)}
     else{await chatSendTekst(tekst,c.svar?{svar:c.svar}:null);c.svar=null;chatBar()}
     ta.value='';ta.style.height='';state.chat.verk=false;chatInpOppd()}
   catch(er){push('Kunne ikke sende','Prøv igjen ('+((er&&er.code)||'feil')+').')}
-  c.sender=false;const b2=document.querySelector('#cForm .csend:not(.ctommel)');if(b2)b2.disabled=false;const t2=document.getElementById('cT');if(t2)t2.focus({preventScroll:true});chatHold()}
+  c.sender=false;const b2=document.querySelector('#cForm .csend:not(.ctommel)');if(b2)b2.disabled=false;const t2=document.getElementById('cT');if(t2&&harFokus)t2.focus({preventScroll:true});chatHold()}
 document.addEventListener('submit',async e=>{if(e.target&&e.target.id==='cBonnF'){e.preventDefault();const ta=document.getElementById('cBonnT'),t=(ta.value||'').trim();if(!t)return;try{await FB.addBonn(state.chat.id,t,nyBeskjedNavn());ta.value='';chatBonnMelding('🙏 Nytt bønneemne: '+t)}catch(er){push('Kunne ikke legge til','Prøv igjen ('+((er&&er.code)||'feil')+').')}return}
   if(!e.target||e.target.id!=='cForm')return;e.preventDefault();chatSendSkjema(false)});
 document.addEventListener('input',e=>{
@@ -3696,7 +3696,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 16:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 17:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 const PALETTER=[["klassisk","Dagens farger","#c9e1fb","#0f3a5f","#d9822b"],["premium","Marine og gull","#f6f4ef","#14304f","#c9a96a"],["kobber","Blågrønn og kobber","#f5f2ec","#12474a","#b87b4b"],["grafitt","Grafitt og stålblå","#f5f5f7","#1d3a5f","#8aa4c8"],["skog","Skog og messing","#f3f4ee","#1f4a38","#b8963f"],["vin","Vin og champagne","#f7f2f0","#5a1f33","#c9a96a"],["iphone","iPhone","#f2f2f7","#007aff","#ff3b30"],["android","Android","#f1f6f3","#073042","#3ddc84"],["rosa","Rosa drøm","#fff1f5","#d63a78","#8e4ec6"],["gutta","Gutta","#eef1f5","#1650ff","#ff8a1f"],["jul","Julefarger","#fbf6ef","#b3202a","#1f6b3f"],["solnedgang","Orange sunset","#fff4ea","#dd4f0a","#b02a6b"],["shrek","Shrek","#eef2dc","#4f7d12","#8a5a2b"]];
