@@ -945,6 +945,10 @@ nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 html[data-bred="1"] #view.ututv{columns:1;max-width:none}
 .utnavrad{margin:0 0 8px;align-items:center}.utnavrad b{flex:1;text-align:center;min-width:120px}
 .utlegende{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 10px;font-size:var(--t-s)}
+.grlist{display:grid;gap:8px}
+.grp{border:1px solid var(--line);border-radius:14px;padding:0 14px;background:var(--surface)}
+.grp>summary{padding:12px 0;cursor:pointer}
+.grp[open]{padding-bottom:12px}
 .ansov{display:grid;gap:8px;margin:0 0 12px}
 .ansrad{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--surface);box-shadow:var(--sh-kort,0 1px 4px rgba(0,0,0,.12));cursor:pointer;position:relative}
 .ansrad:active{transform:scale(.985)}
@@ -2464,11 +2468,24 @@ function leaderGroups(){
    <div class="reg">${l.map(u=>`<div class="r"><div class="grow">${esc(u.name||u.id)}${u.name?'<span class="small" style="display:block">'+esc(u.id)+'</span>':''}</div><button class="btn" data-dm="${esc(u.id)}|${esc(g)}|${esc(String(u.name||'').replace(/\|/g,' '))}">Skriv</button><button class="btn" data-lgdel="${esc(u.id)}|${esc(g)}">Fjern</button></div>`).join('')||'<p class="small">Ingen ennå.</p>'}</div></details>`}).join('')}</details>`}
 /* Grupper: opprett, endre navn og slett. Første endring lagrer standardgruppene i databasen. */
 const slug=n=>String(n).toLowerCase().replace(/æ/g,'ae').replace(/ø/g,'o').replace(/å/g,'a').replace(/[^a-z0-9]+/g,'').slice(0,30)||'gruppe';
+/* Hver gruppe er en rad som åpnes og viser medlemmene (og lederne) rett i gruppen. */
+const grpNavn=u=>u.name||u.id,grpSort=(a,b)=>grpNavn(a).localeCompare(grpNavn(b),'nb');
+const grpMedl=u=>'<div class="r grm"><div class="grow">'+esc(grpNavn(u))+(u.name?'<span class="small" style="display:block">'+esc(u.id)+'</span>':'')+'</div>'+(u.role==='admin'?'<span class="tag m">Administrator</span>':'')+'</div>';
+function grpRad(g){
+  const id=g[0],med=members.filter(u=>(u.groups||[]).includes(id)||(u.leads||[]).includes(id)).sort(grpSort),ledere=med.filter(u=>(u.leads||[]).includes(id)),vanlige=med.filter(u=>!(u.leads||[]).includes(id));
+  return '<details class="acc sub grp" data-acc="gr_'+esc(id)+'" '+(state.acc['gr_'+id]?'open':'')+'><summary><h3 style="font-size:var(--t-l)">'+esc(g[1])+' <span class="small">('+med.length+')</span></h3>'+(g[2]?'<span class="small" style="display:block">'+esc(g[2])+'</span>':'')+'</summary>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px">'+(grVakt(id)?'<span class="tag">Vaktliste</span>':'')+(grRemind(id)?'<span class="tag m">Påminnelse</span>':'')+'</div>'
+    +(ledere.length?'<p class="small" style="margin:0 0 4px"><b>Ledere ('+ledere.length+')</b></p><div class="reg">'+ledere.map(grpMedl).join('')+'</div>':'')
+    +'<p class="small" style="margin:8px 0 4px"><b>Medlemmer ('+vanlige.length+')</b></p><div class="reg">'+(vanlige.map(grpMedl).join('')||'<p class="small">Ingen ennå. Legg dem til under Brukere eller Tilhørighet og varsler.</p>')+'</div>'
+    +'<div class="btns" style="margin-top:10px"><button class="btn" data-grpedit="'+esc(id)+'">Endre gruppen</button><button class="btn" data-grpdel="'+esc(id)+'">Slett gruppen</button></div></details>'}
+function grpUten(){
+  const u=members.filter(x=>!(x.groups||[]).length&&!(x.leads||[]).length).sort(grpSort);
+  return u.length?'<details class="acc sub grp" data-acc="gr__uten" '+(state.acc.gr__uten?'open':'')+'><summary><h3 style="font-size:var(--t-l)">Ikke i noen gruppe <span class="small">('+u.length+')</span></h3><span class="small" style="display:block">Brukere som ennå ikke er satt i en gruppe</span></summary><div class="reg">'+u.map(grpMedl).join('')+'</div></details>':''}
 function groupsCard(){
   return `<details class="card acc" data-acc="grupper" ${state.acc.grupper?'open':''}><summary><h2>Grupper (${GROUPS.length})</h2></summary>
-  <p class="small" style="margin:0 0 8px">Grupper brukes til å velge hvem som ser et arrangement eller en nyhet, og hvem en gruppeleder leder. Endrer du navnet, gjelder det overalt. Sletter du en gruppe, tas den ut av alle brukere, og innhold som bare var for gruppen blir «Bare medlemmer».</p>
+  <p class="small" style="margin:0 0 8px">Trykk på en gruppe for å se hvem som er med. Grupper brukes til å velge hvem som ser et arrangement eller en nyhet, og hvem en gruppeleder leder. Endrer du navnet, gjelder det overalt. Sletter du en gruppe, tas den ut av alle brukere, og innhold som bare var for gruppen blir «Bare medlemmer».</p>
   <button class="btn primary" data-grpnew style="width:auto">+ Ny gruppe</button>
-  <div class="reg" style="margin-top:10px">${GROUPS.map(g=>`<div class="r"><div class="grow">${esc(g[1])}${g[2]?' <span class="small">('+esc(g[2])+')</span>':''}${grVakt(g[0])?' <span class="tag">Vaktliste</span>':''}${grRemind(g[0])?' <span class="tag m">Påminnelse</span>':''}</div><button class="btn" data-grpedit="${esc(g[0])}">Endre</button><button class="btn" data-grpdel="${esc(g[0])}">Slett</button></div>`).join('')}</div></details>`}
+  <div class="grlist" style="margin-top:10px">${GROUPS.map(g=>grpRad(g)).join('')}${grpUten()}</div></details>`}
 async function grpSeed(){
   if(state.grDb)return;
   let i=0;for(const g of GROUPS_DEFAULT){await FB.setGroupDoc(g[0],{name:g[1],desc:g[2]||'',ord:i++,vakt:grVakt(g[0]),remind:grRemind(g[0])})}
@@ -4033,7 +4050,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 22:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 23:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -4439,7 +4456,7 @@ const ANSVAR_KORT={
 function ansvarOversikt(){
   const roller=state.roles===undefined?'':' ('+state.roles.length+')',
     trinn=[['brukere','Brukere',members.length+' personer med konto','Alle som kan logge inn. Hver har en rolle: administrator, leder, gruppeleder eller medlem.'],
-      ['grupper','Grupper',GROUPS.length+' grupper','Lag av brukere, for eksempel Vertskap eller Hangout. Gruppene styrer hvem som ser arrangementer og nyheter.'],
+      ['grupper','Grupper',GROUPS.length+' grupper','Lag av brukere, for eksempel Vertskap eller Hangout. Trykk på en gruppe for å se medlemmene. Gruppene styrer hvem som ser arrangementer og nyheter.'],
       ['tilh','Tilhørighet og varsler','','Hvem som er med i hvilken gruppe, og hvem som får varsler fra den.'],
       ['ansvar','Hvem har ansvar for hva',roller?'':'','Kontaktpersonene i menigheten. Alle kan trykke «Send beskjed» til dem.']];
   return '<div class="ansov" role="group" aria-label="Slik henger det sammen"><p class="small" style="margin:0 0 6px"><b>Slik henger det sammen</b><br>Brukere settes i grupper. Gruppene gir tilhørighet og varsler. Ansvarsområdene viser hvem som er kontaktperson for hva. Trykk på et trinn for å åpne det.</p>'
