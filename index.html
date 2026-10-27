@@ -4157,7 +4157,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 23:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 00:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5633,6 +5633,17 @@ async function utSjekkNye(){if(!FB||!state.user||!utLes()||Date.now()-sistUtSjek
   try{const l=await FB.utList(dkey(new Date())),meg=meEmail();state.utNye=l.filter(b=>(b.ms||0)>utSett&&String(b.by||'').toLowerCase()!==meg).length;badge()}catch(e){}}
 function utMarkerSett(){utSett=Date.now();lsSet('sm-utsett',String(utSett));state.utNye=0;badge()}
 /* Trykk på et varsel (eller på klokka) tar deg rett til stedet det gjelder: nyhet eller Pastorens hilsen (åpnes i Nyheter), booking (Utleie, på riktig dag og åpnet), beskjed, vakt eller samling i Program. */
+/* Finner samtalen et chatvarsel («Ny beskjed fra Ola» / «Ny beskjed: navn») kommer fra: tekst i varselet = siste melding, avsendernavn = samtalens navn, helst ulest og nyest. Samtalen åpnes på den nyeste meldingen. */
+function chatTraadFraVarsel(T,B){
+  const meg=meEmail(),norm2=x=>String(x||'').toLowerCase().replace(/\s+/g,' ').trim(),
+    nm=norm2((String(T).match(/^\s*ny beskjed(?: fra|:)\s*(.+)$/i)||[])[1]),tx=norm2(B).replace(/…$/,'').slice(0,40);
+  const l=(state.threads||[]).filter(t=>!(t.gone||[]).includes(meg));
+  if(!l.length)return null;
+  const poeng=t=>{let p=0;const navn=norm2(chatNavn(t,meg));
+    if(tx&&norm2(t.last).replace(/^du: /,'').includes(tx))p+=4;
+    if(nm&&(navn.includes(nm)||nm.includes(navn)||norm2(t.fromName).includes(nm)||norm2(t.roleName).includes(nm)))p+=2;
+    if((t.unread||[]).includes(meg))p+=2;return p};
+  return l.slice().sort((a,b)=>poeng(b)-poeng(a)||(b.ms||0)-(a.ms||0))[0]}
 function apneFraVarsel(tab,tittel,tekst){
   const T=String(tittel||'').trim(),B=String(tekst||'').trim(),lc=T.toLowerCase(),rull=(velg,mt)=>setTimeout(()=>{const e=document.querySelector(velg);if(e){(mt||e).style.scrollMarginTop='90px';(mt||e).scrollIntoView({block:'start',behavior:'auto'})}},520);
   if(/booking/.test(lc)&&utLes()){
@@ -5642,7 +5653,7 @@ function apneFraVarsel(tab,tittel,tekst){
       if(b){state.ut.mnd=b.dato.slice(0,7);state.ut.dag=b.dato;state.open['ut_'+b.id+'_'+b.dato]=true}
       utMarkerSett();fadeRender();rull(b?'[data-ev="ut_'+b.id+'_'+b.dato+'"]':'details[data-acc=utleie]',b?null:null)};
     if(state.ut.liste===undefined)utLast().then(vis);else vis();return true}
-  if(/^ny beskjed/.test(lc)&&state.user&&state.member){loadThreads().then(()=>{const u=(state.threads||[]).filter(t=>(t.unread||[]).includes(meEmail())).sort((a,b)=>(b.ms||0)-(a.ms||0))[0];chatApne(u?u.id:null)});return true}
+  if(/^ny beskjed/.test(lc)&&state.user&&state.member){loadThreads().then(()=>{const t=chatTraadFraVarsel(T,B);chatApne(t?t.id:null)});return true}
   if(/vakt/.test(lc)&&state.user){state.tab='me';state.acc.megkort=true;state.acc.vakter=true;if(state.shifts===undefined)loadShifts();fadeRender();rull('details[data-acc=vakter]');return true}
   if(tab==='prog'||/^påminnelse$/.test(lc)){
     const ev=events.find(e=>e.title&&B.includes(e.title)),f=nextFast().find(x=>B.includes(fastInfo(x.fast,x.ex).title)),id=ev?ev.id:f?fastId(f.fast,f.w):'';
