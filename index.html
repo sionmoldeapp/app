@@ -3967,13 +3967,13 @@ function attestStatus(dato){
   const d=new Date(dato+'T12:00');d.setFullYear(d.getFullYear()+ATTEST_AAR);
   const dager=Math.ceil((d.getTime()-Date.now())/864e5),utl=isoDato(d);
   return {utl,dager,tekst:dager<0?'Utløpt':dager<=ATTEST_VARSEL_DAGER?'Utløper snart':'Gyldig',farge:dager<0?'#b3261e':dager<=ATTEST_VARSEL_DAGER?'var(--lamp)':'var(--ok)'}}
-const attestVenter='<span class="tag" style="background:var(--lamp);color:var(--lamp-ink)">Venter bekreftelse</span>';
+const attestVenter='<span class="tag" style="background:var(--lamp);color:var(--lamp-ink)">Venter godkjenning</span>';
 const attestChip=st=>st?'<span class="tag" style="background:'+st.farge+';color:#fff">'+st.tekst+'</span>':'';
 const profSub=(k,tittel,html)=>'<details class="acc sub" data-acc="'+k+'" '+(state.acc[k]?'open':'')+' style="margin-top:10px"><summary><h3 style="font-size:var(--t-l)">'+tittel+'</h3></summary>'+html+'</details>';
 const attErMeg=email=>String(email).toLowerCase()===meEmail();
 const attKanLed=email=>!attErMeg(email)||!!state.admin;   // gruppeleder kan ikke bekrefte sin egen attest, administrator kan
 const attForslagTekst=p=>p.k==='slett'?'Forslag: slette politiattesten':'Forslag: dato '+noDato(p.dato)+(p.fil?' med dokument':'');
-const attSider=p=>'Medlem: '+(p.okM?'✓ bekreftet':'venter')+' · Gruppeleder: '+(p.okL?'✓ bekreftet':'venter');
+const attSider=p=>'Medlem: '+(p.okM?'✓ lagt inn/bekreftet':'venter')+' · Gruppeleder eller administrator: '+(p.okL?'✓ godkjent':'venter på godkjenning');
 /* Leser en fil (bilde eller PDF) som tekst. Bilder krympes til en JPEG som får plass i databasen. */
 function attFilLes(f){
   return new Promise((res,rej)=>{
@@ -4017,16 +4017,16 @@ async function attOppfrisk(email){
 function attestKort(){if(!state.user||!state.member)return '';return '<details class="card acc" data-acc="attest" '+(state.acc.attest?'open':'')+'><summary><h2>Politiattest'+(state.attFors&&!state.attFors.okM?bdg(1):'')+'</h2></summary>'+attestBody()+'</details>'}
 function attestBody(){
   const a=state.attest,p=state.attFors,me=meEmail(),st=a?attestStatus(a.dato):null,idag=isoDato(new Date()),legacy=!!a&&a.godkjent===false;
-  let h='<p class="small" style="margin:0 0 8px">Legg inn datoen politiattesten din ble utstedt, og gjerne selve attesten (bilde eller PDF). Dato og dokument må bekreftes av både deg og gruppelederen din. Endring og sletting må også bekreftes av begge. Bare du, gruppelederen din og administratorene kan se den. Du får påminnelse '+ATTEST_VARSEL_DAGER+' dager før den går ut ('+ATTEST_AAR+' år).</p>';
-  if(st&&!legacy)h+='<p style="margin:0 0 8px"><b>Godkjent:</b> '+esc(noDato(a.dato))+'<br><b>Går ut:</b> '+esc(noDato(st.utl))+' '+attestChip(st)+'<br><span class="small">Bekreftet av deg og gruppelederen din.'+(a.fil?' Dokument er lagret.':' Ingen dokument er lagt inn.')+'</span></p>'+(a.fil?'<div class="btns" style="margin:0 0 8px"><button class="btn" data-atvis="'+esc(me+'|cur')+'">Vis dokument</button></div>':'');
-  else if(st&&legacy)h+='<p style="margin:0 0 8px"><b>Registrert dato:</b> '+esc(noDato(a.dato))+' '+attestVenter+'<br><span class="small">Venter på at gruppelederen bekrefter.</span></p>';
+  let h='<p class="small" style="margin:0 0 8px">Legg inn datoen politiattesten din ble utstedt, og gjerne selve attesten (bilde eller PDF). Du legger den inn selv, men den er ikke gyldig før gruppelederen din eller en administrator har godkjent den. Endring og sletting må også godkjennes. Legger gruppelederen inn datoen for deg, må du bekrefte den. Bare du, gruppelederen din og administratorene kan se den. Du får påminnelse '+ATTEST_VARSEL_DAGER+' dager før den går ut ('+ATTEST_AAR+' år).</p>';
+  if(st&&!legacy)h+='<p style="margin:0 0 8px"><b>Godkjent:</b> '+esc(noDato(a.dato))+'<br><b>Går ut:</b> '+esc(noDato(st.utl))+' '+attestChip(st)+'<br><span class="small">Godkjent av gruppeleder eller administrator.'+(a.fil?' Dokument er lagret.':' Ingen dokument er lagt inn.')+'</span></p>'+(a.fil?'<div class="btns" style="margin:0 0 8px"><button class="btn" data-atvis="'+esc(me+'|cur')+'">Vis dokument</button></div>':'');
+  else if(st&&legacy)h+='<p style="margin:0 0 8px"><b>Registrert dato:</b> '+esc(noDato(a.dato))+' '+attestVenter+'<br><span class="small">Ikke gyldig før gruppeleder eller administrator har godkjent den.</span></p>';
   if(p){
-    h+='<div style="margin:0 0 10px;padding:10px;border:2px solid var(--lamp);border-radius:var(--r-s);background:var(--lamp-soft)"><b>Venter bekreftelse</b><br>'+esc(attForslagTekst(p))+'<br><span class="small">'+esc(attSider(p))+'</span>'
+    h+='<div style="margin:0 0 10px;padding:10px;border:2px solid var(--lamp);border-radius:var(--r-s);background:var(--lamp-soft)"><b>Venter godkjenning</b><br>'+esc(attForslagTekst(p))+'<br><span class="small">'+esc(attSider(p))+'</span>'
      +'<div class="btns" style="margin-top:8px">'+(!p.okM?'<button class="btn primary" data-atbekreft="'+esc(me)+'">Bekreft</button>':'')+(p.fil?'<button class="btn" data-atvis="'+esc(me+'|ny')+'">Vis dokument</button>':'')+'<button class="btn" data-atavslaa="'+esc(me)+'">'+(p.by===me?'Trekk tilbake':'Avslå')+'</button></div></div>'}
   else{
     const skjema='<label class="f">Dato attesten ble utstedt<input id="atD" type="date" max="'+idag+'" value="'+esc(a?a.dato:'')+'"></label>'
      +'<label class="f">Dokument (bilde eller PDF, maks ca. 600 kB)<input id="atF" type="file" accept="image/*,application/pdf"></label>'
-     +'<div class="btns" style="margin-top:8px"><button class="btn primary" data-atsave="'+esc(me)+'" style="flex:1">'+(state.admin?'Lagre':a?'Foreslå endring':'Send til bekreftelse')+'</button></div>'
+     +'<div class="btns" style="margin-top:8px"><button class="btn primary" data-atsave="'+esc(me)+'" style="flex:1">'+(state.admin?'Lagre':a?'Send endring til godkjenning':'Send til godkjenning')+'</button></div>'
      +(a&&!legacy?'<div class="btns" style="margin-top:8px"><button class="btn" data-atslett="'+esc(me)+'" style="flex:1">Foreslå sletting</button></div>':'');
     h+=a?'<details class="acc sub" data-acc="atform" '+(state.acc.atform?'open':'')+'><summary><h3 style="font-size:var(--t-l)">Endre eller slette</h3></summary>'+skjema+'</details>':'<p class="small" style="margin:0 0 8px">Ingen politiattest er lagt inn.</p>'+skjema}
   return h+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.atMsg||'')+'</p>'}
@@ -4048,15 +4048,15 @@ function attesterCard(){
     const vent=ps.filter(p=>p.f||p.legacy),med=ps.filter(p=>p.st&&!p.f&&!p.legacy).sort((a,b)=>a.st.dager-b.st.dager),uten=ps.filter(p=>!p.st&&!p.f);nVent=vent.length;
     const rad=p=>{const f=p.f;let tekst,kn='';
       if(f){tekst=attForslagTekst(f)+' · '+attSider(f);
-        if((!f.okL&&attKanLed(p.id))||(!f.okM&&attErMeg(p.id)))kn+='<button class="btn primary" data-atbekreft="'+esc(p.id)+'">Bekreft</button>';
+        if((!f.okL&&attKanLed(p.id))||(!f.okM&&attErMeg(p.id)))kn+='<button class="btn primary" data-atbekreft="'+esc(p.id)+'">'+(!f.okL&&attKanLed(p.id)?'Godkjenn':'Bekreft')+'</button>';
         if(f.fil)kn+='<button class="btn" data-atvis="'+esc(p.id+'|ny')+'">Vis dokument</button>';
         kn+='<button class="btn" data-atavslaa="'+esc(p.id)+'">'+(f.by===me?'Trekk tilbake':'Avslå')+'</button>'}
-      else if(p.legacy){tekst='Registrert '+noDato(p.dato)+' · venter bekreftelse fra gruppeleder';if(attKanLed(p.id))kn+='<button class="btn primary" data-atlegacy="'+esc(p.id)+'">Bekreft</button>'}
+      else if(p.legacy){tekst='Registrert '+noDato(p.dato)+' · ikke gyldig før den er godkjent';if(attKanLed(p.id))kn+='<button class="btn primary" data-atlegacy="'+esc(p.id)+'">Godkjenn</button>'}
       else if(p.st){tekst='Godkjent '+noDato(p.dato)+' · går ut '+noDato(p.st.utl)+(p.fil?' · dokument lagret':'');if(p.fil)kn+='<button class="btn" data-atvis="'+esc(p.id+'|cur')+'">Vis dokument</button>';kn+='<button class="btn" data-atedit="'+esc(p.id)+'">Endre</button><button class="btn" data-atslett="'+esc(p.id)+'">Slett</button>'}
       else{tekst='Ingen dato';kn+='<button class="btn" data-atedit="'+esc(p.id)+'">Legg inn</button>'}
       return '<div class="r" style="flex-wrap:wrap"><div class="grow" style="min-width:60%"><b>'+esc(p.navn||p.id)+'</b><span class="small" style="display:block">'+esc(tekst)+'</span></div>'+(f||p.legacy?attestVenter:attestChip(p.st))+'<div class="btns" style="flex-basis:100%;margin-top:6px">'+kn+'</div></div>'};
-    inn='<p class="small" style="margin:0 0 8px">'+(state.admin?'Alle medlemmer. ':'Medlemmer i gruppene du leder. ')+'Ny dato, endring og sletting gjelder først når både medlemmet og gruppeleder (eller administrator) har bekreftet.</p>'
-     +(vent.length?'<div style="margin:0 0 10px;padding:10px;border:2px solid var(--lamp);border-radius:var(--r-s);background:var(--lamp-soft)"><b>Venter bekreftelse ('+vent.length+')</b><div class="reg">'+vent.map(rad).join('')+'</div></div>':'')
+    inn='<p class="small" style="margin:0 0 8px">'+(state.admin?'Alle medlemmer. ':'Medlemmer i gruppene du leder. ')+'Ny dato, endring og sletting gjelder først når gruppeleder eller administrator har godkjent (og medlemmet har bekreftet, hvis det er du som har lagt den inn).</p>'
+     +(vent.length?'<div style="margin:0 0 10px;padding:10px;border:2px solid var(--lamp);border-radius:var(--r-s);background:var(--lamp-soft)"><b>Venter godkjenning ('+vent.length+')</b><div class="reg">'+vent.map(rad).join('')+'</div></div>':'')
      +'<div class="reg">'+(med.map(rad).join('')||'<p class="small">Ingen godkjente datoer ennå.</p>')+'</div>'
      +(uten.length?'<details class="acc sub" data-acc="at_uten" '+(state.acc.at_uten?'open':'')+'><summary><h3 style="font-size:var(--t-l)">Mangler dato ('+uten.length+')</h3></summary><div class="reg">'+uten.map(rad).join('')+'</div></details>':'')}
   return '<details class="card acc" data-acc="attester" '+(state.acc.attester?'open':'')+'><summary><h2>Politiattester'+bdg(nVent)+'</h2></summary>'+inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.atMsg2||'')+'</p></details>'}
@@ -4082,19 +4082,19 @@ document.addEventListener('click',async e=>{
     if(d.atsave){const email=d.atsave,dato=(document.getElementById('atD')||{}).value||'';
       if(!/^\d{4}-\d{2}-\d{2}$/.test(dato)){keep(()=>{state.atMsg='Velg en dato.'});return}
       let fil=null;try{fil=await attFilLes((document.getElementById('atF')||{files:[]}).files[0])}catch(er){keep(()=>{state.atMsg=er&&er.msg||'Kunne ikke lese filen.'});return}
-      await attForeslaa(email,'sett',dato,fil);state.atMsg='';keep(()=>{});push('Lagret',state.admin?'Politiattesten er lagret.':'Datoen er sendt. Den gjelder når gruppelederen din også har bekreftet.')}
+      await attForeslaa(email,'sett',dato,fil);state.atMsg='';keep(()=>{});push('Sendt til godkjenning',state.admin?'Politiattesten er lagret.':'Datoen er ikke gyldig før gruppelederen din eller en administrator har godkjent den.')}
     else if(d.atslett){const email=d.atslett;
       if(!await bekreft('Foreslå å slette politiattesten'+(attErMeg(email)?'?':' for '+(((attestPersoner().find(x=>x.id===email)||{}).navn)||email)+'?')+' Både medlemmet og gruppeleder må bekrefte før den slettes.',{ok:'Foreslå sletting',fare:true}))return;
       await attForeslaa(email,'slett','',null);push('Sendt',attErMeg(email)&&state.admin?'Politiattesten er slettet.':'Forslaget om sletting venter bekreftelse.')}
-    else if(d.atbekreft){const email=d.atbekreft;await FB.attBekreft(email,attErMeg(email)?'m':'l');await FB.attFullfor(email);await attOppfrisk(email);push('Bekreftet','Takk. Endringen gjelder når begge har bekreftet.')}
+    else if(d.atbekreft){const email=d.atbekreft;await FB.attBekreft(email,attErMeg(email)?'m':'l');await FB.attFullfor(email);await attOppfrisk(email);push(attErMeg(email)?'Bekreftet':'Godkjent','Takk. Endringen gjelder når begge sider er ferdige.')}
     else if(d.atavslaa){const email=d.atavslaa;if(!await bekreft('Avslå eller trekke tilbake forslaget?',{ok:'Fjern forslaget',fare:true}))return;await FB.attAvslaa(email);await attOppfrisk(email)}
-    else if(d.atlegacy){const email=d.atlegacy;await FB.attLegacy(email);await attOppfrisk(email);push('Bekreftet','Politiattesten er bekreftet.')}
+    else if(d.atlegacy){const email=d.atlegacy;await FB.attLegacy(email);await attOppfrisk(email);push('Godkjent','Politiattesten er godkjent.')}
     else if(d.atvis){const [email,mode]=d.atvis.split('|');attVis(email,mode)}
   }catch(er){keep(()=>{state.atMsg2=state.atMsg='Kunne ikke fullføre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?'})}});
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 14:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 15:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
