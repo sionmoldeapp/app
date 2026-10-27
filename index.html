@@ -764,7 +764,7 @@ html[data-bred="1"] .chat,html[data-bred="1"] .chat[data-mork="1"]{background:va
 .vik-innhold{flex:1;min-width:0}
 .vik-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:var(--t-xs);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .vik-meta b{color:var(--lamp);font-weight:600}
-.vik-x{all:unset;cursor:pointer;width:28px;height:28px;margin:-6px -6px -6px 0;display:grid;place-items:center;border-radius:50%;color:var(--muted);font-size:var(--t-s)}
+.vik-x{all:unset;position:relative;cursor:pointer;width:28px;height:28px;margin:-6px -6px -6px 0;display:grid;place-items:center;border-radius:50%;color:var(--muted);font-size:var(--t-s)}
 .vik-x:hover{background:rgba(127,160,200,.16)}
 .vik-tittel{font-weight:600;font-size:var(--t-b);line-height:1.3;margin-top:2px}
 .vik-tekst{font-size:var(--t-m);line-height:1.4;color:var(--muted);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -4161,7 +4161,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 01:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 01:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
