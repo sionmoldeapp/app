@@ -3193,7 +3193,7 @@ function navPlasser(e){
 addEventListener('resize',()=>{if(state.chat.vis)chatPlasser()});
 const chatTemaOppd=()=>{const e=document.getElementById('chat');if(e)e.dataset.mork=isDark()?'1':'0';try{chatFargeBruk()}catch(x){}};
 function chatEl(){let e=document.getElementById('chat');if(!e){e=document.createElement('div');e.id='chat';e.className='chat';e.hidden=true;e.innerHTML='<div class="cw" role="dialog" aria-modal="true" aria-label="Chat"></div>';document.body.appendChild(e)}return e}
-const chatW=()=>chatEl().querySelector('.cw');
+const chatW=()=>chatEl().querySelector('.cw:not(.cunder)');
 function chatStoppMsgs(){const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}c.unsub=null}c.msgs=[];try{chatAvstStopp();chatBonnStopp();chatMicAvbryt(true)}catch(e){}}
 function thrStopp(){if(state.thrUnsub){try{state.thrUnsub()}catch(e){}state.thrUnsub=null}}
 /* Lytter på samtalene til brukeren (maks 50). Første kall setter opp lytteren; senere kall gjør ingenting. */
@@ -3227,7 +3227,8 @@ function chatListeInn(){
     return '<button type="button" class="crad'+(ny?' ny':'')+'" data-chatopen="'+esc(t.id)+'">'+chatAv(n)+'<span class="ctx"><span class="cn">'+esc(n)+'</span><span class="cp">'+esc((t.lastBy===meg?'Du: ':'')+chatForh(t.last||''))+'</span></span><span class="cm"><span>'+esc(chatTid(t.ms))+'</span>'+((t.dempet||[]).includes(meg)?'<span aria-label="Varsler er dempet">🔕</span>':'')+(ny?'<span class="cdot" aria-label="Ny melding"></span>':'')+'</span></button>'}).join('')}
 function chatListe(){
   const c=state.chat;chatStoppMsgs();c.vy='liste';c.id=null;c.ny=null;
-  chatW().innerHTML='<header class="chd"><h2>Sionchat</h2><span class="grow"></span>'+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatspill aria-label="Spill">🎮</button></header><div class="csokl"><input id="cSokL" type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc(c.q||'')+'"></div><div class="cliste" id="cListe">'+chatListeInn()+'</div>'}
+  chatW().innerHTML=chatListeHtml()}
+const chatListeHtml=(under)=>'<header class="chd"><h2>Sionchat</h2><span class="grow"></span>'+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatspill aria-label="Spill">🎮</button></header><div class="csokl"><input '+(under?'':'id="cSokL" ')+'type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc((state.chat&&state.chat.q)||'')+'"></div><div class="cliste"'+(under?'':' id="cListe"')+'>'+chatListeInn()+'</div>';
 const chatSend='<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.5-7.5a1 1 0 0 0 0-1.8L3.4 3.6a1 1 0 0 0-1.4 1.2L4 11l9 1-9 1-2 6.2a1 1 0 0 0 1.4 1.2z"/></svg>';
 const TRASH='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const KAMIKON='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
@@ -3699,15 +3700,27 @@ async function chatSendBilde(fil){
     await chatSendTekst(tekst,{img,...(c.svar?{svar:c.svar}:{})});c.svar=null;chatBar();if(ta){ta.value='';ta.style.height=''}chatInpOppd()}
   catch(er){push('Kunne ikke sende bildet',er&&er.msg?er.msg:'Prøv igjen ('+((er&&er.code)||'feil')+').')}
   c.sender=false}
-/* Sveip mot høyre i en samtale (eller Ny melding) går tilbake til oversikten over samtaler, som tilbakeknappen. På en melding gjelder bare sveip fra venstre kant, ellers er sveip på meldingen «svar». Ikke i tekstfelt, lyd, bilde-visning eller når et vindu er åpent. */
-{let t0=null;
-  document.addEventListener('touchstart',e=>{t0=null;if(!state.chat||!state.chat.vis||e.touches.length!==1||document.querySelector('dialog[open]'))return;
+/* Dra samtalen mot høyre: den følger fingeren og oversikten over samtaler kommer til syne under. Slipp når den er dratt langt nok (eller raskt nok) for å gå tilbake; slipper du før, glir samtalen tilbake og er fortsatt åpen. På en melding gjelder bare drag fra venstre kant, ellers er sveip på meldingen «svar». Ikke i tekstfelt, lyd, emoji-panel eller når et vindu er åpent. */
+{let g=null;
+  const cwEl=()=>chatW(),rydd=()=>{const u=document.querySelector('#chat .cunder');if(u)u.remove();const w=cwEl();if(w){w.style.transition='';w.style.transform='';w.style.boxShadow=''}};
+  const sett=(dx)=>{const w=cwEl(),W=g.w,x=Math.max(0,Math.min(W,dx));w.style.transition='none';w.style.transform='translateX('+x+'px)';w.style.boxShadow='-10px 0 28px rgba(0,0,0,.22)';if(g.u){g.u.style.transition='none';g.u.style.transform='translateX('+Math.round(-W*.22*(1-x/W))+'px)';g.u.style.opacity=String(.55+.45*(x/W))}};
+  const glid=(maal,ferdig)=>{const w=cwEl();w.style.transition='transform .2s ease-out';w.style.transform='translateX('+maal+'px)';if(g&&g.u){g.u.style.transition='transform .2s ease-out,opacity .2s';g.u.style.transform=maal?'translateX(0)':'translateX('+Math.round(-g.w*.22)+'px)';g.u.style.opacity=maal?'1':'.55'}
+    setTimeout(()=>{ferdig&&ferdig()},210)};
+  document.addEventListener('touchstart',e=>{g=null;if(!state.chat||!state.chat.vis||e.touches.length!==1||document.querySelector('dialog[open]'))return;
     const el=e.target;if(!el.closest||!el.closest('#chat'))return;if(el.closest('input,textarea,audio,video,[contenteditable],#cEmoji,.cavst,.cfarger'))return;
     const x=e.touches[0].clientX,y=e.touches[0].clientY;if(el.closest('.cb[data-msg]')&&x>30)return;
-    t0={x,y,t:Date.now()}},{passive:true});
-  document.addEventListener('touchend',e=>{const a=t0;t0=null;if(!a||!e.changedTouches.length)return;
-    const dx=e.changedTouches[0].clientX-a.x,dy=e.changedTouches[0].clientY-a.y;
-    if(dx>80&&Math.abs(dy)<60&&dx>Math.abs(dy)*2&&Date.now()-a.t<800){const b=chatW().querySelector('[data-chatback]');if(b){try{navigator.vibrate&&navigator.vibrate(8)}catch(x){}b.click()}}},{passive:true})}
+    if(!chatW().querySelector('[data-chatback]'))return;
+    g={x,y,t:Date.now(),mode:0,w:chatW().offsetWidth,u:null,dx:0}},{passive:true});
+  document.addEventListener('touchmove',e=>{if(!g||g.mode<0||!e.touches.length)return;const dx=e.touches[0].clientX-g.x,dy=e.touches[0].clientY-g.y;
+    if(g.mode===0){if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){g.mode=-1;return}if(dx<-12){g.mode=-1;return}if(!(dx>12&&dx>Math.abs(dy)*1.5))return;
+      g.mode=1;const c=state.chat;try{const a=document.activeElement;if(a&&a.blur&&/^(TEXTAREA|INPUT)$/.test(a.tagName)){}}catch(x){}
+      if(c.vy==='samtale'&&!(c.ny&&c.ny.mode==='gruppe')){const u=document.createElement('div');u.className='cw cunder';u.setAttribute('aria-hidden','true');u.style.cssText='position:absolute;top:0;bottom:0;left:0;right:0;margin:0 auto;width:'+g.w+'px;height:auto;pointer-events:none;z-index:0';u.innerHTML=chatListeHtml(true);chatEl().insertBefore(u,chatW());g.u=u}}
+    if(e.cancelable)e.preventDefault();g.dx=dx;sett(dx)},{passive:false});
+  const slutt=(avbrutt)=>{const a=g;g=null;if(!a||a.mode!==1)return;g=a;
+    const v=a.dx/Math.max(1,Date.now()-a.t),ferdig=!avbrutt&&(a.dx>a.w*.4||(a.dx>70&&v>.5));
+    if(ferdig){glid(a.w,()=>{const b=chatW().querySelector('[data-chatback]');rydd();g=null;if(b){try{navigator.vibrate&&navigator.vibrate(8)}catch(x){}b.click()}})}
+    else glid(0,()=>{rydd();g=null})};
+  document.addEventListener('touchend',()=>slutt(false),{passive:true});document.addEventListener('touchcancel',()=>slutt(true),{passive:true})}
 /* Hold på en melding (520 ms) åpner menyen. */
 {let tm=0,p0=null,brukt=false;
   const stopp=()=>{clearTimeout(tm);tm=0;p0=null};
@@ -4122,7 +4135,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 19:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 20:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
