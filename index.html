@@ -1689,7 +1689,7 @@ function utDBar(){let b=document.getElementById('utDbar');
     dag=L.nStart===L.nEnd?utDDagNavn(L.nStart):utDDagNavn(L.nStart)+' – '+utDDagNavn(L.nEnd)+' ('+n+' dager)',
     hint=L.multi?'Dra for å flytte tidspunktet for denne dagen, eller dra i håndtakene øverst og nederst for å endre lengden. Håndtak på sidene legger til eller fjerner dager.':L.uke?'Dra for å flytte. Håndtak øverst og nederst endrer lengden, håndtak på sidene legger til dager.':'Dra for å flytte. Dra i håndtakene for å endre lengden. Åpne Uke for å utvide over flere dager.';
   b.querySelector('.utdtxt').innerHTML='<b>'+esc(L.b.tittel||'Booking')+'</b><br>'+esc(dag+(k[1]?' · '+k[1]:'')+(L.multi?' · tid for '+utDDagNavn(L.k)+': ':' · ')+utDT(L.s)+'–'+utDT(L.e))+'<br><span class="small">'+hint+'</span>'}
-function utDAvbryt(oppdater){const L=UTD.lost;UTD.lost=null;UTD.drag=null;const b=document.getElementById('utDbar');if(b)b.remove();if(L&&oppdater!==false)keep(()=>{})}
+function utDAvbryt(oppdater){const L=UTD.lost;UTD.lost=null;UTD.drag=null;if(UTD.utsatt){UTD.utsatt=0;oppdater=true}const b=document.getElementById('utDbar');if(b)b.remove();if(L&&oppdater!==false)keep(()=>{})}
 function utDLoft(el){
   const p=el.dataset.utblokk,i=p.lastIndexOf('|'),id=p.slice(0,i),k=p.slice(i+1),b=(state.ut.liste||[]).find(x=>x.id===id),kol=el.parentNode,h0=Number(kol.dataset.h0)||0,
     multi=!!(b.dato2&&b.dato2>b.dato),uke=state.ut.visn==='uke',dg=utDager(b),[f,t]=utDagTid(b,k),s0=utMin(f),e0=Math.max(utMin(t),s0+utDMin);
@@ -1732,7 +1732,7 @@ function utDVis(){const L=UTD.lost;L.el.style.top=Math.round((L.s-L.h0*60)*utDK)
     else{const u=under();if(!u)return;const dag=u.dataset.utcell.split('|')[0];
       if(D.mode==='hoyre')L.nEnd=dag<L.nStart?L.nStart:dag;else L.nStart=dag>L.nEnd?L.nEnd:dag}
     utDVis()},true);
-  const slipp=()=>{stopp();if(UTD.drag){UTD.drag=null;UTD.sup=Date.now()}};
+  const slipp=()=>{stopp();if(UTD.drag){UTD.drag=null;UTD.sup=Date.now()}if(UTD.utsatt&&!UTD.lost){UTD.utsatt=0;keep(()=>{})}};
   document.addEventListener('pointerup',slipp,true);document.addEventListener('pointercancel',slipp,true);
   document.addEventListener('touchmove',e=>{if(UTD.drag&&e.cancelable)e.preventDefault()},{passive:false});
   document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('.utbl2'))e.preventDefault()});
@@ -4093,7 +4093,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 12:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 13:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -4617,7 +4617,9 @@ function push(t,b){try{if(!matchMedia('(prefers-reduced-motion:reduce)').matches
     if(Math.abs(dx)>70||dy<-35){pb.classList.remove('drag');pb.style.transition='transform .2s,opacity .2s';pb.style.transform='translate(calc(-50% + '+(Math.abs(dx)>70?(dx>0?400:-400):0)+'px),'+(Math.abs(dx)>70?0:-160)+'px)';pb.style.opacity='0';setTimeout(()=>{pb.style.transition='';hide()},220)}
     else{pb.classList.remove('drag');pb.style.transform='';pb.style.opacity='';if(!moved)hide();else pt=setTimeout(hide,2500)}};
   pb.addEventListener('pointerup',end);pb.addEventListener('pointercancel',end)}
-function keep(fn){const y=scrollY;fn();if(first)return;   // ikke tegn siden på nytt før innholdet er lastet første gang (ellers vises «Ingen planlagt» et øyeblikk)
+function keep(fn){const y=scrollY;fn();if(first)return;
+  if(UTD.t||UTD.lost){UTD.utsatt=1;return}   /* en booking holdes eller er løftet: ikke tegn kalenderen på nytt under fingeren (nye data, chat og varsler kommer etterpå) */
+  // ikke tegn siden på nytt før innholdet er lastet første gang (ellers vises «Ingen planlagt» et øyeblikk)
   $('#view').innerHTML=viewBanner()+VIEWS[state.tab]();utvKlasse();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
 /* Dra ned fra toppen for å hente siste innhold (ikke oftere enn hvert 10. sekund, for å spare lesinger i databasen) */
 (function(){let el,y0=null,d=0,sist=0;
@@ -4687,10 +4689,10 @@ document.addEventListener('input',e=>{if(e.target.id==='noteQ'){state.nq=e.targe
 {let t=null,x0=0,y0=0,svelg=false;
   document.addEventListener('pointerdown',e=>{
     if((state.tab!=='me'&&state.tab!=='home')||state.reorder||!e.target.closest('#view'))return;
-    if(e.target.closest('button,a,input,select,textarea,label,[data-noteopen],[data-lp],[contenteditable],.merow,[data-subcid] > summary'))return;
+    if(e.target.closest('button,a,input,select,textarea,label,[data-noteopen],[data-lp],[contenteditable],.merow,[data-subcid] > summary,.utg,#utDbar'))return;   /* kalenderen har eget langt trykk (løsne booking); ellers tegnes siden på nytt og bookingen faller tilbake */
     x0=e.clientX;y0=e.clientY;clearTimeout(t);
     t=setTimeout(()=>{t=null;
-      const n=ordSynlige(ov()).length;if(n<2)return;
+      if(UTD.lost)return;const n=ordSynlige(ov()).length;if(n<2)return;
       svelg=true;try{navigator.vibrate&&navigator.vibrate(25)}catch(x){}
       state.reorder=true;keep(()=>{});scrollTo(0,0)},600)});
   document.addEventListener('pointermove',e=>{if(t&&Math.hypot(e.clientX-x0,e.clientY-y0)>10){clearTimeout(t);t=null}});
