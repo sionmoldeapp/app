@@ -897,6 +897,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .sokbtn.on{background:var(--lamp);border-color:var(--lamp);color:#fff}
 .cbtn,.csend,.sokbtn{display:flex;align-items:center;justify-content:center;padding:0;line-height:1}   /* iOS Safari sentrerer ikke innholdet i grid-knapper med standard sidemarg */
 .cbtn svg,.csend svg,.sokbtn svg{display:block;flex:none}
+.cbtn[data-chatspill]{padding-bottom:3px;font-size:21px}   /* emoji-tegn ligger lavt i linjeboksen på iPhone: løft det litt */
 @media (max-width:400px){.sokbtn{width:38px;height:38px}}   /* samme størrelse som knappene i toppen (38 px), så sentrene står rett under hverandre */
 .nrad{background:var(--surface);border:0;border-radius:var(--r-m);overflow:hidden}
 .nhode{display:flex!important;align-items:center;gap:10px;padding:12px 14px!important;width:100%}
@@ -4100,7 +4101,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 17:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 17:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
