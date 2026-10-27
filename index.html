@@ -1619,6 +1619,10 @@ async function utProgSync(id,d,cat){
   bruk(rawEvents,posts,regular);keep(()=>{})}
 async function utProgFjern(id){const le=utProgEv(id);if(!le||!state.admin)return;try{await FB.del('events',le.id);rawEvents=rawEvents.filter(e=>e!==le);bruk(rawEvents,posts,regular)}catch(e){}}
 /* Bookingskjemaet er delt i seksjoner (trekkspill): bare én er åpen om gangen. */
+/* Team: hvem som kommer, ikke kommer, ikke vet og ikke har svart (bookinger/{id}/team). */
+const UT_TEAM_GR=[['ja','✅ Kommer'],['nei','❌ Kommer ikke'],['vet','🤔 Vet ikke ennå'],['ingen','⏳ Ikke svart ennå']];
+const utTeamHtml=l=>'<div class="utteam">'+UT_TEAM_GR.map(([k,n])=>{const p=l.filter(y=>y.k===k).map(y=>esc(y.n||y.e)).sort((a,b)=>a.localeCompare(b,'nb'));return '<div class="utt-rad"><span>'+n+' ('+p.length+')</span><span>'+(p.length?p.join(', '):'–')+'</span></div>'}).join('')+'</div>';
+const utTeamSum=l=>l.length?UT_TEAM_GR.map(([k])=>[k,l.filter(y=>y.k===k).length]).filter(x=>x[1]).map(([k,n])=>n+' '+({ja:'kommer',nei:'kommer ikke',vet:'vet ikke',ingen:'ikke svart'})[k]).join(' · '):'Ingen invitert ennå';
 const utSekO=(n,t,apen)=>'<details class="utsek" data-i="'+n+'"'+(apen?' open':'')+'><summary><span class="utsn">'+n+'</span><b>'+t+'</b><span class="small utsum"></span></summary><div class="utsb">';
 const utSekL=neste=>(neste===false?'':'<button type="button" class="btn" data-utnext style="width:auto;justify-self:start">Neste ›</button>')+'</div></details>';
 function utAsk(id,dato,pre){
@@ -1638,7 +1642,7 @@ function utAsk(id,dato,pre){
    +'<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="uEget" style="width:auto" '+(/^Eget/.test(b.pris)?'checked':'')+'>Eget arrangement (gratis)</label>'+utSekL()+utSekO(4,'Faktura')+utFakSkjema(b)+utSekL()+(state.admin?utSekO(5,'Menighetens kalender')+'<p class="small" style="margin:0">Menighetens kalender er Program-fanen. Her kan bookingen også legges inn der, så medlemmene ser den. Bare tittel, dag, klokkeslett og rom tas med, aldri leietaker, kontakt, pris eller merknad.</p><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" id="uPr" style="width:22px;height:22px;flex:none" '+(lev?'checked':'')+'>Legg også inn i menighetens kalender</label><label class="f" id="uPrKat">Kategori<select id="uPrC">'+utKatListe().map(c=>'<option '+(c===(lev?normCat(lev.cat):'Møter')?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select></label><p class="small" id="uPrInfo" style="margin:0"></p>'+utSekL():'')+utSekO(state.admin?6:5,'Merknad og varsler')+'<label class="f">Merknad<textarea id="uN" rows="3" maxlength="500">'+esc(b.notat)+'</textarea></label>'
    +'<label class="f">Automatisk påminnelse til vertskapet<select id="uRem">'+UT_PAAMINN.map(([h,t])=>'<option value="'+h+'" '+(Number(b.remindH==null?24:b.remindH)===h?'selected':'')+'>'+t+'</option>').join('')+'</select></label><p class="small" style="margin:-4px 0 0">Vertskapet får et varsel automatisk før bookingen starter (gjelder bekreftede bookinger). Du kan endre eller slå av.</p>'
    +'<label class="f" style="flex-direction:row;align-items:flex-start;gap:8px"><input type="checkbox" id="uVarsle" style="width:auto;margin-top:4px" checked><span>Send varsel til vertskapet (gruppen Vertskap) om bookingen. <span class="small">Varselet viser tittel, tid, rom, antall gjester og servering, aldri leietakerens navn. Skriv derfor ikke navn på avdøde eller andre privatpersoner i tittelen.</span></span></label>'
-   +utSekL(false)+'<p class="small" style="margin:0">Legg ikke inn opplysninger om barn under 13 år.</p><p class="small" id="uMsg" role="status" style="margin:0"></p>'
+   +(ex?utSekL()+utSekO(state.admin?7:6,'Team','')+'<p class="small" style="margin:0">Svar fra de som har fått invitasjonen i Sionchat. Inviterte som ikke har svart, står under «Ikke svart ennå».</p><div id="uTeamE"><p class="small">Henter …</p></div>'+utSekL(false):utSekL(false))+'<p class="small" style="margin:0">Legg ikke inn opplysninger om barn under 13 år.</p><p class="small" id="uMsg" role="status" style="margin:0"></p>'
    +'<div class="btns"><button class="btn primary" value="lagre" style="width:auto">Lagre</button>'+(ex?'<button class="btn danger" value="slett" formnovalidate>Slett</button>':'')+'<button class="btn" value="avbryt" formnovalidate>Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   { const sek=[...dlg.querySelectorAll('.utsek')],q=x=>dlg.querySelector(x),S=i=>dlg.querySelector('.utsek[data-i="'+i+'"] .utsum'),
@@ -1653,6 +1657,7 @@ function utAsk(id,dato,pre){
       S(state.admin?6:5).textContent=q('#uRem').selectedOptions[0].textContent+(q('#uVarsle').checked?' · varsler vertskap':'');
       if(q('#uPr')){const pa=q('#uPr').checked;q('#uPrKat').style.display=pa?'':'none';q('#uPrInfo').style.display=pa?'':'none';q('#uPrInfo').textContent=utKatInfo(q('#uPrC').value);S(5).textContent=pa?'I kalenderen · '+q('#uPrC').value:'Ikke i kalenderen'}};
     dlg.addEventListener('input',sum);dlg.addEventListener('change',sum);sum();dlg.__apne=apne;
+    if(ex&&FB&&FB.utTeamList){const TS=state.admin?7:6;FB.utTeamList(id).then(l=>{const el=q('#uTeamE'),su=S(TS);if(el)el.innerHTML=utTeamHtml(l);if(su)su.textContent=utTeamSum(l)}).catch(()=>{const el=q('#uTeamE'),su=S(TS);if(el)el.innerHTML='<p class="small">Kunne ikke hente svarene.</p>';if(su)su.textContent='Ikke tilgjengelig'})}
   }
   { const q=x=>dlg.querySelector(x),tm0=utTiderMap(b);
     const bygg=()=>{const a=q('#uD').value,z=q('#uD2').value,flere=a&&z&&z>a&&Math.round((Date.parse(z)-Date.parse(a))/864e5)<=60;q('#uEn').style.display=flere?'none':'grid';const box=q('#uTider');
@@ -1799,7 +1804,7 @@ function utDetalj(id,dag){
     +(skriv&&!x.program?rad('Leietaker',x.leier)+rad('Kontakt',x.kontakt)+rad('Pris',x.pris)+rad('Merknad',x.notat):'')
     +'<div class="btns">'+(skriv&&!x.program?'<button class="btn primary" value="endre" style="width:auto">Endre</button>':'')+'<button class="btn" value="del" style="width:auto">Del</button><button class="btn" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';
   document.body.appendChild(dlg);
-  if(!x.program&&FB&&FB.utTeamList)FB.utTeamList(id).then(l=>{const el=dlg.querySelector('#uTeam');if(!el||!l.length)return;const gr=[['ja','✅ Kommer'],['nei','❌ Kommer ikke'],['vet','🤔 Vet ikke ennå'],['ingen','⏳ Ikke svart ennå']];el.innerHTML='<div class="utteam"><b>Team</b>'+gr.map(([k,n])=>{const p=l.filter(y=>y.k===k).map(y=>esc(y.n||y.e)).sort((a,b)=>a.localeCompare(b,'nb'));return '<div class="utt-rad"><span>'+n+' ('+p.length+')</span><span>'+(p.length?p.join(', '):'–')+'</span></div>'}).join('')+'</div>'}).catch(()=>{});
+  if(!x.program&&FB&&FB.utTeamList)FB.utTeamList(id).then(l=>{const el=dlg.querySelector('#uTeam');if(!el||!l.length)return;el.innerHTML='<b>Team</b>'+utTeamHtml(l)}).catch(()=>{});
   dlg.querySelector('form').addEventListener('submit',async e=>{const v=e.submitter&&e.submitter.value;
     if(v==='endre'){e.preventDefault();dlg.close();setTimeout(()=>utAsk(id),450)}
     else if(v==='del'){e.preventDefault();const tekst=utBokTekst(x,false).split(UT_DETALJ)[0].replace('Endret booking','Booking').trim();
@@ -4200,7 +4205,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 02:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 03:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
