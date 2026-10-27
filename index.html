@@ -548,6 +548,8 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .kam.kflash::after{content:'';position:absolute;inset:0;background:#fff;opacity:.6;pointer-events:none}
 .chat{position:fixed;inset:0;z-index:5;display:flex;justify-content:center;background:var(--bg);overflow:hidden;overscroll-behavior:contain}   /* overflow: samtalen som dras til siden klippes til chat-boksen og flytter ikke toppen eller menyen */
 html,body{overscroll-behavior-x:none}
+/* Mens chatten er åpen skal vannrette drag aldri flytte hele siden (toppen og menyen) eller starte nettleserens «sveip for å gå tilbake»: bare loddrett rulling slippes til nettleseren, resten håndterer appen selv. */
+html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,html.chatapen nav.tabs{touch-action:pan-y;overscroll-behavior-x:none}
 .chatkort{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;color:inherit;font:inherit;padding:0;cursor:pointer}
 .chatkort .ctx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .chatkort .cn{font-weight:700;font-size:var(--t-l)}
@@ -3213,7 +3215,7 @@ function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unre
 function chatApne(id){
   if(!FB||!state.user||!state.member)return;
   const c=state.chat;try{if(typeof ovgRydd==='function')ovgRydd();chatEl().getAnimations().forEach(a=>a.cancel());chatEl().style.pointerEvents=''}catch(e){}
-  c.vis=true;chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';try{drawTabs()}catch(e){}
+  c.vis=true;document.documentElement.classList.add('chatapen');chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';try{drawTabs()}catch(e){}
   loadThreads();
   chatListe();if(id)chatVent(id,()=>chatSamtale(id))}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
@@ -3222,7 +3224,7 @@ function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatLis
 const chatHistSikre=()=>{const c=state.chat;if(c&&!c.hist){try{history.pushState({sion:'chat'},'')}catch(e){}c.hist=true}};
 const chatHistFjern=()=>{const c=state.chat;if(c&&c.hist){c.hist=false;try{history.back()}catch(e){}}};
 addEventListener('popstate',()=>{const c=state.chat;if(!c||!c.vis||c.vy==='liste')return;c.hist=false;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()});
-function chatLukk(){const c=state.chat;chatHistFjern();chatStoppMsgs();c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
+function chatLukk(){const c=state.chat;chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen');c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
 function chatListeInn(){
   const q=norm((state.chat&&state.chat.q)||'').trim(),meg=meEmail(),l=state.threads&&state.threads.filter(t=>!(t.gone||[]).includes(meg)&&(!q||norm(chatNavn(t,meg)+' '+(t.last||'')).includes(q)));
   if(l===undefined)return '<p class="small" style="padding:14px">Henter samtaler …</p>';
@@ -4153,7 +4155,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 22:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 22:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
