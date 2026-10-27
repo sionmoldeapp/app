@@ -958,6 +958,10 @@ nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 /* Utvidet visning: kalenderen bruker hele skjermbredden, og rommene er fargekodet. */
 #view.ututv{padding-left:4px;padding-right:4px}
 #view.ututv>h1{padding:0 12px}
+.utkt{margin-left:auto;display:inline-flex;gap:8px;align-items:center}
+.utkt .btn{width:auto;display:inline-flex;align-items:center;justify-content:center}
+.utlasboks{position:sticky;top:var(--utlasTop,70px);z-index:4;background:var(--surface);padding:6px 0 4px;margin:0 0 8px;max-height:60vh;overflow-y:auto;box-shadow:0 6px 8px -6px rgba(0,0,0,.25)}
+.utlasboks .utghint{display:none}
 #view.ututv>details[data-acc="utleie"]{padding:12px 8px;border-radius:14px}
 html[data-bred="1"] #view.ututv{columns:1;max-width:none}
 .utnavrad{margin:0 0 8px;align-items:center}.utnavrad b{flex:1;text-align:center;min-width:120px}
@@ -1524,7 +1528,7 @@ function utUtvInnhold(u,perDag,idag){
   {const pd={};Object.keys(perDag).forEach(k=>{pd[k]=perDag[k].filter(x=>!(x.rom||[]).length||x.rom.some(vis))});perDag=pd}
   const farger=x=>utFarge((x.rom&&x.rom.length)?x.rom[0]:PROG);
   const nSk=alleRom.filter(r=>skjul.includes(r)).length,
-    legende='<div class="utlegende" role="group" aria-label="Vis eller skjul rom">'+alleRom.map(r=>{const p=vis(r);return '<button type="button" class="utlchip'+(p?'':' av')+'" data-utrom="'+esc(r)+'" aria-pressed="'+p+'" title="'+(p?'Skjul ':'Vis ')+esc(r)+'"><i style="background:'+(p?utFarge(r):'transparent')+';border-color:'+utFarge(r)+'"></i>'+esc(r)+'</button>'}).join('')+(nSk?'<button type="button" class="utlchip vis" data-utrom="__alle">Vis alle ('+nSk+' skjult)</button>':'')+'</div>';
+    legende='<div class="utlegende" role="group" aria-label="Vis eller skjul rom">'+alleRom.map(r=>{const p=vis(r);return '<button type="button" class="utlchip'+(p?'':' av')+'" data-utrom="'+esc(r)+'" aria-pressed="'+p+'" title="'+(p?'Skjul ':'Vis ')+esc(r)+'"><i style="background:'+(p?utFarge(r):'transparent')+';border-color:'+utFarge(r)+'"></i>'+esc(r)+'</button>'}).join('')+(nSk?'<button type="button" class="utlchip vis" data-utrom="__alle">Vis alle ('+nSk+' skjult)</button>':'')+'</div><!--UL-->';
   const nav=(tekst,n,aria)=>'<div class="btns utnavrad"><button type="button" class="btn" data-utnav="-'+n+'" aria-label="Forrige '+aria+'">‹</button><b>'+tekst+'</b><button type="button" class="btn" data-utnav="'+n+'" aria-label="Neste '+aria+'">›</button><button type="button" class="btn" data-utidag>I dag</button></div>';
   const ny=utTilgang()?'<div class="btns" style="margin-top:12px"><button type="button" class="btn primary" data-utny style="width:auto">+ Ny booking</button>'+utLedereKnapp()+'</div>':'<p class="small" style="margin:10px 0 0">Du ser bookingene som vertskap, og får varsel når det kommer en ny.</p>';
   const iv=(liste,k)=>{const o=liste.map(x=>{const [f,t]=utDagTid(x,k),s=utMin(f);return {x,f,t,s,e:Math.max(utMin(t)||s+60,s+30)}}).sort((p,q)=>p.s-q.s),lanes=[];
@@ -1563,7 +1567,7 @@ function utleieCard(){
   const [år,mm]=u.mnd.split('-').map(Number),første=new Date(år,mm-1,1),dagerIMnd=new Date(år,mm,0).getDate(),forskyv=(første.getDay()+6)%7;
   const egen=b=>!!b.program||/^Eget/.test(b.pris||''),visOK=b=>!u.vis||u.vis==='alle'||(u.vis==='egne'?egen(b):!egen(b));
   const filter=b=>visOK(b)&&(u.rom==='Alle'||(b.rom||[]).includes(u.rom)||(b.rom||[]).includes('Hele bygget'));
-  const visChips='<p class="small" style="margin:0 0 4px"><b>Type</b></p><div class="btns" style="margin:0 0 8px" role="group" aria-label="Vis">'+[['alle','Alle'],['utleid','Utleide'],['egne','Egne arrangementer']].map(([v,n])=>'<button type="button" class="btn '+((u.vis||'alle')===v?'on':'')+'" data-utvis="'+v+'" aria-pressed="'+((u.vis||'alle')===v)+'">'+n+'</button>').join('')+'</div>';
+  const visChips='<p class="small" style="margin:0 0 4px"><b>Type</b></p><div class="btns" style="margin:0 0 8px" role="group" aria-label="Vis">'+[['alle','Alle'],['utleid','Utleide'],['egne','Egne arrangementer']].map(([v,n])=>'<button type="button" class="btn '+((u.vis||'alle')===v?'on':'')+'" data-utvis="'+v+'" aria-pressed="'+((u.vis||'alle')===v)+'">'+n+'</button>').join('')+'<span class="utkt">'+(u.utv?'<button type="button" class="btn utlas'+(u.las?' on':'')+'" data-utlas aria-pressed="'+(!!u.las)+'" aria-label="Lås toppen så bare kalenderen ruller" title="Lås toppen så bare kalenderen ruller"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/>'+(u.las?'<path d="M8 11V8a4 4 0 0 1 8 0v3"/>':'<path d="M8 11V8a4 4 0 0 1 7.5-2"/>')+'</svg></button>':'')+'<button type="button" class="btn ututv'+(u.utv?' on':'')+'" data-ututv role="switch" aria-checked="'+(!!u.utv)+'" aria-label="Utvidet visning av kalenderen (skjuler de andre kortene)">Utvidet visning</button></span></div>';
   const alle=(u.liste||[]).filter(filter),perDag={},prog=(()=>{const r=utRange(u,dagerIMnd);return utProgram(r[0],r[1])})().filter(filter);
   [...alle,...prog].forEach(b=>{utDager(b).forEach(k=>{(perDag[k]=perDag[k]||[]).push(b)})});
   let inn;
@@ -1577,7 +1581,7 @@ function utleieCard(){
     const kommende=alle.filter(b=>(b.dato2||b.dato)>=idag).sort((a,b)=>(a.dato+a.fra).localeCompare(b.dato+b.fra))
     .slice(0,10);
     const fakChips=utTilgang()?'<p class="small" style="margin:0 0 4px"><b>Faktura</b></p><div class="btns" style="margin:0 0 8px" role="group" aria-label="Faktura">'+[['alle','Alle'],['ikke','Ikke fakturerte'],['ja','Fakturerte']].map(([v,n])=>'<button type="button" class="btn '+((u.fil||'alle')===v?'on':'')+'" data-utfil="'+v+'" aria-pressed="'+((u.fil||'alle')===v)+'">'+n+'</button>').join('')+'</div>':'';
-    if(u.utv&&!(utTilgang()&&(u.fil||'alle')!=='alle'))inn=visChips+utVisnKnapper(u)+utUtvInnhold(u,perDag,idag)+utFakEpostLinje();
+    if(u.utv&&!(utTilgang()&&(u.fil||'alle')!=='alle')){const dl=utUtvInnhold(u,perDag,idag),i=dl.indexOf('<!--UL-->'),topp=visChips+utVisnKnapper(u)+(i<0?'':dl.slice(0,i));inn=(u.las&&i>=0?'<div class="utlasboks">'+topp+'</div>'+dl.slice(i+9):topp+(i<0?dl:dl.slice(i+9)))+utFakEpostLinje()}
     else if(utTilgang()&&(u.fil||'alle')!=='alle'){
       if(u.alle===undefined){utLastAlle();inn=visChips+fakChips+'<p class="small">Henter alle bookinger …</p>'}
       else{const ikke=u.fil==='ikke',lis=u.alle.filter(filter).filter(b=>utFakRel(b)&&(ikke?!b.fakturert:!!b.fakturert)).sort((a,b)=>ikke?(a.dato+a.fra).localeCompare(b.dato+b.fra):(b.dato+b.fra).localeCompare(a.dato+a.fra));
@@ -1595,7 +1599,7 @@ function utleieCard(){
      +'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">'+cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+'</h3><div class="list">'+(valgteB.length?valgteB.map(b=>utItem(b,u.dag)).join(''):'<p class="small">Ingen bookinger denne dagen.</p>')+'</div>'
      +(utTilgang()?'<div class="btns" style="margin-top:10px"><button type="button" class="btn primary" data-utny style="width:auto">+ Ny booking</button>'+utLedereKnapp()+'</div>':'<p class="small" style="margin:10px 0 0">Du ser bookingene som vertskap, og får varsel når det kommer en ny.</p>')
      +utFakEpostLinje()+(kommende.length?'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Kommende</h3><div class="list">'+(()=>{let sist='',ut='';kommende.forEach(b=>{const dag=b.dato<idag?idag:b.dato,w=new Date(dag+'T12:00'),k=when(w)+' '+w.getDate()+'. '+MON[w.getMonth()];if(k!==sist){ut+='<div class="day">'+k+'</div>';sist=k}ut+=utItem(b,dag)});return ut})()+'</div>':'')}
-  return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie?'open':'')+'><summary><h2>Utleie</h2></summary><div class="switch utbryter"><div><b>Utvidet visning</b><div class="small">Skjuler de andre kortene</div></div><button type="button" class="tg" role="switch" aria-checked="'+(!!u.utv)+'" aria-label="Utvidet visning av kalenderen" data-ututv></button></div>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
+  return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie?'open':'')+'><summary><h2>Utleie</h2></summary>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
 /* Menighetens kalender (Program): en booking kan også legges inn som arrangement der. Koblingen ligger på arrangementet (utId), så bookingen trenger ingen nye felt. Bare administratorer kan skrive i Program. */
 const UT_KATER=['Møter','Ungdom','Barn','Happeninger','Menighetsmøte','Lederrådet','Ungdomsleder'],UT_KAT_MEDL=['Menighetsmøte','Lederrådet','Ungdomsleder'];
 const utKatListe=()=>[...UT_KATER,...allCats().filter(c=>!UT_KATER.includes(c))];
@@ -4157,7 +4161,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 00:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 01:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -4630,7 +4634,7 @@ function badge(){
 }
 const viewBanner=()=>'';
 function chipScroll(){const a=document.querySelector('.chips.scroll [aria-pressed="true"]'),r=document.querySelector('.chips.scroll');if(a&&r)r.scrollTo({left:a.offsetLeft-(r.clientWidth-a.offsetWidth)/2,behavior:'auto'})}
-const utvKlasse=()=>$('#view').classList.toggle('ututv',state.tab==='me'&&!!(state.ut&&state.ut.utv)&&!!document.querySelector('#view details[data-acc="utleie"]'));
+const utvKlasse=()=>{const v=$('#view');v.classList.toggle('ututv',state.tab==='me'&&!!(state.ut&&state.ut.utv)&&!!document.querySelector('#view details[data-acc="utleie"]'));const h=document.querySelector('header.top');if(h)v.style.setProperty('--utlasTop',Math.round(h.getBoundingClientRect().height)+'px')};
 function render(){visTab=state.tab;drawTabs();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();utvKlasse();badge();window.scrollTo(0,0);chipScroll()}
 /* «Sletter …»: en sirkel som snurrer til databasen har bekreftet slettingen. Vises i åpen dialog hvis det finnes en, ellers over hele siden. */
 let busyN=0,busyT=null,busyIv=null,busyRm=null,busyTekst='Sletter …',busyVist=0;
@@ -4889,6 +4893,7 @@ document.addEventListener('click',async e=>{
   else if('givingedit' in c.dataset){givingAsk()}
   else if('juledit' in c.dataset){julAsk()}
   else if(c.dataset.utdag){keep(()=>{state.ut.dag=c.dataset.utdag});}
+  else if('utlas' in c.dataset){keep(()=>{state.ut.las=!state.ut.las})}
   else if('ututv' in c.dataset){const pa=!state.ut.utv;keep(()=>{state.ut.utv=pa;if(pa){state.acc.utleie=true;if(!state.ut.visn||state.ut.visn==='mnd')state.ut.visn='dag'}});const k=document.querySelector('#view details[data-acc="utleie"]');if(k)requestAnimationFrame(()=>kortTilToppen(k))}
   else if(c.dataset.utmnd){const [y,m]=state.ut.mnd.split('-').map(Number),d=new Date(y,m-1+parseInt(c.dataset.utmnd,10),1);keep(()=>{state.ut.mnd=dkey(d).slice(0,7)})}
   else if(c.dataset.utvisn){keep(()=>{const u=state.ut;u.visn=c.dataset.utvisn;if(u.visn==='mnd')u.mnd=u.dag.slice(0,7)})}
