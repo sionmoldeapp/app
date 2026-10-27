@@ -244,6 +244,9 @@ const FB={
     setUtleieEpost:e=>S.setDoc(S.doc(db,'settings','utleie'),{fakturaEpost:String(e||'').slice(0,100)},{merge:true}),
     // Svar fra teamet på et arrangement (Kommer / Kommer ikke / Vet ikke ennå): bookinger/{id}/team/{e-post} {n,k,ms}.
     utTeamSet:(bid,epost,navn,k)=>S.setDoc(S.doc(db,'bookinger',String(bid),'team',String(epost).toLowerCase()),{n:String(navn||epost).slice(0,60),k,ms:Date.now()}),
+    // Inviterte som ikke har svart ennå (k:'ingen'). Eksisterende svar røres ikke.
+    async utTeamInviter(bid,folk){const ref=S.collection(db,'bookinger',String(bid),'team'),har=new Set((await S.getDocs(ref)).docs.map(d=>d.id));
+      for(const p of folk){const e=String(p.e).toLowerCase();if(!har.has(e))await S.setDoc(S.doc(ref,e),{n:String(p.n||e).slice(0,60),k:'ingen',ms:Date.now()})}},
     utTeamList:async bid=>(await S.getDocs(S.collection(db,'bookinger',String(bid),'team'))).docs.map(d=>({e:d.id,...d.data()})),
     utDel:id=>S.deleteDoc(S.doc(db,'bookinger',id)),
     async getUtleie(){const s=await S.getDoc(S.doc(db,'settings','utleie'));return s.exists()?s.data():null},
