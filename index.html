@@ -966,7 +966,10 @@ nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 .utkt{margin-left:auto;display:inline-flex;gap:8px;align-items:center}
 .utkt .btn{width:auto;display:inline-flex;align-items:center;justify-content:center}
 .utlasboks{position:sticky;top:var(--utlasTop,70px);z-index:4;background:var(--surface);padding:6px 0 4px;margin:0 0 8px;max-height:60vh;overflow-y:auto;box-shadow:0 6px 8px -6px rgba(0,0,0,.25)}
-.utlasboks .utghint{display:none}
+.utinfo{display:flex;justify-content:flex-end;margin:0 0 4px}
+.utinfo2{margin:-4px 0 0}.utinfo2>summary{list-style:none;cursor:pointer;display:flex;justify-content:flex-end}.utinfo2>summary::-webkit-details-marker{display:none}
+.utibtn{all:unset;box-sizing:border-box;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);display:grid;place-items:center;font:italic 700 15px/1 Georgia,serif;cursor:pointer}
+.utibtn.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
 #view.ututv>details[data-acc="utleie"]{padding:12px 8px;border-radius:14px}
 html[data-bred="1"] #view.ututv{columns:1;max-width:none}
 .utnavrad{margin:0 0 8px;align-items:center}.utnavrad b{flex:1;text-align:center;min-width:120px}
@@ -1557,7 +1560,8 @@ function utUtvInnhold(u,perDag,idag){
     const nå=new Date(),nm=nå.getHours()*60+nå.getMinutes(),naa=naaK&&nm>=h0*60&&nm<h1*60?'<div class="utnu2" style="top:'+Math.round((nm-h0*60)*K)+'px" aria-hidden="true"></div>':'';
     return '<div class="utg" style="--n:'+n+'"><div class="utg-in"><div class="utg-rad utg-hode"><span class="utg-t0"></span>'+kol.map(c=>'<div class="utg-kh" style="border-top-color:'+c.farge+'">'+c.hode+'</div>').join('')+'</div>'
       +'<div class="utg-rad utg-kropp" style="height:'+H+'px"><div class="utg-tid">'+timer.join('')+'</div>'+kol.map(c=>'<div class="utg-kol'+(c.idag?' idag':'')+'"'+(utTilgang()&&c.d?' data-utcell="'+c.d+'|'+esc(c.r||'')+'" data-h0="'+h0+'" title="Trykk for å legge inn en booking"':'')+'>'+(c.idag?naa:'')+c.html+'</div>').join('')+'</div></div></div>'};
-  const tips=utTilgang()?'<p class="small utghint">Trykk på et tomt felt for å legge inn en booking. Trykk på en booking for å se detaljer, endre eller dele. Hold inne på en booking for å flytte den eller gjøre den lengre eller kortere. I Uke kan du dra i sidene for å utvide den til flere dager, og deretter løsne hver dag for å gi den sitt eget tidspunkt. Trykk på et rom i fargeforklaringen for å skjule eller vise det.</p>':'<p class="small utghint">Trykk på en booking for å se detaljer.</p>';
+  const tipsTekst=utTilgang()?'Trykk på et tomt felt for å legge inn en booking. Trykk på en booking for å se detaljer, endre eller dele. Hold inne på en booking for å flytte den eller gjøre den lengre eller kortere. I Uke kan du dra i sidene for å utvide den til flere dager, og deretter løsne hver dag for å gi den sitt eget tidspunkt. Trykk på et rom i fargeforklaringen for å skjule eller vise det.':'Trykk på en booking for å se detaljer.',
+    tips='<div class="utinfo"><button type="button" class="utibtn'+(u.hjelp?' on':'')+'" data-uthjelp aria-expanded="'+(!!u.hjelp)+'" aria-label="Vis eller skjul hjelp" title="Hjelp">i</button></div>'+(u.hjelp?'<p class="small utghint">'+tipsTekst+'</p>':'');
   if(v==='uke'){
     const dager=utUkeDager(u.dag),a=new Date(dager[0]+'T12:00'),z=new Date(dager[6]+'T12:00'),[h0,h1]=tider(dager.map(k=>[perDag[k]||[],k]));
     const kol=dager.map(k=>{const w=new Date(k+'T12:00');return {hode:'<button type="button" data-utdagvisn="'+k+'" class="utg-dagk" aria-label="Vis '+cap(DAYS[w.getDay()])+' '+w.getDate()+'. '+MON[w.getMonth()]+' som dag">'+esc(cap(DAYS[w.getDay()]).slice(0,3))+' '+w.getDate()+'.</button>',farge:k===idag?'var(--brand)':'var(--line)',idag:k===idag,d:k,r:(u.rom&&u.rom!=='Alle')?u.rom:'',html:blokker(perDag[k]||[],k,h0)}});
@@ -1573,7 +1577,7 @@ function utUtvInnhold(u,perDag,idag){
   for(let d=1;d<=dager;d++){const k=u.mnd+'-'+utPad2(d),b=(perDag[k]||[]).slice().sort((x,y)=>utMin(utDagTid(x,k)[0])-utMin(utDagTid(y,k)[0]));
     celler.push('<button type="button" class="utmc'+(k===idag?' idag':'')+'" data-utdagvisn="'+k+'" aria-label="'+d+'. '+UT_MND[mm-1]+(b.length?', '+b.length+' booking'+(b.length>1?'er':''):'')+'"><b>'+d+'</b>'
       +b.slice(0,3).map(x=>{const c=farger(x);return '<span class="utmch" style="border-left-color:'+c+';background:'+c+'2e">'+esc(utDagTid(x,k)[0])+' '+esc(x.tittel||'Booking')+'</span>'}).join('')+(b.length>3?'<span class="utmmer">+'+(b.length-3)+' til</span>':'')+'</button>')}
-  return '<div class="btns utnavrad"><button type="button" class="btn" data-utmnd="-1" aria-label="Forrige måned">‹</button><b>'+cap(UT_MND[mm-1])+' '+år+'</b><button type="button" class="btn" data-utmnd="1" aria-label="Neste måned">›</button><button type="button" class="btn" data-utidag>I dag</button></div>'+legende
+  return tips+'<div class="btns utnavrad"><button type="button" class="btn" data-utmnd="-1" aria-label="Forrige måned">‹</button><b>'+cap(UT_MND[mm-1])+' '+år+'</b><button type="button" class="btn" data-utmnd="1" aria-label="Neste måned">›</button><button type="button" class="btn" data-utidag>I dag</button></div>'+legende
     +'<div class="utmrutenett"><div class="utmuker">'+['man','tir','ons','tor','fre','lør','søn'].map(x=>'<span>'+x+'</span>').join('')+'</div><div class="utmdager">'+celler.join('')+'</div></div>'+ny}
 function utleieCard(){
   if(!utLes())return '';
@@ -1643,7 +1647,7 @@ function utAsk(id,dato,pre){
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(ex?'Endre booking':'Ny booking')+'</h3>'
    +utSekO(1,'Hva og når',true)+'<label class="f">Tittel / hva skal det brukes til<input id="uT" maxlength="100" value="'+esc(b.tittel)+'" placeholder="For eksempel Bursdagsselskap"></label>'
    +'<details class="utsub" id="uRomD"><summary><b>Rom</b><span class="small utsubs"></span></summary><div class="utsubb">'+utRomListe().map(r=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utr="'+esc(r)+'" style="width:22px;height:22px;flex:none" '+((b.rom||[]).includes(r)?'checked':'')+'>'+esc(r)+'</label>').join('')+(state.admin?'<button type="button" class="pmore" id="uRomEdit" style="margin-top:4px">Endre romlisten</button>':'')+'</div></details>'
-   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Første dag<input id="uD" type="date" value="'+esc(b.dato)+'"></label><label class="f">Siste dag<input id="uD2" type="date" value="'+esc(b.dato2||'')+'"></label></div><p class="small" style="margin:-4px 0 0">Lar du «Siste dag» stå tom, gjelder bookingen bare én dag. Velger du flere dager, kan du sette eget tidspunkt for hver dag.</p>'
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Første dag<input id="uD" type="date" value="'+esc(b.dato)+'"></label><label class="f">Siste dag<input id="uD2" type="date" value="'+esc(b.dato2||'')+'"></label></div><details class="utinfo2"><summary aria-label="Hjelp om dager"><span class="utibtn">i</span></summary><p class="small" style="margin:6px 0 0">Lar du «Siste dag» stå tom, gjelder bookingen bare én dag. Velger du flere dager, kan du sette eget tidspunkt for hver dag.</p></details>'
    +'<div id="uEn" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Fra<input id="uF" type="time" value="'+esc(b.fra)+'"></label><label class="f">Til<input id="uTi" type="time" value="'+esc(b.til)+'"></label></div><div id="uTider" style="display:grid;gap:4px"></div>'
    +utSekL()+utSekO(2,'Gjester, servering og allergener')+'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px"><label class="f">Antall gjester<input id="uG" type="number" min="0" max="2000" inputmode="numeric" value="'+(b.gjester||'')+'"></label><label class="f">Matrett som skal serveres<input id="uM" maxlength="200" value="'+esc(b.servering||'')+'" placeholder="For eksempel kjøttkaker, kaffe og kake"></label></div>'
    +'<details class="utsub" id="uAlD"><summary><b>Allergener blant gjestene</b><span class="small utsubs"></span></summary><div class="utsubb"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">'+UT_ALLERGENER.map(a=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utal="'+esc(a)+'" style="width:22px;height:22px;flex:none" '+((b.allergener||[]).includes(a)?'checked':'')+'>'+esc(a)+'</label>').join('')+'</div><label class="f" style="margin-top:6px">Andre allergier eller kosthold<input id="uAn" maxlength="200" value="'+esc(b.allergenNotat||'')+'" placeholder="For eksempel vegetar eller nøtteallergi hos barn"></label></div></details>'
@@ -4217,7 +4221,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 03:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 03:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -4949,6 +4953,7 @@ document.addEventListener('click',async e=>{
   else if('givingedit' in c.dataset){givingAsk()}
   else if('juledit' in c.dataset){julAsk()}
   else if(c.dataset.utdag){keep(()=>{state.ut.dag=c.dataset.utdag});}
+  else if('uthjelp' in c.dataset){keep(()=>{state.ut.hjelp=!state.ut.hjelp})}
   else if('utlas' in c.dataset){keep(()=>{state.ut.las=!state.ut.las})}
   else if('ututv' in c.dataset){const pa=!state.ut.utv;keep(()=>{state.ut.utv=pa;if(pa){state.acc.utleie=true;if(!state.ut.visn||state.ut.visn==='mnd')state.ut.visn='dag'}});const k=document.querySelector('#view details[data-acc="utleie"]');if(k)requestAnimationFrame(()=>kortTilToppen(k))}
   else if(c.dataset.utmnd){const [y,m]=state.ut.mnd.split('-').map(Number),d=new Date(y,m-1+parseInt(c.dataset.utmnd,10),1);keep(()=>{state.ut.mnd=dkey(d).slice(0,7)})}
