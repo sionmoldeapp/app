@@ -859,6 +859,11 @@ dialog.pub{max-height:88vh;overflow:auto;width:min(94vw,440px)}
 dialog.lp .btns.col{flex-direction:column;align-items:stretch}
 dialog.lp .btns.col .btn{width:100%}
 a.btn{text-decoration:none;color:inherit;display:inline-block}
+/* Bildevisning og andre vinduer med Last ned + Lukk: begge knapper like store, tekst midt i, og bare en svak ramme (ikke tykk fokusring på iPhone) */
+dialog .btns a.btn,dialog .btns button.btn{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+dialog.cvis .btns .btn{padding:12px 18px;font-size:var(--t-b);width:auto;line-height:1.2}
+dialog.cvis .btns .btn:focus,dialog.cvis .btns .btn:focus-visible{outline:none;box-shadow:none}
+dialog.cvis form:focus{outline:none}
 .btn.danger{background:#b3261e;color:#fff;border-color:#b3261e}
 .detail{padding:0 14px 14px 116px;display:none;flex-direction:column;gap:10px}
 @media (max-width:480px){.detail{padding-left:14px}}
@@ -3712,7 +3717,7 @@ async function chatSendBilde(fil){
   document.addEventListener('click',e=>{if(brukt){brukt=false;if(e.target.closest&&e.target.closest('#cMsg .cb[data-msg]')){e.preventDefault();e.stopPropagation()}}},true)}
 document.addEventListener('click',e=>{
   const im=e.target.closest&&e.target.closest('img[data-cbilde]');
-  if(im&&!document.querySelector('dialog.pub')){const dlg=document.createElement('dialog');dlg.className='lp pub cvis';dlg.innerHTML='<form method="dialog" class="form"><img src="'+im.src+'" alt="Bilde" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--r-s)"><div class="btns"><a class="btn" href="'+im.src+'" download="bilde.jpg">Last ned</a><button class="btn primary" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';document.body.appendChild(dlg);dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();return}
+  if(im&&!document.querySelector('dialog.pub')){const dlg=document.createElement('dialog');dlg.className='lp pub cvis';dlg.innerHTML='<form method="dialog" class="form" tabindex="-1" autofocus><img src="'+im.src+'" alt="Bilde" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--r-s)"><div class="btns"><a class="btn" href="'+im.src+'" download="bilde.jpg">Last ned</a><button class="btn primary" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';document.body.appendChild(dlg);dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();return}
   const b=e.target.closest&&e.target.closest('button');if(!b)return;const d=b.dataset;
   if('chattab' in d){byttFane('chat',false)}
   else if('chatlukk' in d)chatLukk();
@@ -4110,7 +4115,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 18:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 18:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
