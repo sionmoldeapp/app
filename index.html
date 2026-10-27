@@ -3736,7 +3736,9 @@ function bildeSveip(dlg){
     if(e.cancelable)e.preventDefault();g.dx=dx;sett(dx)},{passive:false});
   const slutt=(avbrutt)=>{const a=g;g=null;if(!a||a.mode!==1)return;g=a;
     const v=a.dx/Math.max(1,Date.now()-a.t),ferdig=!avbrutt&&(a.dx>a.w*.4||(a.dx>70&&v>.5));
-    if(ferdig){glid(a.w,()=>{const b=chatW().querySelector('[data-chatback]');rydd();g=null;if(b){try{navigator.vibrate&&navigator.vibrate(8)}catch(x){}b.click()}})}
+    if(ferdig){glid(a.w,()=>{const c=state.chat;g=null;try{navigator.vibrate&&navigator.vibrate(8)}catch(x){}
+      /* Bytt innhold først og sett samtalen tilbake etterpå, i samme øyeblikk, så den lukkede samtalen ikke blinker. Ikke via tilbakeknappen: den går gjennom historikken og svarer litt senere. */
+      if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe();rydd()})}
     else glid(0,()=>{rydd();g=null})};
   document.addEventListener('touchend',()=>slutt(false),{passive:true});document.addEventListener('touchcancel',()=>slutt(true),{passive:true})}
 /* Hold på en melding (520 ms) åpner menyen. */
@@ -4155,7 +4157,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='27.10.2026 kl. 22:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='27.10.2026 kl. 23:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
