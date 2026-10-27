@@ -160,7 +160,7 @@ const FB={
     // Privat beskjed fra en gruppeleder (eller administrator) til ett medlem i gruppen. Egen samtale (kind 'dm') som medlemmet svarer i under Beskjeder.
     async newDm(toEmail,toName,groupName,text,name,ekstra){
       const me=auth.currentUser.email.toLowerCase(),to=String(toEmail).toLowerCase(),parts=[me,to],tref=S.doc(S.collection(db,'threads')),mref=S.doc(S.collection(db,'threads',tref.id,'messages')),b=S.writeBatch(db);
-      b.set(tref,{roleId:'dm',roleName:String(groupName||'Beskjed').slice(0,60),kind:'dm',toName:String(toName||to).slice(0,60),from:me,fromName:String(name).slice(0,60),parts,last:String(text).slice(0,140),lastBy:me,ms:Date.now(),unread:[to],created:S.serverTimestamp()});
+      b.set(tref,{roleId:'dm',roleName:String(groupName||'Beskjed').slice(0,60),kind:'dm',toName:String(toName||to).slice(0,60),from:me,fromName:String(name).slice(0,60),parts,last:String(text).replace(/⟦[^⟧]*⟧/g,'').trim().slice(0,140),lastBy:me,ms:Date.now(),unread:[to],created:S.serverTimestamp()});
       const dm={by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()};if(ekstra&&ekstra.lyd){dm.lyd=String(ekstra.lyd);dm.lsek=Math.min(120,Math.max(1,ekstra.lsek|0))}if(ekstra&&ekstra.avst&&ekstra.avst.id)dm.avst={id:String(ekstra.avst.id).slice(0,40)};b.set(mref,dm);
       await b.commit();return tref.id},
     async addMsg(t,text,name,ekstra){
@@ -171,7 +171,7 @@ const FB={
       if(ekstra&&ekstra.lyd){d.lyd=String(ekstra.lyd);d.lsek=Math.min(120,Math.max(1,ekstra.lsek|0))}
       if(ekstra&&ekstra.avst&&ekstra.avst.id)d.avst={id:String(ekstra.avst.id).slice(0,40)};
       b.set(mref,d);
-      b.update(tref,{last:(String(text).trim()?String(text):(ekstra&&ekstra.lyd?'🎤 Stemmemelding':'📷 Bilde')).slice(0,140),lastBy:me,ms:Date.now(),unread:t.parts.filter(p=>p!==me),gone:[]});
+      b.update(tref,{last:(String(text).replace(/⟦[^⟧]*⟧/g,'').trim()?String(text).replace(/⟦[^⟧]*⟧/g,'').trim():(ekstra&&ekstra.lyd?'🎤 Stemmemelding':'📷 Bilde')).slice(0,140),lastBy:me,ms:Date.now(),unread:t.parts.filter(p=>p!==me),gone:[]});
       await b.commit()},
     // Angre en melding du har sendt (teksten tømmes og meldingen merkes slettet), skjul/vis en samtale for deg selv, eller slett den for alle.
     async angreMsg(tid,mid,sist){const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db);
@@ -242,6 +242,9 @@ const FB={
       if(id){await S.setDoc(S.doc(db,'bookinger',id),o);return id}const r=await S.addDoc(S.collection(db,'bookinger'),o);return r.id},
     utSetFaktura:(id,v)=>S.setDoc(S.doc(db,'bookinger',id),{fakturert:!!v,fakturertMs:v?Date.now():0,ms:Date.now()},{merge:true}),
     setUtleieEpost:e=>S.setDoc(S.doc(db,'settings','utleie'),{fakturaEpost:String(e||'').slice(0,100)},{merge:true}),
+    // Svar fra teamet på et arrangement (Kommer / Kommer ikke / Vet ikke ennå): bookinger/{id}/team/{e-post} {n,k,ms}.
+    utTeamSet:(bid,epost,navn,k)=>S.setDoc(S.doc(db,'bookinger',String(bid),'team',String(epost).toLowerCase()),{n:String(navn||epost).slice(0,60),k,ms:Date.now()}),
+    utTeamList:async bid=>(await S.getDocs(S.collection(db,'bookinger',String(bid),'team'))).docs.map(d=>({e:d.id,...d.data()})),
     utDel:id=>S.deleteDoc(S.doc(db,'bookinger',id)),
     async getUtleie(){const s=await S.getDoc(S.doc(db,'settings','utleie'));return s.exists()?s.data():null},
     setUtleie:d=>S.setDoc(S.doc(db,'settings','utleie'),{...(d.rom?{rom:d.rom.slice(0,20).map(x=>String(x).slice(0,40))}:{}),...(d.vertskapLedere?{vertskapLedere:d.vertskapLedere.slice(0,6).map(x=>String(x).toLowerCase().slice(0,100))}:{})},{merge:true}),

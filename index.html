@@ -585,6 +585,9 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 .cb{touch-action:pan-y}
 .cvid{all:unset;display:block;margin-top:8px;padding:7px 12px;border-radius:99px;background:rgba(255,255,255,.25);border:1px solid currentColor;font-size:var(--t-s);font-weight:700;cursor:pointer;text-align:center}
 .cb.de .cvid{background:var(--surface)}
+.cbk{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.cbk-b{all:unset;box-sizing:border-box;padding:8px 12px;border-radius:99px;border:1px solid currentColor;font-size:var(--t-s);font-weight:700;cursor:pointer;text-align:center;background:var(--surface);color:var(--ink)}
+.cbk-b.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
 .cnvn{font-size:var(--t-xs);font-weight:700;opacity:.75;margin:0 0 2px}
 .cstj{position:absolute;top:-8px;left:8px;font-size:13px;line-height:1}
 .cb.cfram{animation:cfram 1.4s}
@@ -1684,7 +1687,7 @@ function utAsk(id,dato,pre){
     const k=utKonflikt(d,id);
     if(k.length&&!await bekreft('Dobbeltbooking: '+k.map(x=>(x.tittel||'Utleie')+' '+(x.dato2&&x.dato2>x.dato?utDatoKort(x.dato)+'–'+utDatoKort(x.dato2):x.fra+'–'+x.til)+' ('+(x.program?'Menighetens kalender'+((x.rom||[]).length?', '+x.rom.join(', '):''):(x.rom||[]).join(', '))+')').join('; ')+'. Lagre likevel?',{ok:'Lagre likevel',fare:false}))return;
     const prHas=!!dlg.querySelector('#uPr'),prCat=prHas&&dlg.querySelector('#uPr').checked?dlg.querySelector('#uPrC').value:'';
-    try{const nid=await FB.utSave(id,{...d,by:meEmail()});if(state.admin&&prHas&&(prCat||utProgEv(nid)))utProgSync(nid,d,prCat).catch(()=>push('Menighetens kalender','Bookingen er lagret, men menighetens kalender ble ikke oppdatert.'));state.ut.alle=undefined;state.ut.liste=[...(state.ut.liste||[]).filter(x=>x.id!==nid),{id:nid,...d}].sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;state.ut.mnd=d.dato.slice(0,7);dlg.close();state.acc.utleie=true;keep(()=>{});push('Lagret','Bookingen er lagret.');if(!ex||dlg.querySelector('#uVarsle').checked)utBeskjedLedere(d,!ex);if(dlg.querySelector('#uVarsle').checked)utVarsle(d,!ex).then(t=>{if(t)push('Varsel',t)})}
+    try{const nid=await FB.utSave(id,{...d,by:meEmail()});if(state.admin&&prHas&&(prCat||utProgEv(nid)))utProgSync(nid,d,prCat).catch(()=>push('Menighetens kalender','Bookingen er lagret, men menighetens kalender ble ikke oppdatert.'));state.ut.alle=undefined;state.ut.liste=[...(state.ut.liste||[]).filter(x=>x.id!==nid),{id:nid,...d}].sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;state.ut.mnd=d.dato.slice(0,7);dlg.close();state.acc.utleie=true;keep(()=>{});push('Lagret','Bookingen er lagret.');if(!ex||dlg.querySelector('#uVarsle').checked)utBeskjedLedere({...d,id:nid},!ex);if(dlg.querySelector('#uVarsle').checked)utVarsle(d,!ex).then(t=>{if(t)push('Varsel',t)})}
     catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 /* Interaktiv kalender: trykk på tomt felt = ny booking med dag, rom og klokkeslett utfylt. */
@@ -1790,9 +1793,11 @@ function utDetalj(id,dag){
     +rad('Antall gjester',x.gjester?String(x.gjester):'')+rad('Servering',x.servering)
     +((x.allergener||[]).length||x.allergenNotat?rad('Allergener',[...(x.allergener||[]),x.allergenNotat].filter(Boolean).join(', ')):'')
     +(x.program?'<p class="small" style="margin:0">Dette er et arrangement fra Program, og endres der.</p>':'')
+    +(x.program?'':'<div class="small" id="uTeam" style="margin:0"></div>')
     +(skriv&&!x.program?rad('Leietaker',x.leier)+rad('Kontakt',x.kontakt)+rad('Pris',x.pris)+rad('Merknad',x.notat):'')
     +'<div class="btns">'+(skriv&&!x.program?'<button class="btn primary" value="endre" style="width:auto">Endre</button>':'')+'<button class="btn" value="del" style="width:auto">Del</button><button class="btn" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';
   document.body.appendChild(dlg);
+  if(!x.program&&FB&&FB.utTeamList)FB.utTeamList(id).then(l=>{const el=dlg.querySelector('#uTeam');if(!el||!l.length)return;const gr=[['ja','✅ Kommer'],['nei','❌ Kommer ikke'],['vet','🤔 Vet ikke ennå']];el.innerHTML='<b>Team:</b> '+gr.map(([k,n])=>{const p=l.filter(y=>y.k===k).map(y=>esc(y.n||y.e));return p.length?n+' ('+p.length+'): '+p.join(', '):''}).filter(Boolean).join(' · ')}).catch(()=>{});
   dlg.querySelector('form').addEventListener('submit',async e=>{const v=e.submitter&&e.submitter.value;
     if(v==='endre'){e.preventDefault();dlg.close();setTimeout(()=>utAsk(id),450)}
     else if(v==='del'){e.preventDefault();const tekst=utBokTekst(x,false).split(UT_DETALJ)[0].replace('Endret booking','Booking').trim();
@@ -1807,14 +1812,14 @@ function utBokTekst(d,ny){
   const al=[...(d.allergener||[]),d.allergenNotat].filter(Boolean).join(', ');
   const hoved=['📅 '+(ny==='slett'?'Slettet booking':ny?'Ny booking':'Endret booking')+(d.status==='foresporsel'?' (forespørsel)':'')+': '+(d.tittel||'Utleie'),'Når: '+dager,'Rom: '+(d.rom||[]).join(', '),d.gjester?'Gjester: '+d.gjester:'',d.servering?'Servering: '+d.servering:'',al?'Allergener: '+al:''].filter(Boolean);
   const detaljer=['Leietaker: '+(d.leier||'–'),d.kontakt?'Kontakt: '+d.kontakt:'',d.pris?'Pris: '+(/^Eget/.test(d.pris)?'Eget arrangement (gratis)':d.pris):'','Status: '+(d.status==='foresporsel'?'Forespørsel':'Bekreftet'),d.notat?'Merknad: '+d.notat:'','Booket av: '+nyBeskjedNavn()].filter(Boolean);
-  return (hoved.join('\n')+'\n'+UT_DETALJ+'\n'+detaljer.join('\n')).slice(0,990)}
+  return (hoved.join('\n')+'\n'+UT_DETALJ+'\n'+detaljer.join('\n')).slice(0,960)}
 async function utBeskjedLedere(d,ny){
   if(!FB||!state.user)return;
   let em=(state.utLedere||[]).slice();
   if(!em.length&&state.admin)em=members.filter(u=>(u.leads||[]).includes('vertskap')).map(u=>u.id);
   em=[...new Set(em.map(x=>String(x).toLowerCase()))].filter(x=>x&&x!==meEmail()).slice(0,6);
   if(!em.length){push('Ingen leder for vertskap','Velg hvem som skal få beskjed om bookinger med knappen «Hvem får beskjed?» under Utleie.');return}
-  const tekst=utBokTekst(d,ny),navn=nyBeskjedNavn();let ok=0;
+  const tekst=utBokTekst(d,ny)+(d.id&&ny!=='slett'?'⟦lbok:'+d.id+'⟧':''),navn=nyBeskjedNavn();let ok=0;
   try{await loadThreads();
     for(const e of em){try{
       const t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(e)&&(x.parts||[]).includes(meEmail()));
@@ -3312,8 +3317,35 @@ function chatEffekt(type){
       const g=cx.createLinearGradient(x,q.y-sz,x,q.y+sz*.4);g.addColorStop(0,'#ffb3c8');g.addColorStop(1,'#e8638c');cx.fillStyle=g;hjerte(x,q.y,sz*.6);cx.fill();cx.restore()});
     if(t<DUR&&cv.isConnected)requestAnimationFrame(tegn);else cv.remove()};
   requestAnimationFrame(tegn)}
-const chatForh=t=>String(t||'').replace(SION_TOKEN,'[Sion]');
-const chatTekstHtml=t=>linkify(esc(t)).replace(SION_TOKEN,(m,v)=>sionHtml(v));
+/* Skjulte merker i meldingstekst (vises ikke): ⟦lbok:ID⟧ bookingbeskjed til leder, ⟦bok:ID:a|m⟧ invitasjon til teamet (a = automatisk i kalenderen), ⟦svar:ID:ja|nei|vet:a|m⟧ svar fra en i teamet. */
+const chatRens=t=>String(t||'').replace(/⟦[^⟧]*⟧/g,'').trim();
+const bokTok=t=>{const x=/⟦bok:([A-Za-z0-9_-]+):([am])⟧/.exec(t||'');return x?{id:x[1],auto:x[2]==='a'}:null};
+const svarTok=t=>{const x=/⟦svar:([A-Za-z0-9_-]+):(ja|nei|vet):([am])⟧/.exec(t||'');return x?{id:x[1],k:x[2],auto:x[3]==='a'}:null};
+const lbokId=t=>(/⟦lbok:([A-Za-z0-9_-]+)⟧/.exec(t||'')||[])[1]||'';
+const chatForh=t=>chatRens(t).replace(SION_TOKEN,'[Sion]');
+const chatTekstHtml=t=>linkify(esc(chatRens(t))).replace(SION_TOKEN,(m,v)=>sionHtml(v));
+const BOK_VALG=[['ja','✅ Kommer'],['nei','❌ Kommer ikke'],['vet','🤔 Vet ikke ennå']];
+const bokKalMerket=()=>{try{return JSON.parse(lsGet('sm-bokkal')||'[]')}catch(e){return[]}};
+/* Knapper under en bookingmelding: Kommer / Kommer ikke / Vet ikke ennå for teamet, og «Legg i kalenderen» for lederen under svarene. */
+function chatBokKnapper(m,l,meg){
+  const b=bokTok(m.text),sv=svarTok(m.text);
+  if(b&&m.by!==meg){
+    const min=[...l].reverse().find(x=>x.by===meg&&!x.slettet&&(svarTok(x.text)||{}).id===b.id),na=min?svarTok(min.text).k:'';
+    return '<div class="cbk" role="group" aria-label="Kommer du?">'+BOK_VALG.map(([k,n])=>'<button type="button" class="cbk-b'+(na===k?' on':'')+'" data-bokk="'+esc(m.id+'|'+k)+'" aria-pressed="'+(na===k)+'">'+n+'</button>').join('')+'</div>'}
+  if(sv&&m.by!==meg&&chatKan())return '<div class="cbk">'+(sv.auto?'<span class="small">✓ Lagt i kalenderen automatisk</span>':bokKalMerket().includes(m.id)?'<span class="small">✓ Lagt i kalenderen</span>':'<button type="button" class="cbk-b" data-bokkal="'+esc(m.id)+'">📅 Legg i kalenderen</button>')+'</div>';
+  return ''}
+async function chatBokSvar(mid,k){
+  const c=state.chat,m=c.msgs.find(x=>x.id===mid),b=m&&bokTok(m.text),t=chatTraad(c.id);if(!b||!t)return;
+  const navn=nyBeskjedNavn(),tittel=(String(m.text).match(/^📅 [^:\n]*: (.*)$/m)||[])[1]||'',
+    tekst=BOK_VALG.find(x=>x[0]===k)[1]+(tittel?': '+tittel:'')+'⟦svar:'+b.id+':'+k+':'+(b.auto?'a':'m')+'⟧';
+  try{await FB.addMsg(t,tekst,navn);if(PUSH_URL)FB.notifyThread(PUSH_URL,t.id).catch(()=>{});
+    if(b.auto)FB.utTeamSet(b.id,meEmail(),navn,k).catch(()=>{});
+    push('Svar sendt','Lederen din har fått svaret.')}
+  catch(e){push('Kunne ikke sende svaret','Prøv igjen.')}}
+async function chatBokKal(mid){
+  const m=state.chat.msgs.find(x=>x.id===mid),sv=m&&svarTok(m.text);if(!sv)return;
+  try{await FB.utTeamSet(sv.id,m.by,m.name||m.by,sv.k);lsSet('sm-bokkal',JSON.stringify([...bokKalMerket(),mid].slice(-200)));push('Lagt i kalenderen',(m.name||m.by)+' står nå i arrangementet i kalenderen.');chatMsgs()}
+  catch(e){push('Kunne ikke legge i kalenderen','Er de nye reglene publisert i Firebase? ('+((e&&e.code)||'feil')+')')}}
 const chatBareEmoji=t=>{t=String(t||'').trim();const u=t.replace(SION_TOKEN,'🕊');return !!u&&/^[\p{Extended_Pictographic}️‍\s]+$/u.test(u)&&[...u.matchAll(/\p{Extended_Pictographic}/gu)].length<=3};
 
 function chatRamme(tittel,under,av,innhold,hint){
@@ -3356,7 +3388,7 @@ function chatMsgs(sist){
       inn='<div class="'+kl+(rk.length?' lk':'')+(stor?' cstor':'')+(m.img&&!m.text&&!m.svar&&!m.lyd&&!m.avst?' cbild':'')+'" data-msg="'+esc(m.id)+'">'+(gr&&!mine&&!sammeFor?'<div class="cnvn">'+esc(m.name||'')+'</div>':'')
        +(m.svar?'<div class="cqt"><b>'+esc(m.svar.navn||'')+'</b><span>'+esc(m.svar.tekst||'')+'</span></div>':'')
        +(m.img?'<img class="cimg" src="'+m.img+'" alt="Bilde" data-cbilde>':'')
-       +(m.text?chatTekstHtml(m.text):'')+(/^📅 /.test(m.text||'')&&chatKan()?'<button type="button" class="cvid" data-bokvid="'+esc(m.id)+'">📤 Send videre til teamet</button>':'')+(m.avst&&m.avst.id?'<div class="cavst" data-avst="'+esc(m.avst.id)+'">'+chatAvstInn(m.avst.id)+'</div>':'')+(m.lyd?'<audio class="clyd" controls preload="metadata" src="'+m.lyd+'"></audio>':'')
+       +(m.text?chatTekstHtml(m.text):'')+chatBokKnapper(m,l,meg)+(/^📅 /.test(m.text||'')&&chatKan()&&!bokTok(m.text)?'<button type="button" class="cvid" data-bokvid="'+esc(m.id)+'">📤 Send videre til teamet</button>':'')+(m.avst&&m.avst.id?'<div class="cavst" data-avst="'+esc(m.avst.id)+'">'+chatAvstInn(m.avst.id)+'</div>':'')+(m.lyd?'<audio class="clyd" controls preload="metadata" src="'+m.lyd+'"></audio>':'')
        +((m.stjerne||[]).includes(meg)?'<span class="cstj" aria-label="Stjernemerket">⭐</span>':'')+(rk.length?'<span class="clike'+(minRk?' mine':'')+'" aria-label="'+tot+' reaksjoner">'+rk.map(x=>chatReakHtml(x[1])).join('')+(tot>1?'<small>'+tot+'</small>':'')+'</span>':'')+'</div>'}
     h+='<div class="crow '+(mine?'me':'de')+'">'+av+inn+'</div>';
     if(slutt){let tid=chatKl(m.ms)+(m.redigert?' · redigert':'');if(mine&&i===l.length-1&&t&&t.lastBy===meg)tid+=' · '+(sett?'Sett':'Sendt');h+='<div class="ct '+(mine?'me':'de')+'">'+esc(tid)+'</div>'}
@@ -3445,12 +3477,13 @@ function chatStjerneGo(id){const el=document.getElementById('cStj');if(el)el.rem
 function chatBokVidere(mid){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid);if(!m||!chatKan()||document.querySelector('dialog.pub'))return;
   const gs=chatGrupper();if(!gs.length){push('Ingen grupper','Du leder ingen grupper å sende til.');return}
-  const hoved=String(m.text||'').split('─── Detaljer')[0].trim().replace(/^📅 (Ny booking|Endret booking)/,'📅 Arrangement'),
+  const hoved=String(m.text||'').split('─── Detaljer')[0].trim().replace(/^📅 (Ny booking|Endret booking)/,'📅 Arrangement').replace(/⟦[^⟧]*⟧/g,'').trim()+(lbokId(m.text)?'\n\nKommer du? Trykk på en av knappene under.':''),
     def=gs.some(g=>g[0]==='vertskap')?'vertskap':gs[0][0];
   const dlg=document.createElement('dialog');dlg.className='lp pub';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Send videre til teamet</h3><p class="small" style="margin:0">Her er bare det viktigste. Leietaker, kontaktinfo og pris er ikke med. Du kan endre teksten før du sender.</p>'
    +'<label class="f">Til gruppen<select id="bvG">'+gs.map(g=>'<option value="'+esc(g[0])+'" '+(g[0]===def?'selected':'')+'>'+esc(g[1])+' ('+chatGruppeFolk(g[0]).length+')</option>').join('')+'</select></label>'
-   +'<label class="f">Melding<textarea id="bvT" rows="8" maxlength="800"></textarea></label><p class="small" id="bvS" role="status" style="margin:0"></p>'
+   +'<label class="f">Melding<textarea id="bvT" rows="8" maxlength="800"></textarea></label>'
+   +(lbokId(m.text)?'<p class="small" style="margin:0">Hver i teamet får knappene <b>Kommer</b>, <b>Kommer ikke</b> og <b>Vet ikke ennå</b> i meldingen. Svaret kommer til deg i chatten.</p><label style="display:flex;gap:8px;align-items:flex-start;font-size:var(--t-s)"><input type="checkbox" id="bvA" style="width:auto;margin-top:3px"'+(lsGet('sm-bokauto')==='1'?' checked':'')+'> Legg svarene automatisk i kalenderen, uten at jeg må bekrefte</label>':'')+'<p class="small" id="bvS" role="status" style="margin:0"></p>'
    +'<div class="btns"><button class="btn primary" value="send" style="flex:1">Send til teamet</button><button class="btn" value="avbryt" formnovalidate style="flex:1">Avbryt</button></div></form>';
   document.body.appendChild(dlg);dlg.querySelector('#bvT').value=hoved;
   dlg.querySelector('form').addEventListener('submit',async e=>{
@@ -3458,7 +3491,8 @@ function chatBokVidere(mid){
     const g=dlg.querySelector('#bvG').value,tekst=dlg.querySelector('#bvT').value.trim(),folk=chatGruppeFolk(g);
     if(!tekst){dlg.querySelector('#bvS').textContent='Skriv en melding.';return}
     if(!folk.length){dlg.querySelector('#bvS').textContent='Gruppen har ingen å sende til.';return}
-    dlg.close();await chatSendBulk(folk,g,tekst)});
+    const bid=lbokId(m.text),auto=!!(dlg.querySelector('#bvA')&&dlg.querySelector('#bvA').checked);if(bid)lsSet('sm-bokauto',auto?'1':'0');
+    dlg.close();await chatSendBulk(folk,g,tekst+(bid?'⟦bok:'+bid+':'+(auto?'a':'m')+'⟧':''))});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 /* Svar på en melding (fra menyen eller ved å sveipe). */
 function chatSvarPaa(mid){
@@ -3607,7 +3641,7 @@ async function chatSendBulk(folk,gid,tekst,ekstra){
   const meg=meEmail(),navn=nyBeskjedNavn();let ok=0,feil=0;
   for(let i=0;i<folk.length;i+=4){
     await Promise.all(folk.slice(i,i+4).map(async u=>{try{const t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(u.id)&&(x.parts||[]).includes(meg));if(t)await FB.addMsg(t,tekst,navn,ekstra);else await FB.newDm(u.id,u.name||u.id,gName(gid),tekst,navn,ekstra);ok++}catch(e){feil++}}))}
-  if(ok&&PUSH_URL)FB.sendPushStille(PUSH_URL,'Ny beskjed fra '+navn,kortTekst(tekst),'me',{type:'grupper',groups:[gid]}).catch(()=>{});
+  if(ok&&PUSH_URL)FB.sendPushStille(PUSH_URL,'Ny beskjed fra '+navn,kortTekst(chatRens(tekst)),'me',{type:'grupper',groups:[gid]}).catch(()=>{});
   if(feil)push('Delvis sendt',ok+' fikk beskjeden, '+feil+' feilet.');
   chatListe()}
 /* Ny melding: velg hele gruppen eller en person. Bare ledere og administratorer. */
@@ -3794,6 +3828,8 @@ document.addEventListener('click',e=>{
   else if('crecsend' in d)chatMicSendKnapp();
   else if(d.avstv)chatAvstStem(d.avstv);
   else if(d.bokvid)chatBokVidere(d.bokvid);
+  else if(d.bokk){const [a,k]=d.bokk.split('|');chatBokSvar(a,k)}
+  else if(d.bokkal)chatBokKal(d.bokkal);
   else if('chatavstny' in d)chatAvstNy('gruppe');
   else if('chatspill' in d)chatQuiz();
   else if(d.cspill){if(d.cspill==='avst')chatAvstNy('person');else chatSpillSend(d.cspill)}
@@ -4161,7 +4197,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 01:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 02:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */

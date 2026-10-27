@@ -329,6 +329,18 @@ service cloud.firestore {
       return isAdmin() || (signedIn() && exists(/databases/$(database)/documents/members/$(request.auth.token.email))
         && 'utleie' in get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []));
     }
+    match /bookinger/{id}/team/{epost} {
+      allow read: if utleieTilgang() || (signedIn() && exists(/databases/$(database)/documents/members/$(request.auth.token.email))
+        && 'vertskap' in get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []));
+      // Hver kan svare for seg selv; leder for vertskap, gruppen utleie og administratorer kan legge inn svar for andre.
+      allow create, update: if signedIn() && isMember()
+        && (epost == request.auth.token.email || utleieTilgang() || (isLeader() && 'vertskap' in myLeads()))
+        && request.resource.data.keys().hasOnly(['n', 'k', 'ms'])
+        && request.resource.data.n is string && request.resource.data.n.size() <= 60
+        && request.resource.data.k in ['ja', 'nei', 'vet']
+        && request.resource.data.ms is number;
+      allow delete: if utleieTilgang();
+    }
     match /bookinger/{id} {
       allow read: if utleieTilgang() || (signedIn() && exists(/databases/$(database)/documents/members/$(request.auth.token.email))
         && 'vertskap' in get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []));
