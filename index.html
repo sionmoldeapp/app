@@ -3386,7 +3386,7 @@ function chatBokKnapper(m,l,meg){
   if(b&&m.by===meg){
     const sv2=[...l].reverse().find(x=>x.by!==meg&&!x.slettet&&(svarTok(x.text)||{}).id===b.id),vk=sv2?(BOK_VALG.find(v=>v[0]===svarTok(sv2.text).k)||[])[1]:'';
     return '<div class="cbk"><span class="small">'+(vk?'Svar: <b>'+esc(vk)+'</b>':'Venter på svar. Mottakeren ser knappene Kommer, Kommer ikke og Vet ikke ennå.')+'</span></div>'}
-  if(sv&&m.by!==meg&&chatKan())return '<div class="cbk">'+(sv.auto?'<span class="small">✓ Lagt i kalenderen automatisk</span>':bokKalMerket().includes(m.id)?'<span class="small">✓ Lagt i kalenderen</span>':'<button type="button" class="cbk-b" data-bokkal="'+esc(m.id)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Legg i kalenderen</button>')+'</div>';
+  if(sv&&m.by!==meg&&chatKan())return '<div class="cbk">'+(sv.auto&&/Lagt til i kalenderen automatisk/.test(m.text||'')?'<span class="small">✓ Lagt i kalenderen automatisk</span>':bokKalMerket().includes(m.id)?'<span class="small">✓ Lagt i kalenderen</span>':'<button type="button" class="cbk-b" data-bokkal="'+esc(m.id)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Legg i kalenderen</button>')+'</div>';
   return ''}
 /* Bookingmeldinger (starter med 📅) vises som et ryddig kort. Selve meldingsteksten er uendret, så videresending og varsler virker som før. */
 function chatBokKort(txt){
@@ -3410,10 +3410,12 @@ function chatBokKort(txt){
 async function chatBokSvar(mid,k){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid),b=m&&bokTok(m.text),t=chatTraad(c.id);if(!b||!t)return;
   const navn=nyBeskjedNavn(),tittel=(String(m.text).match(/^📅 [^:\n]*: (.*)$/m)||[])[1]||'',
-    tekst=BOK_VALG.find(x=>x[0]===k)[1]+(tittel?': '+tittel:'')+'⟦svar:'+b.id+':'+k+':'+(b.auto?'a':'m')+'⟧';
+    verb={ja:'kommer',nei:'kommer ikke',vet:'vet ikke ennå'}[k]||'';
+  let lagt=false;
+  if(b.auto){try{await FB.utTeamSet(b.id,meEmail(),navn,k);lagt=true}catch(e){}}
+  const tekst=navn+' '+verb+(tittel?': '+tittel:'')+(lagt?'\nLagt til i kalenderen automatisk.':'')+'⟦svar:'+b.id+':'+k+':'+(b.auto?'a':'m')+'⟧';
   try{await FB.addMsg(t,tekst,navn);if(PUSH_URL)FB.notifyThread(PUSH_URL,t.id).catch(()=>{});
-    if(b.auto)FB.utTeamSet(b.id,meEmail(),navn,k).catch(()=>{});
-    push('Svar sendt','Lederen din har fått svaret.')}
+    push('Svar sendt','Lederen din har fått svaret.'+(lagt?' Du står nå i kalenderen.':''))}
   catch(e){push('Kunne ikke sende svaret','Prøv igjen.')}}
 async function chatBokKal(mid){
   const m=state.chat.msgs.find(x=>x.id===mid),sv=m&&svarTok(m.text);if(!sv)return;
@@ -4272,7 +4274,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 07:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 07:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
