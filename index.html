@@ -597,7 +597,6 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 .bokk-d[open]>.bokk-h{margin-bottom:4px}
 .bokk-chev{margin-left:auto;flex:none;display:grid;place-items:center;width:32px;height:32px;opacity:.7;transition:transform .2s}
 .bokk-d[open] .bokk-chev{transform:rotate(180deg)}
-.tilbchat{position:fixed;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:6px;padding:0 18px 0 12px;min-height:44px;border:0;border-radius:99px;background:var(--brand);color:var(--brand-ink);font:600 var(--t-m)/1 var(--f-body,inherit);box-shadow:0 6px 20px rgba(0,0,0,.3);cursor:pointer}
 .bokst.mangler{background:rgba(230,150,30,.3)!important}
 .bokk-ik{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,currentColor 16%,transparent)}
 .bokk-tt{display:flex;flex-direction:column;min-width:0}
@@ -3623,19 +3622,10 @@ async function utTeamEndring(bid,gammel,ny){
   delete bokTeamC[bid];
   push(ok?'Endringene er sendt':'Kunne ikke sende',ok?ok+(ok===1?' person har':' personer har')+' fått beskjed.':'Prøv igjen.')}
 /* Hopp mellom Sionchat og kalenderen. */
-/* Etter «Åpne i kalenderen» fra en samtale står en knapp «Tilbake til chat» nederst, til du går til en annen fane. */
-function tilbChatVis(tid){
-  const g=document.getElementById('tilbChat');if(g)g.remove();
-  const b=document.createElement('button');b.type='button';b.id='tilbChat';b.className='tilbchat';
-  b.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Tilbake til chat';
-  const nav=document.getElementById('tabs');b.style.bottom=(nav?Math.max(0,innerHeight-nav.getBoundingClientRect().top)+12:80)+'px';
-  const fjern=()=>{b.remove();document.removeEventListener('click',tab,true)},tab=e=>{if(e.target.closest&&e.target.closest('#tabs button'))fjern()};
-  b.addEventListener('click',()=>{fjern();chatApne(tid||null)});document.addEventListener('click',tab,true);document.body.appendChild(b);setTimeout(fjern,10*60*1000)}
 function utApneId(bid){
-  const fraChat=state.chat&&state.chat.vis?(state.chat.id||''):null;
   const vis=()=>{const b=(state.ut.liste||[]).find(x=>x.id===bid);
     if(!b){push('Fant ikke bookingen','Den kan være slettet eller ligge langt tilbake.');return}
-    chatLukk();state.tab='me';state.acc.utleie=true;state.ut.fil='alle';state.ut.vis='alle';state.ut.rom='Alle';state.ut.mnd=b.dato.slice(0,7);state.ut.dag=b.dato;state.open['ut_'+b.id+'_'+b.dato]=true;fadeRender();if(fraChat!==null)tilbChatVis(fraChat);
+    chatLukk();state.tab='me';state.acc.utleie=true;state.ut.fil='alle';state.ut.vis='alle';state.ut.rom='Alle';state.ut.mnd=b.dato.slice(0,7);state.ut.dag=b.dato;state.open['ut_'+b.id+'_'+b.dato]=true;fadeRender();
     setTimeout(()=>{const e=document.querySelector('[data-ev="ut_'+b.id+'_'+b.dato+'"]');if(e){e.style.scrollMarginTop='90px';e.scrollIntoView({block:'start'})}},520)};
   if(state.ut.liste===undefined)utLast().then(vis);else vis()}
 async function utApneChat(x){
@@ -4636,7 +4626,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 22:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 22:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
