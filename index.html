@@ -3654,9 +3654,9 @@ function chatBokVidere(mid){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid);if(!m||!chatKan()||document.querySelector('dialog.pub'))return;
   const gs=chatGrupper();if(!gs.length){push('Ingen grupper','Du leder ingen grupper å sende til.');return}
   const hoved0=String(m.text||'').split('─── Detaljer')[0].trim().replace(/^📅 (Ny booking|Endret booking)/,'📅 Arrangement').replace(/⟦[^⟧]*⟧/g,'').trim(),kd=lbokId(m.text)?'Kommer du? Trykk på en av knappene under.':'',hoved=hoved0+(kd?'\n\n'+kd:''),
-    def=gs.some(g=>g[0]==='vertskap')?'vertskap':gs[0][0];
+    def=(gs.find(g=>/torsdag/i.test(g[0]+g[1]))||gs.find(g=>g[0]==='vertskap')||gs[0])[0];
   const dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Send videre til teamet</h3>'+utHjelpI('Her er bare det viktigste. Leietaker, kontaktinfo og pris er ikke med. Du kan legge til en egen hilsen.','margin:0')+''
+  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0;padding-right:44px">Send videre til teamet</h3>'+utHjelpI('Her er bare det viktigste. Leietaker, kontaktinfo og pris er ikke med. Du kan legge til en egen hilsen.','margin:-40px 0 0')+''
    +'<label class="f">Til gruppen<select id="bvG">'+gs.map(g=>'<option value="'+esc(g[0])+'" '+(g[0]===def?'selected':'')+'>'+esc(g[1])+' ('+chatGruppeFolk(g[0]).length+')</option>').join('')+'</select></label>'
    +'<div class="bvprev">'+chatBokKort(hoved)+'</div><label class="f">Egen hilsen til teamet (valgfritt)<textarea id="bvT" rows="2" maxlength="300"></textarea></label>'
    +(lbokId(m.text)?'<p class="small" style="margin:0">Hver i teamet får knappene <b>Kommer</b>, <b>Kommer ikke</b> og <b>Vet ikke ennå</b> i meldingen. Svaret kommer til deg i chatten.</p><label style="display:flex;gap:8px;align-items:flex-start;font-size:var(--t-s)"><input type="checkbox" id="bvA" style="width:auto;margin-top:3px"'+(lsGet('sm-bokauto')==='0'?'':' checked')+'> Legg svarene automatisk i kalenderen, uten at jeg må bekrefte</label>':'')+'<p class="small" id="bvS" role="status" style="margin:0"></p>'
@@ -4390,7 +4390,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 11:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 11:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
