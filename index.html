@@ -591,6 +591,12 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 .cb:has(.bokk){max-width:92%;min-width:min(290px,92%)}
 .bokk{white-space:normal;display:grid;gap:0;min-width:0;font-size:var(--t-m)}
 .bokk-h{display:flex;align-items:center;gap:10px;padding-bottom:10px;margin-bottom:4px;border-bottom:1px solid color-mix(in srgb,currentColor 22%,transparent)}
+.bokk-d>.bokk-h{cursor:pointer;list-style:none;margin-bottom:0}
+.bokk-d>.bokk-h::-webkit-details-marker{display:none}
+.bokk-d:not([open])>.bokk-h{border-bottom:0;padding-bottom:0}
+.bokk-d[open]>.bokk-h{margin-bottom:4px}
+.bokk-chev{margin-left:auto;flex:none;display:grid;place-items:center;width:32px;height:32px;opacity:.7;transition:transform .2s}
+.bokk-d[open] .bokk-chev{transform:rotate(180deg)}
 .bokk-ik{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,currentColor 16%,transparent)}
 .bokk-tt{display:flex;flex-direction:column;min-width:0}
 .bokk-ty{font-size:var(--t-s);font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
@@ -3498,7 +3504,7 @@ function chatBokKnapper(m,l,meg){
   if(sv&&m.by!==meg&&chatKan())return '<div class="cbk">'+(sv.auto&&/Lagt til i kalenderen automatisk/.test(m.text||'')?'<span class="small">✓ Lagt i kalenderen automatisk</span>':bokKalMerket().includes(m.id)?'<span class="small">✓ Lagt i kalenderen</span>':'<button type="button" class="cbk-b" data-bokkal="'+esc(m.id)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Legg i kalenderen</button>')+'</div>';
   return ''}
 /* Bookingmeldinger (starter med 📅) vises som et ryddig kort. Selve meldingsteksten er uendret, så videresending og varsler virker som før. */
-function chatBokKort(txt){
+function chatBokKort(txt,kollaps){
   const ls=chatRens(txt).split('\n'),m1=(ls[0]||'').match(/^📅 ([^:]*?)(?: \(forespørsel\))?: (.*)$/),fors=/\(forespørsel\)/.test(ls[0]||'');
   if(!m1)return chatTekstHtml(txt);
   const rad=[],fri=[];let det=false,sist=null,tom=false;
@@ -3513,9 +3519,9 @@ function chatBokKort(txt){
   const IKN={'Når':'klokke','Rom':'rom','Gjester':'folk','Servering':'mat','Allergener':'vars','Leietaker':'pers','Kontakt':'tlf','Pris':'pris','Status':'ok','Merknad':'note','Booket av':'av'};
   const svg=(p,n)=>'<svg width="'+(n||16)+'" height="'+(n||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[p]||'<circle cx="12" cy="12" r="2"/>')+'</svg>';
   const verdi=(k,v)=>k==='Status'?'<span class="bokk-s'+(/^Forespørsel/.test(v)?' f':'')+'">'+esc(v)+'</span>':esc(v).replace(/\n/g,'<br>');
-  return '<div class="bokk"><div class="bokk-h"><span class="bokk-ik">'+svg('cal',22)+'</span><span class="bokk-tt"><span class="bokk-ty">'+esc(m1[1])+(fors?' · forespørsel':'')+'</span><span class="bokk-n">'+esc(m1[2])+'</span></span></div>'
+  return '<'+(kollaps?'details':'div')+' class="bokk'+(kollaps?' bokk-d':'')+'"><'+(kollaps?'summary':'div')+' class="bokk-h"><span class="bokk-ik">'+svg('cal',22)+'</span><span class="bokk-tt"><span class="bokk-ty">'+esc(m1[1])+(fors?' · forespørsel':'')+'</span><span class="bokk-n">'+esc(m1[2])+'</span></span>'+(kollaps?'<span class="bokk-chev" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>':'</div>')
    +rad.map(r=>r.sk?'<div class="bokk-sk">Detaljer</div>':'<div class="bokk-r"><span class="bokk-k">'+svg(IKN[r.k],16)+'<span>'+esc(r.k)+'</span></span><span class="bokk-v">'+verdi(r.k,r.v)+'</span></div>').join('')
-   +(fri.length?'<div class="bokk-p">'+esc(fri.join(' '))+'</div>':'')+'</div>'}
+   +(fri.length?'<div class="bokk-p">'+esc(fri.join(' '))+'</div>':'')+'</'+(kollaps?'details':'div')+'>'}
 async function chatBokSvar(mid,k){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid),b=m&&bokTok(m.text),t=chatTraad(c.id);if(!b||!t)return;
   const navn=nyBeskjedNavn(),tittel=(String(m.text).match(/^📅 [^:\n]*: (.*)$/m)||[])[1]||'',
@@ -3668,8 +3674,8 @@ function chatBokVidere(mid){
   const dlg=document.createElement('dialog');dlg.className='lp pub';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0;padding-right:44px">Send videre til teamet</h3>'+utHjelpI('Her er bare det viktigste. Leietaker, kontaktinfo og pris er ikke med. Du kan legge til en egen hilsen.','margin:-40px 0 0')+''
    +'<label class="f">Til gruppen<select id="bvG">'+gs.map(g=>'<option value="'+esc(g[0])+'" '+(g[0]===def?'selected':'')+'>'+esc(g[1])+' ('+chatGruppeFolk(g[0]).length+')</option>').join('')+'</select></label>'
-   +'<div class="bvprev">'+chatBokKort(hoved)+'</div><label class="f">Egen hilsen til teamet (valgfritt)<textarea id="bvT" rows="2" maxlength="300"></textarea></label>'
-   +(lbokId(m.text)?'<p class="small" style="margin:0">Hver i teamet får knappene <b>Kommer</b>, <b>Kommer ikke</b> og <b>Vet ikke ennå</b> i meldingen. Svaret kommer til deg i chatten.</p><label style="display:flex;gap:8px;align-items:flex-start;font-size:var(--t-s)"><input type="checkbox" id="bvA" style="width:auto;margin-top:3px"'+(lsGet('sm-bokauto')==='0'?'':' checked')+'> Legg svarene automatisk i kalenderen, uten at jeg må bekrefte</label>':'')+'<p class="small" id="bvS" role="status" style="margin:0"></p>'
+   +'<div class="bvprev">'+chatBokKort(hoved,true)+'</div><label class="f">Egen hilsen til teamet (valgfritt)<textarea id="bvT" rows="2" maxlength="300"></textarea></label>'
+   +(lbokId(m.text)?'<div style="display:flex;gap:10px;align-items:flex-start"><label style="flex:1;display:flex;gap:8px;align-items:flex-start;font-size:var(--t-s)"><input type="checkbox" id="bvA" style="width:auto;margin-top:3px"'+(lsGet('sm-bokauto')==='0'?'':' checked')+'> Legg svarene automatisk i kalenderen, uten at jeg må bekrefte</label><button type="button" class="utibtn" data-bvi aria-expanded="false" aria-label="Vis hjelp">i</button></div><p class="small" id="bvInfo" hidden style="margin:0">Hver i teamet får knappene <b>Kommer</b>, <b>Kommer ikke</b> og <b>Vet ikke ennå</b> i meldingen. Svaret kommer til deg i chatten.</p>':'')+'<p class="small" id="bvS" role="status" style="margin:0"></p>'
    +'<div class="btns"><button class="btn primary" value="send" style="flex:1">Send til teamet</button><button class="btn" value="avbryt" formnovalidate style="flex:1">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.querySelector('form').addEventListener('submit',async e=>{
@@ -3680,6 +3686,7 @@ function chatBokVidere(mid){
     const bid=lbokId(m.text),auto=!!(dlg.querySelector('#bvA')&&dlg.querySelector('#bvA').checked);if(bid)lsSet('sm-bokauto',auto?'1':'0');
     if(bid)FB.utTeamInviter(bid,folk.map(u=>({e:u.id,n:u.name||u.id}))).catch(()=>{});
     dlg.close();await chatSendBulk(folk,g,tekst+(bid?'⟦bok:'+bid+':'+(auto?'a':'m')+'⟧':''))});
+  dlg.addEventListener('click',ev=>{const bi=ev.target.closest&&ev.target.closest('[data-bvi]');if(!bi)return;ev.preventDefault();const p=dlg.querySelector('#bvInfo');if(p){p.hidden=!p.hidden;bi.setAttribute('aria-expanded',String(!p.hidden))}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 /* Svar på en melding (fra menyen eller ved å sveipe). */
 function chatSvarPaa(mid){
@@ -4447,7 +4454,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 15:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 15:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
