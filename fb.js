@@ -114,6 +114,7 @@ const FB={
     async msgsList(id){const s=await S.getDocs(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created'),S.limit(200)));return s.docs.map(d=>{const x=d.data();return {id:d.id,by:x.by,name:x.name,text:x.text,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})},
     // Chat: farge per samtale, avstemninger (avst), bønneliste (threads/{id}/bonner).
     setFarge:(tid,farge)=>S.updateDoc(S.doc(db,'threads',tid),{farge}),
+    setBilde:(tid,v)=>S.updateDoc(S.doc(db,'threads',tid),{bilde:v===null?S.deleteField():v}),
     setUtseende:(tid,felt,verdi)=>S.updateDoc(S.doc(db,'threads',tid),{[felt==='bakgrunn'?'bakgrunn':'farge']:verdi===null?S.deleteField():verdi}),
     // Stjernemerke (bare egen e-post i stjerne), dempe en samtale (egen e-post i dempet), moderator sletter en melding, og ny gruppesamtale (kind gruppe, opptil 40 deltakere).
     stjerneMsg:(tid,mid,paa)=>{const me=auth.currentUser.email.toLowerCase();return S.updateDoc(S.doc(db,'threads',tid,'messages',mid),{stjerne:paa?S.arrayUnion(me):S.arrayRemove(me)})},

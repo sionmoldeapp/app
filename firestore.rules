@@ -124,6 +124,10 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['farge', 'bakgrunn'])
         && request.resource.data.get('farge', 'blaa') in ['blaa', 'rosa', 'gronn', 'lilla', 'oransje', 'rod', 'turkis', 'gull']
         && request.resource.data.get('bakgrunn', 'ingen') in ['ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion'];
+      // Samtalebilde: et lite bilde (data-URL) som begge deltakerne kan bytte.
+      allow update: if signedIn() && request.auth.token.email in resource.data.parts
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bilde'])
+        && (!('bilde' in request.resource.data) || (request.resource.data.bilde is string && request.resource.data.bilde.size() <= 30000 && request.resource.data.bilde.matches('^data:image/jpeg;base64,.*')));
       // Dempe en samtale for seg selv: bare egen e-post i feltet dempet.
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dempet'])
