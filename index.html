@@ -572,6 +572,15 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 .chat .cw{width:100%;max-width:560px;height:100%;background:var(--bg);display:flex;flex-direction:column;padding-top:0}
 .chd{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
 .chd h2{margin:0;font-size:var(--t-xl)}
+.mapps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;margin:12px 0 4px}
+.mapp{all:unset;box-sizing:border-box;position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font-size:var(--t-s);font-weight:600;text-align:center;-webkit-tap-highlight-color:transparent}
+.mapp i{width:68px;height:68px;border-radius:18px;display:grid;place-items:center;color:#fff;box-shadow:0 5px 12px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .15s var(--ease,ease)}
+.mapp:active i{transform:scale(.92)}
+.mapp[aria-pressed=true] i{outline:3px solid var(--brand);outline-offset:3px}
+.mapp:focus-visible i{outline:3px solid var(--brand);outline-offset:3px}
+.mapp-n{position:absolute;top:-5px;left:calc(50% + 16px);min-width:22px;height:22px;border-radius:99px;background:#e0443a;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;padding:0 6px;box-shadow:0 0 0 2px var(--surface)}
+.mapp-inn{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.mapp-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 nav.tabs{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .chd .ctit{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.2}
@@ -3009,8 +3018,14 @@ function verktoyCard(){return subSorter('verktoy',verktoyKort())}
 function verktoyKort(){
   if(!state.user||!state.member)return '';
   const l=state.notes,n=l?l.length:0,nl=(OPPT.liste||[]).filter(x=>(x.type||'lyd')==='lyd').length,nv=(OPPT.liste||[]).filter(x=>x.type==='video').length;
-  return '<details class="card acc" data-acc="verktoy" '+(state.acc.verktoy?'open':'')+'><summary><h2>Møteverktøy</h2></summary><p class="small" style="margin:0 0 4px">Notater og opptak fra møtene. Bare du ser dem.</p>'
-   +profSub('vnotat','Møtenotater'+(l?' ('+n+')':''),notesInner())+profSub('vlyd','Lydopptak'+(nl?' ('+nl+')':''),opptInner('lyd'))+profSub('vvideo','Videoopptak'+(nv?' ('+nv+')':''),opptInner('video'))+'</details>'}
+  const ik=(p)=>'<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>',
+    app=[['vnotat','Notater',ik('<path d="M6 3.5h9l4 4V20a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 20z"/><path d="M14.5 3.5V8H19M9 12h6M9 15.5h6"/>'),l?n:0,'linear-gradient(145deg,#f7c04a,#e08a12)','Møtenotater'],
+      ['vlyd','Lyd',ik('<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5M9 20.5h6"/>'),nl,'linear-gradient(145deg,#ff6b78,#c81d3a)','Lydopptak'],
+      ['vvideo','Video',ik('<rect x="3.5" y="6.5" width="12.5" height="11" rx="2.5"/><path d="m16 11 4.5-2.8v7.6L16 13"/>'),nv,'linear-gradient(145deg,#8a6cf5,#3f3fd4)','Videoopptak']],
+    valgt=app.find(x=>state.acc[x[0]]);
+  return '<details class="card acc" data-acc="verktoy" '+(state.acc.verktoy?'open':'')+'><summary><h2>Møteapper</h2></summary><p class="small" style="margin:0 0 4px">Notater og opptak fra møtene. Bare du ser dem.</p>'
+   +'<div class="mapps">'+app.map(x=>'<button type="button" class="mapp" data-moteapp="'+x[0]+'" aria-pressed="'+(valgt===x)+'" aria-label="'+x[5]+(x[3]?', '+x[3]:'')+'"><i style="background:'+x[4]+'">'+x[2]+'</i>'+(x[3]?'<span class="mapp-n">'+x[3]+'</span>':'')+x[1]+'</button>').join('')+'</div>'
+   +(valgt?'<div class="mapp-inn"><div class="mapp-hd"><b>'+valgt[5]+(valgt[3]?' ('+valgt[3]+')':'')+'</b><button type="button" class="btn" data-moteapp="'+valgt[0]+'" style="width:auto">Lukk</button></div>'+(valgt[0]==='vnotat'?notesInner():opptInner(valgt[0]==='vlyd'?'lyd':'video'))+'</div>':'')+'</details>'}
 /* Lister over notater og opptak deles opp per dag og ser ut som hendelsene i Program: dagoverskrift, datoboks og rader. */
 const dagTekst=d=>cap(DAYS[d.getDay()])+' '+d.getDate()+'. '+MON[d.getMonth()]+(d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():'');
 const datoBoks=d=>'<div class="date">'+d.getDate()+'. '+cap(MON[d.getMonth()])+'</div>';
@@ -4007,7 +4022,7 @@ async function chatMicStart(){
   try{
     if(!navigator.mediaDevices||!window.MediaRecorder)throw {msg:'Opptak støttes ikke i denne nettleseren.'};
     const stream=await navigator.mediaDevices.getUserMedia({audio:true}),typer=['audio/webm;codecs=opus','audio/mp4','audio/webm'],mime=typer.find(t=>MediaRecorder.isTypeSupported(t))||'',
-      mr=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:24000}:{audioBitsPerSecond:24000});
+      mr=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:48000}:{audioBitsPerSecond:48000});
     const r={mr,stream,chunks:[],t0:Date.now(),mime:mime||'audio/webm',avbrutt:false,sendt:false};c.rec=r;
     mr.ondataavailable=e=>{if(e.data&&e.data.size)r.chunks.push(e.data)};
     mr.onstop=()=>{try{stream.getTracks().forEach(t=>t.stop())}catch(e){}if(!r.avbrutt&&r.sendt)chatMicSend(r)};
@@ -4682,7 +4697,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 02:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 03:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -4821,7 +4836,7 @@ async function kamVend(){
   if(OPPT.state!=='klar'||!OPPT.stream)return;
   const ny0=OPPT.face==='user'?'environment':'user';
   try{
-    const ny=await navigator.mediaDevices.getUserMedia({audio:true,video:{facingMode:ny0,width:{ideal:960},height:{ideal:540}}});
+    const ny=await navigator.mediaDevices.getUserMedia({audio:OPPT_LYD,video:{facingMode:ny0,width:{ideal:960},height:{ideal:540}}});
     OPPT.stream.getTracks().forEach(t=>t.stop());OPPT.stream=ny;OPPT.face=ny0;OPPT.trk=ny.getVideoTracks()[0];OPPT.z=1;
     let cap=null;try{cap=OPPT.trk.getCapabilities&&OPPT.trk.getCapabilities()}catch(e){}
     OPPT.hw=!!(cap&&cap.zoom&&cap.zoom.max>1);OPPT.zmax=OPPT.hw?Math.min(cap.zoom.max,8):4;OPPT.zmin=OPPT.hw&&cap.zoom.min&&cap.zoom.min<1?cap.zoom.min:1;
@@ -4848,11 +4863,13 @@ function opptForh(){const v=document.getElementById('opptForh');if(!v||!OPPT.str
   if(v.srcObject!==OPPT.stream){v.srcObject=OPPT.stream;v.play&&v.play().catch(()=>{})}
   if(!OPPT.hw)v.style.transform='scale('+(OPPT.z||1)+')'}
 /* Lydopptak starter med en gang. Videoopptak åpner først kameraet (klar), og opptaket starter ikke før du trykker Start opptak eller trykker i videobildet. */
+/* Møteopptak: ingen støyfjerning og ekkokansellering (de er laget for telefonsamtaler og tar bort stemmer langt unna og klang i rommet), men automatisk forsterkning så svake stemmer kommer med. Høy bitrate for lyden (128 kbit/s) i stedet for nettleserens lave standard. */
+const OPPT_LYD={channelCount:{ideal:1},sampleRate:{ideal:48000},sampleSize:{ideal:16},echoCancellation:false,noiseSuppression:false,autoGainControl:true},OPPT_LYD_BPS=128000;
 async function opptStart(video){OPPT.auto=false;OPPT.pms=0;OPPT.p0=0;OPPT.feil='';OPPT.msg='';OPPT.chunks=[];OPPT.type=video?'video':'lyd';OPPT.z=1;OPPT.hw=false;
   try{
     if(!navigator.mediaDevices||!window.MediaRecorder)throw new Error('Opptak støttes ikke i denne nettleseren.');
     const typer=video?['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4']:['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg'];OPPT.mime=typer.find(t=>MediaRecorder.isTypeSupported(t))||(video?'video/webm':'audio/webm');
-    OPPT.stream=await navigator.mediaDevices.getUserMedia(video?{audio:true,video:{facingMode:OPPT.face||'environment',width:{ideal:960},height:{ideal:540}}}:{audio:true});
+    OPPT.stream=await navigator.mediaDevices.getUserMedia(video?{audio:OPPT_LYD,video:{facingMode:OPPT.face||'environment',width:{ideal:960},height:{ideal:540}}}:{audio:OPPT_LYD});
     if(video){
       OPPT.trk=OPPT.stream.getVideoTracks()[0];let cap=null;try{cap=OPPT.trk.getCapabilities&&OPPT.trk.getCapabilities()}catch(e){}
       OPPT.hw=!!(cap&&cap.zoom&&cap.zoom.max>1);OPPT.zmax=OPPT.hw?Math.min(cap.zoom.max,8):4;OPPT.zmin=OPPT.hw&&cap.zoom.min&&cap.zoom.min<1?cap.zoom.min:1;
@@ -4865,7 +4882,7 @@ function opptBegin(){
   if(OPPT.state==='opptak')return;
   try{
     const video=OPPT.type==='video';let rs=OPPT.stream;if(video&&!OPPT.hw)rs=opptCanvasStart();
-    OPPT.rec=new MediaRecorder(rs,video?{mimeType:OPPT.mime,videoBitsPerSecond:1200000,audioBitsPerSecond:64000}:{mimeType:OPPT.mime});
+    OPPT.rec=new MediaRecorder(rs,video?{mimeType:OPPT.mime,videoBitsPerSecond:1500000,audioBitsPerSecond:OPPT_LYD_BPS}:{mimeType:OPPT.mime,audioBitsPerSecond:OPPT_LYD_BPS});
     OPPT.rec.ondataavailable=e=>{if(e.data&&e.data.size)OPPT.chunks.push(e.data)};
     OPPT.rec.onstop=opptFerdig;OPPT.rec.start(1000);OPPT.state='opptak';OPPT.t0=Date.now();OPPT.pms=0;OPPT.p0=0;
     if(!OPPT.tim)OPPT.tim=setInterval(opptTikk,500);
@@ -6304,6 +6321,8 @@ document.addEventListener('click',e=>{
   /* Slippes fingeren etter en dra-bevegelse, skal det ikke regnes som et trykk på knappen under. */
   document.addEventListener('click',e=>{if(svelg&&e.target.closest&&e.target.closest('#tabs')){svelg=false;e.preventDefault();e.stopImmediatePropagation()}},true);
   document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('#tabs'))e.preventDefault()}) }
+/* Møteapper: trykk på et ikon for å åpne det (notater, lyd eller video), trykk igjen eller Lukk for å lukke. */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-moteapp]');if(!b)return;e.preventDefault();const k=b.dataset.moteapp;keep(()=>{const var0=state.acc[k];['vnotat','vlyd','vvideo'].forEach(x=>{state.acc[x]=false});if(!var0)state.acc[k]=true;state.acc.verktoy=true})});
 /* Oppstartsskjermen (logoen) tones ut og siden tones inn når første innlasting er ferdig. */
 function splashBort(){
   const sp=document.getElementById('splash');if(!sp||sp.dataset.bort)return;sp.dataset.bort='1';
