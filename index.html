@@ -535,6 +535,10 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .kamzoom{position:absolute;left:50%;transform:translateX(-50%);bottom:150px;display:flex;gap:2px;background:rgba(40,40,40,.65);border-radius:99px;padding:4px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .kamzoom button{all:unset;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:17px;color:#fff;cursor:pointer}
 .kamzoom button.on{background:rgba(15,15,15,.92)}
+.fklinser{position:absolute;left:50%;transform:translateX(-50%);bottom:206px;display:flex;gap:6px;z-index:2}
+.fklinser[hidden]{display:none}
+.fklinser button{all:unset;box-sizing:border-box;min-width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:700;color:#fff;background:rgba(40,40,40,.65);cursor:pointer}
+.fklinser button.on{background:#fff;color:#000}
 .kamkn{flex:none;height:128px;display:flex;align-items:center;justify-content:space-between;padding:0 22px}
 .kbtn{all:unset;box-sizing:border-box;width:46px;height:46px;border-radius:50%;background:rgba(85,85,85,.65);color:#fff;display:grid;place-items:center;cursor:pointer;overflow:hidden}
 .kbtn[disabled]{opacity:.35;pointer-events:none}
@@ -3937,24 +3941,41 @@ function chatBildeLes(f){
         if(data.length<=170000)break;dim=Math.round(dim*.8);q=Math.max(.45,q-.06)}
       if(data.length>190000)return rej({msg:'Bildet er for stort. Prøv et annet bilde.'});res(data)};
     img.onerror=()=>{URL.revokeObjectURL(url);rej({msg:'Kunne ikke lese bildet.'})};img.src=url})}
-/* Kamera for bilder i Sionchat, inne i appen: X øverst til venstre lukker uten å ta bilde. Uten kameratilgang brukes telefonens eget kamera. */
+/* Kamera for bilder i Sionchat, inne i appen: X øverst til venstre lukker uten å ta bilde. Zoom (0,5×, 1×, 2×, 3× når telefonen støtter det) og valg av linse når telefonen har flere bakkameraer. Uten kameratilgang brukes telefonens eget kamera. */
 async function chatKamera(){
   const reserve=()=>{const f=document.getElementById('cKam');if(f){f.value='';f.click()}};
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){reserve();return}
   if(document.getElementById('fkam'))return;
-  let face='environment',strm=null;
+  let face='environment',strm=null,trk=null,hw=false,zmin=1,zmax=4,z=1,dev='',linser=[];
   const e=document.createElement('div');e.id='fkam';e.className='kam';e.setAttribute('role','dialog');e.setAttribute('aria-label','Kamera');
-  e.innerHTML='<div class="kamtop"><button type="button" class="kbtn" data-fkx aria-label="Lukk kamera uten å ta bilde"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="kamvf"><video id="fkVid" muted playsinline autoplay></video></div><div class="kamkn"><span style="width:64px"></span><button type="button" class="kopp" data-fkbilde aria-label="Ta bilde"><i style="background:#fff;border:3px solid #ccc"></i></button><button type="button" class="kbtn kstor" data-fkvend aria-label="Bytt kamera">'+KAM_IKON.vend+'</button></div>';
+  e.innerHTML='<div class="kamtop"><button type="button" class="kbtn" data-fkx aria-label="Lukk kamera uten å ta bilde"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="kamvf"><video id="fkVid" muted playsinline autoplay></video></div><div class="fklinser" id="fkLinser" hidden></div><div class="kamzoom" id="fkZoom"></div><div class="kamkn"><span style="width:64px"></span><button type="button" class="kopp" data-fkbilde aria-label="Ta bilde"><i style="background:#fff;border:3px solid #ccc"></i></button><button type="button" class="kbtn kstor" data-fkvend aria-label="Bytt mellom front- og bakkamera">'+KAM_IKON.vend+'</button></div>';
   document.body.appendChild(e);navPlasser(e);
-  const pl=()=>navPlasser(e),stopp=()=>{try{strm&&strm.getTracks().forEach(t=>t.stop())}catch(x){}strm=null};
+  const pl=()=>navPlasser(e),stopp=()=>{try{strm&&strm.getTracks().forEach(t=>t.stop())}catch(x){}strm=null;trk=null};
   const esc2=ev=>{if(ev.key==='Escape')lukk()};
   const lukk=()=>{stopp();e.remove();removeEventListener('resize',pl);document.removeEventListener('keydown',esc2)};
   addEventListener('resize',pl);document.addEventListener('keydown',esc2);
-  const start=async()=>{stopp();try{strm=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:face,width:{ideal:1280},height:{ideal:960}}});if(!document.body.contains(e)){stopp();return}const v=e.querySelector('#fkVid');v.srcObject=strm;if(v.play)v.play().catch(()=>{})}catch(er){lukk();reserve()}};
+  const vid=()=>e.querySelector('#fkVid');
+  const tegnZoom=()=>{const zs=[...(hw&&zmin<=.65?[.6]:[]),1,2,3].filter(n=>n<=zmax),best=zs.reduce((a,b)=>Math.abs(b-z)<Math.abs(a-z)?b:a,1);
+    e.querySelector('#fkZoom').innerHTML=zs.map(n=>'<button type="button" data-fkz="'+n+'" class="'+(n===best?'on':'')+'" aria-label="Zoom '+n+' ganger">'+(n===1?'1×':String(n).replace('0.','.'))+'</button>').join('')};
+  const settZoom=n=>{z=n;if(hw&&trk){trk.applyConstraints({advanced:[{zoom:n}]}).catch(()=>{});vid().style.transform=''}else vid().style.transform='scale('+Math.max(1,n)+')';tegnZoom()};
+  const tegnLinser=()=>{const el=e.querySelector('#fkLinser');if(linser.length<2||face==='user'){el.hidden=true;return}el.hidden=false;
+    el.innerHTML=linser.map((l,i)=>'<button type="button" data-fklinse="'+esc(l.deviceId)+'" class="'+(l.deviceId===dev?'on':'')+'" aria-label="Kamera '+(i+1)+'">'+(i+1)+'</button>').join('')};
+  const start=async()=>{stopp();
+    const vc={width:{ideal:1280},height:{ideal:960}};if(dev&&face!=='user')vc.deviceId={exact:dev};else vc.facingMode=face;
+    try{strm=await navigator.mediaDevices.getUserMedia({audio:false,video:vc});if(!document.body.contains(e)){stopp();return}
+      trk=strm.getVideoTracks()[0];let cap=null;try{cap=trk.getCapabilities&&trk.getCapabilities()}catch(x){}
+      hw=!!(cap&&cap.zoom&&cap.zoom.max>1);zmax=hw?Math.min(cap.zoom.max,8):4;zmin=hw&&cap.zoom.min&&cap.zoom.min<1?cap.zoom.min:1;z=1;
+      const v=vid();v.srcObject=strm;v.style.transform='';if(v.play)v.play().catch(()=>{});
+      try{const ds=await navigator.mediaDevices.enumerateDevices();linser=ds.filter(d=>d.kind==='videoinput'&&/back|bak|rear|environment/i.test(d.label||''));
+        const cur=trk.getSettings&&trk.getSettings().deviceId;if(cur&&linser.some(l=>l.deviceId===cur))dev=cur}catch(x){linser=[]}
+      tegnZoom();tegnLinser()}
+    catch(er){lukk();reserve()}};
   e.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('button');if(!b)return;
     if('fkx' in b.dataset)lukk();
-    else if('fkvend' in b.dataset){face=face==='user'?'environment':'user';start()}
-    else if('fkbilde' in b.dataset){const v=e.querySelector('#fkVid');if(!v||!v.videoWidth)return;const c=document.createElement('canvas'),k=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight));c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,0,0,c.width,c.height);c.toBlob(bl=>{lukk();if(bl)chatSendBilde(new File([bl],'bilde.jpg',{type:'image/jpeg'}))},'image/jpeg',.85)}});
+    else if('fkvend' in b.dataset){face=face==='user'?'environment':'user';dev='';start()}
+    else if('fkz' in b.dataset)settZoom(Number(b.dataset.fkz));
+    else if('fklinse' in b.dataset){dev=b.dataset.fklinse;start()}
+    else if('fkbilde' in b.dataset){const v=vid();if(!v||!v.videoWidth)return;const c=document.createElement('canvas'),k=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight)),dz=(!hw&&z>1)?z:1,sw=v.videoWidth/dz,sh=v.videoHeight/dz;c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,(v.videoWidth-sw)/2,(v.videoHeight-sh)/2,sw,sh,0,0,c.width,c.height);c.toBlob(bl=>{lukk();if(bl)chatSendBilde(new File([bl],'bilde.jpg',{type:'image/jpeg'}))},'image/jpeg',.85)}});
   start()}
 async function chatSendBilde(fil){
   const c=state.chat;if(!c.id||c.sender)return;c.sender=true;
@@ -4415,7 +4436,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 13:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 14:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
