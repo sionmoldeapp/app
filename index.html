@@ -3023,6 +3023,7 @@ function verktoyKort(){
       ['vlyd','Lyd',ik('<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5M9 20.5h6"/>'),nl,'linear-gradient(145deg,#ff6b78,#c81d3a)','Lydopptak'],
       ['vvideo','Video',ik('<rect x="3.5" y="6.5" width="12.5" height="11" rx="2.5"/><path d="m16 11 4.5-2.8v7.6L16 13"/>'),nv,'linear-gradient(145deg,#8a6cf5,#3f3fd4)','Videoopptak']],
     valgt=app.find(x=>state.acc[x[0]]);
+  if(valgt&&valgt[0]==='vnotat'&&state.notes===undefined&&FB&&!state.notesLaster){state.notesLaster=true;setTimeout(()=>loadNotes().finally(()=>{state.notesLaster=false}),0)}
   return '<details class="card acc" data-acc="verktoy" '+(state.acc.verktoy?'open':'')+'><summary><h2>Møteapper</h2></summary><p class="small" style="margin:0 0 4px">Notater og opptak fra møtene. Bare du ser dem.</p>'
    +'<div class="mapps">'+app.map(x=>'<button type="button" class="mapp" data-moteapp="'+x[0]+'" aria-pressed="'+(valgt===x)+'" aria-label="'+x[5]+(x[3]?', '+x[3]:'')+'"><i style="background:'+x[4]+'">'+x[2]+'</i>'+(x[3]?'<span class="mapp-n">'+x[3]+'</span>':'')+x[1]+'</button>').join('')+'</div>'
    +(valgt?'<div class="mapp-inn"><div class="mapp-hd"><b>'+valgt[5]+(valgt[3]?' ('+valgt[3]+')':'')+'</b><button type="button" class="btn" data-moteapp="'+valgt[0]+'" style="width:auto">Lukk</button></div>'+(valgt[0]==='vnotat'?notesInner():opptInner(valgt[0]==='vlyd'?'lyd':'video'))+'</div>':'')+'</details>'}
@@ -4697,7 +4698,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 03:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 03:25';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -6322,7 +6323,7 @@ document.addEventListener('click',e=>{
   document.addEventListener('click',e=>{if(svelg&&e.target.closest&&e.target.closest('#tabs')){svelg=false;e.preventDefault();e.stopImmediatePropagation()}},true);
   document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('#tabs'))e.preventDefault()}) }
 /* Møteapper: trykk på et ikon for å åpne det (notater, lyd eller video), trykk igjen eller Lukk for å lukke. */
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-moteapp]');if(!b)return;e.preventDefault();const k=b.dataset.moteapp;keep(()=>{const var0=state.acc[k];['vnotat','vlyd','vvideo'].forEach(x=>{state.acc[x]=false});if(!var0)state.acc[k]=true;state.acc.verktoy=true})});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-moteapp]');if(!b)return;e.preventDefault();const k=b.dataset.moteapp;keep(()=>{const var0=state.acc[k];['vnotat','vlyd','vvideo'].forEach(x=>{state.acc[x]=false});if(!var0)state.acc[k]=true;state.acc.verktoy=true});if(k==='vnotat'&&state.acc.vnotat&&state.notes===undefined&&FB)loadNotes()});
 /* Oppstartsskjermen (logoen) tones ut og siden tones inn når første innlasting er ferdig. */
 function splashBort(){
   const sp=document.getElementById('splash');if(!sp||sp.dataset.bort)return;sp.dataset.bort='1';
