@@ -569,9 +569,10 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 .crad{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;background:none;color:inherit;font:inherit;padding:10px 14px;cursor:pointer;border-radius:0}
 .crad:active{background:var(--chip)}
 .crad .ctx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.crad .cn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crad .cn{font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .crad .cp{font-size:var(--t-m);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .crad.ny .cn,.crad.ny .cp{font-weight:700;color:var(--ink)}
+.crad.ny .cm{font-weight:700;color:var(--ink)}
 .crad .cm{display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:var(--t-s);color:var(--muted);flex:none}
 .cdot{width:12px;height:12px;border-radius:50%;background:var(--lamp)}
 .cmsg{flex:1;overflow-y:auto;padding:12px 12px 4px;display:flex;flex-direction:column;gap:3px;overscroll-behavior:contain}
@@ -4222,7 +4223,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 04:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 04:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
