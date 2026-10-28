@@ -26,6 +26,7 @@ const FB={
     full:false,   // true for medlemmer og administratorer: da hentes også medlemsinnhold
     get user(){return auth.currentUser},
     onAuth:cb=>A.onAuthStateChanged(auth,cb),
+    persist:husk=>A.setPersistence(auth,husk?A.browserLocalPersistence:A.browserSessionPersistence).catch(()=>{}),
     login:(e,p)=>A.signInWithEmailAndPassword(auth,e,p),
     logout:()=>A.signOut(auth),
     reset:e=>A.sendPasswordResetEmail(auth,e),
