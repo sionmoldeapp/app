@@ -922,7 +922,7 @@ textarea{resize:none;padding-bottom:36px;min-height:70px}
 .ned.rt-ed{height:200px}
 .ned font[size="2"]{font-size:.85em}.ned font[size="3"]{font-size:1em}.ned font[size="4"]{font-size:1.2em}.ned font[size="5"]{font-size:1.4em}.ned font[size="6"]{font-size:1.8em}
 dialog.lp::backdrop{background:rgba(5,20,40,.55)}
-dialog.pub{max-height:88vh;overflow:auto;width:min(94vw,440px)}
+dialog.pub{max-height:94vh;max-height:94dvh;overflow:auto;width:min(94vw,440px)}
 .lpzone{min-height:38vh;display:flex;align-items:flex-end;justify-content:center;padding:16px;text-align:center}
 .tag.avl{background:#b3261e;color:#fff}
 .item.avl>button b{text-decoration:line-through;opacity:.75}
@@ -1081,10 +1081,21 @@ html[data-bred="1"] #utDbar{max-width:560px;margin:0 auto}
 .utsek>summary::after{content:"›";margin-left:auto;font-size:22px;color:var(--muted);transition:transform .2s}
 .utsek[open]>summary::after{transform:rotate(90deg)}
 .utsek[open]>summary{background:var(--chip)}
+.utkort{display:none;font-size:var(--t-s);font-weight:600;white-space:nowrap}
+/* Bookingskjemaet: bare det åpne steget fyller bredden. De andre er smale knapper på én linje, så vinduet ikke blir så høyt at det må rulleres. */
+.form:has(>.utsek){display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;align-items:flex-start}
+.form:has(>.utsek)>*{flex:0 0 100%;order:3}
+.form:has(>.utsek)>h3{order:0}
+.form:has(>.utsek)>.utsek:not([open]){flex:0 0 auto;order:1;border-radius:99px}
+.form:has(>.utsek)>.utsek[open]{order:2}
+.utsek:not([open])>summary{min-height:40px;padding:6px 12px 6px 8px;gap:6px}
+.utsek:not([open])>summary b,.utsek:not([open]) .utsum,.utsek:not([open])>summary::after{display:none}
+.utsek:not([open]) .utkort{display:inline}
+.utsek:not([open])>.utsb{display:none}
 .utsek .utsn{flex:none;width:24px;height:24px;border-radius:50%;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;font-size:var(--t-xs);font-weight:700}
 .utsek .utsum{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
 .utsek[open] .utsum{display:none}
-.utsb{padding:12px 14px;display:grid;gap:10px;min-width:0}
+.utsb{padding:10px 12px;display:grid;gap:8px;min-width:0}
 .utsb>*{min-width:0}
 .utsb input,.utsb select,.utsb textarea{min-width:0;max-width:100%;box-sizing:border-box}
 .utsb>div[style*="1fr 1fr"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
@@ -1706,7 +1717,8 @@ const UT_TEAM_GR=[['ja','Kommer'],['nei','Kommer ikke'],['vet','Vet ikke ennå']
 const utTeamHtml=l=>'<div class="utteam">'+UT_TEAM_GR.map(([k,n])=>{const p=l.filter(y=>y.k===k).map(y=>esc(y.n||y.e)+(y.oppg?' ('+esc(y.oppg)+')':'')).sort((a,b)=>a.localeCompare(b,'nb'));return '<div class="utt-rad"><span>'+n+' ('+p.length+')</span><span>'+(p.length?p.join(', '):'–')+'</span></div>'}).join('')+'</div>';
 const utTeamSum=l=>l.length?UT_TEAM_GR.map(([k])=>[k,l.filter(y=>y.k===k).length]).filter(x=>x[1]).map(([k,n])=>n+' '+({ja:'kommer',nei:'kommer ikke',vet:'vet ikke',ingen:'ikke svart'})[k]).join(' · '):'Ingen invitert ennå';
 const utHjelpI=(html,stil)=>'<details class="utinfo2"'+(stil?' style="'+stil+'"':'')+'><summary aria-label="Vis hjelp"><span class="utibtn">i</span></summary><p class="small" style="margin:6px 0 0">'+html+'</p></details>';
-const utSekO=(n,t,apen)=>'<details class="utsek" data-i="'+n+'"'+(apen?' open':'')+'><summary><span class="utsn">'+n+'</span><b>'+t+'</b><span class="small utsum"></span></summary><div class="utsb">';
+const UT_KORT={'Hva og når':'Når','Gjester, servering og allergener':'Gjester','Leietaker, pris og status':'Leietaker','Faktura':'Faktura','Menighetens kalender':'Kalender','Merknad og varsler':'Varsel','Team':'Team'};
+const utSekO=(n,t,apen)=>'<details class="utsek" data-i="'+n+'"'+(apen?' open':'')+'><summary><span class="utsn">'+n+'</span><span class="utkort">'+(UT_KORT[t]||t)+'</span><b>'+t+'</b><span class="small utsum"></span></summary><div class="utsb">';
 const utSekL=neste=>(neste===false?'':'<button type="button" class="btn" data-utnext style="width:auto;justify-self:start">Neste ›</button>')+'</div></details>';
 function utAsk(id,dato,pre){
   if(!utTilgang()||document.querySelector('dialog.pub'))return;
@@ -1715,7 +1727,7 @@ function utAsk(id,dato,pre){
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(ex?'Endre booking':'Ny booking')+'</h3>'
    +utSekO(1,'Hva og når',true)+'<label class="f">Tittel / hva skal det brukes til<input id="uT" maxlength="100" value="'+esc(b.tittel)+'" placeholder="For eksempel Bursdagsselskap"></label>'
    +'<details class="utsub" id="uRomD"><summary><b>Rom</b><span class="small utsubs"></span></summary><div class="utsubb">'+utRomListe().map(r=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utr="'+esc(r)+'" style="width:22px;height:22px;flex:none" '+((b.rom||[]).includes(r)?'checked':'')+'>'+esc(r)+'</label>').join('')+(state.admin?'<button type="button" class="pmore" id="uRomEdit" style="margin-top:4px">Endre romlisten</button>':'')+'</div></details>'
-   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Første dag<input id="uD" type="date" value="'+esc(b.dato)+'"></label><label class="f">Siste dag<input id="uD2" type="date" value="'+esc(b.dato2||'')+'"></label></div>'+utHjelpI('Lar du «Siste dag» stå tom, gjelder bookingen bare én dag. Velger du flere dager, kan du sette eget tidspunkt for hver dag.','margin:-4px 0 0')+''
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Første dag<input id="uD" type="date" value="'+esc(b.dato)+'"></label><label class="f">Siste dag<input id="uD2" type="date" value="'+esc(b.dato2||'')+'"></label></div>'+utHjelpI('Lar du «Siste dag» stå tom, gjelder bookingen bare én dag. Velger du flere dager, kan du sette eget tidspunkt for hver dag.','margin:-80px 0 0;position:relative;z-index:1')+''
    +'<div id="uEn" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Fra<input id="uF" type="time" value="'+esc(b.fra)+'"></label><label class="f">Til<input id="uTi" type="time" value="'+esc(b.til)+'"></label></div><div id="uTider" style="display:grid;gap:4px"></div>'
    +utSekL()+utSekO(2,'Gjester, servering og allergener')+'<div style="display:flex;gap:8px;align-items:end"><label class="f" style="flex:1">Mal<select id="uMal">'+utMalOpts()+'</select></label><button type="button" class="btn" data-utmalsave style="width:auto">Lagre som mal</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Antall gjester<input id="uG" type="number" min="0" max="2000" inputmode="numeric" value="'+(b.gjester||'')+'"></label><label class="f">Trengs i teamet<input id="uTM" type="number" min="0" max="50" inputmode="numeric" value="'+(b.teamMaal||'')+'" placeholder="Valgfritt"></label></div><div class="utmatbox"><p class="small" style="margin:0"><b>Måltider</b> (valgfritt)</p><div id="uMatL" style="display:grid;gap:10px">'+utMaaltider(b).map(utMatRad).join('')+'</div><button type="button" class="btn" data-utmadd style="width:auto;justify-self:start">+ Legg til måltid</button></div>'
    +'<details class="utsub" id="uAlD"><summary><b>Allergener blant gjestene</b><span class="small utsubs"></span></summary><div class="utsubb"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">'+UT_ALLERGENER.map(a=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utal="'+esc(a)+'" style="width:22px;height:22px;flex:none" '+((b.allergener||[]).includes(a)?'checked':'')+'>'+esc(a)+'</label>').join('')+'</div><label class="f" style="margin-top:6px">Andre allergier eller kosthold<input id="uAn" maxlength="200" value="'+esc(b.allergenNotat||'')+'" placeholder="For eksempel vegetar eller nøtteallergi hos barn"></label></div></details>'
@@ -4614,7 +4626,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 21:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 21:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
