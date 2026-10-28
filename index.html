@@ -587,24 +587,25 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 .cb:has(.bokk){max-width:92%;min-width:min(290px,92%)}
 .bokk{white-space:normal;display:grid;gap:0;min-width:0;font-size:var(--t-m)}
 .bokk-h{display:flex;align-items:center;gap:10px;padding-bottom:10px;margin-bottom:4px;border-bottom:1px solid color-mix(in srgb,currentColor 22%,transparent)}
-.bokk-ik{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:20px;background:color-mix(in srgb,currentColor 16%,transparent)}
+.bokk-ik{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,currentColor 16%,transparent)}
 .bokk-tt{display:flex;flex-direction:column;min-width:0}
 .bokk-ty{font-size:var(--t-s);font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
 .bokk-n{font-size:var(--t-l,18px);font-weight:700;line-height:1.2;overflow-wrap:anywhere}
 .bokk-r{display:grid;grid-template-columns:minmax(0,92px) minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
 .bokk-r:last-child{border-bottom:0}
-.bokk-k{display:flex;gap:6px;align-items:baseline;font-size:var(--t-s);opacity:.72}
+.bokk-k{display:flex;gap:7px;align-items:flex-start;font-size:var(--t-s);opacity:.72}
+.bokk-k svg{flex:none;margin-top:2px}
 .bokk-v{font-weight:600;min-width:0;overflow-wrap:anywhere}
 .bokk-s{display:inline-block;padding:1px 10px;border-radius:99px;font-size:var(--t-s);font-weight:700;background:rgba(46,160,90,.28);border:1px solid rgba(46,160,90,.6)}
 .bokk-s.f{background:rgba(230,150,30,.28);border-color:rgba(230,150,30,.7)}
 .bokk-sk{margin:10px 0 2px;padding-top:10px;border-top:1px dashed color-mix(in srgb,currentColor 35%,transparent);font-size:var(--t-s);font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.7}
 .bokk-p{margin-top:8px;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,currentColor 12%,transparent);font-size:var(--t-m)}
-.cvid{all:unset;display:block;margin-top:8px;padding:7px 12px;border-radius:99px;background:rgba(255,255,255,.25);border:1px solid currentColor;font-size:var(--t-s);font-weight:700;cursor:pointer;text-align:center}
+.cvid{all:unset;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:8px;padding:7px 12px;border-radius:99px;background:rgba(255,255,255,.25);border:1px solid currentColor;font-size:var(--t-s);font-weight:700;cursor:pointer;text-align:center}
 .cb.de .cvid{background:var(--surface)}
 .cbk{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .utteam{border:1px solid var(--line);border-radius:var(--r-s);padding:10px 12px;display:grid;gap:6px;background:var(--chip)}
 .utt-rad{display:grid;gap:2px;font-size:var(--t-s)}.utt-rad>span:first-child{font-weight:700}.utt-rad>span:last-child{color:var(--muted)}
-.cbk-b{all:unset;box-sizing:border-box;padding:8px 12px;border-radius:99px;border:1px solid currentColor;font-size:var(--t-s);font-weight:700;cursor:pointer;text-align:center;background:var(--surface);color:var(--ink)}
+.cbk-b{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;border-radius:99px;border:1px solid currentColor;font-size:var(--t-s);font-weight:700;cursor:pointer;text-align:center;background:var(--surface);color:var(--ink)}
 .cbk-b.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
 .cnvn{font-size:var(--t-xs);font-weight:700;opacity:.75;margin:0 0 2px}
 .cstj{position:absolute;top:-8px;left:8px;font-size:13px;line-height:1}
@@ -3372,7 +3373,7 @@ function chatBokKnapper(m,l,meg){
   if(b&&m.by!==meg){
     const min=[...l].reverse().find(x=>x.by===meg&&!x.slettet&&(svarTok(x.text)||{}).id===b.id),na=min?svarTok(min.text).k:'';
     return '<div class="cbk" role="group" aria-label="Kommer du?">'+BOK_VALG.map(([k,n])=>'<button type="button" class="cbk-b'+(na===k?' on':'')+'" data-bokk="'+esc(m.id+'|'+k)+'" aria-pressed="'+(na===k)+'">'+n+'</button>').join('')+'</div>'}
-  if(sv&&m.by!==meg&&chatKan())return '<div class="cbk">'+(sv.auto?'<span class="small">✓ Lagt i kalenderen automatisk</span>':bokKalMerket().includes(m.id)?'<span class="small">✓ Lagt i kalenderen</span>':'<button type="button" class="cbk-b" data-bokkal="'+esc(m.id)+'">📅 Legg i kalenderen</button>')+'</div>';
+  if(sv&&m.by!==meg&&chatKan())return '<div class="cbk">'+(sv.auto?'<span class="small">✓ Lagt i kalenderen automatisk</span>':bokKalMerket().includes(m.id)?'<span class="small">✓ Lagt i kalenderen</span>':'<button type="button" class="cbk-b" data-bokkal="'+esc(m.id)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Legg i kalenderen</button>')+'</div>';
   return ''}
 /* Bookingmeldinger (starter med 📅) vises som et ryddig kort. Selve meldingsteksten er uendret, så videresending og varsler virker som før. */
 function chatBokKort(txt){
@@ -3386,10 +3387,12 @@ function chatBokKort(txt){
     if(m&&!tom){sist={k:m[1],v:m[2]};rad.push(sist)}
     else if(sist&&/^\s/.test(raw))sist.v+='\n'+raw.trim();
     else fri.push(raw.trim())}
-  const IK={'Når':'🕒','Rom':'🚪','Gjester':'👥','Servering':'🍽️','Allergener':'⚠️','Leietaker':'👤','Kontakt':'☎️','Pris':'💰','Status':'📌','Merknad':'📝','Booket av':'✍️'};
+  const P={cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',klokke:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',rom:'<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>',folk:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5a3 3 0 0 1 0 6M18 14c2 .6 3 2.6 3 6"/>',mat:'<path d="M7 3v8a2 2 0 0 0 2 2v8M11 3v8M7 7h4M17 3c-2 2-2.5 5-2.5 8h2.5v10"/>',vars:'<path d="M12 3 2.5 20h19z"/><path d="M12 10v5M12 18v.01"/>',pers:'<circle cx="12" cy="8" r="3.5"/><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7"/>',tlf:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',pris:'<path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="12" r="2.5"/>',ok:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',note:'<path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/>',av:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>'};
+  const IKN={'Når':'klokke','Rom':'rom','Gjester':'folk','Servering':'mat','Allergener':'vars','Leietaker':'pers','Kontakt':'tlf','Pris':'pris','Status':'ok','Merknad':'note','Booket av':'av'};
+  const svg=(p,n)=>'<svg width="'+(n||16)+'" height="'+(n||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[p]||'<circle cx="12" cy="12" r="2"/>')+'</svg>';
   const verdi=(k,v)=>k==='Status'?'<span class="bokk-s'+(/^Forespørsel/.test(v)?' f':'')+'">'+esc(v)+'</span>':esc(v).replace(/\n/g,'<br>');
-  return '<div class="bokk"><div class="bokk-h"><span class="bokk-ik" aria-hidden="true">📅</span><span class="bokk-tt"><span class="bokk-ty">'+esc(m1[1])+(fors?' · forespørsel':'')+'</span><span class="bokk-n">'+esc(m1[2])+'</span></span></div>'
-   +rad.map(r=>r.sk?'<div class="bokk-sk">Detaljer · ikke send videre</div>':'<div class="bokk-r"><span class="bokk-k"><span aria-hidden="true">'+(IK[r.k]||'•')+'</span>'+esc(r.k)+'</span><span class="bokk-v">'+verdi(r.k,r.v)+'</span></div>').join('')
+  return '<div class="bokk"><div class="bokk-h"><span class="bokk-ik">'+svg('cal',22)+'</span><span class="bokk-tt"><span class="bokk-ty">'+esc(m1[1])+(fors?' · forespørsel':'')+'</span><span class="bokk-n">'+esc(m1[2])+'</span></span></div>'
+   +rad.map(r=>r.sk?'<div class="bokk-sk">Detaljer · ikke send videre</div>':'<div class="bokk-r"><span class="bokk-k">'+svg(IKN[r.k],16)+'<span>'+esc(r.k)+'</span></span><span class="bokk-v">'+verdi(r.k,r.v)+'</span></div>').join('')
    +(fri.length?'<div class="bokk-p">'+esc(fri.join(' '))+'</div>':'')+'</div>'}
 async function chatBokSvar(mid,k){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid),b=m&&bokTok(m.text),t=chatTraad(c.id);if(!b||!t)return;
@@ -3445,7 +3448,7 @@ function chatMsgs(sist){
       inn='<div class="'+kl+(rk.length?' lk':'')+(stor?' cstor':'')+(m.img&&!m.text&&!m.svar&&!m.lyd&&!m.avst?' cbild':'')+'" data-msg="'+esc(m.id)+'">'+(gr&&!mine&&!sammeFor?'<div class="cnvn">'+esc(m.name||'')+'</div>':'')
        +(m.svar?'<div class="cqt"><b>'+esc(m.svar.navn||'')+'</b><span>'+esc(m.svar.tekst||'')+'</span></div>':'')
        +(m.img?'<img class="cimg" src="'+m.img+'" alt="Bilde" data-cbilde>':'')
-       +(m.text?(/^📅 /.test(m.text)?chatBokKort(m.text):chatTekstHtml(m.text)):'')+chatBokKnapper(m,l,meg)+(/^📅 /.test(m.text||'')&&chatKan()&&!bokTok(m.text)?'<button type="button" class="cvid" data-bokvid="'+esc(m.id)+'">📤 Send videre til teamet</button>':'')+(m.avst&&m.avst.id?'<div class="cavst" data-avst="'+esc(m.avst.id)+'">'+chatAvstInn(m.avst.id)+'</div>':'')+(m.lyd?'<audio class="clyd" controls preload="metadata" src="'+m.lyd+'"></audio>':'')
+       +(m.text?(/^📅 /.test(m.text)?chatBokKort(m.text):chatTekstHtml(m.text)):'')+chatBokKnapper(m,l,meg)+(/^📅 /.test(m.text||'')&&chatKan()&&!bokTok(m.text)?'<button type="button" class="cvid" data-bokvid="'+esc(m.id)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg>Send videre til teamet</button>':'')+(m.avst&&m.avst.id?'<div class="cavst" data-avst="'+esc(m.avst.id)+'">'+chatAvstInn(m.avst.id)+'</div>':'')+(m.lyd?'<audio class="clyd" controls preload="metadata" src="'+m.lyd+'"></audio>':'')
        +((m.stjerne||[]).includes(meg)?'<span class="cstj" aria-label="Stjernemerket">⭐</span>':'')+(rk.length?'<span class="clike'+(minRk?' mine':'')+'" aria-label="'+tot+' reaksjoner">'+rk.map(x=>chatReakHtml(x[1])).join('')+(tot>1?'<small>'+tot+'</small>':'')+'</span>':'')+'</div>'}
     h+='<div class="crow '+(mine?'me':'de')+'">'+av+inn+'</div>';
     if(slutt){let tid=chatKl(m.ms)+(m.redigert?' · redigert':'');if(mine&&i===l.length-1&&t&&t.lastBy===meg)tid+=' · '+(sett?'Sett':'Sendt');h+='<div class="ct '+(mine?'me':'de')+'">'+esc(tid)+'</div>'}
@@ -4255,7 +4258,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 05:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 05:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
