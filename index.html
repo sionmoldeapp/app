@@ -3511,9 +3511,10 @@ async function chatBokSvar(mid,k){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid),b=m&&bokTok(m.text),t=chatTraad(c.id);if(!b||!t)return;
   const navn=nyBeskjedNavn(),tittel=(String(m.text).match(/^📅 [^:\n]*: (.*)$/m)||[])[1]||'',
     verb={ja:'kommer',nei:'kommer ikke',vet:'vet ikke ennå'}[k]||'';
+  const nar=(String(m.text).match(/^Når: (.*)$/m)||[])[1]||'';
   let lagt=false;
   if(b.auto){try{await FB.utTeamSet(b.id,meEmail(),navn,k);lagt=true}catch(e){}}
-  const tekst=navn+' '+verb+(tittel?': '+tittel:'')+(lagt?'\nLagt til i kalenderen automatisk.':'')+'⟦svar:'+b.id+':'+k+':'+(b.auto?'a':'m')+'⟧';
+  const tekst=navn+' '+verb+(tittel?': '+tittel:'')+(nar?' · '+nar:'')+(lagt?'\nLagt til i kalenderen automatisk.':'')+'⟦svar:'+b.id+':'+k+':'+(b.auto?'a':'m')+'⟧';
   try{await FB.addMsg(t,tekst,navn);if(PUSH_URL)FB.notifyThread(PUSH_URL,t.id).catch(()=>{});
     push('Svar sendt','Lederen din har fått svaret.'+(lagt?' Du står nå i kalenderen.':''))}
   catch(e){push('Kunne ikke sende svaret','Prøv igjen.')}}
@@ -4390,7 +4391,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 12:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 12:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
