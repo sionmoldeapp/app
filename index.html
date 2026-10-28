@@ -3374,6 +3374,9 @@ function chatBokKnapper(m,l,meg){
   if(b&&m.by!==meg){
     const min=[...l].reverse().find(x=>x.by===meg&&!x.slettet&&(svarTok(x.text)||{}).id===b.id),na=min?svarTok(min.text).k:'';
     return '<div class="cbk" role="group" aria-label="Kommer du?">'+BOK_VALG.map(([k,n])=>'<button type="button" class="cbk-b'+(na===k?' on':'')+'" data-bokk="'+esc(m.id+'|'+k)+'" aria-pressed="'+(na===k)+'">'+n+'</button>').join('')+'</div>'}
+  if(b&&m.by===meg){
+    const sv2=[...l].reverse().find(x=>x.by!==meg&&!x.slettet&&(svarTok(x.text)||{}).id===b.id),vk=sv2?(BOK_VALG.find(v=>v[0]===svarTok(sv2.text).k)||[])[1]:'';
+    return '<div class="cbk"><span class="small">'+(vk?'Svar: <b>'+esc(vk)+'</b>':'Venter på svar. Mottakeren ser knappene Kommer, Kommer ikke og Vet ikke ennå.')+'</span></div>'}
   if(sv&&m.by!==meg&&chatKan())return '<div class="cbk">'+(sv.auto?'<span class="small">✓ Lagt i kalenderen automatisk</span>':bokKalMerket().includes(m.id)?'<span class="small">✓ Lagt i kalenderen</span>':'<button type="button" class="cbk-b" data-bokkal="'+esc(m.id)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Legg i kalenderen</button>')+'</div>';
   return ''}
 /* Bookingmeldinger (starter med 📅) vises som et ryddig kort. Selve meldingsteksten er uendret, så videresending og varsler virker som før. */
@@ -4259,7 +4262,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 06:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 06:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
