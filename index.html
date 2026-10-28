@@ -1652,7 +1652,7 @@ async function utProgSync(id,d,cat){
 async function utProgFjern(id){const le=utProgEv(id);if(!le||!state.admin)return;try{await FB.del('events',le.id);rawEvents=rawEvents.filter(e=>e!==le);bruk(rawEvents,posts,regular)}catch(e){}}
 /* Bookingskjemaet er delt i seksjoner (trekkspill): bare én er åpen om gangen. */
 /* Team: hvem som kommer, ikke kommer, ikke vet og ikke har svart (bookinger/{id}/team). */
-const UT_TEAM_GR=[['ja','✅ Kommer'],['nei','❌ Kommer ikke'],['vet','🤔 Vet ikke ennå'],['ingen','⏳ Ikke svart ennå']];
+const UT_TEAM_GR=[['ja','Kommer'],['nei','Kommer ikke'],['vet','Vet ikke ennå'],['ingen','Ikke svart ennå']];
 const utTeamHtml=l=>'<div class="utteam">'+UT_TEAM_GR.map(([k,n])=>{const p=l.filter(y=>y.k===k).map(y=>esc(y.n||y.e)).sort((a,b)=>a.localeCompare(b,'nb'));return '<div class="utt-rad"><span>'+n+' ('+p.length+')</span><span>'+(p.length?p.join(', '):'–')+'</span></div>'}).join('')+'</div>';
 const utTeamSum=l=>l.length?UT_TEAM_GR.map(([k])=>[k,l.filter(y=>y.k===k).length]).filter(x=>x[1]).map(([k,n])=>n+' '+({ja:'kommer',nei:'kommer ikke',vet:'vet ikke',ingen:'ikke svart'})[k]).join(' · '):'Ingen invitert ennå';
 const utHjelpI=(html,stil)=>'<details class="utinfo2"'+(stil?' style="'+stil+'"':'')+'><summary aria-label="Vis hjelp"><span class="utibtn">i</span></summary><p class="small" style="margin:6px 0 0">'+html+'</p></details>';
@@ -3365,7 +3365,7 @@ const svarTok=t=>{const x=/⟦svar:([A-Za-z0-9_-]+):(ja|nei|vet):([am])⟧/.exec
 const lbokId=t=>(/⟦lbok:([A-Za-z0-9_-]+)⟧/.exec(t||'')||[])[1]||'';
 const chatForh=t=>chatRens(t).replace(SION_TOKEN,'[Sion]');
 const chatTekstHtml=t=>linkify(esc(chatRens(t))).replace(SION_TOKEN,(m,v)=>sionHtml(v));
-const BOK_VALG=[['ja','✅ Kommer'],['nei','❌ Kommer ikke'],['vet','🤔 Vet ikke ennå']];
+const BOK_VALG=[['ja','Kommer'],['nei','Kommer ikke'],['vet','Vet ikke ennå']];
 const bokKalMerket=()=>{try{return JSON.parse(lsGet('sm-bokkal')||'[]')}catch(e){return[]}};
 /* Knapper under en bookingmelding: Kommer / Kommer ikke / Vet ikke ennå for teamet, og «Legg i kalenderen» for lederen under svarene. */
 function chatBokKnapper(m,l,meg){
@@ -4258,7 +4258,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 05:35';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 05:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
