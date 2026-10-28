@@ -663,6 +663,14 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 .cbar[hidden],.cemoji[hidden]{display:none}
 .cbar .cbt{flex:1;min-width:0;display:flex;flex-direction:column;font-size:var(--t-s);border-left:3px solid #0084ff;padding-left:8px}
 .cbar .cbt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.cbar2{gap:12px;padding:12px 14px;background:var(--chip);border-radius:18px 18px 0 0;border-top:0;box-shadow:0 -4px 18px rgba(0,0,0,.18)}
+.cbar2 .cbik{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--line);color:var(--lamp,var(--brand))}
+.cbar2 .cbt{border-left:0;padding-left:0;font-size:var(--t-m);gap:2px}
+.cbar2 .cbt b{font-size:var(--t-m)}
+.cbar2 .cbt span{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cinp.cred .cfelt{border-radius:22px;min-height:64px}
+.cinp.cred #cT,.cinp.cred textarea{max-height:260px}
+.cinp.cred textarea{font-size:var(--t-m);line-height:1.4;padding:14px 16px;min-height:64px}
 .cemoji{display:block;padding:8px 14px 16px;background:var(--surface);border-top:0;border-radius:22px 22px 0 0;box-shadow:0 -1px 0 var(--line),0 -10px 30px rgba(15,40,70,.08);max-height:300px;overflow:auto}
 /* Rolig, voksen utforming: små overskrifter, nedtonede fliser og tynne omriss i stedet for fargede piller. */
 .cegrep{display:block;width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 6px}
@@ -3526,9 +3534,10 @@ function chatInpOppd(){const ta=document.getElementById('cT'),s=document.querySe
   if(tom)state.chat.verk=false;const vis=tom||!!state.chat.verk,vk=document.getElementById('cVerk'),ch=document.querySelector('#cForm .cchev');if(vk)vk.hidden=!vis;if(ch)ch.hidden=vis}
 function chatBar(){
   const b=document.getElementById('cBar');if(!b)return;const c=state.chat;
-  if(c.red){b.hidden=false;b.innerHTML='<span class="cbt"><b>Redigerer melding</b><span>'+esc(String(c.red.tekst||'').slice(0,80))+'</span></span><button type="button" class="cbtn" data-cbarx aria-label="Avbryt redigering"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'}
-  else if(c.svar){b.hidden=false;b.innerHTML='<span class="cbt"><b>Svarer til '+esc(c.svar.navn||'')+'</b><span>'+esc(c.svar.tekst||'')+'</span></span><button type="button" class="cbtn" data-cbarx aria-label="Avbryt svar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'}
-  else{b.hidden=true;b.innerHTML=''}
+  if(c.red){b.hidden=false;b.hidden=false;b.className='cbar cbar2';b.innerHTML='<span class="cbik"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></span><span class="cbt"><b>Redigerer melding</b><span>'+esc(chatForh(String(c.red.tekst||'')).slice(0,120))+'</span></span><button type="button" class="cbtn" data-cbarx aria-label="Avbryt redigering"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'}
+  else if(c.svar){b.hidden=false;b.className='cbar cbar2';b.innerHTML='<span class="cbik"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v3"/></svg></span><span class="cbt"><b>Svarer til '+esc(c.svar.navn||'')+'</b><span>'+esc(c.svar.tekst||'')+'</span></span><button type="button" class="cbtn" data-cbarx aria-label="Avbryt svar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'}
+  else{b.hidden=true;b.innerHTML='';b.className='cbar'}
+  {const fm=document.getElementById('cForm');if(fm)fm.classList.toggle('cred',!!c.red);const ta2=document.getElementById('cT');if(c.red&&ta2)ta2.dispatchEvent(new Event('input',{bubbles:true}))}
   chatInpOppd()}
 function chatSamtale(id){
   const c=state.chat,t=chatTraad(id);if(!t){chatListe();return}
@@ -4054,7 +4063,7 @@ async function chatSendSkjema(tommel){
 document.addEventListener('submit',async e=>{if(e.target&&e.target.id==='cBonnF'){e.preventDefault();const ta=document.getElementById('cBonnT'),t=(ta.value||'').trim();if(!t)return;try{await FB.addBonn(state.chat.id,t,nyBeskjedNavn());ta.value='';chatBonnMelding('🙏 Nytt bønneemne: '+t)}catch(er){push('Kunne ikke legge til','Prøv igjen ('+((er&&er.code)||'feil')+').')}return}
   if(!e.target||e.target.id!=='cForm')return;e.preventDefault();chatSendSkjema(false)});
 document.addEventListener('input',e=>{
-  if(e.target.id==='cT'){const t=e.target;if(e.isTrusted)chatPanelLukk();t.style.height='auto';t.style.height=Math.min(t.scrollHeight,120)+'px';t.style.overflowY=t.scrollHeight>120?'auto':'hidden';chatInpOppd()}
+  if(e.target.id==='cT'){const t=e.target;if(e.isTrusted)chatPanelLukk();t.style.height='auto';const lim=state.chat.red?260:120;t.style.height=Math.min(t.scrollHeight,lim)+'px';t.style.overflowY=t.scrollHeight>lim?'auto':'hidden';chatInpOppd()}
   else if(e.target.id==='cQ'){const l=document.getElementById('cPers');if(l)l.innerHTML=chatNyPersonerHtml(e.target.value)}
   else if(e.target.id==='cSokL'){state.chat.q=e.target.value;const l=document.getElementById('cListe');if(l)l.innerHTML=chatListeInn()}});
 document.addEventListener('keydown',e=>{
@@ -4381,7 +4390,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 10:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 11:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
