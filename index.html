@@ -2038,6 +2038,7 @@ async function utRomAsk(){
     const r=[...new Set(dlg.querySelector('#rT').value.split('\n').map(x=>x.trim().slice(0,40)).filter(Boolean))].slice(0,20);if(!r.length){dlg.querySelector('#rMsg').textContent='Legg inn minst ett rom.';return}
     try{await FB.setUtleie({rom:r});state.utRom=r;dlg.close();keep(()=>{});push('Lagret','Romlisten er oppdatert.')}catch(er){dlg.querySelector('#rMsg').textContent='Kunne ikke lagre ('+((er&&er.code)||'feil')+').'}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='autovidG'){UI.autovidG=e.target.value;uiLagre()}});
 document.addEventListener('change',e=>{if(e.target.id==='utRomSel'){state.ut.rom=e.target.value;keep(()=>{})}});
 /* Tilhørighet og varsler (administrator): enkle brytere for hvem som er med i hver gruppe og hvem som får varsel fra gruppen. «Varsel» kan også slås på for en enkeltperson som ikke er med i gruppen (feltet extra), og av for en som er med (feltet muted). */
 state.tl=state.tl||{mode:'gruppe',g:'',p:'',q:''};
@@ -3381,6 +3382,7 @@ function loadThreads(){
   return state.thrPromise}
 function chatTraadEndret(){
   try{drawTabs();badge()}catch(e){}
+  try{autoVidereSjekk();bokStatFriskt()}catch(e){}
   try{const k=document.querySelector('.chatkort');if(k){const card=k.closest('.card');if(card)card.outerHTML=chatKort()}}catch(e){}
   try{const c=state.chat;if(!c.vis)return;
     if(c.vy==='liste'){const l=document.getElementById('cListe');if(l)l.innerHTML=chatListeInn()}
@@ -3492,9 +3494,54 @@ const chatForh=t=>chatRens(t).replace(/^📅 /,'').replace(UT_DETALJ_RE,'').repl
 const chatTekstHtml=t=>linkify(esc(chatRens(t))).replace(SION_TOKEN,(m,v)=>sionHtml(v));
 const BOK_VALG=[['ja','Kommer'],['nei','Kommer ikke'],['vet','Vet ikke ennå']];
 const bokKalMerket=()=>{try{return JSON.parse(lsGet('sm-bokkal')||'[]')}catch(e){return[]}};
+/* Oversikt over teamets svar under bookingmeldingen til lederen (oppdateres av seg selv), og knapp for å minne de som ikke har svart. */
+const bokTeamC={};
+function bokTeamHent(bid){const c=bokTeamC[bid];if(!FB||!FB.utTeamList||(c&&(Date.now()-c.ms<15000)))return;bokTeamC[bid]={...(c||{}),ms:Date.now()};
+  FB.utTeamList(bid).then(l=>{bokTeamC[bid]={ms:Date.now(),l};bokStatOppd(bid)}).catch(()=>{})}
+function bokStatOppd(bid){document.querySelectorAll('[data-bokstat]').forEach(el=>{if(el.dataset.bokstat===bid)el.innerHTML=bokStatHtml(bid)})}
+function bokStatFriskt(){document.querySelectorAll('[data-bokstat]').forEach(el=>{const c=bokTeamC[el.dataset.bokstat];if(c&&Date.now()-c.ms>15000)bokTeamHent(el.dataset.bokstat)})}
+const bokPurret=()=>{try{return JSON.parse(lsGet('sm-purret')||'{}')}catch(e){return{}}};
+function bokStatHtml(bid){
+  const c=bokTeamC[bid];if(!c||!c.l){bokTeamHent(bid);return '<span class="small">Henter svar …</span>'}
+  if(Date.now()-c.ms>60000)bokTeamHent(bid);
+  const l=c.l;if(!l.length)return '';
+  const n=k=>l.filter(y=>y.k===k).length,d=[[n('ja'),'kommer'],[n('nei'),'kommer ikke'],[n('vet'),'vet ikke ennå'],[n('ingen'),'har ikke svart']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' · ');
+  const ing=n('ingen'),p=bokPurret()[bid];
+  return '<span class="small bokst">'+esc(d)+'</span>'+(ing?(p&&Date.now()-p<216e5?'<span class="small">Påminnet kl. '+chatKl(p)+'</span>':'<button type="button" class="cbk-b" data-bokpurr="'+esc(bid)+'">Minn de som ikke har svart ('+ing+')</button>'):'')}
+async function chatBokPurr(bid){
+  const c=bokTeamC[bid];if(!c||!c.l)return;const ing=c.l.filter(y=>y.k==='ingen');if(!ing.length)return;
+  const m=(state.chat.msgs||[]).find(x=>lbokId(x.text)===bid),navn=nyBeskjedNavn(),
+    tittel=m?((String(m.text).match(/^📅 [^:\n]*: (.*)$/m)||[])[1]||''):'',nar=m?((String(m.text).match(/^Når: (.*)$/m)||[])[1]||''):'';
+  if(!await bekreft('Sende en påminnelse til '+ing.length+(ing.length===1?' person':' personer')+' som ikke har svart?',{ok:'Send påminnelse'}))return;
+  const tekst='Påminnelse: Kommer du'+(tittel?' til '+tittel:'')+(nar?' ('+nar+')':'')+'? Trykk på en av knappene under.⟦bok:'+bid+':'+(lsGet('sm-bokauto')!=='0'?'a':'m')+'⟧';
+  let ok=0;
+  for(const u of ing){try{const e=u.e,t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(e)&&(x.parts||[]).includes(meEmail()));
+    const id=t?(await FB.addMsg(t,tekst,navn),t.id):await FB.newDm(e,u.n||e,'Vertskap',tekst,navn);
+    if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});ok++}catch(er){}}
+  if(ok){const p=bokPurret();p[bid]=Date.now();lsSet('sm-purret',JSON.stringify(p));bokStatOppd(bid)}
+  push(ok?'Påminnelse sendt':'Kunne ikke sende',ok?ok+(ok===1?' person har':' personer har')+' fått en påminnelse.':'Prøv igjen.')}
+/* Automatisk videresending (valg for leder): en ny booking sendes til teamet uten at lederen trykker. Skjer når lederens app er åpen og får beskjeden, og bare hvis ingen allerede har sendt den videre. */
+let autoBusy=false;
+async function autoVidereSjekk(){
+  if(autoBusy||!UI.autovid||!FB||!FB.lastMsgs||!state.threads||!chatKan())return;
+  const meg=meEmail();let h=[];try{h=JSON.parse(lsGet('sm-autovid')||'[]')}catch(e){}
+  const t=state.threads.find(x=>x.kind==='dm'&&x.lastBy&&x.lastBy!==meg&&x.ms>Date.now()-216e5&&/^📅 Ny booking/.test(chatRens(x.last||''))&&!h.includes(x.id+':'+x.ms));
+  if(!t)return;
+  autoBusy=true;h.push(t.id+':'+t.ms);lsSet('sm-autovid',JSON.stringify(h.slice(-60)));
+  try{
+    const ms=await FB.lastMsgs(t.id,3),m=ms.find(x=>x.by!==meg&&lbokId(x.text)&&/^📅 Ny booking/.test(x.text||''));if(!m)return;
+    const bid=lbokId(m.text),team=await FB.utTeamList(bid);if(team.length)return;
+    const gs=chatGrupper(),g=gs.find(x=>x[0]===UI.autovidG)||gs.find(x=>/torsdag/i.test(x[0]+x[1]))||gs[0];if(!g)return;
+    const folk=chatGruppeFolk(g[0]);if(!folk.length){push('Ingen å sende til','Gruppen '+g[1]+' har ingen medlemmer.');return}
+    const hoved0=String(m.text||'').split('─── Detaljer')[0].trim().replace(/^📅 (Ny booking|Endret booking)/,'📅 Arrangement').replace(/⟦[^⟧]*⟧/g,'').trim(),auto=lsGet('sm-bokauto')!=='0';
+    FB.utTeamInviter(bid,folk.map(u=>({e:u.id,n:u.name||u.id}))).catch(()=>{});
+    await chatSendBulk(folk,g[0],hoved0+'\n\nKommer du? Trykk på en av knappene under.⟦bok:'+bid+':'+(auto?'a':'m')+'⟧',undefined,true);
+    push('Sendt til teamet',g[1]+' ('+folk.length+') har fått bookingen.');
+  }catch(e){}finally{autoBusy=false}}
 /* Knapper under en bookingmelding: Kommer / Kommer ikke / Vet ikke ennå for teamet, og «Legg i kalenderen» for lederen under svarene. */
 function chatBokKnapper(m,l,meg){
-  const b=bokTok(m.text),sv=svarTok(m.text);
+  const b=bokTok(m.text),sv=svarTok(m.text),lb=lbokId(m.text);
+  if(lb&&chatKan()&&!b)return '<div class="cbk"><div class="bokstat" data-bokstat="'+esc(lb)+'" style="display:grid;gap:6px">'+bokStatHtml(lb)+'</div></div>';
   if(b&&m.by!==meg){
     const min=[...l].reverse().find(x=>x.by===meg&&!x.slettet&&(svarTok(x.text)||{}).id===b.id),na=min?svarTok(min.text).k:'';
     return '<div class="cbk" role="group" aria-label="Kommer du?">'+BOK_VALG.map(([k,n])=>'<button type="button" class="cbk-b'+(na===k?' on':'')+'" data-bokk="'+esc(m.id+'|'+k)+'" aria-pressed="'+(na===k)+'">'+n+'</button>').join('')+'</div>'}
@@ -3675,7 +3722,7 @@ function chatBokVidere(mid){
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0;padding-right:44px">Send videre til teamet</h3>'+utHjelpI('Her er bare det viktigste. Leietaker, kontaktinfo og pris er ikke med. Du kan legge til en egen hilsen.','margin:-40px 0 0')+''
    +'<label class="f">Til gruppen<select id="bvG">'+gs.map(g=>'<option value="'+esc(g[0])+'" '+(g[0]===def?'selected':'')+'>'+esc(g[1])+' ('+chatGruppeFolk(g[0]).length+')</option>').join('')+'</select></label>'
    +'<div class="bvprev">'+chatBokKort(hoved,true)+'</div><label class="f">Egen hilsen til teamet (valgfritt)<textarea id="bvT" rows="2" maxlength="300"></textarea></label>'
-   +(lbokId(m.text)?'<div style="display:flex;gap:10px;align-items:flex-start"><label style="flex:1;display:flex;gap:8px;align-items:flex-start;font-size:var(--t-s)"><input type="checkbox" id="bvA" style="width:auto;margin-top:3px"'+(lsGet('sm-bokauto')==='0'?'':' checked')+'> Legg svarene automatisk i kalenderen, uten at jeg må bekrefte</label><button type="button" class="utibtn" data-bvi aria-expanded="false" aria-label="Vis hjelp">i</button></div><p class="small" id="bvInfo" hidden style="margin:0">Hver i teamet får knappene <b>Kommer</b>, <b>Kommer ikke</b> og <b>Vet ikke ennå</b> i meldingen. Svaret kommer til deg i chatten.</p>':'')+'<p class="small" id="bvS" role="status" style="margin:0"></p>'
+   +(lbokId(m.text)?'<div style="display:flex;gap:10px;align-items:flex-start"><label style="flex:1;display:flex;gap:8px;align-items:flex-start;font-size:var(--t-s)"><input type="checkbox" id="bvA" style="width:auto;margin-top:3px"'+(lsGet('sm-bokauto')==='0'?'':' checked')+'> Legg svarene automatisk i kalenderen, uten at jeg må bekrefte</label><button type="button" class="utibtn" data-bvi aria-expanded="false" aria-label="Vis hjelp">i</button></div><p class="small" id="bvInfo" hidden style="margin:0">Hver i teamet får knappene <b>Kommer</b>, <b>Kommer ikke</b> og <b>Vet ikke ennå</b> i meldingen. Svaret kommer til deg i chatten.</p><label style="display:flex;gap:8px;align-items:flex-start;font-size:var(--t-s)"><input type="checkbox" id="bvAuto2" style="width:auto;margin-top:3px"'+(UI.autovid?' checked':'')+'> Send nye bookinger automatisk til dette teamet</label>':'')+'<p class="small" id="bvS" role="status" style="margin:0"></p>'
    +'<div class="btns"><button class="btn primary" value="send" style="flex:1">Send til teamet</button><button class="btn" value="avbryt" formnovalidate style="flex:1">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.querySelector('form').addEventListener('submit',async e=>{
@@ -3683,6 +3730,7 @@ function chatBokVidere(mid){
     const g=dlg.querySelector('#bvG').value,hils=dlg.querySelector('#bvT').value.trim(),tekst=hoved0+(hils?'\n\n'+hils:'')+(kd?'\n\n'+kd:''),folk=chatGruppeFolk(g);
     if(!tekst){dlg.querySelector('#bvS').textContent='Skriv en melding.';return}
     if(!folk.length){dlg.querySelector('#bvS').textContent='Gruppen har ingen å sende til.';return}
+    if(dlg.querySelector('#bvAuto2')){UI.autovid=dlg.querySelector('#bvAuto2').checked;if(UI.autovid)UI.autovidG=g;uiLagre()}
     const bid=lbokId(m.text),auto=!!(dlg.querySelector('#bvA')&&dlg.querySelector('#bvA').checked);if(bid)lsSet('sm-bokauto',auto?'1':'0');
     if(bid)FB.utTeamInviter(bid,folk.map(u=>({e:u.id,n:u.name||u.id}))).catch(()=>{});
     dlg.close();await chatSendBulk(folk,g,tekst+(bid?'⟦bok:'+bid+':'+(auto?'a':'m')+'⟧':''))});
@@ -3831,13 +3879,13 @@ function chatSpillSend(type){
   else if(type==='mynt')chatSendTekst('🪙 Myntkast: '+(Math.random()<.5?'Krone':'Mynt')).catch(()=>{});
   else if(type==='quiz')chatQuiz()}
 /* Sender samme melding (med eventuelle tillegg) som privat samtale til flere. */
-async function chatSendBulk(folk,gid,tekst,ekstra){
+async function chatSendBulk(folk,gid,tekst,ekstra,stille){
   const meg=meEmail(),navn=nyBeskjedNavn();let ok=0,feil=0;
   for(let i=0;i<folk.length;i+=4){
     await Promise.all(folk.slice(i,i+4).map(async u=>{try{const t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(u.id)&&(x.parts||[]).includes(meg));if(t)await FB.addMsg(t,tekst,navn,ekstra);else await FB.newDm(u.id,u.name||u.id,gName(gid),tekst,navn,ekstra);ok++}catch(e){feil++}}))}
   if(ok&&PUSH_URL)FB.sendPushStille(PUSH_URL,'Ny beskjed fra '+navn,kortTekst(chatRens(tekst)),'me',{type:'grupper',groups:[gid]}).catch(()=>{});
   if(feil)push('Delvis sendt',ok+' fikk beskjeden, '+feil+' feilet.');
-  chatListe()}
+  if(!stille)chatListe()}
 /* Ny melding: velg hele gruppen eller en person. Bare ledere og administratorer. */
 const chatFolkAlle=()=>(state.admin?members:leaderMem).filter(u=>u.id!==meEmail());
 const chatGrupper=()=>state.admin?GROUPS:GROUPS.filter(g=>(state.leads||[]).includes(g[0]));
@@ -4087,6 +4135,7 @@ document.addEventListener('click',e=>{
   else if(d.bokvid)chatBokVidere(d.bokvid);
   else if(d.bokk){const [a,k]=d.bokk.split('|');chatBokSvar(a,k)}
   else if(d.bokkal)chatBokKal(d.bokkal);
+  else if(d.bokpurr)chatBokPurr(d.bokpurr);
   else if('chatavstny' in d)chatAvstNy('gruppe');
   else if('chatspill' in d)chatQuiz();
   else if(d.cspill){if(d.cspill==='avst')chatAvstNy('person');else chatSpillSend(d.cspill)}
@@ -4454,7 +4503,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 15:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 16:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -4527,11 +4576,12 @@ function uiLagre(){try{localStorage.setItem('sm-ui',JSON.stringify(UI))}catch(e)
 applyFs();
 function settingsCard(){return subSorter('innst',settingsKort())}
 function settingsKort(){
-  const bryter=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${(k==='nh'||k==='vaken')?UI[k]===true:UI[k]!==false}" aria-label="${l}" data-ui="${k}"></button></div>`;
+  const bryter=(k,l,s)=>`<div class="switch"><div><b>${l}</b><div class="small">${s}</div></div><button class="tg" role="switch" aria-checked="${(k==='nh'||k==='vaken'||k==='autovid')?UI[k]===true:UI[k]!==false}" aria-label="${l}" data-ui="${k}"></button></div>`;
   const H=t=>`<h3 style="margin:14px 0 6px;font-size:var(--t-l)">${t}</h3>`;
   return `<details class="card acc" data-acc="innst" ${state.acc.innst?'open':''}><summary><h2>Innstillinger</h2></summary>
   ${profSub('inpush','Varsler',pushInner())}
   ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Lys eller mørk</h3><p class="small" style="margin:0 0 8px">Automatisk følger telefonens eget valg (lys eller mørk), også når det bytter av seg selv. Sol/måne-knappen i toppen velger lys eller mørk fast.</p><div class="btns" role="group" aria-label="Lys eller mørk" style="margin-bottom:16px">${[['auto','Følg telefonen'],['light','Lys'],['dark','Mørk']].map(([v,n])=>`<button type="button" class="btn ${(document.documentElement.dataset.theme||'auto')===v?'on':''}" data-tema="${v}" aria-pressed="${(document.documentElement.dataset.theme||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Skjermvisning</h3><p class="small" style="margin:0 0 8px">På PC kan appen fylle hele nettleservinduet med sidemeny og flere kolonner. Automatisk betyr bred visning for administratorer på stor skjerm.</p><div class="btns" role="group" aria-label="Skjermvisning" style="margin-bottom:16px">${[['auto','Automatisk'],['bred','Bred (PC)'],['mobil','Mobilvisning']].map(([v,n])=>`<button type="button" class="btn ${(UI.vis||'auto')===v?'on':''}" data-vis="${v}" aria-pressed="${(UI.vis||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Meny</h3><p class="small" style="margin:0 0 8px">Når appen er utvidet til hele bredden, kan menyen stå på siden eller nederst som på mobil.</p><div class="btns" role="group" aria-label="Plassering av menyen" style="margin-bottom:16px">${[['side','På siden'],['bunn','Nederst']].map(([v,n])=>`<button type="button" class="btn ${(UI.meny||'side')===v?'on':''}" data-meny="${v}" aria-pressed="${(UI.meny||'side')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${[...PALETTER,egenPalEntry()].map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div>${egenEditor()}<p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
+  ${chatKan()?profSub('inbook','Bookinger',bryter('autovid','Send nye bookinger automatisk til teamet','Når du får en ny booking i Sionchat, sendes den videre til teamet uten at du trykker. Skjer når appen din er åpen. Gjelder bare på denne enheten.')+'<label class="f" style="margin-top:8px">Team<select id="autovidG">'+chatGrupper().map(g=>'<option value="'+esc(g[0])+'" '+(g[0]===(UI.autovidG||(chatGrupper().find(x=>/torsdag/i.test(x[0]+x[1]))||chatGrupper()[0]||[''])[0])?'selected':'')+'>'+esc(g[1])+'</option>').join('')+'</select></label>'):''}
   ${profSub('invaken','Skjerm',bryter('vaken','Hold skjermen våken','Skjermen slukker ikke så lenge appen er åpen og i forgrunnen. Bruker mer batteri.')+(navigator.wakeLock?'':'<p class="small" style="margin:6px 0 0">Denne nettleseren støtter ikke dette.</p>')+'<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>')}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
@@ -5244,7 +5294,7 @@ document.addEventListener('click',async e=>{
   else if('rscancel' in c.dataset){$('#rsDlg').close();rsPending=null}
   else if(c.dataset.af){state.af=c.dataset.af;state.sel={};keep(()=>{})}
   else if(c.dataset.f){state.filter=c.dataset.f;keep(()=>{})}
-  else if(c.dataset.ui){keep(()=>{const k0=c.dataset.ui;UI[k0]=(k0==='nh'||k0==='vaken')?!UI[k0]:UI[k0]===false;if(k0==='vaken')vakenSett();if(c.dataset.ui==='vk'&&UI.vk)lsSet('sm-viktig-skjult','');uiLagre()})}
+  else if(c.dataset.ui){keep(()=>{const k0=c.dataset.ui;UI[k0]=(k0==='nh'||k0==='vaken'||k0==='autovid')?!UI[k0]:UI[k0]===false;if(k0==='vaken')vakenSett();if(c.dataset.ui==='vk'&&UI.vk)lsSet('sm-viktig-skjult','');uiLagre()})}
   else if('egenbruk' in c.dataset){setPal('egen');keep(()=>{})}
   else if(c.dataset.egenauto){const k=c.dataset.egenauto;let j={};try{j=JSON.parse(lsGet('sm-egen')||'{}')||{}}catch(e){}j[k]='';lsSet('sm-egen',JSON.stringify(j));egenBruk();keep(()=>{})}
   else if('egenreset' in c.dataset){lsSet('sm-egen','');egenBruk();keep(()=>{})}
