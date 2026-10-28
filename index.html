@@ -2626,6 +2626,11 @@ function admin(){
 const PEN='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
 const EYE='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const EYEOFF='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.7C3.7 8.5 2 12 2 12s3.6 7 10 7c1.6 0 3-.4 4.3-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+/* Kjente brukere på denne enheten (bare e-postadresser, aldri passord). Passordene ligger i telefonens eget passordlager. */
+const lgBrukere=()=>{try{return JSON.parse(lsGet('sm-brukere')||'[]').filter(x=>typeof x==='string')}catch(e){return[]}};
+const lgBrukLagre=l=>lsSet('sm-brukere',JSON.stringify([...new Set(l)].slice(0,8)));
+const lgBrukerHtml=()=>{const l=lgBrukere(),pc=!!window.PasswordCredential;if(!l.length&&!pc)return '';
+  return '<div style="display:grid;gap:6px"><span class="small" style="margin:0">Lagrede brukere på denne enheten</span><div class="btns" style="margin:0">'+l.map(e=>'<span class="chip lgb" style="display:inline-flex;align-items:center;gap:6px;padding:0 4px 0 12px"><button type="button" data-lgbruker="'+esc(e)+'" style="all:unset;cursor:pointer;min-height:36px;display:inline-flex;align-items:center">'+esc(e)+'</button><button type="button" data-lgglem="'+esc(e)+'" aria-label="Fjern '+esc(e)+' fra listen" style="all:unset;cursor:pointer;width:32px;height:32px;display:grid;place-items:center"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>').join('')+(pc?'<button type="button" class="btn" data-lgvelg style="width:auto">Velg lagret passord</button>':'')+'</div></div>'};
 const pwField=(id,label,ac,extra)=>`<label class="f">${label}<span class="pw"><input id="${id}" type="password" autocomplete="${ac}" ${extra||''} required><button type="button" class="eye" data-eye aria-label="Vis passord" aria-pressed="false">${EYE}</button></span></label>`;
 const userRow=(x,me)=>{
   const self=x.id===me,adm=x.role==='admin',leader=(x.leads||[]).length>0;
@@ -4391,7 +4396,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 12:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 13:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -4759,7 +4764,7 @@ function loginCard(){
    <button class="btn primary" type="submit">Lagre nytt passord</button></form>
    <p class="small" role="status" style="margin:8px 0 0">${esc(state.pwMsg)}</p></details></div>`;
   return `<div class="card"><h2>Logg inn</h2><p class="small" style="margin:4px 0 12px">For medlemmer og ledere. Du får en e-post fra menigheten der du velger passord.</p>
-  ${FB?`<form class="form" id="login" method="post" action="#"><label class="f">E-post<input id="lE" name="email" type="email" autocomplete="username" required></label>
+  ${FB?`<form class="form" id="login" method="post" action="#">${lgBrukerHtml()}<label class="f">E-post<input id="lE" name="email" type="email" autocomplete="username" required></label>
   ${pwField('lP','Passord','current-password','name="password"')}
   <label style="display:flex;gap:10px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" id="lH" style="width:22px;height:22px;flex:none" ${lsGet('sm-husk')==='0'?'':'checked'}> Husk passord på denne enheten</label>
   <button class="btn primary" type="submit">Logg inn</button><button class="pmore" type="button" data-reset>Glemt passord?</button></form>
@@ -5129,6 +5134,9 @@ document.addEventListener('click',async e=>{
   else if('givingedit' in c.dataset){givingAsk()}
   else if('juledit' in c.dataset){julAsk()}
   else if(c.dataset.utdag){keep(()=>{state.ut.dag=c.dataset.utdag});}
+  else if('lgbruker' in c.dataset){const e=$('#lE');if(e){e.value=c.dataset.lgbruker;const p=$('#lP');if(p)p.focus()}}
+  else if('lgglem' in c.dataset){lgBrukLagre(lgBrukere().filter(x=>x!==c.dataset.lgglem));refresh()}
+  else if('lgvelg' in c.dataset){try{const cr=await navigator.credentials.get({password:true,mediation:'required'});if(cr&&cr.id){const e=$('#lE'),p=$('#lP');if(e&&p){e.value=cr.id;p.value=cr.password||'';const f=$('#login');if(f&&f.requestSubmit)f.requestSubmit()}}}catch(x){}}
   else if('uthjelp' in c.dataset){keep(()=>{state.ut.hjelp=!state.ut.hjelp})}
   else if('utlas' in c.dataset){keep(()=>{state.ut.las=!state.ut.las})}
   else if('ututv' in c.dataset){const pa=!state.ut.utv;keep(()=>{state.ut.utv=pa;if(pa){state.acc.utleie=true;if(!state.ut.visn||state.ut.visn==='mnd')state.ut.visn='dag'}});const k=document.querySelector('#view details[data-acc="utleie"]');if(k)requestAnimationFrame(()=>kortTilToppen(k))}
@@ -5404,7 +5412,7 @@ document.addEventListener('submit',async e=>{
     await refresh();return}
   if(f.id==='login'){e.preventDefault();
     try{const em=$('#lE').value.trim(),pw=$('#lP').value,husk=$('#lH')?$('#lH').checked:true;lsSet('sm-husk',husk?'1':'0');if(FB.persist)await FB.persist(husk);await FB.login(em,pw);state.err='';
-      try{if(husk&&window.PasswordCredential)await navigator.credentials.store(new PasswordCredential({id:em,password:pw,name:em}))}catch(x){}}catch(er){keep(()=>state.err=authMsg(er.code))}}
+      if(husk)lgBrukLagre([em,...lgBrukere()]);try{if(husk&&window.PasswordCredential)await navigator.credentials.store(new PasswordCredential({id:em,password:pw,name:em}))}catch(x){}}catch(er){keep(()=>state.err=authMsg(er.code))}}
   else if(f.id==='pushsend'){e.preventDefault();
     const t=$('#psT').value.trim(),b=$('#psB').value.trim(),tab=$('#psTab').value,asNews=$('#psNews').checked,hide=$('#psHide').checked;
     if(!t)return;
