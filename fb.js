@@ -245,7 +245,8 @@ const FB={
     utSetFaktura:(id,v)=>S.setDoc(S.doc(db,'bookinger',id),{fakturert:!!v,fakturertMs:v?Date.now():0,ms:Date.now()},{merge:true}),
     setUtleieEpost:e=>S.setDoc(S.doc(db,'settings','utleie'),{fakturaEpost:String(e||'').slice(0,100)},{merge:true}),
     // Svar fra teamet på et arrangement (Kommer / Kommer ikke / Vet ikke ennå): bookinger/{id}/team/{e-post} {n,k,ms}.
-    utTeamSet:(bid,epost,navn,k)=>S.setDoc(S.doc(db,'bookinger',String(bid),'team',String(epost).toLowerCase()),{n:String(navn||epost).slice(0,60),k,ms:Date.now()}),
+    utTeamSet:(bid,epost,navn,k)=>S.setDoc(S.doc(db,'bookinger',String(bid),'team',String(epost).toLowerCase()),{n:String(navn||epost).slice(0,60),k,ms:Date.now()},{merge:true}),
+    async utOppgSet(bid,epost,navn,oppg){const ref=S.doc(db,'bookinger',String(bid),'team',String(epost).toLowerCase()),o=String(oppg||'').slice(0,30);try{await S.updateDoc(ref,{oppg:o})}catch(e){await S.setDoc(ref,{n:String(navn||epost).slice(0,60),k:'ingen',ms:Date.now(),oppg:o})}},
     // Inviterte som ikke har svart ennå (k:'ingen'). Eksisterende svar røres ikke.
     async utTeamInviter(bid,folk){const ref=S.collection(db,'bookinger',String(bid),'team'),har=new Set((await S.getDocs(ref)).docs.map(d=>d.id));
       for(const p of folk){const e=String(p.e).toLowerCase();if(!har.has(e))await S.setDoc(S.doc(ref,e),{n:String(p.n||e).slice(0,60),k:'ingen',ms:Date.now()})}},

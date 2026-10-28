@@ -335,7 +335,8 @@ service cloud.firestore {
       // Hver kan svare for seg selv; gruppeledere, gruppen utleie og administratorer kan legge inn svar og invitasjoner (k = ingen) for andre.
       allow create, update: if signedIn() && isMember()
         && (epost == request.auth.token.email || utleieTilgang() || isLeader())
-        && request.resource.data.keys().hasOnly(['n', 'k', 'ms'])
+        && request.resource.data.keys().hasOnly(['n', 'k', 'ms', 'oppg'])
+        && (!('oppg' in request.resource.data) || (request.resource.data.oppg is string && request.resource.data.oppg.size() <= 30))
         && request.resource.data.n is string && request.resource.data.n.size() <= 60
         && request.resource.data.k in ['ja', 'nei', 'vet', 'ingen']
         && request.resource.data.ms is number;

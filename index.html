@@ -1233,6 +1233,7 @@ const state={tab:'home',filter:'Alle',member:false,admin:false,user:null,rsvp:{}
 try{Object.assign(state,JSON.parse(localStorage.getItem('sm-proto')||'{}'))}catch(e){}
 state.member=false;state.admin=false;state.user=null;try{state.edit=localStorage.getItem('sm-edit')!=='0'}catch(e){state.edit=true}
 {const q=new URLSearchParams(location.search),dt=q.get('tab');if(['home','prog','news','me'].includes(dt)){state.tab=dt;try{history.replaceState(null,'',location.pathname)}catch(e){}}
+  if(q.get('bsvar')&&q.get('bok')&&q.get('tr')){state.pendingBok={bid:q.get('bok'),k:q.get('bsvar'),tr:q.get('tr')};try{history.replaceState(null,'',location.pathname)}catch(e){}}
   if(q.get('vt')||q.get('vb')){state.pendingVarsel={tab:dt||'home',tittel:q.get('vt')||'',tekst:q.get('vb')||''};try{history.replaceState(null,'',location.pathname)}catch(e){}}}
 const save=()=>{try{localStorage.setItem('sm-proto',JSON.stringify({rsvp:state.rsvp,rem:state.rem,prefs:state.prefs}))}catch(e){}};
 
@@ -1701,7 +1702,7 @@ async function utProgFjern(id){const le=utProgEv(id);if(!le||!state.admin)return
 /* Bookingskjemaet er delt i seksjoner (trekkspill): bare én er åpen om gangen. */
 /* Team: hvem som kommer, ikke kommer, ikke vet og ikke har svart (bookinger/{id}/team). */
 const UT_TEAM_GR=[['ja','Kommer'],['nei','Kommer ikke'],['vet','Vet ikke ennå'],['ingen','Ikke svart ennå']];
-const utTeamHtml=l=>'<div class="utteam">'+UT_TEAM_GR.map(([k,n])=>{const p=l.filter(y=>y.k===k).map(y=>esc(y.n||y.e)).sort((a,b)=>a.localeCompare(b,'nb'));return '<div class="utt-rad"><span>'+n+' ('+p.length+')</span><span>'+(p.length?p.join(', '):'–')+'</span></div>'}).join('')+'</div>';
+const utTeamHtml=l=>'<div class="utteam">'+UT_TEAM_GR.map(([k,n])=>{const p=l.filter(y=>y.k===k).map(y=>esc(y.n||y.e)+(y.oppg?' ('+esc(y.oppg)+')':'')).sort((a,b)=>a.localeCompare(b,'nb'));return '<div class="utt-rad"><span>'+n+' ('+p.length+')</span><span>'+(p.length?p.join(', '):'–')+'</span></div>'}).join('')+'</div>';
 const utTeamSum=l=>l.length?UT_TEAM_GR.map(([k])=>[k,l.filter(y=>y.k===k).length]).filter(x=>x[1]).map(([k,n])=>n+' '+({ja:'kommer',nei:'kommer ikke',vet:'vet ikke',ingen:'ikke svart'})[k]).join(' · '):'Ingen invitert ennå';
 const utHjelpI=(html,stil)=>'<details class="utinfo2"'+(stil?' style="'+stil+'"':'')+'><summary aria-label="Vis hjelp"><span class="utibtn">i</span></summary><p class="small" style="margin:6px 0 0">'+html+'</p></details>';
 const utSekO=(n,t,apen)=>'<details class="utsek" data-i="'+n+'"'+(apen?' open':'')+'><summary><span class="utsn">'+n+'</span><b>'+t+'</b><span class="small utsum"></span></summary><div class="utsb">';
@@ -3382,7 +3383,7 @@ function loadThreads(){
   return state.thrPromise}
 function chatTraadEndret(){
   try{drawTabs();badge()}catch(e){}
-  try{autoVidereSjekk();bokStatFriskt()}catch(e){}
+  try{autoVidereSjekk();bokStatFriskt();bokVentende()}catch(e){}
   try{const k=document.querySelector('.chatkort');if(k){const card=k.closest('.card');if(card)card.outerHTML=chatKort()}}catch(e){}
   try{const c=state.chat;if(!c.vis)return;
     if(c.vy==='liste'){const l=document.getElementById('cListe');if(l)l.innerHTML=chatListeInn()}
@@ -3506,8 +3507,8 @@ function bokStatHtml(bid){
   if(Date.now()-c.ms>60000)bokTeamHent(bid);
   const l=c.l;if(!l.length)return '';
   const n=k=>l.filter(y=>y.k===k).length,d=[[n('ja'),'kommer'],[n('nei'),'kommer ikke'],[n('vet'),'vet ikke ennå'],[n('ingen'),'har ikke svart']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' · ');
-  const ing=n('ingen'),p=bokPurret()[bid];
-  return '<span class="small bokst">'+esc(d)+'</span>'+(ing?(p&&Date.now()-p<216e5?'<span class="small">Påminnet kl. '+chatKl(p)+'</span>':'<button type="button" class="cbk-b" data-bokpurr="'+esc(bid)+'">Minn de som ikke har svart ('+ing+')</button>'):'')}
+  const ing=n('ingen'),p=bokPurret()[bid],oppg={};l.filter(y=>y.k==='ja'&&y.oppg).forEach(y=>{oppg[y.oppg]=(oppg[y.oppg]||0)+1});const ot=Object.keys(oppg).map(o=>o+' '+oppg[o]).join(' · ');
+  return '<span class="small bokst">'+esc(d)+'</span>'+(ot?'<span class="small">Oppgaver: '+esc(ot)+'</span>':'')+(ing?(p&&Date.now()-p<216e5?'<span class="small">Påminnet kl. '+chatKl(p)+'</span>':'<button type="button" class="cbk-b" data-bokpurr="'+esc(bid)+'">Minn de som ikke har svart ('+ing+')</button>'):'')}
 async function chatBokPurr(bid){
   const c=bokTeamC[bid];if(!c||!c.l)return;const ing=c.l.filter(y=>y.k==='ingen');if(!ing.length)return;
   const m=(state.chat.msgs||[]).find(x=>lbokId(x.text)===bid),navn=nyBeskjedNavn(),
@@ -3538,13 +3539,33 @@ async function autoVidereSjekk(){
     await chatSendBulk(folk,g[0],hoved0+'\n\nKommer du? Trykk på en av knappene under.⟦bok:'+bid+':'+(auto?'a':'m')+'⟧',undefined,true);
     push('Sendt til teamet',g[1]+' ('+folk.length+') har fått bookingen.');
   }catch(e){}finally{autoBusy=false}}
+/* Oppgaver i teamet: den som kommer kan velge hva vedkommende tar ansvar for. Valget lagres på eget team-dokument (bookinger/{id}/team/{e-post}.oppg) og vises for lederen. */
+const UT_OPPG=['Kjøkken','Servering','Oppvask','Rydding','Annet'];
+const bokOppgMap=()=>{try{return JSON.parse(lsGet('sm-oppg')||'{}')}catch(e){return{}}};
+async function chatBokOppg(mid,oppg){
+  const c=state.chat,m=c.msgs.find(x=>x.id===mid),b=m&&bokTok(m.text);if(!b)return;
+  const mp=bokOppgMap(),ny=mp[b.id]===oppg?'':oppg;
+  try{await FB.utOppgSet(b.id,meEmail(),nyBeskjedNavn(),ny);mp[b.id]=ny;lsSet('sm-oppg',JSON.stringify(mp));chatMsgs(false);push(ny?'Oppgave valgt':'Oppgave fjernet',ny?ny+' er lagt til på deg.':'Du har ingen oppgave.')}
+  catch(e){push('Kunne ikke lagre oppgaven','Prøv igjen.')}}
+/* Svar rett fra varselet (knappene Kommer / Kommer ikke på varselet): finner bookingmeldingen i samtalen og sender svaret som om du trykket i chatten. */
+async function bokSvarDirekte(bid,k,tr){
+  if(!['ja','nei','vet'].includes(k))return;
+  if(!FB||!state.user||!state.member||!state.threads){state.pendingBok={bid,k,tr};return}
+  const t=chatTraad(tr);if(!t||!FB.lastMsgs){push('Kunne ikke sende svaret','Åpne Sionchat og trykk på knappen der.');return}
+  try{const ms=await FB.lastMsgs(tr,10),m=ms.find(x=>(bokTok(x.text)||{}).id===bid&&x.by!==meEmail());
+    if(!m){push('Kunne ikke sende svaret','Fant ikke bookingmeldingen. Åpne Sionchat.');return}
+    await bokSvarKjerne(m,t,k)}
+  catch(e){push('Kunne ikke sende svaret','Åpne Sionchat og trykk på knappen der.')}}
+function bokVentende(){const p=state.pendingBok;if(!p||!FB||!state.user||!state.member||!state.threads)return;state.pendingBok=null;bokSvarDirekte(p.bid,p.k,p.tr)}
 /* Knapper under en bookingmelding: Kommer / Kommer ikke / Vet ikke ennå for teamet, og «Legg i kalenderen» for lederen under svarene. */
 function chatBokKnapper(m,l,meg){
   const b=bokTok(m.text),sv=svarTok(m.text),lb=lbokId(m.text);
   if(lb&&chatKan()&&!b)return '<div class="cbk"><div class="bokstat" data-bokstat="'+esc(lb)+'" style="display:grid;gap:6px">'+bokStatHtml(lb)+'</div></div>';
   if(b&&m.by!==meg){
     const min=[...l].reverse().find(x=>x.by===meg&&!x.slettet&&(svarTok(x.text)||{}).id===b.id),na=min?svarTok(min.text).k:'';
-    return '<div class="cbk" role="group" aria-label="Kommer du?">'+BOK_VALG.map(([k,n])=>'<button type="button" class="cbk-b'+(na===k?' on':'')+'" data-bokk="'+esc(m.id+'|'+k)+'" aria-pressed="'+(na===k)+'">'+n+'</button>').join('')+'</div>'}
+    const op=bokOppgMap()[b.id]||'';
+    return '<div class="cbk" role="group" aria-label="Kommer du?">'+BOK_VALG.map(([k,n])=>'<button type="button" class="cbk-b'+(na===k?' on':'')+'" data-bokk="'+esc(m.id+'|'+k)+'" aria-pressed="'+(na===k)+'">'+n+'</button>').join('')+'</div>'
+      +(na==='ja'?'<div class="cbk" role="group" aria-label="Din oppgave"><span class="small">Hva kan du hjelpe til med?</span><div class="btns" style="margin:0">'+UT_OPPG.map(o=>'<button type="button" class="cbk-b'+(op===o?' on':'')+'" data-bokop="'+esc(m.id+'|'+o)+'" aria-pressed="'+(op===o)+'" style="padding:6px 12px">'+o+'</button>').join('')+'</div></div>':'')}
   if(b&&m.by===meg){
     const sv2=[...l].reverse().find(x=>x.by!==meg&&!x.slettet&&(svarTok(x.text)||{}).id===b.id),vk=sv2?(BOK_VALG.find(v=>v[0]===svarTok(sv2.text).k)||[])[1]:'';
     return '<div class="cbk"><span class="small">'+(vk?'Svar: <b>'+esc(vk)+'</b>':'Venter på svar. Mottakeren ser knappene Kommer, Kommer ikke og Vet ikke ennå.')+'</span></div>'}
@@ -3569,17 +3590,21 @@ function chatBokKort(txt,kollaps){
   return '<'+(kollaps?'details':'div')+' class="bokk'+(kollaps?' bokk-d':'')+'"><'+(kollaps?'summary':'div')+' class="bokk-h"><span class="bokk-ik">'+svg('cal',22)+'</span><span class="bokk-tt"><span class="bokk-ty">'+esc(m1[1])+(fors?' · forespørsel':'')+'</span><span class="bokk-n">'+esc(m1[2])+'</span></span>'+(kollaps?'<span class="bokk-chev" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>':'</div>')
    +rad.map(r=>r.sk?'<div class="bokk-sk">Detaljer</div>':'<div class="bokk-r"><span class="bokk-k">'+svg(IKN[r.k],16)+'<span>'+esc(r.k)+'</span></span><span class="bokk-v">'+verdi(r.k,r.v)+'</span></div>').join('')
    +(fri.length?'<div class="bokk-p">'+esc(fri.join(' '))+'</div>':'')+'</'+(kollaps?'details':'div')+'>'}
-async function chatBokSvar(mid,k){
-  const c=state.chat,m=c.msgs.find(x=>x.id===mid),b=m&&bokTok(m.text),t=chatTraad(c.id);if(!b||!t)return;
-  const navn=nyBeskjedNavn(),tittel=(String(m.text).match(/^📅 [^:\n]*: (.*)$/m)||[])[1]||'',
+/* Sender svaret fra en i teamet til lederen. m = bookingmeldingen (med ⟦bok:…⟧), t = samtalen med lederen. */
+async function bokSvarKjerne(m,t,k){
+  const b=bokTok(m.text);if(!b||!t)return;
+  const navn=nyBeskjedNavn(),tittel=(String(m.text).match(/^📅 [^:\n]*: (.*)$/m)||[])[1]||(String(m.text).match(/^Påminnelse: Kommer du til (.*?)(?: \(|\?)/)||[])[1]||'',
     verb={ja:'kommer',nei:'kommer ikke',vet:'vet ikke ennå'}[k]||'';
-  const nar=(String(m.text).match(/^Når: (.*)$/m)||[])[1]||'';
+  const nar=(String(m.text).match(/^Når: (.*)$/m)||[])[1]||(String(m.text).match(/\(([^)]*\d{1,2}:\d{2}[^)]*)\)\?/)||[])[1]||'';
   let lagt=false;
   if(b.auto){try{await FB.utTeamSet(b.id,meEmail(),navn,k);lagt=true}catch(e){}}
   const tekst=navn+' '+verb+(tittel?': '+tittel:'')+(nar?' · '+nar:'')+(lagt?'\nLagt til i kalenderen automatisk.':'')+'⟦svar:'+b.id+':'+k+':'+(b.auto?'a':'m')+'⟧';
   try{await FB.addMsg(t,tekst,navn);if(PUSH_URL)FB.notifyThread(PUSH_URL,t.id).catch(()=>{});
     push('Svar sendt','Lederen din har fått svaret.'+(lagt?' Du står nå i kalenderen.':''))}
   catch(e){push('Kunne ikke sende svaret','Prøv igjen.')}}
+async function chatBokSvar(mid,k){
+  const c=state.chat,m=c.msgs.find(x=>x.id===mid),t=chatTraad(c.id);if(!m||!t)return;
+  await bokSvarKjerne(m,t,k)}
 async function chatBokKal(mid){
   const m=state.chat.msgs.find(x=>x.id===mid),sv=m&&svarTok(m.text);if(!sv)return;
   try{await FB.utTeamSet(sv.id,m.by,m.name||m.by,sv.k);lsSet('sm-bokkal',JSON.stringify([...bokKalMerket(),mid].slice(-200)));push('Lagt i kalenderen',(m.name||m.by)+' står nå i arrangementet i kalenderen.');chatMsgs()}
@@ -4136,6 +4161,7 @@ document.addEventListener('click',e=>{
   else if(d.bokk){const [a,k]=d.bokk.split('|');chatBokSvar(a,k)}
   else if(d.bokkal)chatBokKal(d.bokkal);
   else if(d.bokpurr)chatBokPurr(d.bokpurr);
+  else if(d.bokop){const [mid,o]=d.bokop.split('|');chatBokOppg(mid,o)}
   else if('chatavstny' in d)chatAvstNy('gruppe');
   else if('chatspill' in d)chatQuiz();
   else if(d.cspill){if(d.cspill==='avst')chatAvstNy('person');else chatSpillSend(d.cspill)}
@@ -4503,7 +4529,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 16:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 18:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -6183,6 +6209,7 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch
   setInterval(()=>{if(!document.hidden)hentVarselFraSW()},15000);   // reserve: sjekker det lokale varsellageret mens appen er åpen
   navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};
     if(d.type==='push'){varselLagre(d.title,d.body);lsSet('sm-viktig-skjult','');keep(()=>{});nyMelding();return}   // varsel kom mens appen var åpen
+    if(d.type==='bok-svar'){state.pendingBok={bid:d.bok,k:d.k,tr:d.tr};bokVentende();return}
     if(d.type!=='open-tab')return;
     if(d.title)varselLagre(d.title,d.body);   // varselet som ble trykket på
     if(!apneFraVarsel(d.tab,d.title,d.body)&&['home','prog','news','me'].includes(d.tab)){state.tab=d.tab;if(d.tab==='news')markSeen();render()}
