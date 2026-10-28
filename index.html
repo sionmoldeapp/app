@@ -792,6 +792,11 @@ html[data-bred="1"] .chat,html[data-bred="1"] .chat[data-mork="1"]{background:va
 .cmeny-bar button.fare,.cmeny-bar button.fare svg{color:var(--danger,#c0392b)}
 .cmeny-mer{position:absolute;right:10px;bottom:calc(96px + env(safe-area-inset-bottom,0px));min-width:210px;padding:4px 14px;border-radius:16px;background:var(--chip);box-shadow:0 6px 24px rgba(0,0,0,.3)}
 .cmeny-mer .cmb{padding:12px 4px}
+.cml{display:grid;gap:2px}
+.cml .cmb{all:unset;cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 6px;border-radius:12px;font-size:var(--t-m);color:var(--ink)}
+.cml .cmb:active{background:var(--chip)}
+.cml .cmb svg{flex:none;color:var(--lamp,var(--brand))}
+.cml .cmb.fare,.cml .cmb.fare svg{color:var(--danger,#e0594a)}
 dialog.pub:has(.cmrad){max-width:340px}
 .cmprev{margin:0;padding:8px 12px;border-left:3px solid var(--brand);background:var(--chip);border-radius:0 10px 10px 0;font-size:var(--t-s);color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .cmrad{display:grid;gap:0;border-top:1px solid var(--line)}
@@ -3773,7 +3778,13 @@ function chatMeny(){
   const c=state.chat,t=chatTraad(c.id);if(!t||document.querySelector('dialog.pub'))return;
   const meg=meEmail(),dempet=(t.dempet||[]).includes(meg),stj=(c.msgs||[]).filter(m=>(m.stjerne||[]).includes(meg)).length,dlg=document.createElement('dialog');dlg.className='lp pub';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+esc(chatNavn(t,meg))+'</h3>'+(t.kind==='gruppe'?'<p class="small" style="margin:0">Gruppesamtale med '+(t.parts||[]).length+' deltakere. Alle kan skrive, og den som startet den kan fjerne meldinger.</p>':'')
-   +'<div class="btns" style="flex-direction:column;align-items:stretch"><button class="btn" value="delt">👥 Se hvem som er med</button><button class="btn" value="bonn">🙏 Bønneliste</button><button class="btn" value="bilde">🖼️ Samtalebilde</button><button class="btn" value="utseende">🎨 Farge og bakgrunn</button><button class="btn" value="stjerner">⭐ Stjernemerkede meldinger'+(stj?' ('+stj+')':'')+'</button><button class="btn" value="demp">'+(dempet?'🔔 Slå på varsler':'🔕 Dempe varsler')+'</button><button class="btn danger" value="slett">Slett samtalen</button><button class="btn" value="avbryt" formnovalidate>Lukk</button></div></form>';
+   +'<div class="cml">'+[['delt','<circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 13.6c2.6.2 4.5 2 4.5 4.9"/>','Se hvem som er med'],
+ ['bonn','<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>','Bønneliste'],
+ ['bilde','<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5"/>','Samtalebilde'],
+ ['utseende','<path d="M12 3.5s6 6.2 6 10.5a6 6 0 0 1-12 0c0-4.3 6-10.5 6-10.5z"/>','Farge og bakgrunn'],
+ ['stjerner','<path d="m12 4 2.4 5 5.4.7-4 3.7 1 5.4L12 16.2 7.2 18.8l1-5.4-4-3.7 5.4-.7z"/>','Stjernemerkede meldinger'+(stj?' ('+stj+')':'')],
+ ['demp',dempet?'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/>':'<path d="M6 16V11a6 6 0 0 1 9-5.2M18 11v5l1.5 2H8"/><path d="M10 21h4M4 4l16 16"/>',dempet?'Slå på varsler':'Dempe varsler'],
+ ['slett','<path d="M5 7h14M10 7V4.5h4V7M7 7l1 12.5h8L17 7"/>','Slett samtalen','fare']].map(x=>'<button class="cmb'+(x[3]?' fare':'')+'" value="'+x[0]+'"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+x[1]+'</svg>'+x[2]+'</button>').join('')+'</div><div class="btns"><button class="btn" value="avbryt" formnovalidate style="width:auto">Lukk</button></div</div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('close',async()=>{const v=dlg.returnValue;dlg.remove();
     if(v==='delt')chatDeltakere();else if(v==='bonn')chatBonnVis();else if(v==='utseende')chatUtseendeMeny();else if(v==='bilde')chatBildeMeny();else if(v==='stjerner')chatStjerneVis();else if(v==='slett')chatSlettMeny();
@@ -4652,7 +4663,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 23:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 23:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
