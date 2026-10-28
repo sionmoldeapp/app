@@ -524,6 +524,10 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .eyebrow{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--muted)}
 .next h2{font-size:34px;margin:4px 0 6px}
 .next .meta{opacity:.9;font-size:var(--t-b)}
+.next:has(.nport){display:grid;grid-template-columns:1fr auto;column-gap:14px;align-items:center}
+.next:has(.nport)>*{grid-column:1}
+.evport{display:block;width:100%;max-height:220px;object-fit:cover;object-position:50% 25%;border-radius:var(--r-m);margin:0 0 10px}
+.nport{grid-column:2!important;grid-row:1/span 3;width:88px;height:88px;border-radius:50%;object-fit:cover;border:3px solid color-mix(in srgb,currentColor 30%,transparent)}
 .kam [hidden]{display:none!important}
 .kam{position:fixed;inset:0;z-index:5;background:#000;color:#fff;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 0}
 .kamtop{position:relative;height:64px;flex:none;display:flex;align-items:center;justify-content:center}
@@ -1211,7 +1215,7 @@ async function fetchAll(){
 /* Arrangementer, nyheter og faste samlinger: filtrerer og sorterer det som er lastet (fra databasen eller fra den lokale kopien). */
 function bruk(e,p,g){
   rawEvents=e;
-  events=e.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)).map(x=>({...x,t:esc(x.title),d:linkify(esc(x.text)),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
+  events=e.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)).map(x=>({...x,img:x.img||evBilde(x.title),t:esc(x.title),d:linkify(esc(x.text)),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
     .filter(x=>(x.e||x.w)>=todayStart).sort((a,b)=>a.w-b.w);
   posts=p.filter(canSee).filter(liveOK).sort((a,b)=>(!!b.pinned-!!a.pinned)||((b.ms||0)-(a.ms||0)));   // festede nyheter først
   regular=g.filter(r=>canSeeCat(r.cat)&&visOK(r)).sort((a,b)=>((a.day+6)%7-(b.day+6)%7)||String(a.time).localeCompare(String(b.time)));
@@ -1340,13 +1344,16 @@ const fastInfo=(r,ex)=>{const e=ex&&ex.k==='endret'?ex:{};return {title:e.title|
 function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',inf=fastInfo(r,ex),note=inf.note;
   return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(inf.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${inf.place?' · '+esc(inf.place):''}${note?' · '+esc(note):''}</span></div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'&&TIDOK(ex.time)&&ex.time!==r.time?'<span class="tag avl" style="background:var(--lamp);color:var(--lamp-ink)">Endret</span>':'<span class="tag">Fast</span>'}</button>
    <div class="detail">${omDager(w)}${inf.text?'<div>'+linkify(esc(inf.text))+'</div>':''}${inf.who?'<div class="small">'+esc(inf.who)+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}${ukeTekst(r)}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
+/* Portrett av gjesten på arrangementer (bildene ligger i mappen bilder). Et eget img-felt på arrangementet går foran. */
+const EV_BILDER=[[/ingar jensen/i,'bilder/ingar-jensen.jpg']];
+function evBilde(t){const m=EV_BILDER.find(x=>x[0].test(String(t||'')));return m?m[1]:''}
 function evItem(e){
   if(e.m&&!state.member)return `<div class="item"><div class="locked" style="padding:12px">${dateBox(e)}<div class="grow"><b>${e.t}</b><span class="small">Kun for medlemmer. Logg inn under «Mer».</span></div></div></div>`;
   const open=state.open[e.id],r=state.rsvp[e.id];
   return `<div class="item ${open?'open':''}"${state.admin&&editOn()?` data-lp="events:${e.id}"`:''}><button data-ev="${e.id}" aria-expanded="${!!open}">${dateBox(e)}
    <div class="grow"><b>${e.t}</b><span class="small">${when(e.w)} ${tm(e)}${statusTag(e)}${e.place?' · '+esc(e.place):''}${e.groups&&e.groups.length?' · '+esc(e.groups.map(gName).join(', ')):''}</span></div>
    ${e.m?'<span class="tag m">Medlem</span>':`<span class="tag">${esc(normCat(e.cat))}</span>`}</button>
-   <div class="detail">${omDager(e.w)}<div>${e.d}</div><div class="small">${esc(e.who)}</div>
+   <div class="detail">${e.img?`<img class="evport" src="${esc(e.img)}" alt="" loading="lazy">`:''}${omDager(e.w)}<div>${e.d}</div><div class="small">${esc(e.who)}</div>
    <div class="btns"><button class="btn ${r?'on':''}" data-rsvp="${e.id}">${r?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(e.id)}
    </div></div></div>`}
 
@@ -2339,7 +2346,7 @@ function homeDeler(){
   const wk=[...vis.slice(0,5).map(e=>({ev:e,w:e.w,id:e.id})),...fast.map(f=>({fast:f.fast,w:f.w,ex:f.ex,id:fastId(f.fast,f.w)}))].filter(x=>!(n&&x.id===n.id)).sort((a,b)=>a.w-b.w).slice(0,4);
   const post=hjemNyhet();
   return {
-   neste:['Neste hovedsamling',()=>(n?`<div class="card next" data-t="prog" data-nid="${esc(String(n.id))}" role="link" tabindex="0" style="cursor:pointer"><div class="eyebrow">Neste hovedsamling</div><h2>${n.t}</h2>
+   neste:['Neste hovedsamling',()=>(n?`<div class="card next" data-t="prog" data-nid="${esc(String(n.id))}" role="link" tabindex="0" style="cursor:pointer">${n.img?`<img class="nport" src="${esc(n.img)}" alt="" loading="lazy">`:''}<div class="eyebrow">Neste hovedsamling</div><h2>${n.t}</h2>
    <div class="meta">${nesteTid(n)}</div></div>`
   :`<div class="card next" data-t="prog"><div class="eyebrow">Neste hovedsamling</div><h2>Ingen planlagt</h2><div class="meta">Se Program.</div></div>`)],
    gruppebesk:['Send beskjed til gruppa',()=>state.admin?'':gruppeBeskjedCard()],
@@ -4663,7 +4670,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 23:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 00:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
