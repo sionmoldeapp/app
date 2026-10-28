@@ -597,6 +597,7 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 .bokk-d[open]>.bokk-h{margin-bottom:4px}
 .bokk-chev{margin-left:auto;flex:none;display:grid;place-items:center;width:32px;height:32px;opacity:.7;transition:transform .2s}
 .bokk-d[open] .bokk-chev{transform:rotate(180deg)}
+.bokst.mangler{background:rgba(230,150,30,.3)!important}
 .bokk-ik{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:color-mix(in srgb,currentColor 16%,transparent)}
 .bokk-tt{display:flex;flex-direction:column;min-width:0}
 .bokk-ty{font-size:var(--t-s);font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
@@ -1709,14 +1710,14 @@ const utSekO=(n,t,apen)=>'<details class="utsek" data-i="'+n+'"'+(apen?' open':'
 const utSekL=neste=>(neste===false?'':'<button type="button" class="btn" data-utnext style="width:auto;justify-self:start">Neste ›</button>')+'</div></details>';
 function utAsk(id,dato,pre){
   if(!utTilgang()||document.querySelector('dialog.pub'))return;
-  const ex=id?(state.ut.liste||[]).find(x=>x.id===id):null,lev=id?utProgEv(id):null,b={tittel:'',rom:[],fakturert:false,fakturaVentH:24,fakturaUtsattTil:0,gjester:0,servering:'',allergener:[],allergenNotat:'',remindH:24,dato:dato||state.ut.dag,dato2:'',fra:'10:00',til:'12:00',leier:'',kontakt:'',pris:'',status:'bekreftet',notat:'',...(ex||{}),...(!ex&&pre?pre:{})};
+  const ex=id?(state.ut.liste||[]).find(x=>x.id===id):null,lev=id?utProgEv(id):null,b={tittel:'',rom:[],fakturert:false,fakturaVentH:24,fakturaUtsattTil:0,gjester:0,teamMaal:0,servering:'',allergener:[],allergenNotat:'',remindH:24,dato:dato||state.ut.dag,dato2:'',fra:'10:00',til:'12:00',leier:'',kontakt:'',pris:'',status:'bekreftet',notat:'',...(ex||{}),...(!ex&&pre?pre:{})};
   const dlg=document.createElement('dialog');dlg.className='lp pub';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">'+(ex?'Endre booking':'Ny booking')+'</h3>'
    +utSekO(1,'Hva og når',true)+'<label class="f">Tittel / hva skal det brukes til<input id="uT" maxlength="100" value="'+esc(b.tittel)+'" placeholder="For eksempel Bursdagsselskap"></label>'
    +'<details class="utsub" id="uRomD"><summary><b>Rom</b><span class="small utsubs"></span></summary><div class="utsubb">'+utRomListe().map(r=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utr="'+esc(r)+'" style="width:22px;height:22px;flex:none" '+((b.rom||[]).includes(r)?'checked':'')+'>'+esc(r)+'</label>').join('')+(state.admin?'<button type="button" class="pmore" id="uRomEdit" style="margin-top:4px">Endre romlisten</button>':'')+'</div></details>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Første dag<input id="uD" type="date" value="'+esc(b.dato)+'"></label><label class="f">Siste dag<input id="uD2" type="date" value="'+esc(b.dato2||'')+'"></label></div>'+utHjelpI('Lar du «Siste dag» stå tom, gjelder bookingen bare én dag. Velger du flere dager, kan du sette eget tidspunkt for hver dag.','margin:-4px 0 0')+''
    +'<div id="uEn" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Fra<input id="uF" type="time" value="'+esc(b.fra)+'"></label><label class="f">Til<input id="uTi" type="time" value="'+esc(b.til)+'"></label></div><div id="uTider" style="display:grid;gap:4px"></div>'
-   +utSekL()+utSekO(2,'Gjester, servering og allergener')+'<label class="f">Antall gjester<input id="uG" type="number" min="0" max="2000" inputmode="numeric" value="'+(b.gjester||'')+'"></label><div class="utmatbox"><p class="small" style="margin:0"><b>Måltider</b> (valgfritt)</p><div id="uMatL" style="display:grid;gap:10px">'+utMaaltider(b).map(utMatRad).join('')+'</div><button type="button" class="btn" data-utmadd style="width:auto;justify-self:start">+ Legg til måltid</button></div>'
+   +utSekL()+utSekO(2,'Gjester, servering og allergener')+'<div style="display:flex;gap:8px;align-items:end"><label class="f" style="flex:1">Mal<select id="uMal">'+utMalOpts()+'</select></label><button type="button" class="btn" data-utmalsave style="width:auto">Lagre som mal</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Antall gjester<input id="uG" type="number" min="0" max="2000" inputmode="numeric" value="'+(b.gjester||'')+'"></label><label class="f">Trengs i teamet<input id="uTM" type="number" min="0" max="50" inputmode="numeric" value="'+(b.teamMaal||'')+'" placeholder="Valgfritt"></label></div><div class="utmatbox"><p class="small" style="margin:0"><b>Måltider</b> (valgfritt)</p><div id="uMatL" style="display:grid;gap:10px">'+utMaaltider(b).map(utMatRad).join('')+'</div><button type="button" class="btn" data-utmadd style="width:auto;justify-self:start">+ Legg til måltid</button></div>'
    +'<details class="utsub" id="uAlD"><summary><b>Allergener blant gjestene</b><span class="small utsubs"></span></summary><div class="utsubb"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">'+UT_ALLERGENER.map(a=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utal="'+esc(a)+'" style="width:22px;height:22px;flex:none" '+((b.allergener||[]).includes(a)?'checked':'')+'>'+esc(a)+'</label>').join('')+'</div><label class="f" style="margin-top:6px">Andre allergier eller kosthold<input id="uAn" maxlength="200" value="'+esc(b.allergenNotat||'')+'" placeholder="For eksempel vegetar eller nøtteallergi hos barn"></label></div></details>'
    +utSekL()+utSekO(3,'Leietaker, pris og status')+'<label class="f">Leietaker<input id="uL" maxlength="100" value="'+esc(b.leier)+'" placeholder="Navn på person eller organisasjon"></label>'
    +'<label class="f">Telefon eller e-post<input id="uK" maxlength="100" value="'+esc(b.kontakt)+'"></label>'
@@ -1756,13 +1757,23 @@ function utAsk(id,dato,pre){
       q('#uTider').querySelectorAll('[data-utp]').forEach(c=>{const w=new Date(c.dataset.utp+'T12:00').getDay();if('utheelg' in kn.dataset)sett(c,!(w===0||w===6));else if('utalle' in kn.dataset)sett(c,true)})});
     q('#uEget').addEventListener('change',e=>{const p=q('#uP');p.disabled=e.target.checked;if(e.target.checked){p.value='';p.placeholder='Gratis'}else p.placeholder='kr'}) }
   dlg.addEventListener('click',ev=>{const a=ev.target.closest&&ev.target.closest('[data-utmadd],[data-utmdel]');if(!a)return;ev.preventDefault();if('utmadd' in a.dataset)dlg.querySelector('#uMatL').insertAdjacentHTML('beforeend',utMatRad({t:'Lunsj',kl:'',r:''}));else a.closest('[data-utmat]').remove();dlg.dispatchEvent(new Event('input'))});
+  dlg.addEventListener('change',ev=>{if(!ev.target||ev.target.id!=='uMal'||!ev.target.value)return;
+    const [k,n]=[ev.target.value.slice(0,1),ev.target.value.slice(2)],m=(k==='s'?UT_MALER_STD:utMalerEgne()).find(x=>x.n===n);if(!m)return;
+    const g=dlg.querySelector('#uG');if(g&&!(parseInt(g.value,10)>0)&&m.g)g.value=m.g;
+    const t=dlg.querySelector('#uT');if(t&&!t.value.trim())t.value=m.n;
+    dlg.querySelector('#uMatL').innerHTML=(m.m||[]).map(utMatRad).join('');dlg.dispatchEvent(new Event('input'));ev.target.value=''});
+  dlg.addEventListener('click',ev=>{const b2=ev.target.closest&&ev.target.closest('[data-utmalsave]');if(!b2)return;ev.preventDefault();
+    const nm=(dlg.querySelector('#uT').value.trim()||'Min mal').slice(0,40),mt=utLesMat(dlg),gj=parseInt(dlg.querySelector('#uG').value,10)||0;
+    if(!mt.length&&!gj){push('Ingenting å lagre','Legg inn antall gjester eller måltider først.');return}
+    const l=utMalerEgne().filter(x=>x.n!==nm);l.push({n:nm,g:gj,m:mt});lsSet('sm-utmaler',JSON.stringify(l.slice(-12)));
+    dlg.querySelector('#uMal').innerHTML=utMalOpts();push('Mal lagret','«'+nm+'» finnes nå under Mine maler.')});
   const re=dlg.querySelector('#uRomEdit');if(re)re.addEventListener('click',()=>{dlg.close();setTimeout(utRomAsk,450)});
   dlg.querySelector('form').addEventListener('submit',async e=>{
     const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='slett')return;e.preventDefault();const msg=t=>{dlg.querySelector('#uMsg').textContent=t;if(/dag|rom|Sluttid|klokke/i.test(t)&&dlg.__apne)dlg.__apne(1)};
     if(v==='slett'){if(!await bekreft('Slette denne bookingen? Vertskap og ledere får beskjed om at den er slettet.'))return;
       try{await FB.utDel(id);utProgFjern(id);if(ex){utBeskjedLedere(ex,'slett');utVarsle(ex,'slett').then(t=>{if(t)push('Varsel',t)}).catch(()=>{})}state.ut.alle=undefined;state.ut.liste=state.ut.liste.filter(x=>x.id!==id);dlg.close();keep(()=>{});push('Slettet','Bookingen er fjernet.')}catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}return}
     const d={tittel:dlg.querySelector('#uT').value.trim(),rom:[...dlg.querySelectorAll('[data-utr]')].filter(x=>x.checked).map(x=>x.dataset.utr),dato:dlg.querySelector('#uD').value,dato2:dlg.querySelector('#uD2').value,fra:dlg.querySelector('#uF').value,til:dlg.querySelector('#uTi').value,
-      remindH:parseInt(dlg.querySelector('#uRem').value,10)||0,fakturert:dlg.querySelector('#uFak').checked,fakturertMs:dlg.querySelector('#uFak').checked?((ex&&ex.fakturert&&ex.fakturertMs)||Date.now()):0,fakturaVentH:parseInt(dlg.querySelector('#uFakV').value,10)||24,fakturaUtsattTil:(parseInt(dlg.querySelector('#uFakU').value,10)>0?Date.now()+parseInt(dlg.querySelector('#uFakU').value,10)*864e5:((ex&&ex.fakturaUtsattTil)||0)),allergener:[...dlg.querySelectorAll('[data-utal]')].filter(x=>x.checked).map(x=>x.dataset.utal),allergenNotat:dlg.querySelector('#uAn').value.trim(),gjester:Math.max(0,Math.min(2000,parseInt(dlg.querySelector('#uG').value,10)||0)),servering:utMatTekst(utLesMat(dlg)),maaltider:utLesMat(dlg),leier:dlg.querySelector('#uL').value.trim(),kontakt:dlg.querySelector('#uK').value.trim(),pris:dlg.querySelector('#uEget').checked?'Eget arrangement (gratis)':dlg.querySelector('#uP').value.trim(),status:dlg.querySelector('#uS').value,notat:dlg.querySelector('#uN').value.trim()};
+      remindH:parseInt(dlg.querySelector('#uRem').value,10)||0,fakturert:dlg.querySelector('#uFak').checked,fakturertMs:dlg.querySelector('#uFak').checked?((ex&&ex.fakturert&&ex.fakturertMs)||Date.now()):0,fakturaVentH:parseInt(dlg.querySelector('#uFakV').value,10)||24,fakturaUtsattTil:(parseInt(dlg.querySelector('#uFakU').value,10)>0?Date.now()+parseInt(dlg.querySelector('#uFakU').value,10)*864e5:((ex&&ex.fakturaUtsattTil)||0)),allergener:[...dlg.querySelectorAll('[data-utal]')].filter(x=>x.checked).map(x=>x.dataset.utal),allergenNotat:dlg.querySelector('#uAn').value.trim(),gjester:Math.max(0,Math.min(2000,parseInt(dlg.querySelector('#uG').value,10)||0)),teamMaal:Math.max(0,Math.min(50,parseInt(dlg.querySelector('#uTM').value,10)||0)),servering:utMatTekst(utLesMat(dlg)),maaltider:utLesMat(dlg),leier:dlg.querySelector('#uL').value.trim(),kontakt:dlg.querySelector('#uK').value.trim(),pris:dlg.querySelector('#uEget').checked?'Eget arrangement (gratis)':dlg.querySelector('#uP').value.trim(),status:dlg.querySelector('#uS').value,notat:dlg.querySelector('#uN').value.trim()};
     const flere=d.dato&&d.dato2&&d.dato2>d.dato&&Math.round((Date.parse(d.dato2)-Date.parse(d.dato))/864e5)<=60;
     if(flere){const rader=[...dlg.querySelectorAll('[data-utf]')].filter(i=>dlg.querySelector('[data-utp="'+i.dataset.utf+'"]').checked);
       if(!rader.length){msg('Velg minst én dag.');return}
@@ -1778,7 +1789,7 @@ function utAsk(id,dato,pre){
     const k=utKonflikt(d,id);
     if(k.length&&!await bekreft('Dobbeltbooking: '+k.map(x=>(x.tittel||'Utleie')+' '+(x.dato2&&x.dato2>x.dato?utDatoKort(x.dato)+'–'+utDatoKort(x.dato2):x.fra+'–'+x.til)+' ('+(x.program?'Menighetens kalender'+((x.rom||[]).length?', '+x.rom.join(', '):''):(x.rom||[]).join(', '))+')').join('; ')+'. Lagre likevel?',{ok:'Lagre likevel',fare:false}))return;
     const prHas=!!dlg.querySelector('#uPr'),prCat=prHas&&dlg.querySelector('#uPr').checked?dlg.querySelector('#uPrC').value:'';
-    try{const nid=await FB.utSave(id,{...d,by:meEmail()});if(state.admin&&prHas&&(prCat||utProgEv(nid)))utProgSync(nid,d,prCat).catch(()=>push('Menighetens kalender','Bookingen er lagret, men menighetens kalender ble ikke oppdatert.'));state.ut.alle=undefined;state.ut.liste=[...(state.ut.liste||[]).filter(x=>x.id!==nid),{id:nid,...d}].sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;state.ut.mnd=d.dato.slice(0,7);dlg.close();state.acc.utleie=true;keep(()=>{});push('Lagret','Bookingen er lagret.');if(!ex||dlg.querySelector('#uVarsle').checked)utBeskjedLedere({...d,id:nid},!ex);if(dlg.querySelector('#uVarsle').checked)utVarsle(d,!ex).then(t=>{if(t)push('Varsel',t)})}
+    try{const nid=await FB.utSave(id,{...d,by:meEmail()});if(state.admin&&prHas&&(prCat||utProgEv(nid)))utProgSync(nid,d,prCat).catch(()=>push('Menighetens kalender','Bookingen er lagret, men menighetens kalender ble ikke oppdatert.'));state.ut.alle=undefined;state.ut.liste=[...(state.ut.liste||[]).filter(x=>x.id!==nid),{id:nid,...d}].sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;state.ut.mnd=d.dato.slice(0,7);dlg.close();state.acc.utleie=true;keep(()=>{});push('Lagret','Bookingen er lagret.');if(!ex||dlg.querySelector('#uVarsle').checked)utBeskjedLedere({...d,id:nid},!ex);if(ex)utTeamEndring(nid,ex,d).catch(()=>{});if(dlg.querySelector('#uVarsle').checked)utVarsle(d,!ex).then(t=>{if(t)push('Varsel',t)})}
     catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 /* Interaktiv kalender: trykk på tomt felt = ny booking med dag, rom og klokkeslett utfylt. */
@@ -1955,11 +1966,12 @@ function utDetalj(id,dag){
     +(x.program?'<p class="small" style="margin:0">Dette er et arrangement fra Program, og endres der.</p>':'')
     +(x.program?'':'<div class="small" id="uTeam" style="margin:0"></div>')
     +(skriv&&!x.program?rad('Leietaker',x.leier)+rad('Kontakt',x.kontakt)+rad('Pris',x.pris)+rad('Merknad',x.notat):'')
-    +'<div class="btns">'+(skriv&&!x.program?'<button class="btn primary" value="endre" style="width:auto">Endre</button>':'')+''+(x.program?'':'<button class="btn" value="pdf" style="width:auto">Lag PDF</button>')+'<button class="btn" value="del" style="width:auto">Del</button><button class="btn" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';
+    +'<div class="btns">'+(skriv&&!x.program?'<button class="btn primary" value="endre" style="width:auto">Endre</button>':'')+''+(x.program?'':'<button class="btn" value="pdf" style="width:auto">Lag PDF</button>')+(x.program||!state.member?'':'<button class="btn" value="chat" style="width:auto">Sionchat</button>')+'<button class="btn" value="del" style="width:auto">Del</button><button class="btn" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';
   document.body.appendChild(dlg);
   if(!x.program&&FB&&FB.utTeamList)FB.utTeamList(id).then(l=>{const el=dlg.querySelector('#uTeam');if(!el||!l.length)return;el.innerHTML='<b>Team</b>'+utTeamHtml(l)}).catch(()=>{});
   dlg.querySelector('form').addEventListener('submit',async e=>{const v=e.submitter&&e.submitter.value;
     if(v==='endre'){e.preventDefault();dlg.close();setTimeout(()=>utAsk(id),450)}
+    else if(v==='chat'){e.preventDefault();dlg.close();setTimeout(()=>utApneChat(x),450)}
     else if(v==='pdf'){e.preventDefault();try{await utPdf(x,dag)}catch(er){push('Kunne ikke lage PDF','Prøv igjen.')}}
     else if(v==='del'){e.preventDefault();const tekst=utBokTekst(x,false).split(UT_DETALJ)[0].replace('Endret booking','Booking').trim();
       try{if(navigator.share){await navigator.share({title:x.tittel||'Booking',text:tekst})}else{await navigator.clipboard.writeText(tekst);push('Kopiert','Teksten er kopiert, så du kan lime den inn der du vil.')}}catch(er){}}});
@@ -1971,7 +1983,7 @@ function utBokTekst(d,ny){
   const dd=new Date(d.dato+'T12:00'),flere=d.dato2&&d.dato2>d.dato;
   const dager=flere?utDager(d).map(k=>{const [f,t]=utDagTid(d,k),w=new Date(k+'T12:00');return cap(DAYS[w.getDay()]).slice(0,3)+' '+w.getDate()+'. '+MON[w.getMonth()]+' kl. '+f+'–'+t}).join('\n   '):cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+' kl. '+d.fra+'–'+d.til;
   const al=[...(d.allergener||[]),d.allergenNotat].filter(Boolean).join(', ');
-  const hoved=['📅 '+(ny==='slett'?'Slettet booking':ny?'Ny booking':'Endret booking')+(d.status==='foresporsel'?' (forespørsel)':'')+': '+(d.tittel||'Utleie'),'Når: '+dager,'Rom: '+(d.rom||[]).join(', '),d.gjester?'Gjester: '+d.gjester:'',d.servering?'Servering: '+d.servering:'',al?'Allergener: '+al:''].filter(Boolean);
+  const hoved=['📅 '+(ny==='slett'?'Slettet booking':ny?'Ny booking':'Endret booking')+(d.status==='foresporsel'?' (forespørsel)':'')+': '+(d.tittel||'Utleie'),'Når: '+dager,'Rom: '+(d.rom||[]).join(', '),d.gjester?'Gjester: '+d.gjester:'',d.servering?'Servering: '+d.servering:'',al?'Allergener: '+al:'',d.teamMaal?'Team: Trenger '+d.teamMaal+(d.teamMaal===1?' person':' personer'):''].filter(Boolean);
   const detaljer=['Leietaker: '+(d.leier||'–'),d.kontakt?'Kontakt: '+d.kontakt:'',d.pris?'Pris: '+(/^Eget/.test(d.pris)?'Eget arrangement (gratis)':d.pris):'','Status: '+(d.status==='foresporsel'?'Forespørsel':'Bekreftet'),d.notat?'Merknad: '+d.notat:'','Booket av: '+nyBeskjedNavn()].filter(Boolean);
   return (hoved.join('\n')+'\n'+UT_DETALJ+'\n'+detaljer.join('\n')).slice(0,960)}
 async function utBeskjedLedere(d,ny){
@@ -3496,19 +3508,20 @@ const chatTekstHtml=t=>linkify(esc(chatRens(t))).replace(SION_TOKEN,(m,v)=>sionH
 const BOK_VALG=[['ja','Kommer'],['nei','Kommer ikke'],['vet','Vet ikke ennå']];
 const bokKalMerket=()=>{try{return JSON.parse(lsGet('sm-bokkal')||'[]')}catch(e){return[]}};
 /* Oversikt over teamets svar under bookingmeldingen til lederen (oppdateres av seg selv), og knapp for å minne de som ikke har svart. */
+const IKCAL='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
 const bokTeamC={};
 function bokTeamHent(bid){const c=bokTeamC[bid];if(!FB||!FB.utTeamList||(c&&(Date.now()-c.ms<15000)))return;bokTeamC[bid]={...(c||{}),ms:Date.now()};
   FB.utTeamList(bid).then(l=>{bokTeamC[bid]={ms:Date.now(),l};bokStatOppd(bid)}).catch(()=>{})}
-function bokStatOppd(bid){document.querySelectorAll('[data-bokstat]').forEach(el=>{if(el.dataset.bokstat===bid)el.innerHTML=bokStatHtml(bid)})}
+function bokStatOppd(bid){document.querySelectorAll('[data-bokstat]').forEach(el=>{if(el.dataset.bokstat===bid)el.innerHTML=bokStatHtml(bid,Number(el.dataset.maal)||0)})}
 function bokStatFriskt(){document.querySelectorAll('[data-bokstat]').forEach(el=>{const c=bokTeamC[el.dataset.bokstat];if(c&&Date.now()-c.ms>15000)bokTeamHent(el.dataset.bokstat)})}
 const bokPurret=()=>{try{return JSON.parse(lsGet('sm-purret')||'{}')}catch(e){return{}}};
-function bokStatHtml(bid){
+function bokStatHtml(bid,maal){
   const c=bokTeamC[bid];if(!c||!c.l){bokTeamHent(bid);return '<span class="small">Henter svar …</span>'}
   if(Date.now()-c.ms>60000)bokTeamHent(bid);
   const l=c.l;if(!l.length)return '';
-  const n=k=>l.filter(y=>y.k===k).length,d=[[n('ja'),'kommer'],[n('nei'),'kommer ikke'],[n('vet'),'vet ikke ennå'],[n('ingen'),'har ikke svart']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' · ');
+  const n=k=>l.filter(y=>y.k===k).length,mgl=maal&&n('ja')<maal,d=(maal?n('ja')+' av '+maal+' kommer'+(mgl?' · mangler '+(maal-n('ja')):'')+' · ':'')+[[maal?0:n('ja'),'kommer'],[n('nei'),'kommer ikke'],[n('vet'),'vet ikke ennå'],[n('ingen'),'har ikke svart']].filter(x=>x[0]).map(x=>x[0]+' '+x[1]).join(' · ');
   const ing=n('ingen'),p=bokPurret()[bid],oppg={};l.filter(y=>y.k==='ja'&&y.oppg).forEach(y=>{oppg[y.oppg]=(oppg[y.oppg]||0)+1});const ot=Object.keys(oppg).map(o=>o+' '+oppg[o]).join(' · ');
-  return '<span class="small bokst">'+esc(d)+'</span>'+(ot?'<span class="small">Oppgaver: '+esc(ot)+'</span>':'')+(ing?(p&&Date.now()-p<216e5?'<span class="small">Påminnet kl. '+chatKl(p)+'</span>':'<button type="button" class="cbk-b" data-bokpurr="'+esc(bid)+'">Minn de som ikke har svart ('+ing+')</button>'):'')}
+  return '<span class="small bokst'+(mgl?' mangler':'')+'">'+esc(d)+'</span>'+(ot?'<span class="small">Oppgaver: '+esc(ot)+'</span>':'')+(ing?(p&&Date.now()-p<216e5?'<span class="small">Påminnet kl. '+chatKl(p)+'</span>':'<button type="button" class="cbk-b" data-bokpurr="'+esc(bid)+'">Minn de som ikke har svart ('+ing+')</button>'):'')}
 async function chatBokPurr(bid){
   const c=bokTeamC[bid];if(!c||!c.l)return;const ing=c.l.filter(y=>y.k==='ingen');if(!ing.length)return;
   const m=(state.chat.msgs||[]).find(x=>lbokId(x.text)===bid),navn=nyBeskjedNavn(),
@@ -3557,15 +3570,66 @@ async function bokSvarDirekte(bid,k,tr){
     await bokSvarKjerne(m,t,k)}
   catch(e){push('Kunne ikke sende svaret','Åpne Sionchat og trykk på knappen der.')}}
 function bokVentende(){const p=state.pendingBok;if(!p||!FB||!state.user||!state.member||!state.threads)return;state.pendingBok=null;bokSvarDirekte(p.bid,p.k,p.tr)}
+/* Maler for måltider og antall (bookingskjemaet). Egne maler lagres på enheten. */
+const UT_MALER_STD=[
+  {n:'Minnestund',g:40,m:[{t:'Annet',kl:'13:30',r:'Kaffe, kaker og smørbrød'}]},
+  {n:'Bursdag',g:25,m:[{t:'Middag',kl:'17:00',r:'Middag etter ønske'},{t:'Annet',kl:'19:00',r:'Kaffe og kake'}]},
+  {n:'Dåp eller konfirmasjon',g:50,m:[{t:'Middag',kl:'15:00',r:'Festmiddag med dessert'},{t:'Annet',kl:'18:00',r:'Kaffe og kake'}]},
+  {n:'Møte eller kurs',g:20,m:[{t:'Frokost',kl:'09:00',r:'Kaffe og rundstykker'},{t:'Lunsj',kl:'12:00',r:'Enkel lunsj'}]},
+  {n:'Heldagssamling',g:30,m:[{t:'Frokost',kl:'08:30',r:'Frokost'},{t:'Lunsj',kl:'12:00',r:'Lunsj'},{t:'Middag',kl:'17:00',r:'Middag'}]}];
+const utMalerEgne=()=>{try{return JSON.parse(lsGet('sm-utmaler')||'[]').filter(x=>x&&x.n)}catch(e){return[]}};
+const utMalerAlle=()=>[...UT_MALER_STD,...utMalerEgne()];
+const utMalOpts=()=>'<option value="">Velg mal …</option><optgroup label="Maler">'+UT_MALER_STD.map(m=>'<option value="s:'+esc(m.n)+'">'+esc(m.n)+'</option>').join('')+'</optgroup>'+(utMalerEgne().length?'<optgroup label="Mine maler">'+utMalerEgne().map(m=>'<option value="e:'+esc(m.n)+'">'+esc(m.n)+'</option>').join('')+'</optgroup>':'');
+/* Hva er endret i en booking (for beskjed til teamet). kritisk = tid eller rom er endret, så teamet må bekrefte på nytt. */
+const utTidKort=x=>(x.dato2&&x.dato2>x.dato?utDatoKort(x.dato)+'–'+utDatoKort(x.dato2):utDatoKort(x.dato))+' kl. '+x.fra+'–'+x.til;
+function utEndringer(a,b){
+  const o=[];let kritisk=false;
+  if(a.dato!==b.dato||(a.dato2||'')!==(b.dato2||'')||a.fra!==b.fra||a.til!==b.til||JSON.stringify(a.tider||[])!==JSON.stringify(b.tider||[])){o.push('Når: '+utTidKort(a)+' → '+utTidKort(b));kritisk=true}
+  if((a.rom||[]).join(', ')!==(b.rom||[]).join(', ')){o.push('Rom: '+((a.rom||[]).join(', ')||'–')+' → '+((b.rom||[]).join(', ')||'–'));kritisk=true}
+  if((Number(a.gjester)||0)!==(Number(b.gjester)||0))o.push('Gjester: '+(a.gjester||'–')+' → '+(b.gjester||'–'));
+  if((a.servering||'')!==(b.servering||''))o.push('Servering: '+(a.servering||'–')+' → '+(b.servering||'–'));
+  const al=x=>[...(x.allergener||[]),x.allergenNotat].filter(Boolean).join(', ');
+  if(al(a)!==al(b))o.push('Allergener: '+(al(a)||'–')+' → '+(al(b)||'–'));
+  return {linjer:o,kritisk};
+}
+async function utTeamEndring(bid,gammel,ny){
+  if(!FB||!FB.utTeamList||!chatKan())return;
+  let team=[];try{team=await FB.utTeamList(bid)}catch(e){return}
+  if(!team.length)return;
+  const {linjer,kritisk}=utEndringer(gammel,ny);if(!linjer.length)return;
+  if(!await bekreft('Teamet har fått denne bookingen ('+team.length+' personer). Sende dem en melding om endringene?\n\n'+linjer.join('\n')+(kritisk?'\n\nSvarene deres nullstilles, så de må bekrefte på nytt.':''),{ok:'Send til teamet'}))return;
+  const navn=nyBeskjedNavn(),meg=meEmail(),auto=lsGet('sm-bokauto')!=='0',
+    tekst='📅 Endret: '+(ny.tittel||'Booking')+'\n'+linjer.join('\n')+'\n\nKommer du fortsatt? Trykk på en av knappene under.⟦bok:'+bid+':'+(auto?'a':'m')+'⟧';
+  await loadThreads();let ok=0;
+  for(const u of team){if(!u.e||u.e===meg)continue;
+    try{const t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(u.e)&&(x.parts||[]).includes(meg));
+      const id=t?(await FB.addMsg(t,tekst,navn),t.id):await FB.newDm(u.e,u.n||u.e,'Vertskap',tekst,navn);
+      if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});
+      if(kritisk&&u.k!=='ingen')await FB.utTeamSet(bid,u.e,u.n||u.e,'ingen');
+      ok++}catch(er){}}
+  delete bokTeamC[bid];
+  push(ok?'Endringene er sendt':'Kunne ikke sende',ok?ok+(ok===1?' person har':' personer har')+' fått beskjed.':'Prøv igjen.')}
+/* Hopp mellom Sionchat og kalenderen. */
+function utApneId(bid){
+  const vis=()=>{const b=(state.ut.liste||[]).find(x=>x.id===bid);
+    if(!b){push('Fant ikke bookingen','Den kan være slettet eller ligge langt tilbake.');return}
+    chatLukk();state.tab='me';state.acc.utleie=true;state.ut.fil='alle';state.ut.vis='alle';state.ut.rom='Alle';state.ut.mnd=b.dato.slice(0,7);state.ut.dag=b.dato;state.open['ut_'+b.id+'_'+b.dato]=true;fadeRender();
+    setTimeout(()=>{const e=document.querySelector('[data-ev="ut_'+b.id+'_'+b.dato+'"]');if(e){e.style.scrollMarginTop='90px';e.scrollIntoView({block:'start'})}},520)};
+  if(state.ut.liste===undefined)utLast().then(vis);else vis()}
+async function utApneChat(x){
+  if(!state.user||!state.member)return;await loadThreads();const meg=meEmail();
+  const t=x.by&&x.by!==meg?(state.threads||[]).find(y=>y.kind==='dm'&&(y.parts||[]).includes(x.by)&&(y.parts||[]).includes(meg)):null;
+  chatApne(t?t.id:null)}
 /* Knapper under en bookingmelding: Kommer / Kommer ikke / Vet ikke ennå for teamet, og «Legg i kalenderen» for lederen under svarene. */
 function chatBokKnapper(m,l,meg){
   const b=bokTok(m.text),sv=svarTok(m.text),lb=lbokId(m.text);
-  if(lb&&chatKan()&&!b)return '<div class="cbk"><div class="bokstat" data-bokstat="'+esc(lb)+'" style="display:grid;gap:6px">'+bokStatHtml(lb)+'</div></div>';
+  const mal=Number((String(m.text).match(/^Team: Trenger (\d+)/m)||[])[1])||0;
+  if(lb&&chatKan()&&!b)return '<div class="cbk"><div class="bokstat" data-bokstat="'+esc(lb)+'" data-maal="'+mal+'" style="display:grid;gap:6px">'+bokStatHtml(lb,mal)+'</div>'+(utLes()?'<button type="button" class="cbk-b" data-bokcal="'+esc(lb)+'">'+IKCAL+'Åpne i kalenderen</button>':'')+'</div>';
   if(b&&m.by!==meg){
     const min=[...l].reverse().find(x=>x.by===meg&&!x.slettet&&(svarTok(x.text)||{}).id===b.id),na=min?svarTok(min.text).k:'';
-    const op=bokOppgMap()[b.id]||'';
+    const op=bokOppgMap()[b.id]||'',cal=utLes()?'<div class="cbk"><button type="button" class="cbk-b" data-bokcal="'+esc(b.id)+'">'+IKCAL+'Åpne i kalenderen</button></div>':'';
     return '<div class="cbk" role="group" aria-label="Kommer du?">'+BOK_VALG.map(([k,n])=>'<button type="button" class="cbk-b'+(na===k?' on':'')+'" data-bokk="'+esc(m.id+'|'+k)+'" aria-pressed="'+(na===k)+'">'+n+'</button>').join('')+'</div>'
-      +(na==='ja'?'<div class="cbk" role="group" aria-label="Din oppgave"><span class="small">Hva kan du hjelpe til med?</span><div class="btns" style="margin:0">'+UT_OPPG.map(o=>'<button type="button" class="cbk-b'+(op===o?' on':'')+'" data-bokop="'+esc(m.id+'|'+o)+'" aria-pressed="'+(op===o)+'" style="padding:6px 12px">'+o+'</button>').join('')+'</div></div>':'')}
+      +(na==='ja'?'<div class="cbk" role="group" aria-label="Din oppgave"><span class="small">Hva kan du hjelpe til med?</span><div class="btns" style="margin:0">'+UT_OPPG.map(o=>'<button type="button" class="cbk-b'+(op===o?' on':'')+'" data-bokop="'+esc(m.id+'|'+o)+'" aria-pressed="'+(op===o)+'" style="padding:6px 12px">'+o+'</button>').join('')+'</div></div>':'')+cal}
   if(b&&m.by===meg){
     const sv2=[...l].reverse().find(x=>x.by!==meg&&!x.slettet&&(svarTok(x.text)||{}).id===b.id),vk=sv2?(BOK_VALG.find(v=>v[0]===svarTok(sv2.text).k)||[])[1]:'';
     return '<div class="cbk"><span class="small">'+(vk?'Svar: <b>'+esc(vk)+'</b>':'Venter på svar. Mottakeren ser knappene Kommer, Kommer ikke og Vet ikke ennå.')+'</span></div>'}
@@ -3584,7 +3648,7 @@ function chatBokKort(txt,kollaps){
     else if(sist&&/^\s/.test(raw))sist.v+='\n'+raw.trim();
     else fri.push(raw.trim())}
   const P={cal:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',klokke:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',rom:'<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>',folk:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 5a3 3 0 0 1 0 6M18 14c2 .6 3 2.6 3 6"/>',mat:'<path d="M7 3v8a2 2 0 0 0 2 2v8M11 3v8M7 7h4M17 3c-2 2-2.5 5-2.5 8h2.5v10"/>',vars:'<path d="M12 3 2.5 20h19z"/><path d="M12 10v5M12 18v.01"/>',pers:'<circle cx="12" cy="8" r="3.5"/><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7"/>',tlf:'<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',pris:'<path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><circle cx="12" cy="12" r="2.5"/>',ok:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',note:'<path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/>',av:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>'};
-  const IKN={'Når':'klokke','Rom':'rom','Gjester':'folk','Servering':'mat','Allergener':'vars','Leietaker':'pers','Kontakt':'tlf','Pris':'pris','Status':'ok','Merknad':'note','Booket av':'av'};
+  const IKN={'Når':'klokke','Rom':'rom','Gjester':'folk','Servering':'mat','Team':'folk','Allergener':'vars','Leietaker':'pers','Kontakt':'tlf','Pris':'pris','Status':'ok','Merknad':'note','Booket av':'av'};
   const svg=(p,n)=>'<svg width="'+(n||16)+'" height="'+(n||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(P[p]||'<circle cx="12" cy="12" r="2"/>')+'</svg>';
   const verdi=(k,v)=>k==='Status'?'<span class="bokk-s'+(/^Forespørsel/.test(v)?' f':'')+'">'+esc(v)+'</span>':esc(v).replace(/\n/g,'<br>');
   return '<'+(kollaps?'details':'div')+' class="bokk'+(kollaps?' bokk-d':'')+'"><'+(kollaps?'summary':'div')+' class="bokk-h"><span class="bokk-ik">'+svg('cal',22)+'</span><span class="bokk-tt"><span class="bokk-ty">'+esc(m1[1])+(fors?' · forespørsel':'')+'</span><span class="bokk-n">'+esc(m1[2])+'</span></span>'+(kollaps?'<span class="bokk-chev" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>':'</div>')
@@ -4161,6 +4225,7 @@ document.addEventListener('click',e=>{
   else if(d.bokk){const [a,k]=d.bokk.split('|');chatBokSvar(a,k)}
   else if(d.bokkal)chatBokKal(d.bokkal);
   else if(d.bokpurr)chatBokPurr(d.bokpurr);
+  else if(d.bokcal)utApneId(d.bokcal);
   else if(d.bokop){const [mid,o]=d.bokop.split('|');chatBokOppg(mid,o)}
   else if('chatavstny' in d)chatAvstNy('gruppe');
   else if('chatspill' in d)chatQuiz();
@@ -4529,7 +4594,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='28.10.2026 kl. 18:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='28.10.2026 kl. 20:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */

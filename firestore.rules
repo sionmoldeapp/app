@@ -347,7 +347,7 @@ service cloud.firestore {
         && 'vertskap' in get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []));
       allow delete: if utleieTilgang();
       allow create, update: if utleieTilgang()
-        && request.resource.data.keys().hasOnly(['tittel', 'rom', 'dato', 'dato2', 'tider', 'gjester', 'servering', 'maaltider', 'allergener', 'allergenNotat', 'fakturert', 'fakturertMs', 'fakturaVentH', 'fakturaUtsattTil', 'remindH', 'fra', 'til', 'leier', 'kontakt', 'pris', 'status', 'notat', 'by', 'ms'])
+        && request.resource.data.keys().hasOnly(['tittel', 'rom', 'dato', 'dato2', 'tider', 'gjester', 'servering', 'maaltider', 'teamMaal', 'allergener', 'allergenNotat', 'fakturert', 'fakturertMs', 'fakturaVentH', 'fakturaUtsattTil', 'remindH', 'fra', 'til', 'leier', 'kontakt', 'pris', 'status', 'notat', 'by', 'ms'])
         && request.resource.data.tittel is string && request.resource.data.tittel.size() <= 100
         && request.resource.data.rom is list && request.resource.data.rom.size() >= 1 && request.resource.data.rom.size() <= 10
         && request.resource.data.dato is string && request.resource.data.dato.size() == 10
@@ -355,6 +355,7 @@ service cloud.firestore {
         && (!('tider' in request.resource.data) || (request.resource.data.tider is list && request.resource.data.tider.size() <= 62))
         && (!('gjester' in request.resource.data) || (request.resource.data.gjester is number && request.resource.data.gjester >= 0 && request.resource.data.gjester <= 2000))
         && (!('servering' in request.resource.data) || (request.resource.data.servering is string && request.resource.data.servering.size() <= 200))
+        && (!('teamMaal' in request.resource.data) || (request.resource.data.teamMaal is number && request.resource.data.teamMaal >= 0 && request.resource.data.teamMaal <= 50))
         && (!('maaltider' in request.resource.data) || (request.resource.data.maaltider is list && request.resource.data.maaltider.size() <= 8))
         && (!('allergener' in request.resource.data) || (request.resource.data.allergener is list && request.resource.data.allergener.size() <= 20))
         && (!('allergenNotat' in request.resource.data) || (request.resource.data.allergenNotat is string && request.resource.data.allergenNotat.size() <= 200))
