@@ -1721,7 +1721,7 @@ function utTemaVelg(){
   dlg.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-tema],[data-pal]'))setTimeout(tegn,30)});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 function utUtvInnhold(u,perDag,idag){
-  const v=u.visn||'mnd',HH=56,K=HH/60,alleRom=utRomListe(),skjul=utSkjul(),vis=r=>!skjul.includes(r),visRom=((u.rom&&u.rom!=='Alle')?[u.rom]:alleRom.filter(r=>r!=='Hele bygget')).filter(vis),PROG='__prog';
+  let HH=56,K=HH/60;const v=u.visn||'mnd',alleRom=utRomListe(),skjul=utSkjul(),vis=r=>!skjul.includes(r),visRom=((u.rom&&u.rom!=='Alle')?[u.rom]:alleRom.filter(r=>r!=='Hele bygget')).filter(vis),PROG='__prog';
   {const pd={};Object.keys(perDag).forEach(k=>{pd[k]=perDag[k].filter(x=>!(x.rom||[]).length||x.rom.some(vis))});perDag=pd}
   const farger=x=>utFarge((x.rom&&x.rom.length)?x.rom[0]:PROG);
   const nSk=alleRom.filter(r=>skjul.includes(r)).length,
@@ -1742,12 +1742,12 @@ function utUtvInnhold(u,perDag,idag){
     tips='<div class="utinfo"><button type="button" class="utibtn'+(u.hjelp?' on':'')+'" data-uthjelp aria-expanded="'+(!!u.hjelp)+'" aria-label="Vis eller skjul hjelp" title="Hjelp">i</button></div>'+(u.hjelp?'<p class="small utghint">'+tipsTekst+'</p>':'');
   const hbtn='<span class="utlh"><button type="button" class="utibtn'+(u.hjelp?' on':'')+'" data-uthjelp aria-expanded="'+(!!u.hjelp)+'" aria-label="Vis eller skjul hjelp" title="Hjelp">i</button></span>',hp=u.hjelp?'<p class="small utghint">'+tipsTekst+'</p>':'';
   if(v==='uke'){
-    const dager=utUkeDager(u.dag),a=new Date(dager[0]+'T12:00'),z=new Date(dager[6]+'T12:00'),[h0,h1]=tider(dager.map(k=>[perDag[k]||[],k]));
+    const dager=utUkeDager(u.dag),a=new Date(dager[0]+'T12:00'),z=new Date(dager[6]+'T12:00'),[h0,h1]=tider(dager.map(k=>[perDag[k]||[],k]));HH=utHH(u,h1-h0);K=HH/60;utDK=K;
     const kol=dager.map(k=>{const w=new Date(k+'T12:00');return {hode:'<button type="button" data-utdagvisn="'+k+'" class="utg-dagk" aria-label="Vis '+cap(DAYS[w.getDay()])+' '+w.getDate()+'. '+MON[w.getMonth()]+' som dag">'+esc(cap(DAYS[w.getDay()]).slice(0,3))+' '+w.getDate()+'.</button>',farge:k===idag?'var(--brand)':'var(--line)',idag:k===idag,d:k,r:(u.rom&&u.rom!=='Alle')?u.rom:'',html:blokker(perDag[k]||[],k,h0)}});
     return nav('Uke '+isoUke(a)+' · '+a.getDate()+'. '+esc(MON[a.getMonth()])+' – '+z.getDate()+'. '+esc(MON[z.getMonth()]),7,'uke')+legende.replace('<!--HB-->',hbtn)+hp+rutenett(kol,h0,h1,true)+ny}
   if(v==='dag'){
     const dd=new Date(u.dag+'T12:00'),b=perDag[u.dag]||[],medRom=r=>b.filter(x=>(x.rom||[]).includes(r)||((x.rom||[]).includes('Hele bygget')&&vis('Hele bygget'))),utenRom=b.filter(x=>!(x.rom||[]).length);
-    const [h0,h1]=tider([[b,u.dag]]);
+    const [h0,h1]=tider([[b,u.dag]]);HH=utHH(u,h1-h0);K=HH/60;utDK=K;
     const kol=visRom.map(r=>({hode:esc(r),farge:utFarge(r),idag:u.dag===idag,d:u.dag,r:r,html:blokker(medRom(r),u.dag,h0,utFarge(r))}));
     return nav(esc(cap(DAYS[dd.getDay()]))+' '+dd.getDate()+'. '+esc(MON[dd.getMonth()])+(dd.getFullYear()!==new Date().getFullYear()?' '+dd.getFullYear():''),1,'dag')+legende.replace('<!--HB-->',hbtn)+hp+(kol.length?rutenett(kol,h0,h1,true):'<p class="small">Alle rom er skjult. Trykk på et rom over for å vise det.</p>')+(b.length?'':'<p class="small">Ingen bookinger denne dagen.</p>')+ny}
   /* måned */
@@ -1756,7 +1756,7 @@ function utUtvInnhold(u,perDag,idag){
   for(let d=1;d<=dager;d++){const k=u.mnd+'-'+utPad2(d),b=(perDag[k]||[]).slice().sort((x,y)=>utMin(utDagTid(x,k)[0])-utMin(utDagTid(y,k)[0]));
     celler.push('<button type="button" class="utmc'+(k===idag?' idag':'')+'" data-utdagvisn="'+k+'" aria-label="'+d+'. '+UT_MND[mm-1]+(b.length?', '+b.length+' booking'+(b.length>1?'er':''):'')+'"><b>'+d+'</b>'
       +b.slice(0,3).map(x=>{const c=farger(x);return '<span class="utmch" style="border-left-color:'+c+';background:'+c+'2e">'+esc(utDagTid(x,k)[0])+' '+esc(x.tittel||'Booking')+'</span>'}).join('')+(b.length>3?'<span class="utmmer">+'+(b.length-3)+' til</span>':'')+'</button>')}
-  return tips+'<div class="btns utnavrad"><button type="button" class="btn" data-utmnd="-1" aria-label="Forrige måned">‹</button><b>'+cap(UT_MND[mm-1])+' '+år+'</b><button type="button" class="btn" data-utmnd="1" aria-label="Neste måned">›</button><button type="button" class="btn" data-utidag>I dag</button></div>'+legende
+  return '<div class="btns utnavrad"><button type="button" class="btn" data-utmnd="-1" aria-label="Forrige måned">‹</button><b>'+cap(UT_MND[mm-1])+' '+år+'</b><button type="button" class="btn" data-utmnd="1" aria-label="Neste måned">›</button><button type="button" class="btn" data-utidag>I dag</button></div>'+legende.replace('<!--HB-->',hbtn)+hp
     +'<div class="utmrutenett"><div class="utmuker">'+['man','tir','ons','tor','fre','lør','søn'].map(x=>'<span>'+x+'</span>').join('')+'</div><div class="utmdager">'+celler.join('')+'</div></div>'+ny}
 function utleieCard(){
   if(!utLes())return '';
@@ -1915,7 +1915,10 @@ document.addEventListener('click',e=>{
   state.ut.dag=dag;utAsk(null,dag,{fra:t(min),til:t(sl),rom:rom?[rom]:[]})});
 /* Flytt og forleng: hold inne på en booking (0,5 s) så løsner den. Dra den til et annet tidspunkt (eller rom/dag), dra i håndtakene øverst og nederst for å endre lengden, og i Uke dra i håndtakene på sidene for å legge til eller fjerne dager (flerdagsbooking). Ingenting lagres før du trykker Lagre. */
 const UTD={t:0,lost:null,drag:null,sup:0,p:null};
-const utDMin=15,utDK=56/60,utDT=m=>m>=1440?'23:59':utPad2(Math.floor(m/60))+':'+utPad2(m%60);
+let utDK=56/60;
+/* Timehøyde i dag- og ukevisning: 56 px som minimum, men i eget vindu og utvidet visning vokser den slik at kalenderen fyller høyden som er igjen på skjermen (u.hAvail måles i utvKlasse). */
+const utHH=(u,n)=>Math.max(56,Math.min(170,Math.floor((u.hAvail||0)/Math.max(1,n))));
+const utDMin=15,utDT=m=>m>=1440?'23:59':utPad2(Math.floor(m/60))+':'+utPad2(m%60);
 const utDDagNavn=x=>{const d=new Date(x+'T12:00');return cap(DAYS[d.getDay()]).slice(0,3)+' '+d.getDate()+'. '+MON[d.getMonth()]};
 /* Dagene bookingen får etter dragingen: dagene i området som allerede var med eller er nye (opphold som fantes før beholdes). */
 function utDSet(L){const b=L.b,old=utDager(b),oS=b.dato,oE=b.dato2&&b.dato2>b.dato?b.dato2:b.dato,ut=[];let d=new Date(L.nStart+'T12:00');
@@ -4843,7 +4846,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 19:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 20:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5376,8 +5379,17 @@ function badge(){
 }
 const viewBanner=()=>'';
 function chipScroll(){const a=document.querySelector('.chips.scroll [aria-pressed="true"]'),r=document.querySelector('.chips.scroll');if(a&&r)r.scrollTo({left:a.offsetLeft-(r.clientWidth-a.offsetWidth)/2,behavior:'auto'})}
+/* Kalenderen fyller høyden som er igjen (eget vindu og utvidet visning): timeraden i dag/uke og radene i måned strekkes. Endres tilgjengelig høyde, tegnes dag/uke på nytt med ny timehøyde. */
+function utFyll(v){
+  const u=state.ut;if(!u||!(state.vindu==='utleie'||u.utv))return;
+  const sy=window.scrollY||0,ru=v.querySelector('.utlasrull'),bunn=ru?ru.getBoundingClientRect().bottom+sy-8:innerHeight-84;
+  const kr=v.querySelector('.utg-kropp');
+  if(kr){const top=kr.getBoundingClientRect().top+sy,avail=Math.max(0,Math.round(bunn-top));if(Math.abs(avail-(u.hAvail||0))>24){u.hAvail=avail;requestAnimationFrame(()=>{if(!UTD.lost&&!UTD.t)keep(()=>{})})}return}
+  const md=v.querySelector('.utmdager');
+  if(md){const rader=Math.ceil(md.children.length/7),top=md.getBoundingClientRect().top+sy,h=Math.max(92,Math.floor((bunn-top)/rader));md.style.gridAutoRows=h+'px'}}
 const utvKlasse=()=>{const v=$('#view');v.classList.toggle('ututv',state.tab==='me'&&!!(state.ut&&state.ut.utv)&&!!document.querySelector('#view details[data-acc="utleie"]'));const h=document.querySelector('header.top');if(h)v.style.setProperty('--utlasTop',Math.round(h.getBoundingClientRect().height)+'px');
   /* Låst rulling: toppseksjonen står i ro og bare kalenderen under (.utlasrull) ruller. Kortet får akkurat den høyden som er igjen på skjermen (under toppen, over menyen), så siden selv ikke ruller. */
+  utFyll(v);
   const dk=v.querySelector('details[data-las]');
   if(dk){const nav=document.querySelector('nav.tabs'),nr=nav&&nav.getBoundingClientRect(),navH=nr&&getComputedStyle(nav).display!=='none'&&nr.top>innerHeight*.5?innerHeight-nr.top:0;dk.style.height='';const topp=dk.getBoundingClientRect().top+(window.scrollY||0);dk.style.height=Math.max(240,Math.round(innerHeight-topp-navH-10))+'px';if(window.scrollY)window.scrollTo(0,0);
     const bx=dk.querySelector('.utlasboks'),ru=dk.querySelector('.utlasrull');if(bx&&ru){ru.style.height='';const cs=getComputedStyle(dk),pad=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);ru.style.height=Math.max(120,dk.clientHeight-pad-bx.offsetHeight-(parseFloat(getComputedStyle(bx).marginBottom)||0))+'px'}}
