@@ -4437,15 +4437,15 @@ async function chatKamera(){
     const andre=linser.filter(l=>l.deviceId!==hoved).sort((a,b)=>String(a.label).localeCompare(String(b.label))),h=linser.find(l=>l.deviceId===hoved),rek=[...andre];if(h)rek.splice(Math.floor(linser.length/2),0,h);
     el.innerHTML=rek.map((l,i)=>{const std=l.deviceId===hoved;return '<button type="button" data-fklinse="'+esc(l.deviceId)+'" class="'+(l.deviceId===(dev||hoved)?'on':'')+'" aria-label="'+(std?'Standardkamera':'Kamera '+(i+1))+'">'+(std?'1×':'K'+(i+1))+'</button>'}).join('')};
   const start=async()=>{stopp();
-    const vc={width:{ideal:1280},height:{ideal:960}};if(dev&&face!=='user')vc.deviceId={exact:dev};else vc.facingMode=face;
+    const vc={width:{ideal:960},height:{ideal:540}};if(dev&&face!=='user')vc.deviceId={exact:dev};else vc.facingMode=face;
     try{strm=await navigator.mediaDevices.getUserMedia({audio:false,video:vc});if(!document.body.contains(e)){stopp();return}
-      trk=strm.getVideoTracks()[0];let cap=null;try{cap=trk.getCapabilities&&trk.getCapabilities()}catch(x){}
+      try{trk=strm.getVideoTracks()[0];let cap=null;try{cap=trk.getCapabilities&&trk.getCapabilities()}catch(x){}
       hw=!!(cap&&cap.zoom&&cap.zoom.max>1);zmax=hw?Math.min(cap.zoom.max,8):4;zmin=hw&&cap.zoom.min&&cap.zoom.min<1?cap.zoom.min:1;z=1;
       const v=vid();v.srcObject=strm;v.style.transform='';if(v.play)v.play().catch(()=>{});
       try{const ds=await navigator.mediaDevices.enumerateDevices();linser=ds.filter(d=>d.kind==='videoinput'&&d.deviceId&&!/front|fram|selfie|user/i.test(d.label||''));
         const cur=trk.getSettings&&trk.getSettings().deviceId;if(cur&&linser.some(l=>l.deviceId===cur)){dev=cur;if(!hoved)hoved=cur}
         if(!hoved&&linser.length)hoved=linser[Math.floor(linser.length/2)].deviceId}catch(x){linser=[]}
-      tegnZoom();tegnLinser()}
+      tegnZoom();tegnLinser()}catch(x2){console.warn('kamera (visning):',x2);try{const v2=vid();if(v2&&!v2.srcObject)v2.srcObject=strm;if(v2&&v2.play)v2.play().catch(()=>{})}catch(x3){}}}
     catch(er){lukk();const k=er&&er.name;
       push('Kameraet kunne ikke åpnes',k==='NotAllowedError'||k==='SecurityError'?'Appen har ikke tillatelse til å bruke kameraet. Tillat kamera for Sion Molde i telefonens eller nettleserens innstillinger, og prøv igjen.':k==='NotFoundError'||k==='OverconstrainedError'?'Fant ikke noe kamera å bruke. Velger du bilde fra galleriet i stedet, kan du fortsatt sende bilder.':k==='NotReadableError'||k==='AbortError'?'Kameraet brukes av en annen app. Lukk den og prøv igjen.':'Kameraet ga en feil ('+(k||'ukjent')+'). Prøv igjen, eller velg bilde fra galleriet.');
       reserve()}};
@@ -4918,7 +4918,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 23:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 00:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
