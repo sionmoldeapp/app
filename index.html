@@ -3535,25 +3535,29 @@ function chatLysshow(w){
   cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);w.appendChild(cv);const cx=cv.getContext('2d');cx.scale(dpr,dpr);
   const R=(p,q)=>p+Math.random()*(q-p),DUR=4000,FARGER=['#ff2fd6','#2fd8ff','#ffd02f','#5dff6a','#ff7a2f','#9b6bff','#ff3b5c'],
     lys=[],N=7;
-  for(let i=0;i<N;i++)lys.push({x:W*(i+.5)/N,y:-6,vx:0,c:FARGER[i%FARGER.length],base:R(-.15,.15),amp:R(.5,.85),sp:R(.0016,.0032),ph:R(0,6),puls:R(.006,.012),br:R(.09,.14)});
-  lys.push({x:-6,y:H+6,vx:1,c:'#2fd8ff',base:-1.0,amp:.45,sp:.0021,ph:1,puls:.008,br:.1},{x:W+6,y:H+6,vx:-1,c:'#ff2fd6',base:1.0,amp:.45,sp:.0024,ph:3,puls:.009,br:.1});
+  /* Noen lys (rolige) scanner sakte over hele skjermen, de andre er raske. Strålene blir litt bredere og smalere mens de beveger seg. */
+  for(let i=0;i<N;i++){const rolig=i%2===1;lys.push({x:W*(i+.5)/N,y:-6,vx:0,c:FARGER[i%FARGER.length],base:R(-.1,.1),amp:rolig?R(.85,1.05):R(.45,.7),sp:rolig?R(.0005,.0009):R(.0016,.003),p:R(0,6),bv:R(.0012,.0024),bp:R(0,6),br:rolig?R(.075,.11):R(.07,.12)})}
+  lys.push({x:-6,y:H+6,vx:1,c:'#2fd8ff',base:0,amp:.5,sp:.0007,p:1,bv:.0016,bp:2,br:.1},{x:W+6,y:H+6,vx:-1,c:'#ff2fd6',base:0,amp:.5,sp:.0008,p:3,bv:.0014,bp:5,br:.1});
   const pap=[];
   const kast=(x,y,vx0,vx1,n)=>{for(let i=0;i<n;i++)pap.push({x,y,vx:R(vx0,vx1),vy:R(-17,-6),w:R(5,10),h:R(2.5,5),a:R(0,6),va:R(-.3,.3),fl:R(0,6),vf:R(.08,.2),c:FARGER[(Math.random()*FARGER.length)|0]})};
   kast(0,H*.9,4,13,70);kast(W,H*.9,-13,-4,70);
-  let sist=performance.now();const t0=sist;let kast2=false;
+  let sist=performance.now();const t0=sist;let kast2=false,taktF=0;
   const tegn=nu=>{
-    const t=nu-t0,dt=Math.min(3,(nu-sist)/16.7);sist=nu;
+    const t=nu-t0,dMs=Math.min(50,nu-sist),dt=Math.min(3,dMs/16.7);sist=nu;
     const env=Math.max(0,Math.min(1,t/250,(DUR-t)/900));
     if(!kast2&&t>1300){kast2=true;kast(W*.2,H,-3,3,40);kast(W*.8,H,-3,3,40)}
     cx.globalCompositeOperation='source-over';cx.clearRect(0,0,W,H);
     cx.fillStyle='rgba(10,4,30,'+(.5*env)+')';cx.fillRect(0,0,W,H);
     cx.globalCompositeOperation='lighter';
-    const takt=.5+.5*Math.sin(t/105);
+    const rolig=Math.max(0,Math.min(1,(t-2300)/1500)),ro=1-.9*rolig*rolig*(3-2*rolig);   // fra 2,3 s roer lysene seg ned til nesten stillstand før de tones ut
+    taktF+=dMs*.0095*ro;const takt=.5+.5*Math.sin(taktF);
+    cx.globalCompositeOperation='lighter';
     lys.forEach(l=>{
-      const v=l.vx===0?Math.PI/2+l.base+Math.sin(t*l.sp*6+l.ph)*l.amp:(l.vx>0?-Math.PI/2+.35+Math.sin(t*l.sp*6+l.ph)*l.amp*1.2:-Math.PI/2-.35+Math.sin(t*l.sp*6+l.ph)*l.amp*1.2),
-        len=Math.hypot(W,H)*1.15,sp=l.br*(.8+.4*Math.sin(t*l.puls*3+l.ph)),
+      l.p+=l.sp*dMs*ro;l.bp+=l.bv*dMs*ro;
+      const sv=Math.sin(l.p),v=l.vx===0?Math.PI/2+l.base+sv*l.amp:(l.vx>0?-Math.PI/2+.35:-Math.PI/2-.35)+sv*l.amp,
+        len=Math.hypot(W,H)*1.15,sp=l.br*(1+.5*Math.sin(l.bp)),
         ax=l.x+Math.cos(v-sp)*len,ay=l.y+Math.sin(v-sp)*len,bx=l.x+Math.cos(v+sp)*len,by=l.y+Math.sin(v+sp)*len,
-        g=cx.createRadialGradient(l.x,l.y,0,l.x,l.y,len),k=env*(.55+.45*takt);
+        g=cx.createRadialGradient(l.x,l.y,0,l.x,l.y,len),k=env*(.62+.38*takt);
       g.addColorStop(0,l.c+'ff');g.addColorStop(.7,l.c+'55');g.addColorStop(1,l.c+'00');
       cx.globalAlpha=k*.75;cx.fillStyle=g;cx.beginPath();cx.moveTo(l.x,l.y);cx.lineTo(ax,ay);cx.lineTo(bx,by);cx.closePath();cx.fill();
       const gl=cx.createRadialGradient(l.x,l.y,0,l.x,l.y,34);gl.addColorStop(0,'#ffffffee');gl.addColorStop(1,l.c+'00');cx.globalAlpha=env;cx.fillStyle=gl;cx.beginPath();cx.arc(l.x,l.y,34,0,7);cx.fill()});
@@ -4745,7 +4749,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 05:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 05:35';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
