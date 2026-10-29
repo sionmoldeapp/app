@@ -235,6 +235,8 @@ body{overscroll-behavior-y:contain}
 html:not([data-stil="ios"]):not([data-stil="android"]):root{--f-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',system-ui,'Poppins',sans-serif;--f-display:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,'Poppins',sans-serif}
 html[data-stil="ios"][data-stil="ios"]:root{--f-body:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display',system-ui,'Poppins',sans-serif;--f-display:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,'Poppins',sans-serif;--r-s:10px;--r-m:14px;--r-l:20px;--ease:cubic-bezier(.32,.72,0,1);--d-fast:.2s;--d-med:.35s;--d-slow:.5s;--shadow-card:none}
 html[data-stil="android"][data-stil="android"]:root{--f-body:Roboto,'Google Sans','Segoe UI',system-ui,'Poppins',sans-serif;--f-display:'Google Sans',Roboto,system-ui,'Poppins',sans-serif;--r-s:12px;--r-m:16px;--r-l:28px;--ease:cubic-bezier(.2,0,0,1);--d-fast:.1s;--d-med:.25s;--d-slow:.4s;--shadow-card:0 1px 2px rgba(0,0,0,.14),0 1px 3px 1px rgba(0,0,0,.08)}
+html:not([data-stil="ios"]):not([data-stil="android"]) h1,html:not([data-stil="ios"]):not([data-stil="android"]) h2,html:not([data-stil="ios"]):not([data-stil="android"]) h3,html:not([data-stil="ios"]):not([data-stil="android"]) .nhero-t,html:not([data-stil="ios"]):not([data-stil="android"]) .logo b{text-transform:none;font-weight:700;letter-spacing:-.01em}
+html:not([data-stil="ios"]):not([data-stil="android"]) h1{font-size:34px}html:not([data-stil="ios"]):not([data-stil="android"]) h2{font-size:22px;line-height:1.15}html:not([data-stil="ios"]):not([data-stil="android"]) .nhero-t{font-size:24px;line-height:1.15}html:not([data-stil="ios"]):not([data-stil="android"]) .logo b{font-size:var(--t-l)}
 html[data-stil="ios"] h1,html[data-stil="ios"] h2,html[data-stil="ios"] h3,html[data-stil="ios"] .nhero-t,html[data-stil="ios"] .logo b,
 html[data-stil="android"] h1,html[data-stil="android"] h2,html[data-stil="android"] h3,html[data-stil="android"] .nhero-t,html[data-stil="android"] .logo b{text-transform:none;font-weight:700;letter-spacing:-.01em}
 html[data-stil="ios"] h1{font-size:34px}html[data-stil="android"] h1{font-size:32px;font-weight:500}
@@ -4750,7 +4752,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 06:05';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 06:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
