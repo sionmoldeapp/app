@@ -3,7 +3,7 @@
 const V='10.14.1',B='https://www.gstatic.com/firebasejs/'+V+'/';
 try{
   const [{initializeApp},A,S]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
-  const TEST=location.port==='8090'||/.trycloudflare.com$/.test(location.hostname);   // testversjon: lokal emulator, se lokal/LESMEG.md
+  const TEST=location.port==='8090'||/(trycloudflare.com|.ts.net)$/.test(location.hostname);   // testversjon: lokal emulator, se lokal/LESMEG.md
   const M=TEST?null:await import(B+'firebase-messaging.js').catch(()=>null);   // varsler; appen virker uten
   const VAPID='BN0qXSST7zltP6MnXUbUiQg7HUDkobWNyUKld6kpW2TkKPiXtz9n3xbqquMKb0iakhv2wQt3kpDpofroi144D3M';   // offentlig nøkkel for web-push
   const app=initializeApp({
