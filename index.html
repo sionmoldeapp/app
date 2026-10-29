@@ -1075,6 +1075,9 @@ nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 #view.ututv>h1{padding:0 12px}
 .utkt{margin-left:auto;display:inline-flex;gap:8px;align-items:center}
 .utkt .btn{width:auto;display:inline-flex;align-items:center;justify-content:center}
+/* Låst rulling i utvidet visning og eget vindu: Utleie-overskriften og rammen rundt skjules, så kalenderen får mest mulig plass. */
+details[data-acc="utleie"][data-las]>summary{display:none}
+#view.ututv>details[data-acc="utleie"][data-las],html[data-vindu] details[data-acc="utleie"][data-las]{padding-top:0;box-shadow:none;background:transparent}
 .utlasboks{position:sticky;top:var(--utlasTop,70px);z-index:4;background:var(--surface);padding:6px 0 4px;margin:0 0 8px;max-height:60vh;overflow-y:auto;box-shadow:0 6px 8px -6px rgba(0,0,0,.25)}
 .utinfo{display:flex;justify-content:flex-end;margin:0 0 4px}
 .utinfo2{margin:-4px 0 0}.utinfo2>summary{list-style:none;cursor:pointer;display:flex;justify-content:flex-end}.utinfo2>summary::-webkit-details-marker{display:none}
@@ -1769,7 +1772,7 @@ function utleieCard(){
      +'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">'+cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+'</h3><div class="list">'+(valgteB.length?valgteB.map(b=>utItem(b,u.dag)).join(''):'<p class="small">Ingen bookinger denne dagen.</p>')+'</div>'
      +(utTilgang()?'<div class="btns" style="margin-top:10px"><button type="button" class="btn primary" data-utny style="width:auto">+ Ny booking</button>'+utLedereKnapp()+'</div>':'<p class="small" style="margin:10px 0 0">Du ser bookingene som vertskap, og får varsel når det kommer en ny.</p>')
      +utFakEpostLinje()+(kommende.length?'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Kommende</h3><div class="list">'+(()=>{let sist='',ut='';kommende.forEach(b=>{const dag=b.dato<idag?idag:b.dato,w=new Date(dag+'T12:00'),k=when(w)+' '+w.getDate()+'. '+MON[w.getMonth()];if(k!==sist){ut+='<div class="day">'+k+'</div>';sist=k}ut+=utItem(b,dag)});return ut})()+'</div>':'')}
-  return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie||state.vindu?'open':'')+'><summary><h2>Utleie</h2>'+(!state.vindu&&bredNa()?'<button type="button" class="btn" data-utvindu style="width:auto;margin-left:auto" aria-label="Åpne kalenderen i eget vindu">Eget vindu ↗</button>':'')+'</summary>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
+  return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie||state.vindu?'open':'')+((u.las&&(u.utv||state.vindu))?' data-las':'')+'><summary><h2>Utleie</h2>'+(!state.vindu&&bredNa()?'<button type="button" class="btn" data-utvindu style="width:auto;margin-left:auto" aria-label="Åpne kalenderen i eget vindu">Eget vindu ↗</button>':'')+'</summary>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
 /* Menighetens kalender (Program): en booking kan også legges inn som arrangement der. Koblingen ligger på arrangementet (utId), så bookingen trenger ingen nye felt. Bare administratorer kan skrive i Program. */
 const UT_KATER=['Møter','Ungdom','Barn','Happeninger','Menighetsmøte','Lederrådet','Ungdomsleder'],UT_KAT_MEDL=['Menighetsmøte','Lederrådet','Ungdomsleder'];
 const utKatListe=()=>[...UT_KATER,...allCats().filter(c=>!UT_KATER.includes(c))];
@@ -4788,7 +4791,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 10:25';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 10:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
