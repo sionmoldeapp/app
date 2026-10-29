@@ -351,7 +351,7 @@ service cloud.firestore {
         && 'vertskap' in get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []));
       allow delete: if utleieTilgang();
       allow create, update: if utleieTilgang()
-        && request.resource.data.keys().hasOnly(['tittel', 'rom', 'dato', 'dato2', 'tider', 'gjester', 'servering', 'maaltider', 'teamMaal', 'allergener', 'allergenNotat', 'fakturert', 'fakturertMs', 'fakturaVentH', 'fakturaUtsattTil', 'remindH', 'fra', 'til', 'leier', 'kontakt', 'pris', 'status', 'notat', 'by', 'ms'])
+        && request.resource.data.keys().hasOnly(['tittel', 'rom', 'dato', 'dato2', 'tider', 'gjester', 'servering', 'maaltider', 'teamMaal', 'allergener', 'allergenNotat', 'fakturert', 'fakturertMs', 'fakturaVentH', 'fakturaUtsattTil', 'remindH', 'fra', 'til', 'leier', 'kontakt', 'epost', 'pris', 'status', 'notat', 'by', 'ms'])
         && request.resource.data.tittel is string && request.resource.data.tittel.size() <= 100
         && request.resource.data.rom is list && request.resource.data.rom.size() >= 1 && request.resource.data.rom.size() <= 10
         && request.resource.data.dato is string && request.resource.data.dato.size() == 10
@@ -372,6 +372,7 @@ service cloud.firestore {
         && request.resource.data.til is string && request.resource.data.til.size() == 5
         && request.resource.data.leier is string && request.resource.data.leier.size() <= 100
         && request.resource.data.kontakt is string && request.resource.data.kontakt.size() <= 100
+        && (!('epost' in request.resource.data) || (request.resource.data.epost is string && request.resource.data.epost.size() <= 100))
         && request.resource.data.pris is string && request.resource.data.pris.size() <= 30
         && request.resource.data.status in ['foresporsel', 'bekreftet']
         && request.resource.data.notat is string && request.resource.data.notat.size() <= 500
