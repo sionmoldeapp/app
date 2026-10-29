@@ -1331,7 +1331,7 @@ const state={tab:'home',filter:'Alle',member:false,admin:false,user:null,rsvp:{}
   prefs:{Møter:true,Happeninger:true,Ungdom:false,Viktig:true},unread:0,sv:'',svE:'',pwMsg:'',leder:false,memELd:'',memEA:'',memEL:'',memEM:'',memGL:[],memGM:[],snaps:null,snapMsg:'',view:'meg',brQ:'',brG:'',memBulk:'',memGB:[],rsList:{},q:'',edit:true,real:null,vl:['activ8'],af:'Alle',acc:{},sel:{},groups:[],leads:[],ulOpen:'',psMal:'alle',psGr:[],ugOpen:'',backupMsg:'',pushMsg:'',pushSendMsg:'',psT:'',psB:'',psTab:'news',psNews:true,psHide:false,pushOk:false,memMsg:'',memE:'',memR:'member',adm:{type:'events',edit:null},msg:'',err:''};
 try{Object.assign(state,JSON.parse(localStorage.getItem('sm-proto')||'{}'))}catch(e){}
 state.member=false;state.admin=false;state.user=null;try{state.edit=localStorage.getItem('sm-edit')!=='0'}catch(e){state.edit=true}
-{const q=new URLSearchParams(location.search),dt=q.get('tab');if(/^[A-Za-z0-9]{10,40}\.[a-f0-9]{32}$/.test(q.get('selv')||'')){const [b0,t0]=q.get('selv').split('.');state.vindu='selv';state.selv={bid:b0,tok:t0};document.title='Molde Konferansesenter';state.tab='me';document.documentElement.dataset.vindu='selv';setTimeout(selvInit,0)}
+{const q=new URLSearchParams(location.search),dt=q.get('tab');if(q.get('oppd')){try{history.replaceState(null,'',location.pathname)}catch(e){}}if(/^[A-Za-z0-9]{10,40}\.[a-f0-9]{32}$/.test(q.get('selv')||'')){const [b0,t0]=q.get('selv').split('.');state.vindu='selv';state.selv={bid:b0,tok:t0};document.title='Molde Konferansesenter';state.tab='me';document.documentElement.dataset.vindu='selv';setTimeout(selvInit,0)}
   if(q.get('vindu')==='utleie'){state.vindu=true;state.tab='me';state.acc.utleie=true;document.documentElement.dataset.vindu='utleie'}if(['home','prog','news','me'].includes(dt)){state.tab=dt;try{history.replaceState(null,'',location.pathname)}catch(e){}}
   if(q.get('bsvar')&&q.get('bok')&&q.get('tr')){state.pendingBok={bid:q.get('bok'),k:q.get('bsvar'),tr:q.get('tr')};try{history.replaceState(null,'',location.pathname)}catch(e){}}
   if(q.get('vt')||q.get('vb')){state.pendingVarsel={tab:dt||'home',tittel:q.get('vt')||'',tekst:q.get('vb')||''};try{history.replaceState(null,'',location.pathname)}catch(e){}}}
@@ -4924,7 +4924,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 01:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 01:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5699,8 +5699,11 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.thr){thrAsk(c.dataset.thr)}
   else if('meldrefresh' in c.dataset){state.threads=undefined;keep(()=>{});loadThreads()}
   else if('oppdater' in c.dataset){c.disabled=true;c.textContent='Henter …';
-    try{const ks=await caches.keys();await Promise.all(ks.filter(k=>k!=='sion-varsel').map(k=>caches.delete(k)));const reg=await navigator.serviceWorker.getRegistration();if(reg){await reg.update();if(reg.waiting)reg.waiting.postMessage({type:'skip'})}}catch(er){}
-    setTimeout(()=>location.reload(),400)}
+    /* Henter alt på nytt (også forbi nettleserens egen hurtigbuffer), og åpner appen på nytt av seg selv med en ny adresse så den eldre versjonen ikke vises. Varselabonnementet (service worker) røres ikke. */
+    try{const ks=await caches.keys();await Promise.all(ks.filter(k=>k!=='sion-varsel').map(k=>caches.delete(k)));const reg=await navigator.serviceWorker.getRegistration();if(reg){await reg.update();if(reg.waiting)reg.waiting.postMessage({type:'skip'})}
+      await Promise.all(['./','fb.js','sw.js','fonts.css','manifest.webmanifest'].map(f=>fetch(f,{cache:'reload'}).catch(()=>{})))}catch(er){}
+    c.textContent='Åpner på nytt …';
+    setTimeout(()=>{try{location.replace(location.pathname+'?oppd='+Date.now())}catch(er){location.reload()}},350)}
   else if('lradd' in c.dataset){lrAdd()}
   else if('lrrefresh' in c.dataset){state.lr=undefined;keep(()=>{});loadLr()}
   else if('lrcopy' in c.dataset){lrCopy()}
