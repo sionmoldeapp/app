@@ -4414,8 +4414,12 @@ function histLag(lukk){
   window.addEventListener('popstate',pop,true);
   return ()=>{if(!aktiv)return;aktiv=false;window.removeEventListener('popstate',pop,true);
     const sv=ev=>{ev.stopImmediatePropagation();window.removeEventListener('popstate',sv,true)};window.addEventListener('popstate',sv,true);history.back()}}
+/* Midlertidig diagnose for chat-kameraet: viser kort hva som skjer (åpner, kamera klart, tar bilde, lukkes og hvorfor). */
+const chatKamDiag=t=>{try{push('Kameradiagnose',t)}catch(e){}};
 /* Kamera for bilder i Sionchat, inne i appen: X øverst til venstre lukker uten å ta bilde. Zoom (0,5×, 1×, 2×, 3× når telefonen støtter det) og valg av linse når telefonen har flere bakkameraer. Uten kameratilgang brukes telefonens eget kamera. */
 async function chatKamera(){
+  try{const ta0=document.getElementById('cT');if(ta0)ta0.blur();chatPanelLukk()}catch(x0){}
+  chatKamDiag('Kamera: åpner');
   const reserve=()=>{const f=document.getElementById('cKam');if(f){f.value='';f.click()}};
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){reserve();return}
   if(document.getElementById('fkam'))return;
@@ -4427,7 +4431,7 @@ async function chatKamera(){
   const esc2=ev=>{if(ev.key==='Escape')lukk('esc')};
   /* Årsaken til at kameraet lukkes vises når det skjer uten at du trykket X eller tok bilde (tilbake-gest/knapp, Esc), så uventede lukkinger ikke skjer i det stille. */
   const lukk=arsak=>{fjernHist();stopp();e.remove();removeEventListener('resize',pl);document.removeEventListener('keydown',esc2);
-    if(arsak==='tilbake'||arsak==='esc')push('Kameraet ble lukket',arsak==='esc'?'Esc-tasten lukket kameraet.':'En tilbake-bevegelse eller tilbake-knapp lukket kameraet. Prøv igjen uten å sveipe fra kanten.')};
+    chatKamDiag('Kameraet lukkes. Årsak: '+(arsak==='tilbake'?'tilbake-bevegelse/knapp':arsak==='esc'?'Esc':arsak||'ukjent'))};
   const fjernHist=histLag(()=>lukk('tilbake'));
   addEventListener('resize',pl);document.addEventListener('keydown',esc2);
   const vid=()=>e.querySelector('#fkVid');
@@ -4447,16 +4451,16 @@ async function chatKamera(){
       try{const ds=await navigator.mediaDevices.enumerateDevices();linser=ds.filter(d=>d.kind==='videoinput'&&d.deviceId&&!/front|fram|selfie|user/i.test(d.label||''));
         const cur=trk.getSettings&&trk.getSettings().deviceId;if(cur&&linser.some(l=>l.deviceId===cur)){dev=cur;if(!hoved)hoved=cur}
         if(!hoved&&linser.length)hoved=linser[Math.floor(linser.length/2)].deviceId}catch(x){linser=[]}
-      tegnZoom();tegnLinser()}catch(x2){console.warn('kamera (visning):',x2);try{const v2=vid();if(v2&&!v2.srcObject)v2.srcObject=strm;if(v2&&v2.play)v2.play().catch(()=>{})}catch(x3){}}}
-    catch(er){lukk();const k=er&&er.name;
+      tegnZoom();tegnLinser();chatKamDiag('Kamera klart: '+(trk&&trk.label||'?')+' '+(vid().videoWidth||'?')+'x'+(vid().videoHeight||'?'))}catch(x2){console.warn('kamera (visning):',x2);try{const v2=vid();if(v2&&!v2.srcObject)v2.srcObject=strm;if(v2&&v2.play)v2.play().catch(()=>{})}catch(x3){}}}
+    catch(er){lukk('feil: '+(er&&er.name));const k=er&&er.name;
       push('Kameraet kunne ikke åpnes',k==='NotAllowedError'||k==='SecurityError'?'Appen har ikke tillatelse til å bruke kameraet. Tillat kamera for Sion Molde i telefonens eller nettleserens innstillinger, og prøv igjen.':k==='NotFoundError'||k==='OverconstrainedError'?'Fant ikke noe kamera å bruke. Velger du bilde fra galleriet i stedet, kan du fortsatt sende bilder.':k==='NotReadableError'||k==='AbortError'?'Kameraet brukes av en annen app. Lukk den og prøv igjen.':'Kameraet ga en feil ('+(k||'ukjent')+'). Prøv igjen, eller velg bilde fra galleriet.');
       reserve()}};
   e.addEventListener('click',ev=>{const b=ev.target.closest&&ev.target.closest('button');if(!b)return;
-    if('fkx' in b.dataset)lukk();
+    if('fkx' in b.dataset)lukk('X-knappen');
     else if('fkvend' in b.dataset){face=face==='user'?'environment':'user';dev=face==='user'?'':hoved;start()}
     else if('fkz' in b.dataset)settZoom(Number(b.dataset.fkz));
     else if('fklinse' in b.dataset){dev=b.dataset.fklinse;start()}
-    else if('fkbilde' in b.dataset){const v=vid();if(!v||!v.videoWidth){push('Kameraet er ikke klart','Vent til du ser bildet fra kameraet, og trykk igjen.');return}const c=document.createElement('canvas'),k=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight)),dz=(!hw&&z>1)?z:1,sw=v.videoWidth/dz,sh=v.videoHeight/dz;c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,(v.videoWidth-sw)/2,(v.videoHeight-sh)/2,sw,sh,0,0,c.width,c.height);c.toBlob(bl=>{lukk();if(bl)chatSendBilde(new File([bl],'bilde.jpg',{type:'image/jpeg'}));else push('Bildet ble ikke tatt','Kameraet ga ikke fra seg bildet. Prøv igjen.')},'image/jpeg',.85)}});
+    else if('fkbilde' in b.dataset){const v=vid();if(!v||!v.videoWidth){push('Kameraet er ikke klart','Vent til du ser bildet fra kameraet, og trykk igjen.');return}const c=document.createElement('canvas'),k=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight)),dz=(!hw&&z>1)?z:1,sw=v.videoWidth/dz,sh=v.videoHeight/dz;c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,(v.videoWidth-sw)/2,(v.videoHeight-sh)/2,sw,sh,0,0,c.width,c.height);c.toBlob(bl=>{lukk('bilde tatt');if(bl)chatSendBilde(new File([bl],'bilde.jpg',{type:'image/jpeg'}));else push('Bildet ble ikke tatt','Kameraet ga ikke fra seg bildet. Prøv igjen.')},'image/jpeg',.85)}});
   start()}
 async function chatSendBilde(fil){
   const c=state.chat;if(!c.id){push('Bildet ble ikke sendt','Åpne en samtale først, så sendes bildet dit.');return}if(c.sender){push('Vent litt','Forrige melding sendes fortsatt. Ta bildet på nytt om et øyeblikk.');return}c.sender=true;
@@ -4920,7 +4924,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 00:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 01:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
