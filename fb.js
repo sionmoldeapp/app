@@ -226,6 +226,7 @@ const FB={
     addPrayer:d=>S.addDoc(S.collection(db,'prayers'),{t:String(d.t).slice(0,400),name:String(d.name||'').slice(0,60),by:auth.currentUser.uid,ms:Date.now(),ber:[]}),
     // Anonyme bønneemner uten innlogging går via Apps Script (regnestykke og grenser).
     async bonnUtfordring(url){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'bonnutfordring'})});return r.json()},
+    async selvLenke(url,bid,ny){const idToken=await auth.currentUser.getIdToken(true);const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'selvlenke',idToken,bid,ny:!!ny})});return r.json()},
     async bonnAnon(url,d){const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'bonnanon',...d})});return r.json()},
     delPrayer:id=>sl(S.deleteDoc(S.doc(db,'prayers',id))),
     // Saker til lederrådet: bare administratorer og medlemmer i gruppen lederradet (reglene).

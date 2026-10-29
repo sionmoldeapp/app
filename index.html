@@ -1073,6 +1073,12 @@ nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 html[data-bred="1"] #view.ututv{columns:1;max-width:none}
 html[data-vindu] header.top,html[data-vindu] nav.tabs,html[data-vindu] #chat,html[data-vindu] #ptr{display:none!important}
 html[data-vindu] .app{max-width:none;margin:0}
+html[data-vindu="selv"] .app{max-width:640px;margin:0 auto}
+.selv{display:flex;flex-direction:column;gap:14px}.logo-selv{font-family:var(--f-display);font-size:26px;letter-spacing:.02em;padding:6px 4px 0}
+.selvform{display:flex;flex-direction:column;gap:12px}.selvinfo{display:flex;flex-direction:column;gap:2px;background:var(--chip);border-radius:var(--r-m);padding:12px 14px}
+.selvmat{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,.8fr) auto;gap:6px;margin-bottom:6px}
+.selvall{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.selvar{display:flex;flex-direction:column;gap:4px;font-size:var(--t-m)}
+.selvkort{text-align:center;padding:32px 20px}
 html[data-vindu] main{display:block;columns:1;padding:10px 10px 40px;max-width:none}
 html[data-vindu] details[data-acc="utleie"]>summary{pointer-events:none}
 html[data-vindu] details[data-acc="utleie"]>summary .btn{display:none}
@@ -1286,7 +1292,8 @@ const state={tab:'home',filter:'Alle',member:false,admin:false,user:null,rsvp:{}
   prefs:{Møter:true,Happeninger:true,Ungdom:false,Viktig:true},unread:0,sv:'',svE:'',pwMsg:'',leder:false,memELd:'',memEA:'',memEL:'',memEM:'',memGL:[],memGM:[],snaps:null,snapMsg:'',view:'meg',brQ:'',brG:'',memBulk:'',memGB:[],rsList:{},q:'',edit:true,real:null,vl:['activ8'],af:'Alle',acc:{},sel:{},groups:[],leads:[],ulOpen:'',psMal:'alle',psGr:[],ugOpen:'',backupMsg:'',pushMsg:'',pushSendMsg:'',psT:'',psB:'',psTab:'news',psNews:true,psHide:false,pushOk:false,memMsg:'',memE:'',memR:'member',adm:{type:'events',edit:null},msg:'',err:''};
 try{Object.assign(state,JSON.parse(localStorage.getItem('sm-proto')||'{}'))}catch(e){}
 state.member=false;state.admin=false;state.user=null;try{state.edit=localStorage.getItem('sm-edit')!=='0'}catch(e){state.edit=true}
-{const q=new URLSearchParams(location.search),dt=q.get('tab');if(q.get('vindu')==='utleie'){state.vindu=true;state.tab='me';state.acc.utleie=true;document.documentElement.dataset.vindu='utleie'}if(['home','prog','news','me'].includes(dt)){state.tab=dt;try{history.replaceState(null,'',location.pathname)}catch(e){}}
+{const q=new URLSearchParams(location.search),dt=q.get('tab');if(/^[A-Za-z0-9]{10,40}\.[a-f0-9]{32}$/.test(q.get('selv')||'')){const [b0,t0]=q.get('selv').split('.');state.vindu='selv';state.selv={bid:b0,tok:t0};state.tab='me';document.documentElement.dataset.vindu='selv';setTimeout(selvInit,0)}
+  if(q.get('vindu')==='utleie'){state.vindu=true;state.tab='me';state.acc.utleie=true;document.documentElement.dataset.vindu='utleie'}if(['home','prog','news','me'].includes(dt)){state.tab=dt;try{history.replaceState(null,'',location.pathname)}catch(e){}}
   if(q.get('bsvar')&&q.get('bok')&&q.get('tr')){state.pendingBok={bid:q.get('bok'),k:q.get('bsvar'),tr:q.get('tr')};try{history.replaceState(null,'',location.pathname)}catch(e){}}
   if(q.get('vt')||q.get('vb')){state.pendingVarsel={tab:dt||'home',tittel:q.get('vt')||'',tekst:q.get('vb')||''};try{history.replaceState(null,'',location.pathname)}catch(e){}}}
 const save=()=>{try{localStorage.setItem('sm-proto',JSON.stringify({rsvp:state.rsvp,rem:state.rem,prefs:state.prefs}))}catch(e){}};
@@ -2026,12 +2033,13 @@ function utDetalj(id,dag){
     +(x.program?'<p class="small" style="margin:0">Dette er et arrangement fra Program, og endres der.</p>':'')
     +(x.program?'':'<div class="small" id="uTeam" style="margin:0"></div>')
     +(skriv&&!x.program?rad('Leietaker',x.leier)+rad('Kontakt',x.kontakt)+rad('Pris',x.pris)+rad('Merknad',x.notat):'')
-    +'<div class="btns">'+(skriv&&!x.program?'<button class="btn primary" value="endre" style="width:auto">Endre</button>':'')+''+(x.program?'':'<button class="btn" value="pdf" style="width:auto">Lag PDF</button>')+(x.program||!state.member?'':'<button class="btn" value="chat" style="width:auto">Sionchat</button>')+'<button class="btn" value="del" style="width:auto">Del</button><button class="btn" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';
+    +'<div class="btns">'+(skriv&&!x.program?'<button class="btn primary" value="endre" style="width:auto">Endre</button>':'')+''+(x.program?'':'<button class="btn" value="pdf" style="width:auto">Lag PDF</button>')+(x.program||!state.member?'':'<button class="btn" value="chat" style="width:auto">Sionchat</button>')+(skriv&&!x.program?'<button class="btn" value="selv" style="width:auto">Skjema til leier</button>':'')+'<button class="btn" value="del" style="width:auto">Del</button><button class="btn" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';
   document.body.appendChild(dlg);
   if(!x.program&&FB&&FB.utTeamList)FB.utTeamList(id).then(l=>{const el=dlg.querySelector('#uTeam');if(!el||!l.length)return;el.innerHTML='<b>Team</b>'+utTeamHtml(l)}).catch(()=>{});
   dlg.querySelector('form').addEventListener('submit',async e=>{const v=e.submitter&&e.submitter.value;
     if(v==='endre'){e.preventDefault();dlg.close();setTimeout(()=>utAsk(id),450)}
     else if(v==='chat'){e.preventDefault();dlg.close();setTimeout(()=>{const t=state.fraChatId;state.fraChatId=null;if(t)chatApne(t);else utApneChat(x)},450)}
+    else if(v==='selv'){e.preventDefault();try{const s=await FB.selvLenke(PUSH_URL,id);if(!s||!s.ok)throw new Error((s&&s.feil)||'feil');try{await navigator.clipboard.writeText(s.url)}catch(er){}await visTekst('Send denne lenken til leieren. Den er kopiert. Skjemaet kan bare sendes inn én gang.',s.url)}catch(er){push('Kunne ikke lage lenke',(er&&er.message)||'Prøv igjen.')}}
     else if(v==='pdf'){e.preventDefault();try{await utPdf(x,dag)}catch(er){push('Kunne ikke lage PDF','Prøv igjen.')}}
     else if(v==='del'){e.preventDefault();const tekst=utBokTekst(x,false).split(UT_DETALJ)[0].replace('Endret booking','Booking').trim();
       try{if(navigator.share){await navigator.share({title:x.tittel||'Booking',text:tekst})}else{await navigator.clipboard.writeText(tekst);push('Kopiert','Teksten er kopiert, så du kan lime den inn der du vil.')}}catch(er){}}});
@@ -4757,7 +4765,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 06:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 07:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5227,9 +5235,48 @@ function meFlytt(k,d){
   meLagre(ord);
   keep(()=>{})}
 
+/* Selvbetjening for leietakere (?selv=<booking>.<kode>): åpnes uten innlogging fra en lenke den som la inn bookingen har laget. Bare dette skjemaet vises. Alt går via Apps Script (selvhent/selvsend). Skjemaet bygges én gang og tegnes ikke på nytt (render hopper over når #selvRot finnes). */
+const selvRot=()=>'<div id="selvRot" class="selv"><p class="small" style="padding:20px">Laster skjemaet …</p></div>';
+async function selvKall(d){const r=await fetch(PUSH_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(d)});return r.json()}
+const selvKort=(tittel,tekst)=>'<div class="card selvkort"><h2>'+tittel+'</h2><p style="margin:0">'+tekst+'</p></div>';
+const selvMatRad=()=>'<div class="selvmat" data-smat><select data-st aria-label="Måltid">'+UT_MAT_T.map(t=>'<option>'+t+'</option>').join('')+'</select><input type="time" data-sk aria-label="Klokkeslett"><input type="number" inputmode="numeric" min="0" max="2000" data-sn placeholder="Antall" aria-label="Antall personer"><button type="button" class="btn" data-smdel aria-label="Fjern måltid">✕</button></div>';
+async function selvInit(){
+  const rot=document.getElementById('selvRot');if(!rot||!state.selv)return;
+  const {bid,tok}=state.selv;let inf=null;
+  try{inf=await selvKall({action:'selvhent',bid,tok})}catch(e){}
+  if(!inf||!inf.ok){rot.innerHTML=selvKort('Oi!',esc((inf&&inf.feil)||'Vi fikk ikke kontakt akkurat nå. Prøv igjen om litt.'));return}
+  if(inf.brukt){rot.innerHTML=selvKort('Skjemaet er allerede sendt inn','Takk! Vi har fått det. Skal noe endres, ta kontakt med oss.');return}
+  const ts=Date.now();
+  rot.innerHTML='<div class="logo-selv"><b>SION MOLDE</b></div><form class="card selvform" novalidate>'
+   +'<h2>'+(inf.leier?'Hei, '+esc(inf.leier)+'!':'Hei!')+'</h2>'
+   +'<p style="margin:0">Fyll ut skjemaet så vi er godt forberedt til besøket deres.</p>'
+   +'<div class="selvinfo"><b>'+esc(inf.tittel||'Booking')+'</b><span>'+esc(utDatoOmr(inf)+(inf.fra?' kl. '+inf.fra+(inf.til?'–'+inf.til:''):''))+'</span>'+((inf.rom||[]).length?'<span>'+esc(inf.rom.join(', '))+'</span>':'')+'</div>'
+   +'<label class="f">Hvor mange personer blir dere?<input type="number" inputmode="numeric" min="1" max="2000" id="sAnt" required></label>'
+   +'<h3>Måltider</h3><p class="small" style="margin:0">Legg til de måltidene dere ønsker, med klokkeslett og hvor mange som skal ha mat.</p><div id="sMat">'+selvMatRad()+'</div>'
+   +'<div class="btns"><button type="button" class="btn" data-smny style="width:auto">+ Legg til måltid</button></div>'
+   +'<h3>Allergener</h3><p class="small" style="margin:0">Skriv hvor mange som har hver allergi. La stå tomt hvis ingen.</p>'
+   +'<div class="selvall">'+UT_ALLERGENER.map(a=>'<label class="selvar"><span>'+esc(a)+'</span><input type="number" inputmode="numeric" min="0" max="2000" data-sa="'+esc(a)+'" placeholder="0" aria-label="Antall med '+esc(a)+'"></label>').join('')+'</div>'
+   +'<label class="f">Andre allergier eller kosthold (valgfritt)<input id="sAnnet" maxlength="100" placeholder="For eksempel vegetarianer: 3"></label>'
+   +'<label class="f">Beskjed til oss (valgfritt)<textarea id="sMsg" rows="4" maxlength="1000" placeholder="Er det noe annet vi bør vite?"></textarea></label>'
+   +'<input id="sHp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">'
+   +'<p class="small" id="sFeil" role="alert" style="margin:0;color:#b3261e"></p>'
+   +'<div class="btns"><button type="submit" class="btn primary" id="sSend" style="width:100%">Send inn skjema</button></div></form>';
+  const f=rot.querySelector('form'),mat=rot.querySelector('#sMat'),feil=rot.querySelector('#sFeil');
+  f.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    if('smny' in b.dataset){if(mat.children.length<8)mat.insertAdjacentHTML('beforeend',selvMatRad())}
+    else if('smdel' in b.dataset){const r=b.closest('[data-smat]');if(mat.children.length>1)r.remove();else r.querySelectorAll('input').forEach(i=>{i.value=''})}});
+  f.addEventListener('submit',async e=>{e.preventDefault();feil.textContent='';
+    const ant=parseInt(rot.querySelector('#sAnt').value,10);
+    if(!(ant>=1)){feil.textContent='Skriv hvor mange personer dere blir.';rot.querySelector('#sAnt').focus();return}
+    const maal=[...mat.querySelectorAll('[data-smat]')].map(r=>({t:r.querySelector('[data-st]').value,kl:r.querySelector('[data-sk]').value,n:parseInt(r.querySelector('[data-sn]').value,10)||0})).filter(m=>m.kl||m.n),
+      all=[...rot.querySelectorAll('[data-sa]')].map(i=>({n:i.dataset.sa,a:parseInt(i.value,10)||0})).filter(a=>a.a>0),
+      knapp=rot.querySelector('#sSend');knapp.disabled=true;knapp.textContent='Sender …';
+    let s=null;try{s=await selvKall({action:'selvsend',bid,tok,antall:ant,maal,all,annet:rot.querySelector('#sAnnet').value,msg:rot.querySelector('#sMsg').value,hp:rot.querySelector('#sHp').value,ts})}catch(er){}
+    if(s&&s.ok){rot.innerHTML=selvKort('Takk! Skjemaet er sendt inn 🎉','Vi har fått alt dere fylte ut, og gleder oss til å ta imot dere. Du kan lukke denne siden nå.');window.scrollTo(0,0)}
+    else{knapp.disabled=false;knapp.textContent='Send inn skjema';feil.textContent=(s&&s.feil)||'Vi fikk ikke sendt skjemaet akkurat nå. Prøv igjen om litt.'}})}
 const VIEWS={home,prog,news,me};
 /* Kalenderen i eget vindu (?vindu=utleie): bare Utleie-kortet, uten topp og meny. Vinduet har sin egen visning etter bredden, og henter bookingene på nytt når du kommer tilbake til det. */
-const utVindu=()=>utLes()?utleieCard():(state.authVent||first?'<p class="small" style="padding:20px">Logger inn …</p>':'<p class="small" style="padding:20px">Logg inn i hovedvinduet og last dette vinduet på nytt. Bare de med tilgang til Utleie ser kalenderen.</p>');
+const utVindu=()=>state.vindu==='selv'?selvRot():utLes()?utleieCard():(state.authVent||first?'<p class="small" style="padding:20px">Logger inn …</p>':'<p class="small" style="padding:20px">Logg inn i hovedvinduet og last dette vinduet på nytt. Bare de med tilgang til Utleie ser kalenderen.</p>');
 {let sist=0;const hent=()=>{if(!FB||!state.user||!utLes()||document.hidden||Date.now()-sist<20000)return;sist=Date.now();utLast().then(()=>keep(()=>{}))};addEventListener('focus',hent);document.addEventListener('visibilitychange',hent)}
 const SUN='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
 const MOON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
@@ -5244,7 +5291,7 @@ function badge(){
 const viewBanner=()=>'';
 function chipScroll(){const a=document.querySelector('.chips.scroll [aria-pressed="true"]'),r=document.querySelector('.chips.scroll');if(a&&r)r.scrollTo({left:a.offsetLeft-(r.clientWidth-a.offsetWidth)/2,behavior:'auto'})}
 const utvKlasse=()=>{const v=$('#view');v.classList.toggle('ututv',state.tab==='me'&&!!(state.ut&&state.ut.utv)&&!!document.querySelector('#view details[data-acc="utleie"]'));const h=document.querySelector('header.top');if(h)v.style.setProperty('--utlasTop',Math.round(h.getBoundingClientRect().height)+'px')};
-function render(){visTab=state.tab;drawTabs();$('#view').innerHTML=(state.vindu?'':viewBanner())+(state.vindu?utVindu():VIEWS[state.tab]());utvKlasse();badge();window.scrollTo(0,0);chipScroll()}
+function render(){visTab=state.tab;drawTabs();if(!(state.vindu==='selv'&&$('#selvRot')))$('#view').innerHTML=(state.vindu?'':viewBanner())+(state.vindu?utVindu():VIEWS[state.tab]());utvKlasse();badge();window.scrollTo(0,0);chipScroll()}
 /* «Sletter …»: en sirkel som snurrer til databasen har bekreftet slettingen. Vises i åpen dialog hvis det finnes en, ellers over hele siden. */
 let busyN=0,busyT=null,busyIv=null,busyRm=null,busyTekst='Sletter …',busyVist=0;
 function busyVis(){
@@ -5297,7 +5344,7 @@ function push(t,b){try{if(!matchMedia('(prefers-reduced-motion:reduce)').matches
 function keep(fn){const y=scrollY;fn();if(first)return;
   if(UTD.t||UTD.lost){UTD.utsatt=1;return}   /* en booking holdes eller er løftet: ikke tegn kalenderen på nytt under fingeren (nye data, chat og varsler kommer etterpå) */
   // ikke tegn siden på nytt før innholdet er lastet første gang (ellers vises «Ingen planlagt» et øyeblikk)
-  $('#view').innerHTML=(state.vindu?'':viewBanner())+(state.vindu?utVindu():VIEWS[state.tab]());utvKlasse();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
+  if(!(state.vindu==='selv'&&$('#selvRot')))$('#view').innerHTML=(state.vindu?'':viewBanner())+(state.vindu?utVindu():VIEWS[state.tab]());utvKlasse();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
 /* Dra ned fra toppen for å hente siste innhold (ikke oftere enn hvert 10. sekund, for å spare lesinger i databasen) */
 (function(){let el,y0=null,d=0,sist=0;
   function mk(){if(el)return;el=document.createElement('div');el.id='ptr';el.setAttribute('aria-hidden','true');el.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v10M7 11l5 5 5-5"/></svg>';document.body.appendChild(el)}
@@ -6446,7 +6493,7 @@ document.addEventListener('pointerdown',()=>{if(UI.vaken&&!vakenLaas)vakenSett()
 setTimeout(vakenSett,1500);
 function skjermStor(){return innerWidth>=700&&Math.min(innerWidth,innerHeight)>=500}
 function skjermSjekk(n){
-  n=n||0;if(!skjermStor()||lsGet('sm-skjerm-spurt'))return;
+  n=n||0;if(state.vindu)return;if(!skjermStor()||lsGet('sm-skjerm-spurt'))return;
   if((UI.vis||'auto')!=='auto'){lsSet('sm-skjerm-spurt','1');return}
   if(document.querySelector('dialog[open]')||first){if(n<6)setTimeout(()=>skjermSjekk(n+1),4000);return}
   const dlg=document.createElement('dialog');dlg.className='lp';dlg.setAttribute('role','alertdialog');
