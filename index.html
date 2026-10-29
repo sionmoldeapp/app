@@ -3506,6 +3506,7 @@ const SION_STIKK={
   stjerne:['Stjerner',spk(86,14,1.15)+spk(12,54,.85,SG2)+spk(90,70,.7)+spk(50,92,.6,SC)+spk(20,12,.55,SC)],
   amen:['Amen','<rect x="8.5" y="80.5" width="83" height="17" rx="8.5" fill="'+SN+'" stroke="'+SG+'" stroke-width="1"/><text x="50" y="93" text-anchor="middle" font-size="11" font-weight="600" fill="'+SC+'" font-family="Poppins,Arial,sans-serif" letter-spacing="2.4">AMEN</text>'],
   takk:['Takk','<rect x="8.5" y="80.5" width="83" height="17" rx="8.5" fill="'+SC+'" stroke="'+SG+'" stroke-width="1"/><text x="50" y="93" text-anchor="middle" font-size="11" font-weight="600" fill="'+SN+'" font-family="Poppins,Arial,sans-serif" letter-spacing="2.4">TAKK</text>'],
+  activ8:['Activ8','<defs><linearGradient id="a8g" x1="0" x2="1"><stop offset="0" stop-color="#ff3df0"/><stop offset=".5" stop-color="#ffd23d"/><stop offset="1" stop-color="#3dd8ff"/></linearGradient></defs><g opacity=".9"><path d="M20 -8L8 30M50 -10v40M80 -8l12 38" stroke="#3dd8ff" stroke-width="2.4" stroke-linecap="round" opacity=".75"/><path d="M35 -9L24 30M65 -9l8 39" stroke="#ff3df0" stroke-width="2.4" stroke-linecap="round" opacity=".75"/></g>'+spk(10,40,.8,'#ffd23d')+spk(92,46,.7,'#3dd8ff')+spk(86,10,.55,'#ff3df0')+'<rect x="6.5" y="80.5" width="87" height="17" rx="8.5" fill="#1b0a3d" stroke="url(#a8g)" stroke-width="1.4"/><text x="50" y="93" text-anchor="middle" font-size="11" font-weight="700" fill="url(#a8g)" font-family="Poppins,Arial,sans-serif" letter-spacing="2">ACTIV8</text>'],
   hender:['Hender i været','<g stroke="'+SG+'" stroke-width="1.3" stroke-linecap="round" opacity=".85"><path d="M50 -6v10M32 -2l4 8M68 -2l-4 8M16 8l6 6M84 8l-6 6"/></g>'+spk(10,30,.7,SG2)+spk(92,36,.8)+spk(50,-10,.55,SC)]};
 const SION_TOKEN=new RegExp(':sion(?:-(sort|hvit|solbriller|ild|'+Object.keys(SION_STIKK).join('|')+'))?:','g');
 const sionHtml=v=>{
@@ -3516,21 +3517,57 @@ const sionHtml=v=>{
 function chatPanelHtml(){
   const logo=[['','Sion-logo','color:#0084ff'],['sort','Sion-logo i sort',''],['hvit','Sion-logo i hvitt','']].map(([v,n,st])=>'<button type="button" data-cemo=":sion'+(v?'-'+v:'')+':" aria-label="'+n+'"><span class="sione'+(v?' '+v:'')+'" style="width:26px;height:26px;'+st+'"></span></button>').join('');
   const stikk=Object.entries(SION_STIKK).map(([k,x])=>'<button type="button" class="cst" data-cemo=":sion-'+k+':" aria-label="'+x[0]+'"><span class="sionx" style="width:40px;height:40px"><span class="sione"></span><svg viewBox="0 0 100 100" aria-hidden="true">'+x[1]+'</svg></span></button>').join('');
-  const feir=[['Gratulerer med dagen!','Gratulerer med dagen! :sion-bursdag:'],['Gratulerer!','Gratulerer! :sion-fest:'],['Halleluja!','Halleluja! :sion-hender:'],['Takk!','Takk! :sion-takk:']].map(([n,t])=>'<button type="button" class="cmal" data-cmal="'+esc(t)+'">'+esc(n)+'</button>').join('');
+  const feir=[['Gratulerer med dagen!','Gratulerer med dagen! :sion-bursdag:'],['Gratulerer!','Gratulerer! :sion-fest:'],['Halleluja!','Halleluja! :sion-hender:'],['Takk!','Takk! :sion-takk:'],['Activ8!','Activ8! :sion-activ8:']].map(([n,t])=>'<button type="button" class="cmal" data-cmal="'+esc(t)+'">'+esc(n)+'</button>').join('');
   return '<div class="cemoji" id="cEmoji" hidden><span class="cegrep" aria-hidden="true"></span><div class="cetit">Sion</div><div class="cegrid cstikk">'+logo+'</div><div class="cegrid cstikk2">'+stikk+'</div><div class="cetit">Hurtigsvar</div><div class="cmalrad">'+feir+'</div><div class="cetit">Aktiviteter</div><div class="cmalrad"><button type="button" class="cmal" data-cspill="terning">Terning</button><button type="button" class="cmal" data-cspill="mynt">Mynt</button><button type="button" class="cmal" data-cspill="quiz">Bibelquiz</button>'+(chatKan()&&state.chat.id?'<button type="button" class="cmal" data-cspill="avst">Avstemning</button>':'')+'</div><div class="cetit">Emoji</div><div class="cegrid">'+CHAT_EMOJIER.map(e=>'<button type="button" data-cemo="'+e+'">'+e+'</button>').join('')+'</div></div>'}
 /* Feiringseffekter: konfetti, ballonger, duer eller hjerter over samtalen når en ny melding inneholder for eksempel «gratulerer», «bursdag», 🎉 eller et Sion-klistremerke. */
 function chatEffektFor(tekst){
   const t=String(tekst||'').toLowerCase();
+  if(/:sion-activ8:/.test(t))return 'activ8';
   if(/bursdag|gratulerer med dagen|grattis med dagen|:sion-bursdag:|🎂/.test(t))return 'bursdag';
   if(/gratulerer|grattis|🎉|🥳|:sion-fest:|:sion-stjerne:|:sion-krone:/.test(t))return 'konfetti';
   if(/halleluja|hallelujah|\bamen\b|🕊|:sion-amen:|:sion-hender:/.test(t))return 'duer';
   if(/:sion-hjerte:|💖|💕/.test(t))return 'hjerter';
   return null}
+/* Activ8: lysshow i 4 sekunder: scenelys i mange farger som feier fram og tilbake, konfetti fra begge sider og blitz i takt. Tones inn raskt og ut de siste 0,9 sekundene. */
+function chatLysshow(w){
+  const cv=document.createElement('canvas');cv.className='ceff';cv.setAttribute('aria-hidden','true');
+  const r=w.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1),W=Math.max(200,Math.round(r.width)),H=Math.max(300,Math.round(r.height));
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);w.appendChild(cv);const cx=cv.getContext('2d');cx.scale(dpr,dpr);
+  const R=(p,q)=>p+Math.random()*(q-p),DUR=4000,FARGER=['#ff2fd6','#2fd8ff','#ffd02f','#5dff6a','#ff7a2f','#9b6bff','#ff3b5c'],
+    lys=[],N=7;
+  for(let i=0;i<N;i++)lys.push({x:W*(i+.5)/N,y:-6,vx:0,c:FARGER[i%FARGER.length],base:R(-.15,.15),amp:R(.5,.85),sp:R(.0016,.0032),ph:R(0,6),puls:R(.006,.012),br:R(.09,.14)});
+  lys.push({x:-6,y:H+6,vx:1,c:'#2fd8ff',base:-1.0,amp:.45,sp:.0021,ph:1,puls:.008,br:.1},{x:W+6,y:H+6,vx:-1,c:'#ff2fd6',base:1.0,amp:.45,sp:.0024,ph:3,puls:.009,br:.1});
+  const pap=[];
+  const kast=(x,y,vx0,vx1,n)=>{for(let i=0;i<n;i++)pap.push({x,y,vx:R(vx0,vx1),vy:R(-17,-6),w:R(5,10),h:R(2.5,5),a:R(0,6),va:R(-.3,.3),fl:R(0,6),vf:R(.08,.2),c:FARGER[(Math.random()*FARGER.length)|0]})};
+  kast(0,H*.9,4,13,70);kast(W,H*.9,-13,-4,70);
+  let sist=performance.now();const t0=sist;let kast2=false;
+  const tegn=nu=>{
+    const t=nu-t0,dt=Math.min(3,(nu-sist)/16.7);sist=nu;
+    const env=Math.max(0,Math.min(1,t/250,(DUR-t)/900));
+    if(!kast2&&t>1300){kast2=true;kast(W*.2,H,-3,3,40);kast(W*.8,H,-3,3,40)}
+    cx.globalCompositeOperation='source-over';cx.clearRect(0,0,W,H);
+    cx.fillStyle='rgba(10,4,30,'+(.5*env)+')';cx.fillRect(0,0,W,H);
+    cx.globalCompositeOperation='lighter';
+    const takt=.5+.5*Math.sin(t/105);
+    lys.forEach(l=>{
+      const v=l.vx===0?Math.PI/2+l.base+Math.sin(t*l.sp*6+l.ph)*l.amp:(l.vx>0?-Math.PI/2+.35+Math.sin(t*l.sp*6+l.ph)*l.amp*1.2:-Math.PI/2-.35+Math.sin(t*l.sp*6+l.ph)*l.amp*1.2),
+        len=Math.hypot(W,H)*1.15,sp=l.br*(.8+.4*Math.sin(t*l.puls*3+l.ph)),
+        ax=l.x+Math.cos(v-sp)*len,ay=l.y+Math.sin(v-sp)*len,bx=l.x+Math.cos(v+sp)*len,by=l.y+Math.sin(v+sp)*len,
+        g=cx.createRadialGradient(l.x,l.y,0,l.x,l.y,len),k=env*(.55+.45*takt);
+      g.addColorStop(0,l.c+'ff');g.addColorStop(.7,l.c+'55');g.addColorStop(1,l.c+'00');
+      cx.globalAlpha=k*.75;cx.fillStyle=g;cx.beginPath();cx.moveTo(l.x,l.y);cx.lineTo(ax,ay);cx.lineTo(bx,by);cx.closePath();cx.fill();
+      const gl=cx.createRadialGradient(l.x,l.y,0,l.x,l.y,34);gl.addColorStop(0,'#ffffffee');gl.addColorStop(1,l.c+'00');cx.globalAlpha=env;cx.fillStyle=gl;cx.beginPath();cx.arc(l.x,l.y,34,0,7);cx.fill()});
+    cx.globalAlpha=1;cx.globalCompositeOperation='source-over';
+    pap.forEach(q=>{q.vy+=.32*dt;q.vx*=.992;q.x+=q.vx*dt;q.y+=q.vy*dt;q.a+=q.va*dt;q.fl+=q.vf*dt;const glim=Math.abs(Math.cos(q.fl));
+      cx.save();cx.globalAlpha=env*(.5+.5*glim);cx.translate(q.x,q.y);cx.rotate(q.a);cx.scale(1,.25+.75*glim);cx.fillStyle=q.c;cx.fillRect(-q.w/2,-q.h/2,q.w,q.h);cx.restore()});
+    if(t<DUR&&cv.isConnected)requestAnimationFrame(tegn);else cv.remove()};
+  requestAnimationFrame(tegn)}
 /* Feiringseffekter (rolige og eksklusive): gullfolie som sakte faller, myke lyspunkter, lysstråler og små glødende hjerter. Tones inn og ut, ingen tegneseriefigurer. */
 function chatEffekt(type){
   try{if(matchMedia('(prefers-reduced-motion:reduce)').matches)return}catch(e){}
   const w=chatW();if(!w)return;
   w.querySelectorAll('.ceff').forEach(x=>x.remove());
+  if(type==='activ8')return chatLysshow(w);
   const cv=document.createElement('canvas');cv.className='ceff';cv.setAttribute('aria-hidden','true');
   const r=w.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1),W=Math.max(200,Math.round(r.width)),H=Math.max(300,Math.round(r.height));
   cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);w.appendChild(cv);const cx=cv.getContext('2d');cx.scale(dpr,dpr);
@@ -4708,7 +4745,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 04:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 05:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
