@@ -1173,8 +1173,8 @@ html[data-bred="1"] #utDbar{max-width:560px;margin:0 auto}
 .form:has(>.utsek){display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;align-items:flex-start}
 .form:has(>.utsek)>*{flex:0 0 100%;order:3}
 .form:has(>.utsek)>h3{order:0}
-.form:has(>.utsek)>.utsek:not([open]){flex:0 0 auto;order:1;border-radius:99px}
-.form:has(>.utsek)>.utsek[open]{order:2}
+.form:has(>.utsek)>.utsek:not([open]){flex:0 0 auto;order:2;border-radius:99px}
+.form:has(>.utsek)>.utsek[open]{order:1}
 .utsek:not([open])>summary{min-height:40px;padding:6px 12px 6px 8px;gap:6px}
 .utsek:not([open])>summary b,.utsek:not([open]) .utsum,.utsek:not([open])>summary::after{display:none}
 .utsek:not([open]) .utkort{display:inline}
@@ -4916,7 +4916,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 22:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 00:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
