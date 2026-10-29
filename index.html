@@ -1075,9 +1075,15 @@ html[data-vindu] header.top,html[data-vindu] nav.tabs,html[data-vindu] #chat,htm
 html[data-vindu] .app{max-width:none;margin:0}
 html[data-vindu="selv"] .app{max-width:640px;margin:0 auto}
 .selv{display:flex;flex-direction:column;gap:14px}.logo-selv{font-family:var(--f-display);font-size:26px;letter-spacing:.02em;padding:6px 4px 0}
-.selvform{display:flex;flex-direction:column;gap:12px}.selvinfo{display:flex;flex-direction:column;gap:2px;background:var(--chip);border-radius:var(--r-m);padding:12px 14px}
+.selvform{display:flex;flex-direction:column;gap:10px}.selvsek{background:var(--surface);border-radius:var(--r-l);box-shadow:var(--shadow-card);overflow:hidden}
+.selvhd{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.selvnr{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--chip);font-weight:700;font-size:var(--t-s)}
+.selvtt{flex:1;min-width:0;font-weight:700;font-size:var(--t-l);display:flex;flex-direction:column}.selvtt small{font-weight:400;font-size:var(--t-s);color:var(--muted)}.selvtt small:empty{display:none}
+.selvpil{flex:none;font-size:22px;transition:transform .2s;color:var(--muted)}.selvsek.open .selvpil{transform:rotate(90deg)}.selvsek.open .selvnr{background:var(--brand);color:var(--brand-ink)}
+.selvbody{display:none;flex-direction:column;gap:10px;padding:0 16px 16px}.selvsek.open .selvbody{display:flex;animation:selvInn .25s var(--ease,ease)}@keyframes selvInn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.selvform .selvinfo,.selvform .selvall{margin:0}.selvinfo{display:flex;flex-direction:column;gap:2px;background:var(--chip);border-radius:var(--r-m);padding:12px 14px}
 .selvmat{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,.8fr) auto;gap:6px;margin-bottom:6px}
-.selvall{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.selvar{display:flex;flex-direction:column;gap:4px;font-size:var(--t-m)}
+.selvall{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 6px}.selvar{display:flex;flex-direction:column;gap:1px;font-size:11px;line-height:1.2}.selvar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.selvar input{padding:4px 6px;font-size:var(--t-m)}.selvbody{gap:8px}
 .selvkort{text-align:center;padding:32px 20px}
 html[data-vindu] main{display:block;columns:1;padding:10px 10px 40px;max-width:none}
 html[data-vindu] details[data-acc="utleie"]>summary{pointer-events:none}
@@ -4765,7 +4771,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 07:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 08:05';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5247,27 +5253,33 @@ async function selvInit(){
   if(!inf||!inf.ok){rot.innerHTML=selvKort('Oi!',esc((inf&&inf.feil)||'Vi fikk ikke kontakt akkurat nå. Prøv igjen om litt.'));return}
   if(inf.brukt){rot.innerHTML=selvKort('Skjemaet er allerede sendt inn','Takk! Vi har fått det. Skal noe endres, ta kontakt med oss.');return}
   const ts=Date.now();
-  rot.innerHTML='<div class="logo-selv"><b>SION MOLDE</b></div><form class="card selvform" novalidate>'
-   +'<h2>'+(inf.leier?'Hei, '+esc(inf.leier)+'!':'Hei!')+'</h2>'
-   +'<p style="margin:0">Fyll ut skjemaet så vi er godt forberedt til besøket deres.</p>'
-   +'<div class="selvinfo"><b>'+esc(inf.tittel||'Booking')+'</b><span>'+esc(utDatoOmr(inf)+(inf.fra?' kl. '+inf.fra+(inf.til?'–'+inf.til:''):''))+'</span>'+((inf.rom||[]).length?'<span>'+esc(inf.rom.join(', '))+'</span>':'')+'</div>'
-   +'<label class="f">Hvor mange personer blir dere?<input type="number" inputmode="numeric" min="1" max="2000" id="sAnt" required></label>'
-   +'<h3>Måltider</h3><p class="small" style="margin:0">Legg til de måltidene dere ønsker, med klokkeslett og hvor mange som skal ha mat.</p><div id="sMat">'+selvMatRad()+'</div>'
-   +'<div class="btns"><button type="button" class="btn" data-smny style="width:auto">+ Legg til måltid</button></div>'
-   +'<h3>Allergener</h3><p class="small" style="margin:0">Skriv hvor mange som har hver allergi. La stå tomt hvis ingen.</p>'
-   +'<div class="selvall">'+UT_ALLERGENER.map(a=>'<label class="selvar"><span>'+esc(a)+'</span><input type="number" inputmode="numeric" min="0" max="2000" data-sa="'+esc(a)+'" placeholder="0" aria-label="Antall med '+esc(a)+'"></label>').join('')+'</div>'
-   +'<label class="f">Andre allergier eller kosthold (valgfritt)<input id="sAnnet" maxlength="100" placeholder="For eksempel vegetarianer: 3"></label>'
-   +'<label class="f">Beskjed til oss (valgfritt)<textarea id="sMsg" rows="4" maxlength="1000" placeholder="Er det noe annet vi bør vite?"></textarea></label>'
-   +'<input id="sHp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">'
-   +'<p class="small" id="sFeil" role="alert" style="margin:0;color:#b3261e"></p>'
-   +'<div class="btns"><button type="submit" class="btn primary" id="sSend" style="width:100%">Send inn skjema</button></div></form>';
+  const sek=(i,tittel,inn,neste)=>'<section class="selvsek'+(i===0?' open':'')+'" data-ss="'+i+'"><button type="button" class="selvhd" data-shd="'+i+'" aria-expanded="'+(i===0)+'"><span class="selvnr">'+(i+1)+'</span><span class="selvtt">'+tittel+'<small data-ssum="'+i+'"></small></span><span class="selvpil" aria-hidden="true">›</span></button><div class="selvbody">'+inn+(neste?'<div class="btns"><button type="button" class="btn primary" data-snes="'+i+'" style="width:100%">Neste</button></div>':'')+'</div></section>';
+  rot.innerHTML='<div class="logo-selv"><b>SION MOLDE</b></div><form class="selvform" novalidate>'
+   +sek(0,(inf.leier?'Hei, '+esc(inf.leier)+'!':'Hei!'),'<p style="margin:0">Fyll ut skjemaet så vi er godt forberedt til besøket deres.</p>'
+     +'<div class="selvinfo"><b>'+esc(inf.tittel||'Booking')+'</b><span>'+esc(utDatoOmr(inf)+(inf.fra?' kl. '+inf.fra+(inf.til?'–'+inf.til:''):''))+'</span>'+((inf.rom||[]).length?'<span>'+esc(inf.rom.join(', '))+'</span>':'')+'</div>'
+     +'<label class="f">Hvor mange personer blir dere?<input type="number" inputmode="numeric" min="1" max="2000" id="sAnt" required></label><p class="small" id="sFeil0" role="alert" style="margin:0;color:#b3261e"></p>',1)
+   +sek(1,'Måltider','<p class="small" style="margin:0">Velg måltid, klokkeslett og hvor mange som skal ha mat.</p><div id="sMat">'+selvMatRad()+'</div><div class="btns"><button type="button" class="btn" data-smny style="width:auto">+ Legg til måltid</button></div>',1)
+   +sek(2,'Allergener','<p class="small" style="margin:0">Hvor mange har hver allergi? La stå tomt hvis ingen.</p><div class="selvall">'+UT_ALLERGENER.map(a=>'<label class="selvar"><span>'+esc(a)+'</span><input type="number" inputmode="numeric" min="0" max="2000" data-sa="'+esc(a)+'" placeholder="0" aria-label="Antall med '+esc(a)+'"></label>').join('')+'</div>'
+     +'<label class="f">Andre allergier eller kosthold (valgfritt)<input id="sAnnet" maxlength="100" placeholder="For eksempel vegetarianer: 3"></label>',1)
+   +sek(3,'Beskjed og send inn','<label class="f">Beskjed til oss (valgfritt)<textarea id="sMsg" rows="3" maxlength="1000" placeholder="Er det noe annet vi bør vite?"></textarea></label>'
+     +'<input id="sHp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">'
+     +'<p class="small" id="sFeil" role="alert" style="margin:0;color:#b3261e"></p>'
+     +'<div class="btns"><button type="submit" class="btn primary" id="sSend" style="width:100%">Send inn skjema</button></div>',0)
+   +'</form>';
+  const selvApne=i=>{rot.querySelectorAll('.selvsek').forEach(x=>{const o=+x.dataset.ss===i&&!(i<0);x.classList.toggle('open',o);x.querySelector('.selvhd').setAttribute('aria-expanded',o)});const el=rot.querySelector('.selvsek.open');if(el)setTimeout(()=>el.scrollIntoView({block:'nearest',behavior:'smooth'}),50)};
+  const selvSum=()=>{const q=(n,t)=>{const e=rot.querySelector('[data-ssum="'+n+'"]');if(e)e.textContent=t};
+    const ant=parseInt(rot.querySelector('#sAnt').value,10),nm=[...rot.querySelectorAll('[data-smat]')].filter(r=>r.querySelector('[data-sk]').value||r.querySelector('[data-sn]').value).length,na=[...rot.querySelectorAll('[data-sa]')].filter(i=>+i.value>0).length;
+    q(0,ant>0?ant+' personer':'');q(1,nm?nm+(nm===1?' måltid':' måltider'):'');q(2,na?na+(na===1?' allergen':' allergener'):'');q(3,rot.querySelector('#sMsg').value.trim()?'Beskjed skrevet':'')};
   const f=rot.querySelector('form'),mat=rot.querySelector('#sMat'),feil=rot.querySelector('#sFeil');
+  f.addEventListener('input',selvSum);
   f.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-    if('smny' in b.dataset){if(mat.children.length<8)mat.insertAdjacentHTML('beforeend',selvMatRad())}
+    if('shd' in b.dataset){const i=+b.dataset.shd;selvApne(b.closest('.selvsek').classList.contains('open')?-1:i)}
+    else if('snes' in b.dataset){const i=+b.dataset.snes;if(i===0&&!(parseInt(rot.querySelector('#sAnt').value,10)>=1)){rot.querySelector('#sAnt').focus();rot.querySelector('#sFeil0').textContent='Skriv først hvor mange personer dere blir.';selvApne(0);return}rot.querySelector('#sFeil0').textContent='';selvApne(i+1)}
+    else if('smny' in b.dataset){if(mat.children.length<8)mat.insertAdjacentHTML('beforeend',selvMatRad())}
     else if('smdel' in b.dataset){const r=b.closest('[data-smat]');if(mat.children.length>1)r.remove();else r.querySelectorAll('input').forEach(i=>{i.value=''})}});
   f.addEventListener('submit',async e=>{e.preventDefault();feil.textContent='';
     const ant=parseInt(rot.querySelector('#sAnt').value,10);
-    if(!(ant>=1)){feil.textContent='Skriv hvor mange personer dere blir.';rot.querySelector('#sAnt').focus();return}
+    if(!(ant>=1)){feil.textContent='Skriv hvor mange personer dere blir.';selvApne(0);rot.querySelector('#sAnt').focus();return}
     const maal=[...mat.querySelectorAll('[data-smat]')].map(r=>({t:r.querySelector('[data-st]').value,kl:r.querySelector('[data-sk]').value,n:parseInt(r.querySelector('[data-sn]').value,10)||0})).filter(m=>m.kl||m.n),
       all=[...rot.querySelectorAll('[data-sa]')].map(i=>({n:i.dataset.sa,a:parseInt(i.value,10)||0})).filter(a=>a.a>0),
       knapp=rot.querySelector('#sSend');knapp.disabled=true;knapp.textContent='Sender …';
