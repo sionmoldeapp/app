@@ -849,6 +849,19 @@ dialog.pub:has(.cmrad){max-width:340px}
 .ct{font-size:var(--t-xs);color:var(--muted);margin:0 6px 6px}
 .ct.me{align-self:flex-end}.ct.de{align-self:flex-start}
 .cinp{display:flex;gap:8px;align-items:flex-end;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface)}
+/* Sionchat: indre glød langs kanten (forsiktig, lys i mørk visning og blå i lys) og glass-effekt på toppen og skrivefeltet: meldingene glir svakt under dem (--ch og --ci settes av chatGlass). */
+.chat .cw{position:relative}
+.chat .cw::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:6;box-shadow:inset 0 0 26px rgba(40,90,200,.07),inset 0 0 0 1px #dfe3ea}
+.chat[data-mork="1"] .cw::after{box-shadow:inset 0 0 26px rgba(150,180,255,.13),inset 0 0 0 1px rgba(255,255,255,.14)}
+.chat .cw[data-glass] .chd,.chat .cw[data-glass] .cinp{position:relative;z-index:3;background:rgba(255,255,255,.7);-webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2)}
+.chat .cw[data-glass] .chd{border-bottom-color:rgba(20,30,50,.07)}
+.chat .cw[data-glass] .cinp{border-top-color:rgba(20,30,50,.07)}
+.chat[data-mork="1"] .cw[data-glass] .chd,.chat[data-mork="1"] .cw[data-glass] .cinp{background:rgba(18,20,26,.62)}
+.chat[data-mork="1"] .cw[data-glass] .chd{border-bottom-color:rgba(255,255,255,.08)}
+.chat[data-mork="1"] .cw[data-glass] .cinp{border-top-color:rgba(255,255,255,.08)}
+.chat .cw[data-glass] .cmsg{margin-top:calc(var(--ch,0px)*-1);padding-top:calc(var(--ch,0px) + 10px);margin-bottom:calc(var(--ci,0px)*-1);padding-bottom:calc(var(--ci,0px) + 4px)}
+.chat .cw[data-glass] .cnedw{bottom:var(--ci,0px)}
+@media (prefers-reduced-transparency:reduce){.chat .cw[data-glass] .chd,.chat .cw[data-glass] .cinp{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none}}
 .cinp textarea{flex:1;resize:none;max-height:120px;border-radius:20px;padding:10px 14px;line-height:1.3;margin:0;min-height:42px}
 .csend{width:42px;height:42px;border-radius:50%;border:0;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;flex:none;padding:0}
 .csend:disabled{opacity:.5}
@@ -3465,7 +3478,13 @@ function navPlasser(e){
     else e.style.removeProperty('--cb')}}
 addEventListener('resize',()=>{if(state.chat.vis)chatPlasser()});
 const chatTemaOppd=()=>{const e=document.getElementById('chat');if(e)e.dataset.mork=isDark()?'1':'0';try{chatFargeBruk()}catch(x){}};
-function chatEl(){let e=document.getElementById('chat');if(!e){e=document.createElement('div');e.id='chat';e.className='chat';e.hidden=true;e.innerHTML='<div class="cw" role="dialog" aria-modal="true" aria-label="Chat"></div>';document.body.appendChild(e)}return e}
+/* Glass-effekt: måler toppen og skrivefeltet slik at meldingene kan gli under dem. Bare i en åpen samtale, og bare når ingenting annet (emoji-panel, opptak, svarlinje) står mellom meldingene og skrivefeltet. */
+function chatGlass(){const cw=document.querySelector('#chat .cw');if(!cw)return;const m=document.getElementById('cMsg'),h=cw.querySelector('.chd'),f=document.getElementById('cForm');
+  if(!m||!h||!f){if(cw.hasAttribute('data-glass'))cw.removeAttribute('data-glass');return}
+  const fri=['cBar','cRec','cEmoji'].every(id=>{const e=document.getElementById(id);return !e||e.hidden||!e.offsetHeight}),a=h.offsetHeight+'px',b=(fri?f.offsetHeight:0)+'px';
+  if(!cw.hasAttribute('data-glass'))cw.setAttribute('data-glass','');if(cw.style.getPropertyValue('--ch')!==a)cw.style.setProperty('--ch',a);if(cw.style.getPropertyValue('--ci')!==b)cw.style.setProperty('--ci',b)}
+function chatEl(){let e=document.getElementById('chat');if(!e){e=document.createElement('div');e.id='chat';e.className='chat';e.hidden=true;e.innerHTML='<div class="cw" role="dialog" aria-modal="true" aria-label="Chat"></div>';document.body.appendChild(e);
+  const cw=e.firstChild;let rq=0;const k=()=>{if(rq)return;rq=requestAnimationFrame(()=>{rq=0;try{chatGlass()}catch(er){}})};new MutationObserver(k).observe(cw,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','style','class']});addEventListener('resize',k)}return e}
 const chatW=()=>chatEl().querySelector('.cw:not(.cunder)');
 function chatStoppMsgs(){const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}c.unsub=null}c.msgs=[];try{chatAvstStopp();chatBonnStopp();chatMicAvbryt(true)}catch(e){}}
 function thrStopp(){if(state.thrUnsub){try{state.thrUnsub()}catch(e){}state.thrUnsub=null}}
@@ -4771,7 +4790,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 08:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 09:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
