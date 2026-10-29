@@ -1077,6 +1077,7 @@ nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 .utkt .btn{width:auto;display:inline-flex;align-items:center;justify-content:center}
 /* Låst rulling i utvidet visning og eget vindu: Utleie-overskriften og rammen rundt skjules, så kalenderen får mest mulig plass. */
 details[data-acc="utleie"][data-las]>summary{display:none}
+main:has(details[data-acc="utleie"][data-las]){padding-top:0!important}
 #view.ututv>details[data-acc="utleie"][data-las],html[data-vindu] details[data-acc="utleie"][data-las]{padding-top:0;box-shadow:none;background:transparent}
 .utlasboks{position:sticky;top:var(--utlasTop,70px);z-index:4;background:var(--surface);padding:6px 0 4px;margin:0 0 8px;max-height:60vh;overflow-y:auto;box-shadow:0 6px 8px -6px rgba(0,0,0,.25)}
 .utinfo{display:flex;justify-content:flex-end;margin:0 0 4px}
@@ -4791,7 +4792,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 10:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 11:05';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5322,7 +5323,9 @@ function badge(){
 }
 const viewBanner=()=>'';
 function chipScroll(){const a=document.querySelector('.chips.scroll [aria-pressed="true"]'),r=document.querySelector('.chips.scroll');if(a&&r)r.scrollTo({left:a.offsetLeft-(r.clientWidth-a.offsetWidth)/2,behavior:'auto'})}
-const utvKlasse=()=>{const v=$('#view');v.classList.toggle('ututv',state.tab==='me'&&!!(state.ut&&state.ut.utv)&&!!document.querySelector('#view details[data-acc="utleie"]'));const h=document.querySelector('header.top');if(h)v.style.setProperty('--utlasTop',Math.round(h.getBoundingClientRect().height)+'px')};
+const utvKlasse=()=>{const v=$('#view');v.classList.toggle('ututv',state.tab==='me'&&!!(state.ut&&state.ut.utv)&&!!document.querySelector('#view details[data-acc="utleie"]'));const h=document.querySelector('header.top');if(h)v.style.setProperty('--utlasTop',Math.round(h.getBoundingClientRect().height)+'px');
+  /* Låst rulling: toppseksjonen skal ikke flytte seg i det hele tatt. Låsepunktet settes til der den allerede ligger (målt uten sticky), så den står i ro fra første pikselrulling. */
+  const lb=v.querySelector('.utlasboks');if(lb){const p=lb.style.position;lb.style.position='relative';lb.style.top='0';const nat=lb.getBoundingClientRect().top+(window.scrollY||0);lb.style.position=p;lb.style.top='';v.style.setProperty('--utlasTop',Math.max(0,Math.round(nat))+'px')}};
 function render(){visTab=state.tab;drawTabs();if(!(state.vindu==='selv'&&$('#selvRot')))$('#view').innerHTML=(state.vindu?'':viewBanner())+(state.vindu?utVindu():VIEWS[state.tab]());utvKlasse();badge();window.scrollTo(0,0);chipScroll()}
 /* «Sletter …»: en sirkel som snurrer til databasen har bekreftet slettingen. Vises i åpen dialog hvis det finnes en, ellers over hele siden. */
 let busyN=0,busyT=null,busyIv=null,busyRm=null,busyTekst='Sletter …',busyVist=0;
