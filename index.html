@@ -4401,7 +4401,7 @@ document.addEventListener('click',e=>{
   else if('cgalleri' in d){const f=document.getElementById('cFil');if(f){f.value='';f.click()}}
   else if('cchev' in d){state.chat.verk=true;chatInpOppd();const ta0=document.getElementById('cT');if(ta0)ta0.focus({preventScroll:true})}
   else if('cemoknapp' in d){const p=document.getElementById('cEmoji');if(p)p.hidden=!p.hidden}
-  else if(d.cemo){const ta=document.getElementById('cT');if(ta){const a=ta.selectionStart==null?ta.value.length:ta.selectionStart,z=ta.selectionEnd==null?a:ta.selectionEnd;ta.value=ta.value.slice(0,a)+d.cemo+ta.value.slice(z);ta.selectionStart=ta.selectionEnd=a+d.cemo.length;ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus()}}
+  else if(d.cemo){const ta=document.getElementById('cT');if(ta){const a=ta.selectionStart==null?ta.value.length:ta.selectionStart,z=ta.selectionEnd==null?a:ta.selectionEnd;ta.value=ta.value.slice(0,a)+d.cemo+ta.value.slice(z);ta.selectionStart=ta.selectionEnd=a+d.cemo.length;ta.dispatchEvent(new Event('input',{bubbles:true}));if(/^:sion/.test(d.cemo))ta.blur();else ta.focus()}}   // klistremerker og Sion-logoer: tastaturet skjules
   else if('chatdelt' in d)chatDeltakere();
   else if('chatmeny' in d)chatMeny();
   else if('stjlukk' in d){const el=document.getElementById('cStj');if(el)el.remove()}
@@ -4790,7 +4790,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 09:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 09:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
