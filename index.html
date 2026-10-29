@@ -4424,9 +4424,11 @@ async function chatKamera(){
   e.innerHTML='<div class="kamtop"><button type="button" class="kbtn" data-fkx aria-label="Lukk kamera uten å ta bilde"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="kamvf"><video id="fkVid" muted playsinline autoplay></video></div><div class="fklinser" id="fkLinser" hidden></div><div class="kamzoom" id="fkZoom"></div><div class="kamkn"><span style="width:64px"></span><button type="button" class="kopp" data-fkbilde aria-label="Ta bilde"><i style="background:#fff;border:3px solid #ccc"></i></button><button type="button" class="kbtn kstor" data-fkvend aria-label="Bytt mellom front- og bakkamera">'+KAM_IKON.vend+'</button></div>';
   document.body.appendChild(e);navPlasser(e);
   const pl=()=>navPlasser(e),stopp=()=>{try{strm&&strm.getTracks().forEach(t=>t.stop())}catch(x){}strm=null;trk=null};
-  const esc2=ev=>{if(ev.key==='Escape')lukk()};
-  const lukk=()=>{fjernHist();stopp();e.remove();removeEventListener('resize',pl);document.removeEventListener('keydown',esc2)};
-  const fjernHist=histLag(()=>lukk());
+  const esc2=ev=>{if(ev.key==='Escape')lukk('esc')};
+  /* Årsaken til at kameraet lukkes vises når det skjer uten at du trykket X eller tok bilde (tilbake-gest/knapp, Esc), så uventede lukkinger ikke skjer i det stille. */
+  const lukk=arsak=>{fjernHist();stopp();e.remove();removeEventListener('resize',pl);document.removeEventListener('keydown',esc2);
+    if(arsak==='tilbake'||arsak==='esc')push('Kameraet ble lukket',arsak==='esc'?'Esc-tasten lukket kameraet.':'En tilbake-bevegelse eller tilbake-knapp lukket kameraet. Prøv igjen uten å sveipe fra kanten.')};
+  const fjernHist=histLag(()=>lukk('tilbake'));
   addEventListener('resize',pl);document.addEventListener('keydown',esc2);
   const vid=()=>e.querySelector('#fkVid');
   const tegnZoom=()=>{const zs=[...(hw&&zmin<=.65?[.6]:[]),1,2,3].filter(n=>n<=zmax),best=zs.reduce((a,b)=>Math.abs(b-z)<Math.abs(a-z)?b:a,1);
@@ -4918,7 +4920,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 00:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 00:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
