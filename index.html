@@ -1382,12 +1382,15 @@ function evItem(e){
 
 /* Påmeldingen går til Google Skjema «Sommerstevne påmeldinger nyhetsbrev». Svarene havner i et regneark i Drive,
    og scriptet i regnearket sender e-postvarsel. Google svarer ikke tilbake til nettsider, så vi kan ikke se om det lyktes. */
-const SV_URL='https://docs.google.com/forms/d/e/1FAIpQLScYERloVM4jsoPdXmpeqJYecXNBGl6GNNjNl5vequqCrTvSWw/formResponse',SV_ENTRY='entry.1990573754';
+/* Testversjon: samme app, men mot lokal database (Firebase-emulator på en PC, se lokal/LESMEG.md). Kjenner seg igjen på adressen. Ingen ekte varsler, e-post eller Google Skjema sendes herfra. */
+const TEST=location.port==='8090'||/.trycloudflare.com$/.test(location.hostname);
+if(TEST){document.title='TEST · '+document.title;addEventListener('DOMContentLoaded',()=>{const b=document.createElement('div');b.id='testband';b.textContent='TESTVERSJON · lokal database';b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#d4380d;color:#fff;font:600 11px/16px system-ui,sans-serif;text-align:center;pointer-events:none;letter-spacing:.06em';document.body.appendChild(b)})}
+const SV_URL=TEST?'/__ingen':'https://docs.google.com/forms/d/e/1FAIpQLScYERloVM4jsoPdXmpeqJYecXNBGl6GNNjNl5vequqCrTvSWw/formResponse',SV_ENTRY='entry.1990573754';
 /* «Jeg kommer»: navn og svar sendes til Google Skjema «Jeg kommer – arrangementer» (regneark i Drive).
    Tallet som vises i appen telles separat i databasen. Google svarer ikke tilbake, så vi ser ikke om det lyktes. */
 /* Adressen til Apps Script-tjenesten som sender varsler (varsel-script.gs). Tom = skjemaene for å sende varsel skjules. */
-let PUSH_URL='https://script.google.com/macros/s/AKfycbz-t4PruOcRFJQ_bXwEcpdab9ks6_AMl2wlJZSO7UztI05fUK7UcnPEvV9gsEvwcbV5/exec';
-const RS_URL='https://docs.google.com/forms/d/e/1FAIpQLScVKs0aIg8RU7Ess9mFMnKUOHudetvn5AtQIqiIn-OA94rXcg/formResponse';
+let PUSH_URL=TEST?'':'https://script.google.com/macros/s/AKfycbz-t4PruOcRFJQ_bXwEcpdab9ks6_AMl2wlJZSO7UztI05fUK7UcnPEvV9gsEvwcbV5/exec';
+const RS_URL=TEST?'/__ingen':'https://docs.google.com/forms/d/e/1FAIpQLScVKs0aIg8RU7Ess9mFMnKUOHudetvn5AtQIqiIn-OA94rXcg/formResponse';
 const RS={arr:'entry.568243152',dato:'entry.1403655940',navn:'entry.1951632759',kontakt:'entry.722221792',svar:'entry.903786018'};
 const lsGet=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
@@ -4705,7 +4708,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 04:05';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 04:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */

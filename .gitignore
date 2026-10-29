@@ -4,3 +4,10 @@ design/
 overvaaking.gs
 SAMARBEID.md
 varsel-script.gs
+
+# Testversjon (lokal database)
+lokal/innlogging.txt
+lokal/data/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

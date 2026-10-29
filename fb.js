@@ -3,7 +3,8 @@
 const V='10.14.1',B='https://www.gstatic.com/firebasejs/'+V+'/';
 try{
   const [{initializeApp},A,S]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
-  const M=await import(B+'firebase-messaging.js').catch(()=>null);   // varsler; appen virker uten
+  const TEST=location.port==='8090'||/.trycloudflare.com$/.test(location.hostname);   // testversjon: lokal emulator, se lokal/LESMEG.md
+  const M=TEST?null:await import(B+'firebase-messaging.js').catch(()=>null);   // varsler; appen virker uten
   const VAPID='BN0qXSST7zltP6MnXUbUiQg7HUDkobWNyUKld6kpW2TkKPiXtz9n3xbqquMKb0iakhv2wQt3kpDpofroi144D3M';   // offentlig nøkkel for web-push
   const app=initializeApp({
     apiKey:"AIzaSyAd8OmuuLWJYI2ICbPdn7VN6DQge4lp5mA",
@@ -12,10 +13,12 @@ try{
     storageBucket:"sion-molde-app.firebasestorage.app",
     messagingSenderId:"792770444668",
     appId:"1:792770444668:web:ee5b9814f1190666adf8f9"});
-  const auth=A.getAuth(app),db=S.getFirestore(app);
+  const auth=A.getAuth(app),db=TEST?S.initializeFirestore(app,{host:location.host,ssl:location.protocol==='https:',experimentalAutoDetectLongPolling:true}):S.getFirestore(app);
+  if(TEST)A.connectAuthEmulator(auth,location.origin,{disableWarnings:true});
   await A.setPersistence(auth,A.browserLocalPersistence).catch(()=>{});   // brukeren forblir innlogget til vedkommende logger ut
   // Egen forekomst brukes til å opprette brukere, slik at administratoren ikke logges ut av seg selv.
   const secAuth=A.getAuth(initializeApp(app.options,'oppretter'));
+  if(TEST)A.connectAuthEmulator(secAuth,location.origin,{disableWarnings:true});
   // Sikkerhetspunkter (snapshots): innholdet lagres som tekst i databasen så administratorer kan rulle tilbake etter et uhell.
   const SNAP_COLS=['events','posts','regular','members','admins'],KEEP_COLS=['events','posts','regular'];
   const utTid=v=>v&&typeof v.toDate==='function'?{__tid:v.toDate().toISOString()}:Array.isArray(v)?v.map(utTid):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,utTid(x)])):v;
