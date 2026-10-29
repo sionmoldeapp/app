@@ -1090,6 +1090,8 @@ html:has(details[data-acc="utleie"][data-las]){overflow:hidden}
 .utlasrull::-webkit-scrollbar,.utlasboks::-webkit-scrollbar{display:none}
 details[data-acc="utleie"][data-las]{margin-bottom:0!important}
 #view.ututv>details[data-acc="utleie"][data-las],html[data-vindu] details[data-acc="utleie"][data-las]{padding-top:0;box-shadow:none;background:transparent}
+.utfeil{color:#b3261e;background:color-mix(in srgb,#b3261e 10%,transparent);border-radius:var(--r-s);padding:10px 12px;margin:0}.utfeil ul{margin:6px 0 0 18px;padding:0}
+.feilfelt{outline:2px solid #b3261e;outline-offset:2px;border-radius:6px}
 .utlh{margin-left:auto;display:inline-flex;align-items:center}
 .utlegende .utlh .utibtn{margin:0}
 .uttema{display:inline-grid;place-items:center;width:auto;padding:8px 12px}.uttema svg{width:20px;height:20px}
@@ -1839,7 +1841,7 @@ function utAsk(id,dato,pre){
    +'<details class="utsub" id="uAlD"><summary><b>Allergener blant gjestene</b><span class="small utsubs"></span></summary><div class="utsubb"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">'+UT_ALLERGENER.map(a=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-utal="'+esc(a)+'" style="width:22px;height:22px;flex:none" '+((b.allergener||[]).includes(a)?'checked':'')+'>'+esc(a)+'</label>').join('')+'</div><label class="f" style="margin-top:6px">Andre allergier eller kosthold<input id="uAn" maxlength="200" value="'+esc(b.allergenNotat||'')+'" placeholder="For eksempel vegetar eller nøtteallergi hos barn"></label></div></details>'
    +utSekL()+utSekO(3,'Leietaker, pris og status')+'<label class="f">Leietaker<input id="uL" maxlength="100" value="'+esc(b.leier)+'" placeholder="Navn på person eller organisasjon"></label>'
    +'<label class="f">Telefon eller e-post<input id="uK" maxlength="100" value="'+esc(b.kontakt)+'"></label>'
-   +'<label class="f">E-postadresse til leier<input type="email" id="uEp" maxlength="100" autocomplete="off" placeholder="navn@firma.no" value="'+esc(b.epost||'')+'"></label>'
+   +'<label class="f">E-postadresse til leier<input type="text" inputmode="email" id="uEp" maxlength="100" autocomplete="off" placeholder="navn@firma.no" value="'+esc(b.epost||'')+'"></label>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Pris<input id="uP" maxlength="30" value="'+esc(/^Eget/.test(b.pris)?'':b.pris)+'" placeholder="'+(/^Eget/.test(b.pris)?'Gratis':'kr')+'" '+(/^Eget/.test(b.pris)?'disabled':'')+'></label><label class="f">Status<select id="uS"><option value="bekreftet" '+(b.status==='bekreftet'?'selected':'')+'>Bekreftet</option><option value="foresporsel" '+(b.status==='foresporsel'?'selected':'')+'>Forespørsel</option></select></label></div>'
    +'<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="uEget" style="width:auto" '+(/^Eget/.test(b.pris)?'checked':'')+'>Eget arrangement (gratis)</label>'+utSekL()+utSekO(4,'Faktura')+utFakSkjema(b)+utSekL()+(state.admin?utSekO(5,'Menighetens kalender')+utHjelpI('Menighetens kalender er Program-fanen. Her kan bookingen også legges inn der, så medlemmene ser den. Bare tittel, dag, klokkeslett og rom tas med, aldri leietaker, kontakt, pris eller merknad.','margin:0')+'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" id="uPr" style="width:22px;height:22px;flex:none" '+(lev?'checked':'')+'>Legg også inn i menighetens kalender</label><label class="f" id="uPrKat">Kategori<select id="uPrC">'+utKatListe().map(c=>'<option '+(c===(lev?normCat(lev.cat):'Møter')?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select></label><p class="small" id="uPrInfo" style="margin:0"></p>'+utSekL():'')+utSekO(state.admin?6:5,'Merknad og varsler')+'<label class="f">Merknad<textarea id="uN" rows="3" maxlength="500">'+esc(b.notat)+'</textarea></label>'
    +'<label class="f">Automatisk påminnelse til vertskapet<select id="uRem">'+UT_PAAMINN.map(([h,t])=>'<option value="'+h+'" '+(Number(b.remindH==null?24:b.remindH)===h?'selected':'')+'>'+t+'</option>').join('')+'</select></label>'+utHjelpI('Vertskapet får et varsel automatisk før bookingen starter (gjelder bekreftede bookinger). Du kan endre eller slå av.','margin:-4px 0 0')
@@ -1888,16 +1890,32 @@ function utAsk(id,dato,pre){
     dlg.querySelector('#uMal').innerHTML=utMalOpts();push('Mal lagret','«'+nm+'» finnes nå under Mine maler.')});
   const re=dlg.querySelector('#uRomEdit');if(re)re.addEventListener('click',()=>{dlg.close();setTimeout(utRomAsk,450)});
   dlg.querySelector('form').addEventListener('submit',async e=>{
-    const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='slett')return;e.preventDefault();const msg=t=>{dlg.querySelector('#uMsg').textContent=t;if(/dag|rom|Sluttid|klokke/i.test(t)&&dlg.__apne)dlg.__apne(1)};
+    const v=e.submitter&&e.submitter.value;if(v!=='lagre'&&v!=='slett')return;e.preventDefault();/* Feilmelding i bookingskjemaet: en tekst eller en liste over det som mangler. Feltene som må rettes markeres med rød ramme, riktig seksjon åpnes, og meldingen rulles til. */
+    const msg=(t,sel)=>{const el=dlg.querySelector('#uMsg'),liste=Array.isArray(t)?t:[[t,sel]];dlg.querySelectorAll('.feilfelt').forEach(x=>x.classList.remove('feilfelt'));
+      el.className=t&&t.length?'utfeil':'';
+      el.innerHTML=Array.isArray(t)?'<b>Bookingen er ikke lagret.</b> Dette må rettes:<ul>'+liste.map(x=>'<li>'+esc(x[0])+'</li>').join('')+'</ul>':esc(t||'');
+      let f=null;liste.forEach(([,q2])=>{if(!q2)return;dlg.querySelectorAll(q2).forEach(x=>x.classList.add('feilfelt'));f=f||dlg.querySelector(q2)});
+      if(f){const sk=f.closest('details.utsek');if(sk&&!sk.open&&dlg.__apne)dlg.__apne(+sk.dataset.i)}else if(/dag|rom|Sluttid|klokke/i.test(String(t))&&dlg.__apne)dlg.__apne(1);
+      if(t&&t.length)setTimeout(()=>{(f&&f.scrollIntoView?f:el).scrollIntoView({block:'center',behavior:'smooth'})},80)};
     if(v==='slett'){if(!await bekreft('Slette denne bookingen? Vertskap og ledere får beskjed om at den er slettet.'))return;
       try{await FB.utDel(id);utProgFjern(id);if(ex){utBeskjedLedere(ex,'slett');utVarsle(ex,'slett').then(t=>{if(t)push('Varsel',t)}).catch(()=>{})}state.ut.alle=undefined;state.ut.liste=state.ut.liste.filter(x=>x.id!==id);dlg.close();keep(()=>{});push('Slettet','Bookingen er fjernet.')}catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}return}
     const d={tittel:dlg.querySelector('#uT').value.trim(),rom:[...dlg.querySelectorAll('[data-utr]')].filter(x=>x.checked).map(x=>x.dataset.utr),dato:dlg.querySelector('#uD').value,dato2:dlg.querySelector('#uD2').value,fra:dlg.querySelector('#uF').value,til:dlg.querySelector('#uTi').value,
       remindH:parseInt(dlg.querySelector('#uRem').value,10)||0,fakturert:dlg.querySelector('#uFak').checked,fakturertMs:dlg.querySelector('#uFak').checked?((ex&&ex.fakturert&&ex.fakturertMs)||Date.now()):0,fakturaVentH:parseInt(dlg.querySelector('#uFakV').value,10)||24,fakturaUtsattTil:(parseInt(dlg.querySelector('#uFakU').value,10)>0?Date.now()+parseInt(dlg.querySelector('#uFakU').value,10)*864e5:((ex&&ex.fakturaUtsattTil)||0)),allergener:[...dlg.querySelectorAll('[data-utal]')].filter(x=>x.checked).map(x=>x.dataset.utal),allergenNotat:dlg.querySelector('#uAn').value.trim(),gjester:Math.max(0,Math.min(2000,parseInt(dlg.querySelector('#uG').value,10)||0)),teamMaal:Math.max(0,Math.min(50,parseInt(dlg.querySelector('#uTM').value,10)||0)),servering:utMatTekst(utLesMat(dlg)),maaltider:utLesMat(dlg),leier:dlg.querySelector('#uL').value.trim(),kontakt:dlg.querySelector('#uK').value.trim(),epost:dlg.querySelector('#uEp').value.trim(),pris:dlg.querySelector('#uEget').checked?'Eget arrangement (gratis)':dlg.querySelector('#uP').value.trim(),status:dlg.querySelector('#uS').value,notat:dlg.querySelector('#uN').value.trim()};
+    /* Samler alt som mangler i én melding, så du slipper å lagre om og om igjen. */
+    {const mgl=[],enDag=!(d.dato2&&d.dato2>d.dato);
+      if(!d.dato)mgl.push(['Første dag (dato) er ikke valgt.','#uD']);
+      if(!d.rom.length)mgl.push(['Velg minst ett rom (Hele bygget, Hovedsal …).','[data-utr]']);
+      if(enDag&&!d.fra)mgl.push(['Starttid («Fra») mangler.','#uF']);
+      if(enDag&&!d.til)mgl.push(['Sluttid («Til») mangler.','#uTi']);
+      if(enDag&&d.fra&&d.til&&utMin(d.til)<=utMin(d.fra))mgl.push(['Sluttid må være etter starttid.','#uF,#uTi']);
+      if(d.dato&&d.dato2&&d.dato2<d.dato)mgl.push(['Siste dag kan ikke være før første dag.','#uD2']);
+      if(d.epost&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.epost))mgl.push(['E-postadressen til leier ser ikke riktig ut (for eksempel navn@firma.no).','#uEp']);
+      if(mgl.length){msg(mgl);return}}
     const flere=d.dato&&d.dato2&&d.dato2>d.dato&&Math.round((Date.parse(d.dato2)-Date.parse(d.dato))/864e5)<=60;
     if(flere){const rader=[...dlg.querySelectorAll('[data-utf]')].filter(i=>dlg.querySelector('[data-utp="'+i.dataset.utf+'"]').checked);
-      if(!rader.length){msg('Velg minst én dag.');return}
+      if(!rader.length){msg('Velg minst én dag.','[data-utp]');return}
       d.tider=rader.map(i=>i.dataset.utf+'|'+i.value+'|'+dlg.querySelector('[data-utt="'+i.dataset.utf+'"]').value);
-      if(d.tider.some(x=>{const [,f,t]=x.split('|');return !f||!t||utMin(t)<=utMin(f)})){msg('Hver dag må ha gyldige klokkeslett, og «Til» må være etter «Fra».');return}
+      if(d.tider.some(x=>{const [,f,t]=x.split('|');return !f||!t||utMin(t)<=utMin(f)})){msg('Hver dag må ha gyldige klokkeslett, og «Til» må være etter «Fra».','[data-utf],[data-utt]');return}
       d.fra=d.tider[0].split('|')[1];d.til=d.tider[d.tider.length-1].split('|')[2];
       d.dato=d.tider[0].split('|')[0];d.dato2=d.tider[d.tider.length-1].split('|')[0];if(d.dato2===d.dato)d.dato2=''}else d.tider=[];
     if(!d.dato||!d.fra||!d.til){msg('Velg dato og klokkeslett.');return}
@@ -1909,8 +1927,17 @@ function utAsk(id,dato,pre){
     if(k.length&&!await bekreft('Dobbeltbooking: '+k.map(x=>(x.tittel||'Utleie')+' '+(x.dato2&&x.dato2>x.dato?utDatoKort(x.dato)+'–'+utDatoKort(x.dato2):x.fra+'–'+x.til)+' ('+(x.program?'Menighetens kalender'+((x.rom||[]).length?', '+x.rom.join(', '):''):(x.rom||[]).join(', '))+')').join('; ')+'. Lagre likevel?',{ok:'Lagre likevel',fare:false}))return;
     const prHas=!!dlg.querySelector('#uPr'),prCat=prHas&&dlg.querySelector('#uPr').checked?dlg.querySelector('#uPrC').value:'';
     try{const nid=await FB.utSave(id,{...d,by:meEmail()});if(state.admin&&prHas&&(prCat||utProgEv(nid)))utProgSync(nid,d,prCat).catch(()=>push('Menighetens kalender','Bookingen er lagret, men menighetens kalender ble ikke oppdatert.'));state.ut.alle=undefined;state.ut.liste=[...(state.ut.liste||[]).filter(x=>x.id!==nid),{id:nid,...d}].sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;state.ut.mnd=d.dato.slice(0,7);dlg.close();state.acc.utleie=true;keep(()=>{});push('Lagret','Bookingen er lagret.');if(!ex||dlg.querySelector('#uVarsle').checked)utBeskjedLedere({...d,id:nid},!ex);if(ex)utTeamEndring(nid,ex,d).catch(()=>{});if(dlg.querySelector('#uVarsle').checked)utVarsle(d,!ex).then(t=>{if(t)push('Varsel',t)})}
-    catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?')}});
+    catch(er){msg(utLagreFeil(er))}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
+/* Forklarer hvorfor en booking ikke ble lagret, og hva som kan gjøres. */
+function utLagreFeil(er){
+  const k=String((er&&er.code)||'').replace('firestore/','');
+  if(k==='permission-denied')return 'Databasen nektet å lagre bookingen. Vanlige årsaker: innloggingen har utløpt (logg ut og inn igjen), du har ikke tilgang til Utleie (må være administrator eller i gruppen Utleie), en tekst er for lang (tittel maks 100 tegn, pris maks 30, merknad maks 500), eller de nyeste Firebase-reglene er ikke publisert (gjelder særlig feltet E-postadresse til leier). Tøm e-postfeltet og prøv igjen hvis du er usikker.';
+  if(k==='unauthenticated')return 'Du er ikke innlogget. Logg inn på nytt og prøv igjen.';
+  if(k==='unavailable'||k==='deadline-exceeded'||k==='network-request-failed'||!navigator.onLine)return 'Fikk ikke kontakt med databasen. Sjekk nettforbindelsen og prøv igjen. Det du har fylt ut står fortsatt i skjemaet.';
+  if(k==='resource-exhausted')return 'Dagens kvote i databasen er brukt opp. Prøv igjen etter kl. 09 i morgen.';
+  if(k==='invalid-argument')return 'Databasen godtok ikke innholdet. Sjekk at ingen felt er for lange, og at dato og klokkeslett er gyldige.';
+  return 'Kunne ikke lagre bookingen ('+(k||'ukjent feil')+'). Prøv igjen om litt. Fortsetter det, ta et skjermbilde av denne meldingen.'}
 /* Interaktiv kalender: trykk på tomt felt = ny booking med dag, rom og klokkeslett utfylt. */
 document.addEventListener('click',e=>{
   const kol=e.target.closest&&e.target.closest('[data-utcell]');if(!kol||e.target.closest('button')||!utTilgang())return;
@@ -4889,7 +4916,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 21:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 22:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
