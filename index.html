@@ -4771,7 +4771,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 08:05';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 08:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5254,7 +5254,7 @@ async function selvInit(){
   if(inf.brukt){rot.innerHTML=selvKort('Skjemaet er allerede sendt inn','Takk! Vi har fått det. Skal noe endres, ta kontakt med oss.');return}
   const ts=Date.now();
   const sek=(i,tittel,inn,neste)=>'<section class="selvsek'+(i===0?' open':'')+'" data-ss="'+i+'"><button type="button" class="selvhd" data-shd="'+i+'" aria-expanded="'+(i===0)+'"><span class="selvnr">'+(i+1)+'</span><span class="selvtt">'+tittel+'<small data-ssum="'+i+'"></small></span><span class="selvpil" aria-hidden="true">›</span></button><div class="selvbody">'+inn+(neste?'<div class="btns"><button type="button" class="btn primary" data-snes="'+i+'" style="width:100%">Neste</button></div>':'')+'</div></section>';
-  rot.innerHTML='<div class="logo-selv"><b>SION MOLDE</b></div><form class="selvform" novalidate>'
+  rot.innerHTML='<div class="logo-selv"><b>MOLDE KONFERANSESENTER</b></div><form class="selvform" novalidate>'
    +sek(0,(inf.leier?'Hei, '+esc(inf.leier)+'!':'Hei!'),'<p style="margin:0">Fyll ut skjemaet så vi er godt forberedt til besøket deres.</p>'
      +'<div class="selvinfo"><b>'+esc(inf.tittel||'Booking')+'</b><span>'+esc(utDatoOmr(inf)+(inf.fra?' kl. '+inf.fra+(inf.til?'–'+inf.til:''):''))+'</span>'+((inf.rom||[]).length?'<span>'+esc(inf.rom.join(', '))+'</span>':'')+'</div>'
      +'<label class="f">Hvor mange personer blir dere?<input type="number" inputmode="numeric" min="1" max="2000" id="sAnt" required></label><p class="small" id="sFeil0" role="alert" style="margin:0;color:#b3261e"></p>',1)
