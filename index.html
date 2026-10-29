@@ -602,6 +602,9 @@ nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .crad .cm{display:flex;flex-direction:column;align-items:flex-end;align-self:stretch;justify-content:center;gap:8px;font-size:var(--t-s);color:var(--muted);flex:none}
 .crad .cm svg{opacity:.7}
 .cdot{width:12px;height:12px;border-radius:50%;background:var(--lamp)}
+.cnedw{position:sticky;bottom:0;height:0;flex:none;align-self:stretch;z-index:3}
+.cned{position:absolute;right:6px;bottom:10px;width:40px;height:40px;border-radius:50%;border:0;display:grid;place-items:center;background:var(--surface,#fff);color:var(--brand,#1b4a7d);box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:pointer;padding:0}
+.cned[hidden]{display:none}
 .cmsg{flex:1;overflow-y:auto;padding:12px 12px 4px;display:flex;flex-direction:column;gap:3px;overscroll-behavior:contain}
 .cdag{align-self:center;font-size:var(--t-s);color:var(--muted);margin:10px 0 4px}
 .cb{max-width:80%;padding:8px 13px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35}
@@ -3776,14 +3779,17 @@ function chatMsgs(sist){
     if(slutt){let tid=chatKl(m.ms)+(m.redigert?' · redigert':'');if(mine&&i===l.length-1&&t&&t.lastBy===meg)tid+=' · '+(sett?'Sett':'Sendt');h+='<div class="ct '+(mine?'me':'de')+'">'+esc(tid)+'</div>'}
     forrige=m});
   box.innerHTML=h||'<p class="small" style="align-self:center;margin-top:20px">Ingen meldinger ennå. Skriv den første.</p>';
-  if(nær||sist){box.scrollTop=box.scrollHeight;chatHoldNede(box)}}
+  box.insertAdjacentHTML('beforeend','<div class="cnedw"><button type="button" class="cned" data-cned aria-label="Gå til siste melding" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>');
+  if(nær||sist){box.scrollTop=box.scrollHeight;chatHoldNede(box)}chatNedKnapp(box)}
+function chatNedKnapp(b){const k=b&&b.querySelector('[data-cned]');if(k)k.hidden=b.scrollHeight-b.scrollTop-b.clientHeight<120}
+document.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest('[data-cned]');if(!k)return;const b=document.getElementById('cMsg');if(b){b._pin=true;b.scrollTo({top:b.scrollHeight,behavior:'smooth'})}});
 /* Nyeste melding skal vises når samtalen åpnes. Bilder, skrifter og lyd lastes etter at meldingene er tegnet og gjør samtalen høyere, så vi holder den nederst til alt er lastet (og til du selv blar oppover). */
 function chatHoldNede(box){
   box._pin=true;const ned=()=>{if(box.isConnected&&box._pin)box.scrollTop=box.scrollHeight};
   box.querySelectorAll('img,audio').forEach(i=>{if(i.complete===false||i.tagName==='AUDIO')i.addEventListener(i.tagName==='AUDIO'?'loadedmetadata':'load',ned,{once:true})});
   requestAnimationFrame(ned);setTimeout(ned,150);setTimeout(ned,600);
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(ned)}
-document.addEventListener('scroll',e=>{const b=e.target;if(b&&b.id==='cMsg')b._pin=b.scrollHeight-b.scrollTop-b.clientHeight<60},true);
+document.addEventListener('scroll',e=>{const b=e.target;if(b&&b.id==='cMsg'){b._pin=b.scrollHeight-b.scrollTop-b.clientHeight<60;chatNedKnapp(b)}},true);
 /* ---------- Chat: egne reaksjoner, farge per samtale, avstemninger, bønneliste, stemmemeldinger, dagens vers/utfordring og spill ---------- */
 const chatReakHtml=e=>e===':sion:'?sionHtml():e==='Amen'?'<b class="camen">Amen</b>':e;
 const PLUSIKON='<svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z"/></svg>';
@@ -4698,7 +4704,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 03:25';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 03:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
