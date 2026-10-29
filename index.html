@@ -1071,6 +1071,11 @@ nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 .utibtn.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
 #view.ututv>details[data-acc="utleie"]{padding:12px 8px;border-radius:14px}
 html[data-bred="1"] #view.ututv{columns:1;max-width:none}
+html[data-vindu] header.top,html[data-vindu] nav.tabs,html[data-vindu] #chat,html[data-vindu] #ptr{display:none!important}
+html[data-vindu] .app{max-width:none;margin:0}
+html[data-vindu] main{display:block;columns:1;padding:10px 10px 40px;max-width:none}
+html[data-vindu] details[data-acc="utleie"]>summary{pointer-events:none}
+html[data-vindu] details[data-acc="utleie"]>summary .btn{display:none}
 .utnavrad{margin:0 0 8px;align-items:center}.utnavrad b{flex:1;text-align:center;min-width:120px}
 .utlegende{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 10px;font-size:var(--t-s)}
 .grlist{display:grid;gap:8px}
@@ -1281,7 +1286,7 @@ const state={tab:'home',filter:'Alle',member:false,admin:false,user:null,rsvp:{}
   prefs:{Møter:true,Happeninger:true,Ungdom:false,Viktig:true},unread:0,sv:'',svE:'',pwMsg:'',leder:false,memELd:'',memEA:'',memEL:'',memEM:'',memGL:[],memGM:[],snaps:null,snapMsg:'',view:'meg',brQ:'',brG:'',memBulk:'',memGB:[],rsList:{},q:'',edit:true,real:null,vl:['activ8'],af:'Alle',acc:{},sel:{},groups:[],leads:[],ulOpen:'',psMal:'alle',psGr:[],ugOpen:'',backupMsg:'',pushMsg:'',pushSendMsg:'',psT:'',psB:'',psTab:'news',psNews:true,psHide:false,pushOk:false,memMsg:'',memE:'',memR:'member',adm:{type:'events',edit:null},msg:'',err:''};
 try{Object.assign(state,JSON.parse(localStorage.getItem('sm-proto')||'{}'))}catch(e){}
 state.member=false;state.admin=false;state.user=null;try{state.edit=localStorage.getItem('sm-edit')!=='0'}catch(e){state.edit=true}
-{const q=new URLSearchParams(location.search),dt=q.get('tab');if(['home','prog','news','me'].includes(dt)){state.tab=dt;try{history.replaceState(null,'',location.pathname)}catch(e){}}
+{const q=new URLSearchParams(location.search),dt=q.get('tab');if(q.get('vindu')==='utleie'){state.vindu=true;state.tab='me';state.acc.utleie=true;document.documentElement.dataset.vindu='utleie'}if(['home','prog','news','me'].includes(dt)){state.tab=dt;try{history.replaceState(null,'',location.pathname)}catch(e){}}
   if(q.get('bsvar')&&q.get('bok')&&q.get('tr')){state.pendingBok={bid:q.get('bok'),k:q.get('bsvar'),tr:q.get('tr')};try{history.replaceState(null,'',location.pathname)}catch(e){}}
   if(q.get('vt')||q.get('vb')){state.pendingVarsel={tab:dt||'home',tittel:q.get('vt')||'',tekst:q.get('vb')||''};try{history.replaceState(null,'',location.pathname)}catch(e){}}}
 const save=()=>{try{localStorage.setItem('sm-proto',JSON.stringify({rsvp:state.rsvp,rem:state.rem,prefs:state.prefs}))}catch(e){}};
@@ -1740,7 +1745,7 @@ function utleieCard(){
      +'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">'+cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+'</h3><div class="list">'+(valgteB.length?valgteB.map(b=>utItem(b,u.dag)).join(''):'<p class="small">Ingen bookinger denne dagen.</p>')+'</div>'
      +(utTilgang()?'<div class="btns" style="margin-top:10px"><button type="button" class="btn primary" data-utny style="width:auto">+ Ny booking</button>'+utLedereKnapp()+'</div>':'<p class="small" style="margin:10px 0 0">Du ser bookingene som vertskap, og får varsel når det kommer en ny.</p>')
      +utFakEpostLinje()+(kommende.length?'<h3 style="margin:14px 0 6px;font-size:var(--t-l)">Kommende</h3><div class="list">'+(()=>{let sist='',ut='';kommende.forEach(b=>{const dag=b.dato<idag?idag:b.dato,w=new Date(dag+'T12:00'),k=when(w)+' '+w.getDate()+'. '+MON[w.getMonth()];if(k!==sist){ut+='<div class="day">'+k+'</div>';sist=k}ut+=utItem(b,dag)});return ut})()+'</div>':'')}
-  return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie?'open':'')+'><summary><h2>Utleie</h2></summary>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
+  return '<details class="card acc" data-acc="utleie" '+(state.acc.utleie||state.vindu?'open':'')+'><summary><h2>Utleie</h2>'+(!state.vindu&&bredNa()?'<button type="button" class="btn" data-utvindu style="width:auto;margin-left:auto" aria-label="Åpne kalenderen i eget vindu">Eget vindu ↗</button>':'')+'</summary>'+inn+(u.feil?'<p class="small" role="alert" style="color:#b3261e;margin:8px 0 0">'+esc(u.feil)+'</p>':'')+'</details>'}
 /* Menighetens kalender (Program): en booking kan også legges inn som arrangement der. Koblingen ligger på arrangementet (utId), så bookingen trenger ingen nye felt. Bare administratorer kan skrive i Program. */
 const UT_KATER=['Møter','Ungdom','Barn','Happeninger','Menighetsmøte','Lederrådet','Ungdomsleder'],UT_KAT_MEDL=['Menighetsmøte','Lederrådet','Ungdomsleder'];
 const utKatListe=()=>[...UT_KATER,...allCats().filter(c=>!UT_KATER.includes(c))];
@@ -4752,7 +4757,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 06:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 06:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -4765,7 +4770,7 @@ function nullstillUtseende(){setStil('standard');setPal('premium')}
     const k=e.target.closest&&e.target.closest('.btn,.chip,nav.tabs button,.item>button,.nhero-b,.card.next[data-t]');if(!k)return;
     const r=k.getBoundingClientRect(),d=Math.max(r.width,r.height)*2.2,sp=document.createElement('span');sp.className='ripple';
     sp.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(e.clientX-r.left-d/2)+'px;top:'+(e.clientY-r.top-d/2)+'px';k.appendChild(sp);sp.addEventListener('animationend',()=>sp.remove());setTimeout(()=>sp.remove(),900)},{passive:true}) }
-function bredNa(){const v=UI.vis||'auto';return (v==='bred'&&innerWidth>=700)||(innerWidth>=1000&&v==='auto'&&!!(state.admin||(state.real&&state.real.admin)))}
+function bredNa(){if(state.vindu)return false;const v=UI.vis||'auto';return (v==='bred'&&innerWidth>=700)||(innerWidth>=1000&&v==='auto'&&!!(state.admin||(state.real&&state.real.admin)))}
 function settBred(){const r=document.documentElement;r.dataset.bred=bredNa()?'1':'0';r.dataset.meny=UI.meny==='bunn'?'bunn':'side';r.dataset.tab=state.tab}
 addEventListener('resize',()=>settBred());
 /* Egen palett: brukeren velger noen få farger, resten (kort, tekst, linjer, mørk visning, kontrast) regnes ut. Lagres bare på enheten (sm-egen), og brukes som data-pal="egen". */
@@ -5223,6 +5228,9 @@ function meFlytt(k,d){
   keep(()=>{})}
 
 const VIEWS={home,prog,news,me};
+/* Kalenderen i eget vindu (?vindu=utleie): bare Utleie-kortet, uten topp og meny. Vinduet har sin egen visning etter bredden, og henter bookingene på nytt når du kommer tilbake til det. */
+const utVindu=()=>utLes()?utleieCard():(state.authVent||first?'<p class="small" style="padding:20px">Logger inn …</p>':'<p class="small" style="padding:20px">Logg inn i hovedvinduet og last dette vinduet på nytt. Bare de med tilgang til Utleie ser kalenderen.</p>');
+{let sist=0;const hent=()=>{if(!FB||!state.user||!utLes()||document.hidden||Date.now()-sist<20000)return;sist=Date.now();utLast().then(()=>keep(()=>{}))};addEventListener('focus',hent);document.addEventListener('visibilitychange',hent)}
 const SUN='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
 const MOON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
 const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches};
@@ -5236,7 +5244,7 @@ function badge(){
 const viewBanner=()=>'';
 function chipScroll(){const a=document.querySelector('.chips.scroll [aria-pressed="true"]'),r=document.querySelector('.chips.scroll');if(a&&r)r.scrollTo({left:a.offsetLeft-(r.clientWidth-a.offsetWidth)/2,behavior:'auto'})}
 const utvKlasse=()=>{const v=$('#view');v.classList.toggle('ututv',state.tab==='me'&&!!(state.ut&&state.ut.utv)&&!!document.querySelector('#view details[data-acc="utleie"]'));const h=document.querySelector('header.top');if(h)v.style.setProperty('--utlasTop',Math.round(h.getBoundingClientRect().height)+'px')};
-function render(){visTab=state.tab;drawTabs();$('#view').innerHTML=viewBanner()+VIEWS[state.tab]();utvKlasse();badge();window.scrollTo(0,0);chipScroll()}
+function render(){visTab=state.tab;drawTabs();$('#view').innerHTML=(state.vindu?'':viewBanner())+(state.vindu?utVindu():VIEWS[state.tab]());utvKlasse();badge();window.scrollTo(0,0);chipScroll()}
 /* «Sletter …»: en sirkel som snurrer til databasen har bekreftet slettingen. Vises i åpen dialog hvis det finnes en, ellers over hele siden. */
 let busyN=0,busyT=null,busyIv=null,busyRm=null,busyTekst='Sletter …',busyVist=0;
 function busyVis(){
@@ -5289,7 +5297,7 @@ function push(t,b){try{if(!matchMedia('(prefers-reduced-motion:reduce)').matches
 function keep(fn){const y=scrollY;fn();if(first)return;
   if(UTD.t||UTD.lost){UTD.utsatt=1;return}   /* en booking holdes eller er løftet: ikke tegn kalenderen på nytt under fingeren (nye data, chat og varsler kommer etterpå) */
   // ikke tegn siden på nytt før innholdet er lastet første gang (ellers vises «Ingen planlagt» et øyeblikk)
-  $('#view').innerHTML=viewBanner()+VIEWS[state.tab]();utvKlasse();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
+  $('#view').innerHTML=(state.vindu?'':viewBanner())+(state.vindu?utVindu():VIEWS[state.tab]());utvKlasse();drawTabs();badge();window.scrollTo(0,y);chipScroll()}
 /* Dra ned fra toppen for å hente siste innhold (ikke oftere enn hvert 10. sekund, for å spare lesinger i databasen) */
 (function(){let el,y0=null,d=0,sist=0;
   function mk(){if(el)return;el=document.createElement('div');el.id='ptr';el.setAttribute('aria-hidden','true');el.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v10M7 11l5 5 5-5"/></svg>';document.body.appendChild(el)}
@@ -5499,6 +5507,7 @@ document.addEventListener('click',async e=>{
   else if('lgvelg' in c.dataset){try{const cr=await navigator.credentials.get({password:true,mediation:'required'});if(cr&&cr.id){const e=$('#lE'),p=$('#lP');if(e&&p){e.value=cr.id;p.value=cr.password||'';const f=$('#login');if(f&&f.requestSubmit)f.requestSubmit()}}}catch(x){}}
   else if('uthjelp' in c.dataset){keep(()=>{state.ut.hjelp=!state.ut.hjelp})}
   else if('utlas' in c.dataset){keep(()=>{state.ut.las=!state.ut.las})}
+  else if('utvindu' in c.dataset){e.preventDefault();e.stopPropagation();const w=window.open(location.pathname+'?vindu=utleie','sion-utleie','popup=yes,width=520,height='+Math.min(screen.availHeight||900,960));if(!w)push('Vinduet ble blokkert','Tillat sprettoppvinduer for denne siden og prøv igjen.')}
   else if('ututv' in c.dataset){const pa=!state.ut.utv;keep(()=>{state.ut.utv=pa;if(pa){state.acc.utleie=true;if(!state.ut.visn||state.ut.visn==='mnd')state.ut.visn='dag'}});const k=document.querySelector('#view details[data-acc="utleie"]');if(k)requestAnimationFrame(()=>kortTilToppen(k))}
   else if(c.dataset.utmnd){const [y,m]=state.ut.mnd.split('-').map(Number),d=new Date(y,m-1+parseInt(c.dataset.utmnd,10),1);keep(()=>{state.ut.mnd=dkey(d).slice(0,7)})}
   else if(c.dataset.utvisn){keep(()=>{const u=state.ut;u.visn=c.dataset.utvisn;if(u.visn==='mnd')u.mnd=u.dag.slice(0,7)})}
