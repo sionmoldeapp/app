@@ -1085,6 +1085,7 @@ html:has(details[data-acc="utleie"][data-las]){overflow:hidden}
 .utlasrull::-webkit-scrollbar,.utlasboks::-webkit-scrollbar{display:none}
 details[data-acc="utleie"][data-las]{margin-bottom:0!important}
 #view.ututv>details[data-acc="utleie"][data-las],html[data-vindu] details[data-acc="utleie"][data-las]{padding-top:0;box-shadow:none;background:transparent}
+.uttema{display:inline-grid;place-items:center;width:auto;padding:8px 12px}.uttema svg{width:20px;height:20px}
 .utlasboks{position:sticky;top:var(--utlasTop,70px);z-index:4;background:var(--surface);padding:6px 0 4px;margin:0 0 8px;max-height:60vh;overflow-y:auto;box-shadow:0 6px 8px -6px rgba(0,0,0,.25)}
 .utinfo{display:flex;justify-content:flex-end;margin:0 0 4px}
 .utinfo2{margin:-4px 0 0}.utinfo2>summary{list-style:none;cursor:pointer;display:flex;justify-content:flex-end}.utinfo2>summary::-webkit-details-marker{display:none}
@@ -1749,7 +1750,7 @@ function utleieCard(){
   const [år,mm]=u.mnd.split('-').map(Number),første=new Date(år,mm-1,1),dagerIMnd=new Date(år,mm,0).getDate(),forskyv=(første.getDay()+6)%7;
   const egen=b=>!!b.program||/^Eget/.test(b.pris||''),visOK=b=>!u.vis||u.vis==='alle'||(u.vis==='egne'?egen(b):!egen(b));
   const filter=b=>visOK(b)&&(u.rom==='Alle'||(b.rom||[]).includes(u.rom)||(b.rom||[]).includes('Hele bygget'));
-  const visChips='<p class="small" style="margin:0 0 4px"><b>Type</b></p><div class="btns" style="margin:0 0 8px" role="group" aria-label="Vis">'+[['alle','Alle'],['utleid','Utleide'],['egne','Egne arrangementer']].map(([v,n])=>'<button type="button" class="btn '+((u.vis||'alle')===v?'on':'')+'" data-utvis="'+v+'" aria-pressed="'+((u.vis||'alle')===v)+'">'+n+'</button>').join('')+'<span class="utkt">'+(u.utv?'<button type="button" class="btn utlas'+(u.las?' on':'')+'" data-utlas aria-pressed="'+(!!u.las)+'" aria-label="Lås toppen så bare kalenderen ruller" title="Lås toppen så bare kalenderen ruller"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/>'+(u.las?'<path d="M8 11V8a4 4 0 0 1 8 0v3"/>':'<path d="M8 11V8a4 4 0 0 1 7.5-2"/>')+'</svg></button>':'')+'<button type="button" class="btn ututv'+(u.utv?' on':'')+'" data-ututv role="switch" aria-checked="'+(!!u.utv)+'" aria-label="Utvidet visning av kalenderen (skjuler de andre kortene)">Utvidet visning</button></span></div>';
+  const visChips='<p class="small" style="margin:0 0 4px"><b>Type</b></p><div class="btns" style="margin:0 0 8px" role="group" aria-label="Vis">'+[['alle','Alle'],['utleid','Utleide'],['egne','Egne arrangementer']].map(([v,n])=>'<button type="button" class="btn '+((u.vis||'alle')===v?'on':'')+'" data-utvis="'+v+'" aria-pressed="'+((u.vis||'alle')===v)+'">'+n+'</button>').join('')+'<span class="utkt">'+(u.utv?'<button type="button" class="btn utlas'+(u.las?' on':'')+'" data-utlas aria-pressed="'+(!!u.las)+'" aria-label="Lås toppen så bare kalenderen ruller" title="Lås toppen så bare kalenderen ruller"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/>'+(u.las?'<path d="M8 11V8a4 4 0 0 1 8 0v3"/>':'<path d="M8 11V8a4 4 0 0 1 7.5-2"/>')+'</svg></button>':'')+'<button type="button" class="btn uttema" data-uttema aria-label="'+(isDark()?'Bytt til lyst tema':'Bytt til mørkt tema')+'" title="'+(isDark()?'Lyst tema':'Mørkt tema')+'">'+(isDark()?SUN:MOON)+'</button>'+'<button type="button" class="btn ututv'+(u.utv?' on':'')+'" data-ututv role="switch" aria-checked="'+(!!u.utv)+'" aria-label="Utvidet visning av kalenderen (skjuler de andre kortene)">Utvidet visning</button></span></div>';
   const alle=(u.liste||[]).filter(filter),perDag={},prog=(()=>{const r=utRange(u,dagerIMnd);return utProgram(r[0],r[1])})().filter(filter);
   [...alle,...prog].forEach(b=>{utDager(b).forEach(k=>{(perDag[k]=perDag[k]||[]).push(b)})});
   let inn;
@@ -4824,7 +4825,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='29.10.2026 kl. 13:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='29.10.2026 kl. 14:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5889,6 +5890,7 @@ document.addEventListener('click',async e=>{
     viewOpts();
     $('#viewDlg').showModal()}
   else if('viewclose' in c.dataset){$('#viewDlg').close()}
+  else if('uttema' in c.dataset){const r=document.documentElement;r.dataset.theme=isDark()?'light':'dark';try{localStorage.setItem('sm-theme',r.dataset.theme)}catch(e){}themeIcon();keep(()=>{})}
   else if(c.id==='themeBtn'){const r=document.documentElement;r.dataset.theme=isDark()?'light':'dark';try{localStorage.setItem('sm-theme',r.dataset.theme)}catch(e){}themeIcon()}
 });
 document.addEventListener('submit',async e=>{
