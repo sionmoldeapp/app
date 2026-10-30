@@ -3607,7 +3607,7 @@ function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatLis
 const chatHistSikre=()=>{const c=state.chat;if(c&&!c.hist){try{history.pushState({sion:'chat'},'')}catch(e){}c.hist=true}};
 const chatHistFjern=()=>{const c=state.chat;if(c&&c.hist){c.hist=false;try{history.back()}catch(e){}}};
 addEventListener('popstate',()=>{const c=state.chat;if(!c||!c.vis||c.vy==='liste')return;c.hist=false;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()});
-function chatLukk(){const c=state.chat;tilstStopp();chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen');c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
+function chatLukk(){const c=state.chat;if(c.vy==='samtale'&&c.id)c.sist={id:c.id,ms:Date.now()};tilstStopp();chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen');c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
 /* Online-merke: tilstede/{e-post} oppdateres hvert ~2. minutt mens appen er synlig (hvis Innstillinger → Sionchat tillater det). Den som har samtalen åpen leser listen og viser prikken ved private samtaler hvis den andre var aktiv for under 5 minutter siden. */
 const tilst={};
 const chatOnline=e=>{const t=tilst[String(e||'').toLowerCase()];return !!t&&Date.now()-t<5*60e3};
@@ -3632,7 +3632,7 @@ function chatListeInn(){
   return l.map(t=>{const ny=(t.unread||[]).includes(meg),n=chatNavn(t,meg);
     return '<button type="button" class="crad'+(ny?' ny':'')+'" data-chatopen="'+esc(t.id)+'">'+chatAv(n,false,t.bilde)+'<span class="ctx"><span class="cn">'+esc(n)+'</span><span class="cp">'+esc((t.lastBy===meg?'Du: ':'')+chatForh(t.last||''))+'</span></span><span class="cm"><span>'+esc(chatTid(t.ms))+'</span>'+((t.dempet||[]).includes(meg)?'<span aria-label="Varsler er dempet"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 9-5.2M18 11v5l1.5 2H8"/><path d="M10 21h4M4 4l16 16"/></svg></span>':'')+(ny?'<span class="cdot" aria-label="Ny melding"></span>':'')+'</span></button>'}).join('')}
 function chatListe(){
-  const c=state.chat;chatHistFjern();chatStoppMsgs();c.vy='liste';c.id=null;c.ny=null;
+  const c=state.chat;if(c.vy==='samtale'&&c.id)c.sist={id:c.id,ms:Date.now()};chatHistFjern();chatStoppMsgs();c.vy='liste';c.id=null;c.ny=null;
   chatW().innerHTML=chatListeHtml()}
 const chatListeHtml=(under)=>'<header class="chd"><h2>Sionchat</h2><span class="grow"></span>'+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatspill aria-label="Spill"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8h10a4 4 0 0 1 4 4v1a3 3 0 0 1-5.2 2L14.5 14h-5l-1.3 1A3 3 0 0 1 3 13v-1a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11" r=".7" fill="currentColor"/><circle cx="17.5" cy="13" r=".7" fill="currentColor"/></svg></button></header><div class="csokl"><input '+(under?'':'id="cSokL" ')+'type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc((state.chat&&state.chat.q)||'')+'"></div><div class="cliste"'+(under?'':' id="cListe"')+'>'+chatListeInn()+'</div>';
 const chatSend='<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.5-7.5a1 1 0 0 0 0-1.8L3.4 3.6a1 1 0 0 0-1.4 1.2L4 11l9 1-9 1-2 6.2a1 1 0 0 0 1.4 1.2z"/></svg>';
@@ -4181,6 +4181,14 @@ function chatBokVidere(mid){
   document.addEventListener('contextmenu',e=>{if(rad(e.target))e.preventDefault()});
   /* Etter et kikk skal ikke slippet åpne samtalen. */
   document.addEventListener('click',e=>{if(Date.now()-sup<700&&rad(e.target)){e.preventDefault();e.stopPropagation()}},true);
+}
+/* Rett etter at du har gått ut av en samtale (innen 5 min): sveip fra høyre mot venstre i samtalelisten for å gå tilbake til den. */
+{
+  let sx=0,sy=0,ok=false;
+  const gyldig=()=>{const c=state.chat;return c&&c.vis&&c.vy==='liste'&&c.sist&&Date.now()-c.sist.ms<5*60e3&&chatTraad(c.sist.id)};
+  document.addEventListener('touchstart',e=>{const t=e.target;ok=e.touches.length===1&&!!(t.closest&&t.closest('#chat .cliste')&&!t.closest('#cPeek'));if(ok){sx=e.touches[0].clientX;sy=e.touches[0].clientY}},{passive:true});
+  document.addEventListener('touchend',e=>{if(!ok)return;ok=false;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+    if(dx<-70&&Math.abs(dy)<Math.abs(dx)*.55&&!document.getElementById('cPeek')&&gyldig()){const id=state.chat.sist.id;state.chat.sist=null;chatSamtale(id)}},{passive:true});
 }
 /* Svar på en melding (fra menyen eller ved å sveipe). */
 function chatSvarPaa(mid){
@@ -4963,7 +4971,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 02:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 03:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
