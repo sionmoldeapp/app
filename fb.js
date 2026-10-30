@@ -190,6 +190,7 @@ const FB={
       await b.commit()},
     gjemChat:(tid,paa)=>{const me=auth.currentUser.email.toLowerCase();return S.updateDoc(S.doc(db,'threads',tid),{gone:paa?S.arrayUnion(me):S.arrayRemove(me)})},
     async slettChat(tid){const ms=await S.getDocs(S.collection(db,'threads',tid,'messages'));for(const m of ms.docs)await S.deleteDoc(m.ref);await S.deleteDoc(S.doc(db,'threads',tid))},
+    markThreadUnread:id=>S.updateDoc(S.doc(db,'threads',id),{unread:S.arrayUnion(auth.currentUser.email.toLowerCase())}),
     markThreadRead:id=>S.updateDoc(S.doc(db,'threads',id),{unread:S.arrayRemove(auth.currentUser.email.toLowerCase())}),
     async notifyThread(url,id){const idToken=await auth.currentUser.getIdToken(true);const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'beskjed',threadId:id})});return r.json()},
     // Politiattest (attester/{e-post}): bare datoen den ble godkjent.
