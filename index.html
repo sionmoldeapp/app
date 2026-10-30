@@ -4157,9 +4157,15 @@ function chatBokVidere(mid){
       setTimeout(()=>document.addEventListener('pointerdown',ut,true),500);
       return}
     const p=document.createElement('div');p.id='cPeek';p.setAttribute('role','status');
-    p.innerHTML='<div class="cpeek-hd"><b>'+esc(navn)+'</b><span>'+esc(chatTid(t.ms))+'</span></div><div class="cpeek-tx"></div><div class="cpeek-ft">Trykk eller sveip bort. Samtalen er ikke åpnet.</div>';
+    p.innerHTML='<div class="cpeek-hd"><b>'+esc(navn)+'</b><span>'+esc(chatTid(t.ms))+'</span><button type="button" class="cpeek-x" aria-label="Lukk" style="border:0;background:none;color:inherit;font-size:20px;line-height:1;padding:0 2px 0 10px;cursor:pointer;opacity:.6">✕</button></div><div class="cpeek-tx"></div><div class="cpeek-ft">Trykk eller sveip bort. Samtalen er ikke åpnet.</div>';
     const siste=(t.last||'').trim();p.querySelector('.cpeek-tx').innerHTML=chatTekstHtml(siste)||'<i>Ny melding</i>';
-    document.body.appendChild(p);
+    document.body.appendChild(p);const vist=Date.now();
+    /* Sikker lukking: ✕, klikk/trykk på kortet, eller trykk et annet sted (ignorerer fingeren som fortsatt holder inne de første 0,5 s). */
+    const lukkP=ev=>{if(Date.now()-vist<500)return;p.remove();document.removeEventListener('pointerdown',utenfor,true);document.removeEventListener('touchstart',utenfor,true)};
+    const utenfor=ev=>{if(!p.contains(ev.target))lukkP(ev)};
+    document.addEventListener('pointerdown',utenfor,true);document.addEventListener('touchstart',utenfor,true);
+    p.querySelector('.cpeek-x').addEventListener('click',ev=>{ev.stopPropagation();p.remove()});
+    p.addEventListener('click',lukkP);p.addEventListener('touchend',()=>setTimeout(()=>{if(p.isConnected)lukkP()},30),{passive:true});
     const w=Math.min(innerWidth-24,520);p.style.width=w+'px';p.style.left=Math.round((innerWidth-w)/2)+'px';
     const plass=()=>{let top=q.bottom+6;if(top+p.offsetHeight>innerHeight-10)top=Math.max(10,q.top-p.offsetHeight-6);p.style.top=Math.round(top)+'px'};plass();
     /* Trykk lukker. Sveip (til siden eller opp) lukker også; kortet følger fingeren mens du sveiper. */
@@ -4971,7 +4977,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 03:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 03:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
