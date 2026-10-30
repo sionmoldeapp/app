@@ -3583,21 +3583,42 @@ function chatStoppMsgs(){const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}
 function thrStopp(){if(state.thrUnsub){try{state.thrUnsub()}catch(e){}state.thrUnsub=null}}
 /* Lytter på samtalene til brukeren (maks 50). Første kall setter opp lytteren; senere kall gjør ingenting. */
 /* Pling når en ny melding kommer mens appen er åpen (Innstillinger → Sionchat → Lyd). Lyden lages i nettleseren: to korte, myke toner oppover. Nettleseren tillater lyd først etter at du har trykket på noe i appen. */
-let lydCtx=null;
-const lydKlar=()=>{try{if(!lydCtx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;lydCtx=new A()}if(lydCtx.state==='suspended')lydCtx.resume()}catch(e){}};
+let lydCtx=null,lydUt=null;
+/* Lydmotor: alle lyder er små klokketoner (grunntone + svake overtoner, myk start, rolig utklinging) som går gjennom et lett romklang-filter og en myk kompressor, så de låter varme og dyre, ikke som piper. Vises bare mens appen er synlig. */
+function lydKlar(){try{if(!lydCtx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;lydCtx=new A();
+    const c=lydCtx,ut=c.createGain(),tor=c.createGain(),vaat=c.createGain(),kmp=c.createDynamicsCompressor(),lp=c.createBiquadFilter(),rom=c.createConvolver();
+    const n=Math.floor(c.sampleRate*1.3),buf=c.createBuffer(2,n,c.sampleRate);for(let k=0;k<2;k++){const d=buf.getChannelData(k);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.6)}
+    rom.buffer=buf;lp.type='lowpass';lp.frequency.value=6500;tor.gain.value=.85;vaat.gain.value=.3;kmp.threshold.value=-18;kmp.ratio.value=3;ut.gain.value=1;
+    ut.connect(tor);ut.connect(rom);rom.connect(vaat);tor.connect(lp);vaat.connect(lp);lp.connect(kmp);kmp.connect(c.destination);lydUt=ut}
+  if(lydCtx.state==='suspended')lydCtx.resume()}catch(e){}}
 document.addEventListener('pointerdown',lydKlar,{passive:true});document.addEventListener('keydown',lydKlar);
-function chatPling(svar){
-  try{if(UI.lyd===false||document.hidden)return;lydKlar();const c=lydCtx;if(!c||c.state!=='running')return;
-    const t0=c.currentTime+.02;
-    /* svar = noen svarer i samtalen du har åpen: én lav, myk «pop» som er stillere enn plinget for en ny samtale/melding */
-    (svar?[[880,0,.09,.16]]:[[1318.5,0,.22,.42],[1975.5,.11,.22,.42]]).forEach(([f,d,v,l])=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;
-      g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(v,t0+d+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+d+l);
-      o.connect(g);g.connect(c.destination);o.start(t0+d);o.stop(t0+d+l+.03)})}catch(e){}}
+const lydOK=k=>{try{return UI[k]!==false&&!document.hidden&&lydCtx&&lydCtx.state==='running'}catch(e){return false}};
+/* Én klokketone: f = frekvens, d = forsinkelse (s), v = styrke, l = varighet (s) */
+function lydTone(f,d,v,l){const c=lydCtx,t0=c.currentTime+.02+d;
+  [[1,1,1],[2.01,.28,.7],[3.02,.1,.45]].forEach(([m,g,k])=>{const o=c.createOscillator(),gn=c.createGain();o.type='sine';o.frequency.value=f*m;
+    gn.gain.setValueAtTime(0,t0);gn.gain.linearRampToValueAtTime(v*g,t0+.008);gn.gain.exponentialRampToValueAtTime(.0001,t0+l*k);
+    o.connect(gn);gn.connect(lydUt);o.start(t0);o.stop(t0+l*k+.05)})}
+/* Myk «sus»: filtrert støy som glir oppover */
+function lydSus(d,v,l){const c=lydCtx,t0=c.currentTime+.02+d,n=Math.floor(c.sampleRate*l),buf=c.createBuffer(1,n,c.sampleRate),dt=buf.getChannelData(0);for(let i=0;i<n;i++)dt[i]=Math.random()*2-1;
+  const src=c.createBufferSource(),bp=c.createBiquadFilter(),g=c.createGain();src.buffer=buf;bp.type='bandpass';bp.Q.value=1.1;bp.frequency.setValueAtTime(900,t0);bp.frequency.exponentialRampToValueAtTime(3200,t0+l);
+  g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+l*.35);g.gain.exponentialRampToValueAtTime(.0001,t0+l);src.connect(bp);bp.connect(g);g.connect(lydUt);src.start(t0);src.stop(t0+l+.02)}
+const LYDER={
+  ny:['lyd',()=>{lydTone(1318.5,0,.15,.5);lydTone(1760,.11,.15,.65)}],            // ny melding: to oppadgående toner
+  svar:['lyd',()=>lydTone(880,0,.09,.32)],                                          // svar i åpen samtale: én lav, stille tone
+  send:['lydSend',()=>{lydSus(0,.05,.14);lydTone(2093,.09,.035,.2)}],               // sendt: myk sus og et lite glimt
+  reak:['lydReak',()=>{lydTone(2093,0,.07,.2);lydTone(2637,.07,.05,.22)}],          // reaksjon: to små, lyse tikk
+  mic0:['lydMic',()=>{lydTone(660,0,.07,.18);lydTone(990,.07,.07,.2)}],             // opptak starter: opp
+  mic1:['lydMic',()=>{lydTone(990,0,.07,.18);lydTone(660,.07,.07,.24)}],            // opptak slutter: ned
+  fei:['lydFei',()=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>lydTone(f,i*.085,.1,.5));lydTone(1318.5,.38,.08,1.0)}]  // feiring: kort fanfare (C-dur)
+};
+function lydSpill(n){try{const l=LYDER[n];if(!l)return;lydKlar();if(!lydOK(l[0]))return;l[1]()}catch(e){}}
+const chatPling=svar=>lydSpill(svar?'svar':'ny');
 function plingSjekk(ny){
   const meg=meEmail(),gml=state.threads;if(!gml)return;
   const m={};gml.forEach(t=>{m[t.id]=t.ms||0});
   const nye=ny.filter(t=>t.lastBy!==meg&&(t.ms||0)>(m[t.id]!==undefined?m[t.id]:Infinity)&&!(t.dempet||[]).includes(meg)&&!(t.gone||[]).includes(meg));
   if(!nye.length)return;const c=state.chat;
+  if(nye.every(t=>/(likte|reagerte på) «/.test(t.last||''))){lydSpill('reak');return}
   chatPling(!!(c&&c.vis&&c.vy==='samtale'&&nye.every(t=>t.id===c.id)))}
 function loadThreads(){
   if(!FB||!state.user||!state.member)return Promise.resolve();
@@ -3736,6 +3757,7 @@ function chatLysshow(w){
   requestAnimationFrame(tegn)}
 /* Feiringseffekter (rolige og eksklusive): gullfolie som sakte faller, myke lyspunkter, lysstråler og små glødende hjerter. Tones inn og ut, ingen tegneseriefigurer. */
 function chatEffekt(type){
+  lydSpill('fei');
   try{if(matchMedia('(prefers-reduced-motion:reduce)').matches)return}catch(e){}
   const w=chatW();if(!w)return;
   w.querySelectorAll('.ceff').forEach(x=>x.remove());
@@ -4307,7 +4329,7 @@ async function chatBonnMelding(tekst){
   try{await FB.addMsg(t,tekst.slice(0,400),nyBeskjedNavn());if(PUSH_URL)FB.notifyThread(PUSH_URL,t.id).catch(()=>{})}catch(e){}}
 /* Stemmemelding: opptak i appen (maks 40 s, lav bitrate), lagres i meldingen. */
 function chatMicAvbryt(stille){
-  const c=state.chat,r=c.rec;if(!r)return;c.rec=null;clearInterval(r.iv);r.avbrutt=true;try{r.mr.state!=='inactive'&&r.mr.stop()}catch(e){}try{r.stream.getTracks().forEach(t=>t.stop())}catch(e){}
+  const c=state.chat,r=c.rec;if(!r)return;c.rec=null;clearInterval(r.iv);r.avbrutt=true;try{r.mr.state!=='inactive'&&r.mr.stop()}catch(e){}try{r.stream.getTracks().forEach(t=>t.stop())}catch(e){}if(!stille)lydSpill('mic1');
   const bar=document.getElementById('cRec'),f=document.getElementById('cForm');if(bar){bar.hidden=true;bar.innerHTML=''}if(f)f.hidden=false}
 async function chatMicStart(){
   const c=state.chat;if(!c.id||c.rec||c.sender)return;
@@ -4318,12 +4340,12 @@ async function chatMicStart(){
     const r={mr,stream,chunks:[],t0:Date.now(),mime:mime||'audio/webm',avbrutt:false,sendt:false};c.rec=r;
     mr.ondataavailable=e=>{if(e.data&&e.data.size)r.chunks.push(e.data)};
     mr.onstop=()=>{try{stream.getTracks().forEach(t=>t.stop())}catch(e){}if(!r.avbrutt&&r.sendt)chatMicSend(r)};
-    mr.start(500);
+    lydSpill('mic0');mr.start(500);
     const bar=document.getElementById('cRec'),f=document.getElementById('cForm');if(f)f.hidden=true;
     if(bar){bar.hidden=false;bar.innerHTML='<button type="button" class="cbtn" data-crecx aria-label="Avbryt opptaket"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="crecd"></span><span class="crect" id="cRecT">0:00</span><span class="grow"></span><button type="submit" class="csend" data-crecsend aria-label="Send stemmemeldingen" style="display:grid">'+chatSend+'</button>'}
     r.iv=setInterval(()=>{const s=Math.floor((Date.now()-r.t0)/1000),t=document.getElementById('cRecT');if(t)t.textContent=Math.floor(s/60)+':'+oTall(s%60);if(s>=40&&!r.sendt){r.sendt=true;clearInterval(r.iv);try{mr.stop()}catch(e){}}},400)}
   catch(e){c.rec=null;push('Kunne ikke starte opptaket',e&&e.name==='NotAllowedError'?'Slå på mikrofon for appen i telefonens innstillinger.':(e&&e.msg)||'Prøv igjen.')}}
-function chatMicSendKnapp(){const r=state.chat.rec;if(!r||r.sendt)return;r.sendt=true;clearInterval(r.iv);try{r.mr.stop()}catch(e){}}
+function chatMicSendKnapp(){const r=state.chat.rec;if(!r||r.sendt)return;r.sendt=true;clearInterval(r.iv);try{r.mr.stop()}catch(e){}lydSpill('mic1')}
 async function chatMicSend(r){
   const c=state.chat;c.rec=null;const bar=document.getElementById('cRec'),f=document.getElementById('cForm');if(bar){bar.hidden=true;bar.innerHTML=''}if(f)f.hidden=false;
   const sek=Math.max(1,Math.round((Date.now()-r.t0)/1000)),blob=new Blob(r.chunks,{type:r.mime.split(';')[0]});
@@ -4394,9 +4416,9 @@ async function chatTil(epost,gid,navn){
   chatRamme(n,gid?gName(gid):'',chatAv(n),'<p class="small" style="align-self:center;text-align:center;margin:20px 10px">Skriv første melding til '+esc(n)+'. Bare dere to ser samtalen.</p>')}
 async function chatSendTekst(tekst,ekstra){
   const c=state.chat,meg=meEmail(),navn=nyBeskjedNavn();
-  if(c.id){const t=chatTraad(c.id);if(!t)throw {code:'ikke-funnet'};await FB.addMsg(t,tekst,navn,ekstra);if(PUSH_URL)FB.notifyThread(PUSH_URL,c.id).catch(()=>{});return}
+  if(c.id){const t=chatTraad(c.id);if(!t)throw {code:'ikke-funnet'};await FB.addMsg(t,tekst,navn,ekstra);lydSpill('send');if(PUSH_URL)FB.notifyThread(PUSH_URL,c.id).catch(()=>{});return}
   const ny=c.ny;if(!ny)return;
-  if(ny.mode==='person'){const id=await FB.newDm(ny.til,ny.navn,ny.gid?gName(ny.gid):'Beskjed',tekst,navn,ekstra);if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});chatVent(id,()=>chatSamtale(id));return}
+  if(ny.mode==='person'){const id=await FB.newDm(ny.til,ny.navn,ny.gid?gName(ny.gid):'Beskjed',tekst,navn,ekstra);lydSpill('send');if(PUSH_URL)FB.notifyThread(PUSH_URL,id).catch(()=>{});chatVent(id,()=>chatSamtale(id));return}
   if(ny.mode==='gruppe'){
     let ok=0,feil=0;const folk=ny.folk;
     for(let i=0;i<folk.length;i+=4){
@@ -5000,7 +5022,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 05:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 06:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5079,7 +5101,7 @@ function settingsKort(){
   ${profSub('inpush','Varsler',pushInner())}
   ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Lys eller mørk</h3><p class="small" style="margin:0 0 8px">Automatisk følger telefonens eget valg (lys eller mørk), også når det bytter av seg selv. Sol/måne-knappen i toppen velger lys eller mørk fast.</p><div class="btns" role="group" aria-label="Lys eller mørk" style="margin-bottom:16px">${[['auto','Følg telefonen'],['light','Lys'],['dark','Mørk']].map(([v,n])=>`<button type="button" class="btn ${(document.documentElement.dataset.theme||'auto')===v?'on':''}" data-tema="${v}" aria-pressed="${(document.documentElement.dataset.theme||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Skjermvisning</h3><p class="small" style="margin:0 0 8px">På PC kan appen fylle hele nettleservinduet med sidemeny og flere kolonner. Automatisk betyr bred visning for administratorer på stor skjerm.</p><div class="btns" role="group" aria-label="Skjermvisning" style="margin-bottom:16px">${[['auto','Automatisk'],['bred','Bred (PC)'],['mobil','Mobilvisning']].map(([v,n])=>`<button type="button" class="btn ${(UI.vis||'auto')===v?'on':''}" data-vis="${v}" aria-pressed="${(UI.vis||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Meny</h3><p class="small" style="margin:0 0 8px">Når appen er utvidet til hele bredden, kan menyen stå på siden eller nederst som på mobil.</p><div class="btns" role="group" aria-label="Plassering av menyen" style="margin-bottom:16px">${[['side','På siden'],['bunn','Nederst']].map(([v,n])=>`<button type="button" class="btn ${(UI.meny||'side')===v?'on':''}" data-meny="${v}" aria-pressed="${(UI.meny||'side')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${[...PALETTER,egenPalEntry()].map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div>${egenEditor()}<p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
   ${chatKan()?profSub('inbook','Bookinger',bryter('autovid','Send nye bookinger automatisk til teamet','Når du får en ny booking i Sionchat, sendes den videre til teamet uten at du trykker. Skjer når appen din er åpen. Gjelder bare på denne enheten.')+'<label class="f" style="margin-top:8px">Team<select id="autovidG">'+chatGrupper().map(g=>'<option value="'+esc(g[0])+'" '+(g[0]===(UI.autovidG||(chatGrupper().find(x=>/torsdag/i.test(x[0]+x[1]))||chatGrupper()[0]||[''])[0])?'selected':'')+'>'+esc(g[1])+'</option>').join('')+'</select></label>'):''}
-  ${profSub('insynlig','Sionchat',bryter('lyd','Pling ved ny melding','En kort lyd når en ny melding kommer mens appen er åpen. Gjelder bare på denne enheten.')+bryter('synlig','Vis at jeg er aktiv','Andre medlemmer ser en liten grønn prikk ved navnet ditt i Sionchat når du har appen åpen. Slå av hvis du ikke vil vises.'))}
+  ${profSub('insynlig','Sionchat',bryter('lyd','Pling ved ny melding','To myke toner når en ny melding kommer, og en stillere tone når noen svarer i samtalen du har åpen.')+bryter('lydSend','Lyd når jeg sender','En myk sus når meldingen din er sendt.')+bryter('lydReak','Lyd ved reaksjon','Et lite tikk når noen reagerer på meldingen din.')+bryter('lydMic','Lyd ved talemelding','En liten tone når opptaket starter og slutter.')+bryter('lydFei','Lyd ved feiring','En kort fanfare sammen med konfetti, ballonger og duer. Alle lydene gjelder bare på denne enheten.')+bryter('synlig','Vis at jeg er aktiv','Andre medlemmer ser en liten grønn prikk ved navnet ditt i Sionchat når du har appen åpen. Slå av hvis du ikke vil vises.'))}
   ${profSub('invaken','Skjerm',bryter('vaken','Hold skjermen våken','Skjermen slukker ikke så lenge appen er åpen og i forgrunnen. Bruker mer batteri.')+(navigator.wakeLock?'':'<p class="small" style="margin:6px 0 0">Denne nettleseren støtter ikke dette.</p>')+'<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>')}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
