@@ -1165,6 +1165,9 @@ html[data-vindu] details[data-acc="utleie"]>summary .btn{display:none}
 .utg-hode{border-bottom:1px solid var(--line)}
 .utg-kh{padding:8px 4px;text-align:center;font-weight:700;font-size:var(--t-s);border-top:4px solid var(--line);border-left:1px solid var(--line);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .utg-dagk{all:unset;cursor:pointer}
+.utpl{all:unset;box-sizing:border-box;width:28px;height:28px;margin:5px 9px;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:var(--chip);color:var(--ink);font-size:18px;font-weight:600;line-height:1}
+.utpl:active{transform:scale(.92)}.utpl[disabled]{opacity:.3;pointer-events:none}
+.utg-fot{border-top:1px solid var(--line)}
 .utg-t0,.utg-tid{position:sticky;left:0;background:var(--surface);z-index:2}
 .utg-tid{position:sticky}.utg-tid span{position:absolute;right:6px;margin-top:3px;font-size:var(--t-xs);color:var(--muted);font-variant-numeric:tabular-nums}
 .utg-kol{position:relative;border-left:1px solid var(--line);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 55px,var(--line) 55px,var(--line) 56px)}
@@ -1763,12 +1766,12 @@ function utUtvInnhold(u,perDag,idag){
     o.forEach(a=>{let l=lanes.findIndex(e=>e<=a.s);if(l<0){l=lanes.length;lanes.push(0)}lanes[l]=a.e;a.l=l});return {o,nl:Math.max(1,lanes.length)}};
   const blokker=(liste,k,h0,fast)=>{const r=iv(liste,k);return r.o.map(a=>{const c=fast||farger(a.x);
       return '<button type="button" class="utbl2" data-utblokk="'+esc(a.x.id+'|'+k)+'" style="top:'+Math.round((a.s-h0*60)*K)+'px;height:'+Math.max(34,Math.round((a.e-a.s)*K)-2)+'px;left:calc('+a.l+' * 100% / '+r.nl+' + 2px);width:calc(100% / '+r.nl+' - 4px);border-left-color:'+c+';background:'+c+'2e"><b>'+esc(a.f)+'–'+esc(a.t)+'</b><span>'+esc(a.x.tittel||'Booking')+'</span>'+(fast?'':'<span class="small">'+esc((a.x.rom||[]).join(', ')||'Menighetens kalender')+'</span>')+'</button>'}).join('')};
-  const tider=(lister,k0)=>{let a=8*60,b=21*60;lister.forEach(([liste,k])=>liste.forEach(x=>{const [f,t]=utDagTid(x,k),s=utMin(f);if(s<a)a=s;const e=utMin(t)||s+60;if(e>b)b=e}));return [Math.max(0,Math.floor(a/60)),Math.min(24,Math.ceil(b/60)+1)]};
+  const tider=(lister,k0)=>{let a=8*60,b=21*60;lister.forEach(([liste,k])=>liste.forEach(x=>{const [f,t]=utDagTid(x,k),s=utMin(f);if(s<a)a=s;const e=utMin(t)||s+60;if(e>b)b=e}));return [Math.max(0,Math.floor(a/60)-(u.timeFra||0)),Math.min(24,Math.ceil(b/60)+1+(u.timeTil||0))]};
   const rutenett=(kol,h0,h1,naaK)=>{
     const n=kol.length,H=(h1-h0)*HH,timer=[];for(let h=h0;h<h1;h++)timer.push('<span style="top:'+((h-h0)*HH)+'px">'+utPad2(h)+':00</span>');
     const nå=new Date(),nm=nå.getHours()*60+nå.getMinutes(),naa=naaK&&nm>=h0*60&&nm<h1*60?'<div class="utnu2" style="top:'+Math.round((nm-h0*60)*K)+'px" aria-hidden="true"></div>':'';
-    return '<div class="utg" style="--n:'+n+'"><div class="utg-in"><div class="utg-rad utg-hode"><span class="utg-t0"></span>'+kol.map(c=>'<div class="utg-kh" style="border-top-color:'+c.farge+'">'+c.hode+'</div>').join('')+'</div>'
-      +'<div class="utg-rad utg-kropp" style="height:'+H+'px"><div class="utg-tid">'+timer.join('')+'</div>'+kol.map(c=>'<div class="utg-kol'+(c.idag?' idag':'')+'"'+(utTilgang()&&c.d?' data-utcell="'+c.d+'|'+esc(c.r||'')+'" data-h0="'+h0+'" title="Trykk for å legge inn en booking"':'')+'>'+(c.idag?naa:'')+c.html+'</div>').join('')+'</div></div></div>'};
+    return '<div class="utg" style="--n:'+n+'"><div class="utg-in"><div class="utg-rad utg-hode"><span class="utg-t0"><button type="button" class="utpl" data-utmer="fra" aria-label="Vis en time tidligere" title="Vis en time tidligere"'+(h0<=0?' disabled':'')+'>+</button></span>'+kol.map(c=>'<div class="utg-kh" style="border-top-color:'+c.farge+'">'+c.hode+'</div>').join('')+'</div>'
+      +'<div class="utg-rad utg-kropp" style="height:'+H+'px"><div class="utg-tid">'+timer.join('')+'</div>'+kol.map(c=>'<div class="utg-kol'+(c.idag?' idag':'')+'"'+(utTilgang()&&c.d?' data-utcell="'+c.d+'|'+esc(c.r||'')+'" data-h0="'+h0+'" title="Trykk for å legge inn en booking"':'')+'>'+(c.idag?naa:'')+c.html+'</div>').join('')+'</div><div class="utg-rad utg-fot"><span class="utg-t0"><button type="button" class="utpl" data-utmer="til" aria-label="Vis en time senere" title="Vis en time senere"'+(h1>=24?' disabled':'')+'>+</button></span></div></div></div>'};
   const tipsTekst=utTilgang()?'Trykk på et tomt felt for å legge inn en booking. Trykk på en booking for å se detaljer, endre eller dele. Hold inne på en booking for å flytte den eller gjøre den lengre eller kortere. I Uke kan du dra i sidene for å utvide den til flere dager, og deretter løsne hver dag for å gi den sitt eget tidspunkt. Trykk på et rom i fargeforklaringen for å skjule eller vise det.':'Trykk på en booking for å se detaljer.',
     tips='<div class="utinfo"><button type="button" class="utibtn'+(u.hjelp?' on':'')+'" data-uthjelp aria-expanded="'+(!!u.hjelp)+'" aria-label="Vis eller skjul hjelp" title="Hjelp">i</button></div>'+(u.hjelp?'<p class="small utghint">'+tipsTekst+'</p>':'');
   const hbtn='<span class="utlh"><button type="button" class="utibtn'+(u.hjelp?' on':'')+'" data-uthjelp aria-expanded="'+(!!u.hjelp)+'" aria-label="Vis eller skjul hjelp" title="Hjelp">i</button></span>',hp=u.hjelp?'<p class="small utghint">'+tipsTekst+'</p>':'';
@@ -5093,7 +5096,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='31.10.2026 kl. 03:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='31.10.2026 kl. 04:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5911,6 +5914,7 @@ document.addEventListener('click',async e=>{
   else if('lgglem' in c.dataset){lgBrukLagre(lgBrukere().filter(x=>x!==c.dataset.lgglem));refresh()}
   else if('lgvelg' in c.dataset){try{const cr=await navigator.credentials.get({password:true,mediation:'required'});if(cr&&cr.id){const e=$('#lE'),p=$('#lP');if(e&&p){e.value=cr.id;p.value=cr.password||'';const f=$('#login');if(f&&f.requestSubmit)f.requestSubmit()}}}catch(x){}}
   else if('uthjelp' in c.dataset){keep(()=>{state.ut.hjelp=!state.ut.hjelp})}
+  else if(c.dataset.utmer){const u=state.ut;keep(()=>{if(c.dataset.utmer==='fra')u.timeFra=(u.timeFra||0)+1;else u.timeTil=(u.timeTil||0)+1})}
   else if('utlas' in c.dataset){keep(()=>{state.ut.las=!state.ut.las})}
   else if('utvindu' in c.dataset){e.preventDefault();e.stopPropagation();const w=window.open(location.pathname+'?vindu=utleie','sion-utleie','popup=yes,width=520,height='+Math.min(screen.availHeight||900,960));if(!w)push('Vinduet ble blokkert','Tillat sprettoppvinduer for denne siden og prøv igjen.')}
   else if('ututv' in c.dataset){const pa=!state.ut.utv;keep(()=>{state.ut.utv=pa;if(pa){state.acc.utleie=true;if(!state.ut.visn||state.ut.visn==='mnd')state.ut.visn='dag'}});const k=document.querySelector('#view details[data-acc="utleie"]');if(k)requestAnimationFrame(()=>kortTilToppen(k))}
