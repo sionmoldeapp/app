@@ -3591,7 +3591,8 @@ function lydKlar(){try{if(!lydCtx){const A=window.AudioContext||window.webkitAud
     rom.buffer=buf;lp.type='lowpass';lp.frequency.value=6500;tor.gain.value=.85;vaat.gain.value=.3;kmp.threshold.value=-18;kmp.ratio.value=3;ut.gain.value=1;
     ut.connect(tor);ut.connect(rom);rom.connect(vaat);tor.connect(lp);vaat.connect(lp);lp.connect(kmp);kmp.connect(c.destination);lydUt=ut}
   if(lydCtx.state==='suspended')lydCtx.resume()}catch(e){}}
-document.addEventListener('pointerdown',lydKlar,{passive:true});document.addEventListener('keydown',lydKlar);
+/* På telefon teller først slippet (touchend/click) som brukerhandling, ikke selve nedtrykket: lyden låses opp ved alle. */
+['pointerdown','pointerup','touchend','click','keydown'].forEach(h=>document.addEventListener(h,lydKlar,{passive:true,capture:true}));
 const lydOK=k=>{try{return UI[k]!==false&&!document.hidden&&lydCtx&&lydCtx.state==='running'}catch(e){return false}};
 /* Én klokketone: f = frekvens, d = forsinkelse (s), v = styrke, l = varighet (s) */
 function lydTone(f,d,v,l){const c=lydCtx,t0=c.currentTime+.02+d;
@@ -3612,7 +3613,9 @@ const LYDER={
   lik:['lydLik',()=>{lydTone(784,0,.11,.26);lydTone(1174.7,.065,.11,.4)}],           // du liker/reagerer: varm «pluck» opp, litt fyldigere enn tikkene du får
   fei:['lydFei',()=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>lydTone(f,i*.085,.1,.5));lydTone(1318.5,.38,.08,1.0)}]  // feiring: kort fanfare (C-dur)
 };
-function lydSpill(n){try{const l=LYDER[n];if(!l)return;lydKlar();if(!lydOK(l[0]))return;l[1]()}catch(e){}}
+/* Spiller lyden; er lydkontekstens fortsatt låst (første gang etter en handling), vent til den er åpnet og spill så. */
+function lydSpill(n){try{const l=LYDER[n];if(!l||UI[l[0]]===false||document.hidden)return;lydKlar();if(!lydCtx)return;
+  if(lydCtx.state==='running')l[1]();else lydCtx.resume().then(()=>{if(lydCtx.state==='running'&&UI[l[0]]!==false&&!document.hidden)l[1]()}).catch(()=>{})}catch(e){}}
 const chatPling=svar=>lydSpill(svar?'svar':'ny');
 function plingSjekk(ny){
   const meg=meEmail(),gml=state.threads;if(!gml)return;
@@ -5024,7 +5027,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 06:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 07:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
