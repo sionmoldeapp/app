@@ -579,6 +579,14 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 html.chatfull header.top,html.chatfull nav.tabs{display:none!important}
 .chd .cfl{width:36px;height:40px;flex:none;display:block;background:var(--ink);-webkit-mask:url(logo-512.png) center/contain no-repeat;mask:url(logo-512.png) center/contain no-repeat}
 html.chatfull .chat{padding-top:env(safe-area-inset-top,0)}
+/* Flytende bunnlinje i fullskjerm: Alle, Uleste, Grupper og Ny melding */
+.cpille{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;align-items:center;gap:2px;padding:5px;border-radius:99px;background:color-mix(in srgb,var(--surface) 86%,transparent);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.04) inset;max-width:calc(100% - 24px)}
+.cpille .cpb{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:0 16px;height:40px;border-radius:99px;font-size:14px;font-weight:600;color:var(--muted);transition:background .2s,color .2s}
+.cpille .cpb[aria-pressed="true"]{background:color-mix(in srgb,var(--cfarge,var(--lamp)) 18%,transparent);color:var(--cfarge,var(--lamp))}
+.cpille .cpn{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--cfarge,var(--lamp));color:var(--cfarge-ink,var(--brand-ink,#fff));font-size:11px;line-height:18px;text-align:center}
+.cpille .cpny{all:unset;box-sizing:border-box;cursor:pointer;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;margin-left:4px;background:var(--cfarge,var(--lamp));color:var(--cfarge-ink,var(--brand-ink,#fff));box-shadow:0 4px 14px color-mix(in srgb,var(--cfarge,var(--lamp)) 45%,transparent)}
+.cpille .cpb:active,.cpille .cpny:active{transform:scale(.94)}
+html.chatfull .cliste{padding-bottom:104px}
 .mapps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;margin:12px 0 4px}
 .mapp{all:unset;box-sizing:border-box;position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font-size:var(--t-s);font-weight:600;text-align:center;-webkit-tap-highlight-color:transparent}
 .mapp i{width:68px;height:68px;border-radius:18px;display:grid;place-items:center;color:#fff;box-shadow:0 5px 12px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .15s var(--ease,ease)}
@@ -3670,7 +3678,7 @@ function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatLis
 const chatHistSikre=()=>{const c=state.chat;if(c&&!c.hist){try{history.pushState({sion:'chat'},'')}catch(e){}c.hist=true}};
 const chatHistFjern=()=>{const c=state.chat;if(c&&c.hist){c.hist=false;try{history.back()}catch(e){}}};
 addEventListener('popstate',()=>{const c=state.chat;if(!c||!c.vis||c.vy==='liste')return;c.hist=false;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()});
-function chatFullSett(på){const c=state.chat;c.full=!!på;document.documentElement.classList.toggle('chatfull',c.full);chatPlasser();
+function chatFullSett(på){const c=state.chat;c.full=!!på;if(!c.full)c.fil='alle';document.documentElement.classList.toggle('chatfull',c.full);chatPlasser();
   /* Menylinjen var skjult (målte 0 bredde): flytt markeringen på Sionchat-knappen til riktig sted når den vises igjen */
   try{drawTabs();tabIndFlytt();requestAnimationFrame(tabIndFlytt)}catch(e){}
   if(c.vy==='liste')chatListe();try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
@@ -3693,8 +3701,9 @@ function tilstLytt(){
 function tilstStopp(){if(state.tilUnsub){try{state.tilUnsub()}catch(e){}state.tilUnsub=null}clearInterval(state.tilTik);if(state.tilObs){state.tilObs.disconnect();state.tilObs=null}}
 setInterval(tilstPuls,45e3);document.addEventListener('visibilitychange',tilstPuls);
 function chatListeInn(){
-  const q=norm((state.chat&&state.chat.q)||'').trim(),meg=meEmail(),l=state.threads&&state.threads.filter(t=>!(t.gone||[]).includes(meg)&&(!q||norm(chatNavn(t,meg)+' '+(t.last||'')).includes(q)));
+  const q=norm((state.chat&&state.chat.q)||'').trim(),meg=meEmail(),fil=(state.chat&&state.chat.full&&state.chat.fil)||'alle',l=state.threads&&state.threads.filter(t=>!(t.gone||[]).includes(meg)&&(!q||norm(chatNavn(t,meg)+' '+(t.last||'')).includes(q))&&(fil==='alle'||(fil==='uleste'?(t.unread||[]).includes(meg):t.kind==='gruppe')));
   if(l===undefined)return '<p class="small" style="padding:14px">Henter samtaler …</p>';
+  if(!l.length&&fil!=='alle')return '<p class="small" style="padding:24px 18px;text-align:center">'+(fil==='uleste'?'Ingen uleste samtaler. Alt er lest.':'Ingen gruppesamtaler.')+'</p>';
   if(!l.length)return tom('prat','Ingen samtaler ennå',chatKan()?'Trykk på blyanten oppe til høyre for å skrive til hele gruppen eller til én person.':'Når en leder skriver til deg, kommer samtalen her, og du kan svare.')+(state.meldMsg?'<p class="small" style="padding:0 14px">'+esc(state.meldMsg)+'</p>':'');
   return l.map(t=>{const ny=(t.unread||[]).includes(meg),n=chatNavn(t,meg);
     return '<button type="button" class="crad'+(ny?' ny':'')+'" data-chatopen="'+esc(t.id)+'">'+chatAv(n,false,t.bilde)+'<span class="ctx"><span class="cn">'+esc(n)+'</span><span class="cp">'+esc((t.lastBy===meg?'Du: ':'')+chatForh(t.last||''))+'</span></span><span class="cm"><span>'+esc(chatTid(t.ms))+'</span>'+((t.dempet||[]).includes(meg)?'<span aria-label="Varsler er dempet"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 9-5.2M18 11v5l1.5 2H8"/><path d="M10 21h4M4 4l16 16"/></svg></span>':'')+(ny?'<span class="cdot" aria-label="Ny melding"></span>':'')+'</span></button>'}).join('')}
@@ -3702,7 +3711,9 @@ function chatListe(){
   const c=state.chat;if(c.vy==='samtale'&&c.id)c.sist={id:c.id,ms:Date.now()};chatHistFjern();chatStoppMsgs();c.vy='liste';c.id=null;c.ny=null;
   chatW().innerHTML=chatListeHtml()}
 const CHAT_FULL_INN='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',CHAT_FULL_UT='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
-const chatListeHtml=(under)=>'<header class="chd">'+(!under&&state.chat.full?'<span class="cfl" role="img" aria-label="Sion Molde"></span>':'')+'<h2>Sionchat</h2><span class="grow"></span>'+(under?'':'<button type="button" class="cbtn" data-chatfull aria-label="'+(state.chat.full?'Gå ut av fullskjerm':'Fullskjerm')+'" title="'+(state.chat.full?'Gå ut av fullskjerm':'Fullskjerm')+'">'+(state.chat.full?CHAT_FULL_UT:CHAT_FULL_INN)+'</button>')+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatspill aria-label="Spill"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8h10a4 4 0 0 1 4 4v1a3 3 0 0 1-5.2 2L14.5 14h-5l-1.3 1A3 3 0 0 1 3 13v-1a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11" r=".7" fill="currentColor"/><circle cx="17.5" cy="13" r=".7" fill="currentColor"/></svg></button></header><div class="csokl"><input '+(under?'':'id="cSokL" ')+'type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc((state.chat&&state.chat.q)||'')+'"></div><div class="cliste"'+(under?'':' id="cListe"')+'>'+chatListeInn()+'</div>';
+const chatListeHtml=(under)=>'<header class="chd">'+(!under&&state.chat.full?'<span class="cfl" role="img" aria-label="Sion Molde"></span>':'')+'<h2>Sionchat</h2><span class="grow"></span>'+(under?'':'<button type="button" class="cbtn" data-chatfull aria-label="'+(state.chat.full?'Gå ut av fullskjerm':'Fullskjerm')+'" title="'+(state.chat.full?'Gå ut av fullskjerm':'Fullskjerm')+'">'+(state.chat.full?CHAT_FULL_UT:CHAT_FULL_INN)+'</button>')+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatspill aria-label="Spill"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8h10a4 4 0 0 1 4 4v1a3 3 0 0 1-5.2 2L14.5 14h-5l-1.3 1A3 3 0 0 1 3 13v-1a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11" r=".7" fill="currentColor"/><circle cx="17.5" cy="13" r=".7" fill="currentColor"/></svg></button></header><div class="csokl"><input '+(under?'':'id="cSokL" ')+'type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc((state.chat&&state.chat.q)||'')+'"></div><div class="cliste"'+(under?'':' id="cListe"')+'>'+chatListeInn()+'</div>'+(!under&&state.chat.full?chatPille():'');
+function chatPille(){const f=state.chat.fil||'alle',u=chatUlest(),b=(k,t,n)=>'<button type="button" class="cpb" data-chatfil="'+k+'" aria-pressed="'+(f===k)+'">'+t+(n?'<span class="cpn">'+n+'</span>':'')+'</button>';
+  return '<nav class="cpille" id="cPille" aria-label="Filtrer samtaler">'+b('alle','Alle')+b('uleste','Uleste',u>0?u:0)+b('grupper','Grupper')+(chatKan()?'<button type="button" class="cpny" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'</nav>'}
 const chatSend='<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.5-7.5a1 1 0 0 0 0-1.8L3.4 3.6a1 1 0 0 0-1.4 1.2L4 11l9 1-9 1-2 6.2a1 1 0 0 0 1.4 1.2z"/></svg>';
 const TRASH='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const KAMIKON='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
@@ -4701,6 +4712,7 @@ document.addEventListener('click',e=>{
   else if(d.bokop){const [mid,o]=d.bokop.split('|');chatBokOppg(mid,o)}
   else if('chatavstny' in d)chatAvstNy('gruppe');
   else if('chatfull' in d)chatFullSett(!state.chat.full);
+  else if(d.chatfil){state.chat.fil=d.chatfil;const l=document.getElementById('cListe');if(l){l.innerHTML=chatListeInn();l.scrollTop=0}const p=document.getElementById('cPille');if(p){const u=chatUlest();p.outerHTML=chatPille()}try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}}
   else if('chatspill' in d)chatQuiz();
   else if(d.cspill){if(d.cspill==='avst')chatAvstNy('person');else chatSpillSend(d.cspill)}
   else if(d.cmal){const ta=document.getElementById('cT');if(ta){ta.value=d.cmal;ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus()}}
@@ -5067,7 +5079,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='31.10.2026 kl. 01:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='31.10.2026 kl. 01:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
