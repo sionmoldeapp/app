@@ -4148,10 +4148,11 @@ function chatBokVidere(mid){
     if(!el.classList.contains('ny')){
       /* Lest samtale: hold inne gir valget «Merk som ulest» (kortet lukkes ved trykk utenfor). */
       const m=document.createElement('div');m.id='cPeek';m.setAttribute('role','menu');
-      m.innerHTML='<div class="cpeek-hd"><b>'+esc(navn)+'</b></div><button type="button" class="btn primary" style="width:100%;margin-top:8px">Merk som ulest</button>';
+      m.innerHTML='<div class="cpeek-hd"><b>'+esc(navn)+'</b></div><button type="button" class="btn primary" data-ul style="width:100%;margin-top:8px">Merk som ulest</button><button type="button" class="btn" data-av style="width:100%;margin-top:6px">Avbryt</button>';
       document.body.appendChild(m);const w2=Math.min(innerWidth-24,360);m.style.width=w2+'px';m.style.left=Math.round((innerWidth-w2)/2)+'px';
       let top=q.bottom+6;if(top+m.offsetHeight>innerHeight-10)top=Math.max(10,q.top-m.offsetHeight-6);m.style.top=Math.round(top)+'px';
-      m.querySelector('button').addEventListener('click',ev=>{ev.stopPropagation();m.remove();
+      m.querySelector('[data-av]').addEventListener('click',ev=>{ev.stopPropagation();m.remove();sup=Date.now()});
+      m.querySelector('[data-ul]').addEventListener('click',ev=>{ev.stopPropagation();m.remove();
         if(!(t.unread||[]).includes(meg))t.unread=(t.unread||[]).concat(meg);
         try{FB.markThreadUnread(id).catch(()=>{})}catch(x){}
         try{const l=document.getElementById('cListe');if(l)l.innerHTML=chatListeInn();drawTabs();badge()}catch(x){}});
@@ -4981,7 +4982,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 04:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 04:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
