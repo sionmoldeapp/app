@@ -3603,6 +3603,13 @@ function lydTone(f,d,v,l){const c=lydCtx,t0=c.currentTime+.02+d;
 function lydSus(d,v,l){const c=lydCtx,t0=c.currentTime+.02+d,n=Math.floor(c.sampleRate*l),buf=c.createBuffer(1,n,c.sampleRate),dt=buf.getChannelData(0);for(let i=0;i<n;i++)dt[i]=Math.random()*2-1;
   const src=c.createBufferSource(),bp=c.createBiquadFilter(),g=c.createGain();src.buffer=buf;bp.type='bandpass';bp.Q.value=1.1;bp.frequency.setValueAtTime(900,t0);bp.frequency.exponentialRampToValueAtTime(3200,t0+l);
   g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v,t0+l*.35);g.gain.exponentialRampToValueAtTime(.0001,t0+l);src.connect(bp);bp.connect(g);g.connect(lydUt);src.start(t0);src.stop(t0+l+.02)}
+/* Jubel: filtrert støy med to «vokal»-bånd som svulmer opp og dør ut, som en liten forsamling som roper hurra */
+function lydJubel(d,v,l){const c=lydCtx,t0=c.currentTime+.02+d,n=Math.floor(c.sampleRate*l),buf=c.createBuffer(1,n,c.sampleRate),dt=buf.getChannelData(0);for(let i=0;i<n;i++)dt[i]=Math.random()*2-1;
+  [[750,.9],[1250,.7],[2900,.35]].forEach(([f,k])=>{const src=c.createBufferSource(),bp=c.createBiquadFilter(),g=c.createGain();src.buffer=buf;bp.type='bandpass';bp.Q.value=2.2;bp.frequency.setValueAtTime(f*.85,t0);bp.frequency.linearRampToValueAtTime(f*1.12,t0+l*.5);bp.frequency.linearRampToValueAtTime(f*.95,t0+l);
+    g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(v*k,t0+l*.3);g.gain.setValueAtTime(v*k*.85,t0+l*.55);g.gain.exponentialRampToValueAtTime(.0001,t0+l);src.connect(bp);bp.connect(g);g.connect(lydUt);src.start(t0);src.stop(t0+l+.02)})}
+/* Klapp: kort, lys støtbyge */
+function lydKlapp(d,v){const c=lydCtx,t0=c.currentTime+.02+d,n=Math.floor(c.sampleRate*.06),buf=c.createBuffer(1,n,c.sampleRate),dt=buf.getChannelData(0);for(let i=0;i<n;i++)dt[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);
+  const src=c.createBufferSource(),hp=c.createBiquadFilter(),g=c.createGain();src.buffer=buf;hp.type='bandpass';hp.frequency.value=1700+Math.random()*900;hp.Q.value=.8;g.gain.value=v;src.connect(hp);hp.connect(g);g.connect(lydUt);src.start(t0)}
 const LYDER={
   ny:['lyd',()=>{lydTone(1318.5,0,.15,.5);lydTone(1760,.11,.15,.65)}],            // ny melding: to oppadgående toner
   svar:['lyd',()=>lydTone(880,0,.09,.32)],                                          // svar i åpen samtale: én lav, stille tone
@@ -3611,7 +3618,12 @@ const LYDER={
   mic0:['lydMic',()=>{lydTone(660,0,.07,.18);lydTone(990,.07,.07,.2)}],             // opptak starter: opp
   mic1:['lydMic',()=>{lydTone(990,0,.07,.18);lydTone(660,.07,.07,.24)}],            // opptak slutter: ned
   lik:['lydLik',()=>{lydTone(784,0,.11,.26);lydTone(1174.7,.065,.11,.4)}],           // du liker/reagerer: varm «pluck» opp, litt fyldigere enn tikkene du får
-  fei:['lydFei',()=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>lydTone(f,i*.085,.1,.5));lydTone(1318.5,.38,.08,1.0)}]  // feiring: kort fanfare (C-dur)
+  fei:['lydFei',()=>{                                                                  // feiring: full fanfare i C-dur med dyp bass, jubel og klapping
+    lydTone(130.8,0,.22,1.6);lydTone(196,.3,.2,1.4);
+    [[523.25,659.25,783.99],[587.33,739.99,880],[659.25,830.6,987.77]].forEach((a,i)=>a.forEach(f=>lydTone(f,i*.14,.16,.7)));
+    [523.25,659.25,783.99,1046.5,1318.5].forEach(f=>lydTone(f,.46,.17,1.5));lydTone(65.4,.46,.2,1.8);
+    lydJubel(.1,.34,1.9);for(let i=0;i<14;i++)lydKlapp(.5+i*.09+Math.random()*.04,.16+Math.random()*.08);
+    lydTone(2093,.7,.05,1.2);lydTone(2637,.82,.04,1.2)}]
 };
 /* Spiller lyden; er lydkontekstens fortsatt låst (første gang etter en handling), vent til den er åpnet og spill så. */
 function lydSpill(n){try{const l=LYDER[n];if(!l||UI[l[0]]===false||document.hidden)return;lydKlar();if(!lydCtx)return;
@@ -5027,7 +5039,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 07:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 22:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
