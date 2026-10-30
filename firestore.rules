@@ -492,6 +492,13 @@ service cloud.firestore {
       allow delete: if true;
       allow read, write: if isAdmin();
     }
+    // Online-merke i Sionchat: hvert medlem skriver bare sitt eget tidspunkt (sist = servertid) og kan slette det. Medlemmer leser.
+    match /tilstede/{email} {
+      allow read: if isMember();
+      allow create, update: if isMember() && request.auth.token.email == email
+        && request.resource.data.keys().hasOnly(['sist']) && request.resource.data.sist == request.time;
+      allow delete: if signedIn() && request.auth.token.email == email;
+    }
     // Medlemslisten: e-postadressen er dokument-ID. Brukeren kan sjekke sin egen adresse, administratorer styrer listen.
     // Gruppeledere kan se medlemslisten (for å styre sine grupper), legge nye medlemmer inn i egne grupper, og bare endre feltet groups
     // på eksisterende medlemmer: de kan bare legge til eller fjerne grupper de selv leder.

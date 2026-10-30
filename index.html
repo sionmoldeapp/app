@@ -693,6 +693,12 @@ nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .cbprev .cav{width:96px;height:96px;font-size:34px}
 .cav img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 .cav.sm{width:28px;height:28px;font-size:11px}
+/* Online-merke: liten dempet grønn prikk nede til høyre på avataren, med en tynn ring i bakgrunnsfargen og et nesten usynlig skinn */
+.cav.onl{position:relative}
+.cav.onl::after{content:"";position:absolute;right:1px;bottom:1px;width:13px;height:13px;border-radius:50%;background:#3dbb7e;box-shadow:0 0 0 2.5px var(--bg),0 0 7px rgba(61,187,126,.4);animation:onlInn .4s var(--ease,ease) both}
+.chd .cav.onl::after{width:10px;height:10px;right:0;bottom:0;box-shadow:0 0 0 2px var(--surface),0 0 5px rgba(61,187,126,.4)}
+@keyframes onlInn{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.cav.onl::after{animation:none}}
 .ct.de{margin-left:36px}
 .sione{display:inline-block;vertical-align:-.2em;width:1.25em;height:1.25em;background-color:currentColor;-webkit-mask:url(logo-512.png) center/contain no-repeat;mask:url(logo-512.png) center/contain no-repeat}
 .sione.sort{background-color:#000;filter:drop-shadow(0 0 1px rgba(255,255,255,.9))}
@@ -3593,7 +3599,7 @@ function chatApne(id){
   if(!FB||!state.user||!state.member)return;
   const c=state.chat;try{if(typeof ovgRydd==='function')ovgRydd();chatEl().getAnimations().forEach(a=>a.cancel());chatEl().style.pointerEvents=''}catch(e){}
   c.vis=true;document.documentElement.classList.add('chatapen');chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';try{drawTabs()}catch(e){}
-  loadThreads();
+  loadThreads();tilstLytt();
   chatListe();if(id)chatVent(id,()=>chatSamtale(id))}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
 function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatListe();return}setTimeout(()=>chatVent(id,fn,n+1),250)}
@@ -3601,7 +3607,23 @@ function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatLis
 const chatHistSikre=()=>{const c=state.chat;if(c&&!c.hist){try{history.pushState({sion:'chat'},'')}catch(e){}c.hist=true}};
 const chatHistFjern=()=>{const c=state.chat;if(c&&c.hist){c.hist=false;try{history.back()}catch(e){}}};
 addEventListener('popstate',()=>{const c=state.chat;if(!c||!c.vis||c.vy==='liste')return;c.hist=false;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()});
-function chatLukk(){const c=state.chat;chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen');c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
+function chatLukk(){const c=state.chat;tilstStopp();chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen');c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
+/* Online-merke: tilstede/{e-post} oppdateres hvert ~2. minutt mens appen er synlig (hvis Innstillinger → Sionchat tillater det). Den som har samtalen åpen leser listen og viser prikken ved private samtaler hvis den andre var aktiv for under 5 minutter siden. */
+const tilst={};
+const chatOnline=e=>{const t=tilst[String(e||'').toLowerCase()];return !!t&&Date.now()-t<5*60e3};
+let tilstSist=0;
+function tilstPuls(){try{if(!FB||!state.user||!state.member||document.hidden||UI.synlig===false||Date.now()-tilstSist<100e3)return;tilstSist=Date.now();FB.tilstedePuls().catch(()=>{})}catch(e){}}
+function tilstOppd(){try{const c=state.chat;if(!c||!c.vis)return;const meg=meEmail();
+  const an=(el,t)=>{const a=el&&el.querySelector('.cav');if(a)a.classList.toggle('onl',!!t&&t.kind==='dm'&&chatOnline((t.parts||[]).find(p=>p!==meg)))};
+  document.querySelectorAll('#chat .crad[data-chatopen]').forEach(r=>an(r,chatTraad(r.dataset.chatopen)));
+  if(c.vy==='samtale'&&c.id)an(document.querySelector('#chat .chd'),chatTraad(c.id))}catch(e){}}
+function tilstLytt(){
+  tilstPuls();if(state.tilUnsub||!FB||!state.user||!state.member)return;
+  state.tilUnsub=FB.watchTilstede(l=>{Object.keys(tilst).forEach(k=>delete tilst[k]);l.forEach(x=>{tilst[x.id]=x.ms});tilstOppd()},()=>{});
+  const el=chatEl();if(el&&!state.tilObs){state.tilObs=new MutationObserver(()=>{cancelAnimationFrame(state.tilRaf);state.tilRaf=requestAnimationFrame(tilstOppd)});state.tilObs.observe(el,{childList:true,subtree:true})}
+  state.tilTik=setInterval(tilstOppd,60e3)}
+function tilstStopp(){if(state.tilUnsub){try{state.tilUnsub()}catch(e){}state.tilUnsub=null}clearInterval(state.tilTik);if(state.tilObs){state.tilObs.disconnect();state.tilObs=null}}
+setInterval(tilstPuls,45e3);document.addEventListener('visibilitychange',tilstPuls);
 function chatListeInn(){
   const q=norm((state.chat&&state.chat.q)||'').trim(),meg=meEmail(),l=state.threads&&state.threads.filter(t=>!(t.gone||[]).includes(meg)&&(!q||norm(chatNavn(t,meg)+' '+(t.last||'')).includes(q)));
   if(l===undefined)return '<p class="small" style="padding:14px">Henter samtaler …</p>';
@@ -4927,7 +4949,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 01:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 02:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5006,6 +5028,7 @@ function settingsKort(){
   ${profSub('inpush','Varsler',pushInner())}
   ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Lys eller mørk</h3><p class="small" style="margin:0 0 8px">Automatisk følger telefonens eget valg (lys eller mørk), også når det bytter av seg selv. Sol/måne-knappen i toppen velger lys eller mørk fast.</p><div class="btns" role="group" aria-label="Lys eller mørk" style="margin-bottom:16px">${[['auto','Følg telefonen'],['light','Lys'],['dark','Mørk']].map(([v,n])=>`<button type="button" class="btn ${(document.documentElement.dataset.theme||'auto')===v?'on':''}" data-tema="${v}" aria-pressed="${(document.documentElement.dataset.theme||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Skjermvisning</h3><p class="small" style="margin:0 0 8px">På PC kan appen fylle hele nettleservinduet med sidemeny og flere kolonner. Automatisk betyr bred visning for administratorer på stor skjerm.</p><div class="btns" role="group" aria-label="Skjermvisning" style="margin-bottom:16px">${[['auto','Automatisk'],['bred','Bred (PC)'],['mobil','Mobilvisning']].map(([v,n])=>`<button type="button" class="btn ${(UI.vis||'auto')===v?'on':''}" data-vis="${v}" aria-pressed="${(UI.vis||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Meny</h3><p class="small" style="margin:0 0 8px">Når appen er utvidet til hele bredden, kan menyen stå på siden eller nederst som på mobil.</p><div class="btns" role="group" aria-label="Plassering av menyen" style="margin-bottom:16px">${[['side','På siden'],['bunn','Nederst']].map(([v,n])=>`<button type="button" class="btn ${(UI.meny||'side')===v?'on':''}" data-meny="${v}" aria-pressed="${(UI.meny||'side')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${[...PALETTER,egenPalEntry()].map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div>${egenEditor()}<p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
   ${chatKan()?profSub('inbook','Bookinger',bryter('autovid','Send nye bookinger automatisk til teamet','Når du får en ny booking i Sionchat, sendes den videre til teamet uten at du trykker. Skjer når appen din er åpen. Gjelder bare på denne enheten.')+'<label class="f" style="margin-top:8px">Team<select id="autovidG">'+chatGrupper().map(g=>'<option value="'+esc(g[0])+'" '+(g[0]===(UI.autovidG||(chatGrupper().find(x=>/torsdag/i.test(x[0]+x[1]))||chatGrupper()[0]||[''])[0])?'selected':'')+'>'+esc(g[1])+'</option>').join('')+'</select></label>'):''}
+  ${profSub('insynlig','Sionchat',bryter('synlig','Vis at jeg er aktiv','Andre medlemmer ser en liten grønn prikk ved navnet ditt i Sionchat når du har appen åpen. Slå av hvis du ikke vil vises.'))}
   ${profSub('invaken','Skjerm',bryter('vaken','Hold skjermen våken','Skjermen slukker ikke så lenge appen er åpen og i forgrunnen. Bruker mer batteri.')+(navigator.wakeLock?'':'<p class="small" style="margin:6px 0 0">Denne nettleseren støtter ikke dette.</p>')+'<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>')}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
@@ -5789,7 +5812,7 @@ document.addEventListener('click',async e=>{
   else if('rscancel' in c.dataset){$('#rsDlg').close();rsPending=null}
   else if(c.dataset.af){state.af=c.dataset.af;state.sel={};keep(()=>{})}
   else if(c.dataset.f){state.filter=c.dataset.f;keep(()=>{})}
-  else if(c.dataset.ui){keep(()=>{const k0=c.dataset.ui;UI[k0]=(k0==='nh'||k0==='vaken'||k0==='autovid')?!UI[k0]:UI[k0]===false;if(k0==='vaken')vakenSett();if(c.dataset.ui==='vk'&&UI.vk)lsSet('sm-viktig-skjult','');uiLagre()})}
+  else if(c.dataset.ui){keep(()=>{const k0=c.dataset.ui;UI[k0]=(k0==='nh'||k0==='vaken'||k0==='autovid')?!UI[k0]:UI[k0]===false;if(k0==='vaken')vakenSett();if(k0==='synlig'){if(UI.synlig===false){try{FB.tilstedeBort().catch(()=>{})}catch(e){}}else{tilstSist=0;tilstPuls()}}if(c.dataset.ui==='vk'&&UI.vk)lsSet('sm-viktig-skjult','');uiLagre()})}
   else if('egenbruk' in c.dataset){setPal('egen');keep(()=>{})}
   else if(c.dataset.egenauto){const k=c.dataset.egenauto;let j={};try{j=JSON.parse(lsGet('sm-egen')||'{}')||{}}catch(e){}j[k]='';lsSet('sm-egen',JSON.stringify(j));egenBruk();keep(()=>{})}
   else if('egenreset' in c.dataset){lsSet('sm-egen','');egenBruk();keep(()=>{})}

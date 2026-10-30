@@ -129,6 +129,10 @@ const FB={
       b.set(mref,{by:me,name:String(name).slice(0,60),text:String(text).slice(0,1000),created:S.serverTimestamp()});
       await b.commit();return tref.id},
     async newAvst(d){const me=auth.currentUser.email.toLowerCase(),r=await S.addDoc(S.collection(db,'avst'),{sp:String(d.sp).slice(0,120),val:d.val.slice(0,5).map(x=>String(x).slice(0,40)),by:me,byNavn:String(d.navn||'').slice(0,60),grupper:d.grupper||[],ms:Date.now()});return r.id},
+    /* Online-merke i Sionchat: tilstede/{e-post} {sist}. Skrives av egen app med jevne mellomrom mens den er åpen; andre leser bare dem som er oppdatert siste 10 min. */
+    tilstedePuls:()=>S.setDoc(S.doc(db,'tilstede',auth.currentUser.email.toLowerCase()),{sist:S.serverTimestamp()}),
+    tilstedeBort:()=>S.deleteDoc(S.doc(db,'tilstede',auth.currentUser.email.toLowerCase())),
+    watchTilstede:(cb,err)=>S.onSnapshot(S.query(S.collection(db,'tilstede'),S.where('sist','>',S.Timestamp.fromMillis(Date.now()-10*60e3))),s=>cb(s.docs.map(d=>{const t=d.data({serverTimestamps:'estimate'}).sist;return {id:d.id,ms:t&&t.toMillis?t.toMillis():Date.now()}})),e=>err&&err(e)),
     watchAvst:(id,cb,err)=>S.onSnapshot(S.doc(db,'avst',id),s=>cb(s.exists()?{id,...s.data()}:null),e=>err&&err(e)),
     voteAvst:(id,ny,gammel)=>{const me=auth.currentUser.email.toLowerCase(),u={};if(gammel>=0)u['v'+gammel]=S.arrayRemove(me);if(ny>=0&&ny!==gammel)u['v'+ny]=S.arrayUnion(me);return S.updateDoc(S.doc(db,'avst',id),u)},
     watchBonner:(tid,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',tid,'bonner'),S.orderBy('ms','desc'),S.limit(60)),s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))),e=>err&&err(e)),
