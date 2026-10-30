@@ -3586,7 +3586,11 @@ function navPlasser(e){
     if(!full&&document.documentElement.dataset.bred==='1'&&mn){const cs=getComputedStyle(mn),w=mn.clientWidth-parseFloat(cs.paddingLeft||0)-parseFloat(cs.paddingRight||0);if(w>320)e.style.setProperty('--cb',Math.round(Math.min(w,920))+'px')   /* 920 = innholdsbredden i Program og Nyheter (1000 − 2×40 padding), uavhengig av hvilken fane som lå under */;else e.style.removeProperty('--cb')}
     else e.style.removeProperty('--cb')}}
 addEventListener('resize',()=>{if(state.chat.vis)chatPlasser()});
-const chatTemaOppd=()=>{const e=document.getElementById('chat');if(e)e.dataset.mork=isDark()?'1':'0';try{chatFargeBruk()}catch(x){}};
+/* Fullskjerm: statuslinjen øverst og systemfeltet nederst får samme farge som chatten (svart/hvit øverst, bunnfargen i overgangen nederst), ellers står appens marineblå igjen. */
+function chatFullFarge(){try{const m=document.querySelector('meta[name=theme-color]'),h=document.documentElement,e=document.getElementById('chat');if(!m)return;
+  if(h.classList.contains('chatfull')&&e&&state.chat&&state.chat.vis){const mork=e.dataset.mork==='1';m.content=mork?'#000000':'#ffffff';h.style.background=mork?'#10151c':'#eef3fa'}
+  else{h.style.background='';const d=isDark();m.content=(window.PAL_BG&&PAL_BG[h.dataset.pal]||['#f6f4ef','#0a1b2e'])[d?1:0]}}catch(x){}}
+const chatTemaOppd=()=>{const e=document.getElementById('chat');if(e)e.dataset.mork=isDark()?'1':'0';try{chatFargeBruk()}catch(x){}chatFullFarge()};
 /* Glass-effekt: måler toppen og skrivefeltet slik at meldingene kan gli under dem. Bare i en åpen samtale, og bare når ingenting annet (emoji-panel, opptak, svarlinje) står mellom meldingene og skrivefeltet. */
 function chatGlass(){const cw=document.querySelector('#chat .cw');if(!cw)return;const m=document.getElementById('cMsg'),h=cw.querySelector('.chd'),f=document.getElementById('cForm');
   if(!m||!h||!f){if(cw.hasAttribute('data-glass'))cw.removeAttribute('data-glass');return}
@@ -3669,7 +3673,7 @@ function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unre
 function chatApne(id){
   if(!FB||!state.user||!state.member)return;
   const c=state.chat;try{if(typeof ovgRydd==='function')ovgRydd();chatEl().getAnimations().forEach(a=>a.cancel());chatEl().style.pointerEvents=''}catch(e){}
-  c.vis=true;document.documentElement.classList.add('chatapen');document.documentElement.classList.toggle('chatfull',!!c.full);chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';try{drawTabs()}catch(e){}
+  c.vis=true;document.documentElement.classList.add('chatapen');document.documentElement.classList.toggle('chatfull',!!c.full);chatEl().hidden=false;chatTemaOppd();chatFullFarge();chatPlasser();document.body.style.overflow='hidden';try{drawTabs()}catch(e){}
   loadThreads();tilstLytt();
   chatListe();if(id)chatVent(id,()=>chatSamtale(id))}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
@@ -3684,11 +3688,11 @@ function chatOvergang(dir,endre){
   endre();
   try{ovgInn(chatEl(),dir,ovgRedusert());if(spok){const sp=spok;ovgRydde.push(()=>sp.remove());ovgUt(sp,dir,()=>sp.remove())}}catch(er){if(spok)spok.remove()}}
 function chatFullSett(på){const c=state.chat;if(!!på===!!c.full)return;chatOvergang(på?1:-1,()=>chatFullSett2(på))}
-function chatFullSett2(på){const c=state.chat;c.full=!!på;if(!c.full)c.fil='alle';document.documentElement.classList.toggle('chatfull',c.full);chatPlasser();
+function chatFullSett2(på){const c=state.chat;c.full=!!på;if(!c.full)c.fil='alle';setTimeout(chatFullFarge,0);document.documentElement.classList.toggle('chatfull',c.full);chatFullFarge();chatPlasser();
   /* Menylinjen var skjult (målte 0 bredde): flytt markeringen på Sionchat-knappen til riktig sted når den vises igjen */
   try{drawTabs();tabIndFlytt();requestAnimationFrame(tabIndFlytt)}catch(e){}
   if(c.vy==='liste')chatListe();try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
-function chatLukk(){const c=state.chat;if(c.vy==='samtale'&&c.id)c.sist={id:c.id,ms:Date.now()};tilstStopp();chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen','chatfull');c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
+function chatLukk(){const c=state.chat;if(c.vy==='samtale'&&c.id)c.sist={id:c.id,ms:Date.now()};tilstStopp();chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen','chatfull');c.vis=false;chatFullFarge();c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
 /* Online-merke: tilstede/{e-post} oppdateres hvert ~2. minutt mens appen er synlig (hvis Innstillinger → Sionchat tillater det). Den som har samtalen åpen leser listen og viser prikken ved private samtaler hvis den andre var aktiv for under 5 minutter siden. */
 const tilst={};
 const chatOnline=e=>{const t=tilst[String(e||'').toLowerCase()];return !!t&&Date.now()-t<5*60e3};
@@ -5085,7 +5089,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='31.10.2026 kl. 02:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='31.10.2026 kl. 02:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
