@@ -575,6 +575,10 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 .chat .cw{width:100%;max-width:560px;height:100%;background:var(--bg);display:flex;flex-direction:column;padding-top:0}
 .chd{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
 .chd h2{margin:0;font-size:var(--t-xl)}
+/* Fullskjerm i Sionchat: toppen og menylinjen skjules, og listen får logoen (som vanlig øverst til venstre) med «Sionchat» til høyre */
+html.chatfull header.top,html.chatfull nav.tabs{display:none!important}
+.chd .cfl{width:36px;height:40px;flex:none;display:block;background:var(--ink);-webkit-mask:url(logo-512.png) center/contain no-repeat;mask:url(logo-512.png) center/contain no-repeat}
+html.chatfull .chat{padding-top:env(safe-area-inset-top,0)}
 .mapps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;margin:12px 0 4px}
 .mapp{all:unset;box-sizing:border-box;position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font-size:var(--t-s);font-weight:600;text-align:center;-webkit-tap-highlight-color:transparent}
 .mapp i{width:68px;height:68px;border-radius:18px;display:grid;place-items:center;color:#fff;box-shadow:0 5px 12px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .15s var(--ease,ease)}
@@ -3558,16 +3562,18 @@ if(window.visualViewport){visualViewport.addEventListener('resize',()=>{if(state
 /* Fullskjermvisninger (chat, kamera) legges over innholdet, men aldri over menylinjen (nederst, eller på siden i bred visning). */
 function navPlasser(e){
   const n=document.getElementById('tabs');if(!e||!n)return;const r=n.getBoundingClientRect();
-  if(document.documentElement.dataset.bred==='1'&&document.documentElement.dataset.meny!=='bunn'){e.style.left=r.width+'px';e.style.bottom='0px'}
+  const full=e.id==='chat'&&document.documentElement.classList.contains('chatfull');
+  if(full){e.style.left='0px';e.style.bottom='0px'}
+  else if(document.documentElement.dataset.bred==='1'&&document.documentElement.dataset.meny!=='bunn'){e.style.left=r.width+'px';e.style.bottom='0px'}
   else{e.style.left='0px';e.style.bottom=Math.max(0,innerHeight-r.top)+'px'}
   /* Sionchat ligger under den felles toppen (logo, navn, dato og ikonene), som alle de andre fanene. */
-  if(e.id==='chat'){const h=document.querySelector('header.top');let top=h?Math.max(0,Math.round(h.getBoundingClientRect().bottom)):0;
+  if(e.id==='chat'){const h=document.querySelector('header.top');let top=(h&&!full)?Math.max(0,Math.round(h.getBoundingClientRect().bottom)):0;
     /* Tastaturet oppe: det synlige området er visualViewport. Vinduet slutter over tastaturet slik at skrivefeltet ikke skjules. */
     const v=window.visualViewport;if(v&&v.height<innerHeight-120){e.style.bottom=Math.max(0,Math.round(innerHeight-(v.offsetTop+v.height)))+'px';top=Math.max(top,Math.round(v.offsetTop))}
     e.style.top=top+'px';
     /* Bred visning: chatten er like bred som innholdet på de andre sidene (Hjem, Program osv.), og feltet rundt har appens vanlige bakgrunn. */
     const mn=document.getElementById('view');
-    if(document.documentElement.dataset.bred==='1'&&mn){const cs=getComputedStyle(mn),w=mn.clientWidth-parseFloat(cs.paddingLeft||0)-parseFloat(cs.paddingRight||0);if(w>320)e.style.setProperty('--cb',Math.round(Math.min(w,920))+'px')   /* 920 = innholdsbredden i Program og Nyheter (1000 − 2×40 padding), uavhengig av hvilken fane som lå under */;else e.style.removeProperty('--cb')}
+    if(!full&&document.documentElement.dataset.bred==='1'&&mn){const cs=getComputedStyle(mn),w=mn.clientWidth-parseFloat(cs.paddingLeft||0)-parseFloat(cs.paddingRight||0);if(w>320)e.style.setProperty('--cb',Math.round(Math.min(w,920))+'px')   /* 920 = innholdsbredden i Program og Nyheter (1000 − 2×40 padding), uavhengig av hvilken fane som lå under */;else e.style.removeProperty('--cb')}
     else e.style.removeProperty('--cb')}}
 addEventListener('resize',()=>{if(state.chat.vis)chatPlasser()});
 const chatTemaOppd=()=>{const e=document.getElementById('chat');if(e)e.dataset.mork=isDark()?'1':'0';try{chatFargeBruk()}catch(x){}};
@@ -3653,7 +3659,7 @@ function chatLest(){const t=chatTraad(state.chat.id),meg=meEmail();if(t&&(t.unre
 function chatApne(id){
   if(!FB||!state.user||!state.member)return;
   const c=state.chat;try{if(typeof ovgRydd==='function')ovgRydd();chatEl().getAnimations().forEach(a=>a.cancel());chatEl().style.pointerEvents=''}catch(e){}
-  c.vis=true;document.documentElement.classList.add('chatapen');chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';try{drawTabs()}catch(e){}
+  c.vis=true;document.documentElement.classList.add('chatapen');document.documentElement.classList.toggle('chatfull',!!c.full);chatEl().hidden=false;chatTemaOppd();chatPlasser();document.body.style.overflow='hidden';try{drawTabs()}catch(e){}
   loadThreads();tilstLytt();
   chatListe();if(id)chatVent(id,()=>chatSamtale(id))}
 /* Samtalen kan komme litt etter at den er opprettet: vent til lytteren har den. */
@@ -3662,7 +3668,9 @@ function chatVent(id,fn,n){n=n||0;if(chatTraad(id)){fn();return}if(n>12){chatLis
 const chatHistSikre=()=>{const c=state.chat;if(c&&!c.hist){try{history.pushState({sion:'chat'},'')}catch(e){}c.hist=true}};
 const chatHistFjern=()=>{const c=state.chat;if(c&&c.hist){c.hist=false;try{history.back()}catch(e){}}};
 addEventListener('popstate',()=>{const c=state.chat;if(!c||!c.vis||c.vy==='liste')return;c.hist=false;if(c.vy==='samtale'&&c.ny&&c.ny.mode==='gruppe')chatNyVelg();else chatListe()});
-function chatLukk(){const c=state.chat;if(c.vy==='samtale'&&c.id)c.sist={id:c.id,ms:Date.now()};tilstStopp();chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen');c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
+function chatFullSett(på){const c=state.chat;c.full=!!på;document.documentElement.classList.toggle('chatfull',c.full);chatPlasser();
+  if(c.vy==='liste')chatListe();try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
+function chatLukk(){const c=state.chat;if(c.vy==='samtale'&&c.id)c.sist={id:c.id,ms:Date.now()};tilstStopp();chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen','chatfull');c.vis=false;c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
 /* Online-merke: tilstede/{e-post} oppdateres hvert ~2. minutt mens appen er synlig (hvis Innstillinger → Sionchat tillater det). Den som har samtalen åpen leser listen og viser prikken ved private samtaler hvis den andre var aktiv for under 5 minutter siden. */
 const tilst={};
 const chatOnline=e=>{const t=tilst[String(e||'').toLowerCase()];return !!t&&Date.now()-t<5*60e3};
@@ -3689,7 +3697,8 @@ function chatListeInn(){
 function chatListe(){
   const c=state.chat;if(c.vy==='samtale'&&c.id)c.sist={id:c.id,ms:Date.now()};chatHistFjern();chatStoppMsgs();c.vy='liste';c.id=null;c.ny=null;
   chatW().innerHTML=chatListeHtml()}
-const chatListeHtml=(under)=>'<header class="chd"><h2>Sionchat</h2><span class="grow"></span>'+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatspill aria-label="Spill"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8h10a4 4 0 0 1 4 4v1a3 3 0 0 1-5.2 2L14.5 14h-5l-1.3 1A3 3 0 0 1 3 13v-1a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11" r=".7" fill="currentColor"/><circle cx="17.5" cy="13" r=".7" fill="currentColor"/></svg></button></header><div class="csokl"><input '+(under?'':'id="cSokL" ')+'type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc((state.chat&&state.chat.q)||'')+'"></div><div class="cliste"'+(under?'':' id="cListe"')+'>'+chatListeInn()+'</div>';
+const CHAT_FULL_INN='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',CHAT_FULL_UT='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const chatListeHtml=(under)=>'<header class="chd">'+(!under&&state.chat.full?'<span class="cfl" role="img" aria-label="Sion Molde"></span>':'')+'<h2>Sionchat</h2><span class="grow"></span>'+(under?'':'<button type="button" class="cbtn" data-chatfull aria-label="'+(state.chat.full?'Gå ut av fullskjerm':'Fullskjerm')+'" title="'+(state.chat.full?'Gå ut av fullskjerm':'Fullskjerm')+'">'+(state.chat.full?CHAT_FULL_UT:CHAT_FULL_INN)+'</button>')+(chatKan()?'<button type="button" class="cbtn" data-chatnyv aria-label="Ny melding">'+PEN+'</button>':'')+'<button type="button" class="cbtn" data-chatspill aria-label="Spill"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8h10a4 4 0 0 1 4 4v1a3 3 0 0 1-5.2 2L14.5 14h-5l-1.3 1A3 3 0 0 1 3 13v-1a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11" r=".7" fill="currentColor"/><circle cx="17.5" cy="13" r=".7" fill="currentColor"/></svg></button></header><div class="csokl"><input '+(under?'':'id="cSokL" ')+'type="search" placeholder="Søk i samtaler" autocomplete="off" aria-label="Søk i samtaler" value="'+esc((state.chat&&state.chat.q)||'')+'"></div><div class="cliste"'+(under?'':' id="cListe"')+'>'+chatListeInn()+'</div>';
 const chatSend='<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.4 20.4l17.5-7.5a1 1 0 0 0 0-1.8L3.4 3.6a1 1 0 0 0-1.4 1.2L4 11l9 1-9 1-2 6.2a1 1 0 0 0 1.4 1.2z"/></svg>';
 const TRASH='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const KAMIKON='<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
@@ -4245,6 +4254,15 @@ function chatBokVidere(mid){
   /* Etter et kikk skal ikke slippet åpne samtalen. */
   document.addEventListener('click',e=>{if(Date.now()-sup<700&&rad(e.target)){e.preventDefault();e.stopPropagation()}},true);
 }
+/* Fullskjerm: sveip mot høyre går ett steg tilbake: fra samtalen til oversikten, og fra oversikten ut av fullskjerm. Starter sveipet på en melding (som kan sveipes for å svare), må det starte helt ved venstre kant. */
+{
+  let sx=0,sy=0,ok=false,tatt=false;
+  document.addEventListener('touchstart',e=>{const t=e.target,c=state.chat;ok=!!(c&&c.vis&&c.full&&e.touches.length===1&&t.closest&&t.closest('#chat')&&!t.closest('#cPeek,input,textarea,.cinp,[data-glid],audio'));tatt=false;
+    if(ok){sx=e.touches[0].clientX;sy=e.touches[0].clientY;if(t.closest('.crow,.cb')&&sx>40)ok=false}},{passive:true});
+  const sjekk=e=>{if(!ok||tatt||e.touches.length!==1)return;const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
+    if(dx>80&&Math.abs(dy)<dx*.6){tatt=true;ok=false;const c=state.chat;if(c.vy==='liste')chatFullSett(false);else if(c.vy==='samtale'&&!c.ny)chatListe();else if(c.vy==='samtale'||c.ny)chatListe()}};
+  document.addEventListener('touchmove',sjekk,{passive:true});
+}
 /* Rett etter at du har gått ut av en samtale (innen 5 min): sveip fra høyre mot venstre i samtalelisten for å gå tilbake til den. */
 {
   let sx=0,sy=0,lx=0,ly=0,ok=false;
@@ -4673,6 +4691,7 @@ document.addEventListener('click',e=>{
   else if(d.bokcal)utApneId(d.bokcal);
   else if(d.bokop){const [mid,o]=d.bokop.split('|');chatBokOppg(mid,o)}
   else if('chatavstny' in d)chatAvstNy('gruppe');
+  else if('chatfull' in d)chatFullSett(!state.chat.full);
   else if('chatspill' in d)chatQuiz();
   else if(d.cspill){if(d.cspill==='avst')chatAvstNy('person');else chatSpillSend(d.cspill)}
   else if(d.cmal){const ta=document.getElementById('cT');if(ta){ta.value=d.cmal;ta.dispatchEvent(new Event('input',{bubbles:true}));ta.focus()}}
@@ -5039,7 +5058,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 22:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 23:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
