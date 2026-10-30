@@ -4136,9 +4136,11 @@ function chatBokVidere(mid){
   let st=null,tm=0,sup=0;
   const rad=t=>t&&t.closest&&t.closest('#chat .crad[data-chatopen]');
   const fjern=()=>{const p=document.getElementById('cPeek');if(p)p.remove()};
-  const slutt=()=>{clearTimeout(tm);tm=0;if(st&&st.vis)sup=Date.now();st=null};
+  /* Kortet flyr bort i retningen det ble dratt. */
+  const bort=(p,dx,dy)=>{if(!p||!p.isConnected)return;const l=Math.hypot(dx,dy)||1,k=Math.max(innerWidth,innerHeight)*1.2/l;p.style.pointerEvents='none';p.style.transition='transform .2s ease,opacity .2s ease';p.style.transform='translate('+Math.round(dx*k)+'px,'+Math.round(dy*k)+'px)';p.style.opacity='0';setTimeout(()=>p.remove(),210)};
+  const slutt=()=>{clearTimeout(tm);tm=0;if(st&&st.vis){sup=Date.now();const p=document.getElementById('cPeek');if(p&&Math.hypot(st.dx||0,st.dy||0)>8)bort(p,st.dx,st.dy)}st=null};
   const start=(el,x,y)=>{slutt();st={el,x,y,vis:false};tm=setTimeout(()=>{tm=0;if(!st)return;st.vis=true;try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}kikk(st.el)},380)};
-  const flytt=(x,y,e)=>{if(!st)return;if(st.vis){if(e&&e.cancelable)e.preventDefault();return}
+  const flytt=(x,y,e)=>{if(!st)return;if(st.vis){if(e&&e.cancelable)e.preventDefault();const p=document.getElementById('cPeek');if(p){st.dx=x-st.x;st.dy=y-st.y;p.style.transition='none';p.style.transform='translate('+st.dx+'px,'+st.dy+'px)';p.style.opacity=String(Math.max(.3,1-Math.hypot(st.dx,st.dy)/300))}return}
     if(Math.abs(x-st.x)>10||Math.abs(y-st.y)>10){clearTimeout(tm);tm=0;st=null}};
   async function kikk(el){
     const id=el.dataset.chatopen,t=(state.threads||[]).find(x=>x.id===id);if(!t)return;
@@ -4171,11 +4173,10 @@ function chatBokVidere(mid){
     /* Trykk lukker. Sveip (til siden eller opp) lukker også; kortet følger fingeren mens du sveiper. */
     let sx=0,sy=0,dx=0,dy=0,nede=false;
     p.addEventListener('pointerdown',e=>{nede=true;sx=e.clientX;sy=e.clientY;dx=dy=0;try{p.setPointerCapture(e.pointerId)}catch(x){}});
-    p.addEventListener('pointermove',e=>{if(!nede)return;dx=e.clientX-sx;dy=Math.min(0,e.clientY-sy);p.style.transition='none';p.style.transform='translate('+dx+'px,'+dy+'px)';p.style.opacity=String(Math.max(.25,1-Math.max(Math.abs(dx),Math.abs(dy))/260))});
+    p.addEventListener('pointermove',e=>{if(!nede)return;dx=e.clientX-sx;dy=e.clientY-sy;p.style.transition='none';p.style.transform='translate('+dx+'px,'+dy+'px)';p.style.opacity=String(Math.max(.25,1-Math.max(Math.abs(dx),Math.abs(dy))/260))});
     p.addEventListener('pointerup',()=>{if(!nede)return;nede=false;const d=Math.max(Math.abs(dx),Math.abs(dy));
       if(d<8){p.remove();return}
-      if(d>60){p.style.transition='transform .18s ease,opacity .18s ease';p.style.transform='translate('+(Math.abs(dx)>=Math.abs(dy)?(dx>0?'110vw':'-110vw')+',0':'0,-60vh')+')';p.style.opacity='0';setTimeout(()=>p.remove(),190)}
-      else{p.style.transition='transform .18s ease,opacity .18s ease';p.style.transform='';p.style.opacity=''}});
+      bort(p,dx,dy)});
     p.addEventListener('pointercancel',()=>{nede=false;p.style.transform='';p.style.opacity=''});
     if(siste.length>=138&&FB&&FB.lastMsgs){try{const ms=await FB.lastMsgs(id,1),m=ms&&ms[0];if(m&&m.text&&document.getElementById('cPeek')===p){p.querySelector('.cpeek-tx').innerHTML=chatTekstHtml(m.text);plass()}}catch(e){}}}
   document.addEventListener('touchstart',e=>{if(e.target.closest&&e.target.closest('#cPeek'))return;const el=rad(e.target);if(!el||e.touches.length!==1){slutt();return}start(el,e.touches[0].clientX,e.touches[0].clientY)},{passive:true});
@@ -4977,7 +4978,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 03:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 03:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
