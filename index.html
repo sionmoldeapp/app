@@ -3582,11 +3582,25 @@ const chatW=()=>chatEl().querySelector('.cw:not(.cunder)');
 function chatStoppMsgs(){const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}c.unsub=null}c.msgs=[];try{chatAvstStopp();chatBonnStopp();chatMicAvbryt(true)}catch(e){}}
 function thrStopp(){if(state.thrUnsub){try{state.thrUnsub()}catch(e){}state.thrUnsub=null}}
 /* Lytter på samtalene til brukeren (maks 50). Første kall setter opp lytteren; senere kall gjør ingenting. */
+/* Pling når en ny melding kommer mens appen er åpen (Innstillinger → Sionchat → Lyd). Lyden lages i nettleseren: to korte, myke toner oppover. Nettleseren tillater lyd først etter at du har trykket på noe i appen. */
+let lydCtx=null;
+const lydKlar=()=>{try{if(!lydCtx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;lydCtx=new A()}if(lydCtx.state==='suspended')lydCtx.resume()}catch(e){}};
+document.addEventListener('pointerdown',lydKlar,{passive:true});document.addEventListener('keydown',lydKlar);
+function chatPling(){
+  try{if(UI.lyd===false||document.hidden)return;lydKlar();const c=lydCtx;if(!c||c.state!=='running')return;
+    const t0=c.currentTime+.02;
+    [[1318.5,0],[1975.5,.11]].forEach(([f,d])=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;
+      g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(.22,t0+d+.012);g.gain.exponentialRampToValueAtTime(.0001,t0+d+.42);
+      o.connect(g);g.connect(c.destination);o.start(t0+d);o.stop(t0+d+.45)})}catch(e){}}
+function plingSjekk(ny){
+  const meg=meEmail(),gml=state.threads;if(!gml)return;
+  const m={};gml.forEach(t=>{m[t.id]=t.ms||0});
+  if(ny.some(t=>t.lastBy!==meg&&(t.ms||0)>(m[t.id]!==undefined?m[t.id]:Infinity)&&!(t.dempet||[]).includes(meg)&&!(t.gone||[]).includes(meg)))chatPling()}
 function loadThreads(){
   if(!FB||!state.user||!state.member)return Promise.resolve();
   if(state.thrUnsub)return state.thrPromise||Promise.resolve();
   state.thrPromise=new Promise(res=>{
-    state.thrUnsub=FB.watchThreads(meEmail(),l=>{state.threads=l;state.meldMsg='';chatTraadEndret();res()},e=>{state.threads=state.threads||[];state.meldMsg='Kunne ikke hente samtaler ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?';chatTraadEndret();res()})});
+    state.thrUnsub=FB.watchThreads(meEmail(),l=>{try{plingSjekk(l)}catch(e){}state.threads=l;state.meldMsg='';chatTraadEndret();res()},e=>{state.threads=state.threads||[];state.meldMsg='Kunne ikke hente samtaler ('+((e&&e.code)||'feil')+'). Er de nye reglene publisert i Firebase?';chatTraadEndret();res()})});
   return state.thrPromise}
 function chatTraadEndret(){
   try{drawTabs();badge()}catch(e){}
@@ -4983,7 +4997,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 05:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 05:35';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5062,7 +5076,7 @@ function settingsKort(){
   ${profSub('inpush','Varsler',pushInner())}
   ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Lys eller mørk</h3><p class="small" style="margin:0 0 8px">Automatisk følger telefonens eget valg (lys eller mørk), også når det bytter av seg selv. Sol/måne-knappen i toppen velger lys eller mørk fast.</p><div class="btns" role="group" aria-label="Lys eller mørk" style="margin-bottom:16px">${[['auto','Følg telefonen'],['light','Lys'],['dark','Mørk']].map(([v,n])=>`<button type="button" class="btn ${(document.documentElement.dataset.theme||'auto')===v?'on':''}" data-tema="${v}" aria-pressed="${(document.documentElement.dataset.theme||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Skjermvisning</h3><p class="small" style="margin:0 0 8px">På PC kan appen fylle hele nettleservinduet med sidemeny og flere kolonner. Automatisk betyr bred visning for administratorer på stor skjerm.</p><div class="btns" role="group" aria-label="Skjermvisning" style="margin-bottom:16px">${[['auto','Automatisk'],['bred','Bred (PC)'],['mobil','Mobilvisning']].map(([v,n])=>`<button type="button" class="btn ${(UI.vis||'auto')===v?'on':''}" data-vis="${v}" aria-pressed="${(UI.vis||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Meny</h3><p class="small" style="margin:0 0 8px">Når appen er utvidet til hele bredden, kan menyen stå på siden eller nederst som på mobil.</p><div class="btns" role="group" aria-label="Plassering av menyen" style="margin-bottom:16px">${[['side','På siden'],['bunn','Nederst']].map(([v,n])=>`<button type="button" class="btn ${(UI.meny||'side')===v?'on':''}" data-meny="${v}" aria-pressed="${(UI.meny||'side')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${[...PALETTER,egenPalEntry()].map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div>${egenEditor()}<p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
   ${chatKan()?profSub('inbook','Bookinger',bryter('autovid','Send nye bookinger automatisk til teamet','Når du får en ny booking i Sionchat, sendes den videre til teamet uten at du trykker. Skjer når appen din er åpen. Gjelder bare på denne enheten.')+'<label class="f" style="margin-top:8px">Team<select id="autovidG">'+chatGrupper().map(g=>'<option value="'+esc(g[0])+'" '+(g[0]===(UI.autovidG||(chatGrupper().find(x=>/torsdag/i.test(x[0]+x[1]))||chatGrupper()[0]||[''])[0])?'selected':'')+'>'+esc(g[1])+'</option>').join('')+'</select></label>'):''}
-  ${profSub('insynlig','Sionchat',bryter('synlig','Vis at jeg er aktiv','Andre medlemmer ser en liten grønn prikk ved navnet ditt i Sionchat når du har appen åpen. Slå av hvis du ikke vil vises.'))}
+  ${profSub('insynlig','Sionchat',bryter('lyd','Pling ved ny melding','En kort lyd når en ny melding kommer mens appen er åpen. Gjelder bare på denne enheten.')+bryter('synlig','Vis at jeg er aktiv','Andre medlemmer ser en liten grønn prikk ved navnet ditt i Sionchat når du har appen åpen. Slå av hvis du ikke vil vises.'))}
   ${profSub('invaken','Skjerm',bryter('vaken','Hold skjermen våken','Skjermen slukker ikke så lenge appen er åpen og i forgrunnen. Bruker mer batteri.')+(navigator.wakeLock?'':'<p class="small" style="margin:6px 0 0">Denne nettleseren støtter ikke dette.</p>')+'<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>')}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
