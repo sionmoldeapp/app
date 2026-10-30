@@ -4167,7 +4167,6 @@ function chatBokVidere(mid){
     const utenfor=ev=>{if(!p.contains(ev.target))lukkP(ev)};
     document.addEventListener('pointerdown',utenfor,true);document.addEventListener('touchstart',utenfor,true);
     p.querySelector('.cpeek-x').addEventListener('click',ev=>{ev.stopPropagation();p.remove()});
-    p.addEventListener('click',lukkP);p.addEventListener('touchend',()=>setTimeout(()=>{if(p.isConnected)lukkP()},30),{passive:true});
     const w=Math.min(innerWidth-24,520);p.style.width=w+'px';p.style.left=Math.round((innerWidth-w)/2)+'px';
     const plass=()=>{let top=q.bottom+6;if(top+p.offsetHeight>innerHeight-10)top=Math.max(10,q.top-p.offsetHeight-6);p.style.top=Math.round(top)+'px'};plass();
     /* Trykk lukker. Sveip (til siden eller opp) lukker også; kortet følger fingeren mens du sveiper. */
@@ -4177,7 +4176,7 @@ function chatBokVidere(mid){
     p.addEventListener('pointerup',()=>{if(!nede)return;nede=false;const d=Math.max(Math.abs(dx),Math.abs(dy));
       if(d<8){p.remove();return}
       bort(p,dx,dy)});
-    p.addEventListener('pointercancel',()=>{nede=false;p.style.transform='';p.style.opacity=''});
+    p.addEventListener('pointercancel',()=>{if(!nede)return;nede=false;if(Math.max(Math.abs(dx),Math.abs(dy))>=8)bort(p,dx,dy);else{p.style.transform='';p.style.opacity=''}});
     if(siste.length>=138&&FB&&FB.lastMsgs){try{const ms=await FB.lastMsgs(id,1),m=ms&&ms[0];if(m&&m.text&&document.getElementById('cPeek')===p){p.querySelector('.cpeek-tx').innerHTML=chatTekstHtml(m.text);plass()}}catch(e){}}}
   document.addEventListener('touchstart',e=>{if(e.target.closest&&e.target.closest('#cPeek'))return;const el=rad(e.target);if(!el||e.touches.length!==1){slutt();return}start(el,e.touches[0].clientX,e.touches[0].clientY)},{passive:true});
   document.addEventListener('touchmove',e=>{if(st&&e.touches.length===1)flytt(e.touches[0].clientX,e.touches[0].clientY,e)},{passive:false});
@@ -4982,7 +4981,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 04:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 04:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
