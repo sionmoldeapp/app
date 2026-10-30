@@ -5027,7 +5027,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 07:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 07:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5554,7 +5554,10 @@ const MOON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="
 const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==='dark':matchMedia('(prefers-color-scheme:dark)').matches};
 function themeIcon(){try{chatTemaOppd()}catch(e){}const d=isDark(),b=$('#themeBtn');b.innerHTML=d?SUN:MOON;b.setAttribute('aria-label',d?'Bytt til lys visning':'Bytt til mørk visning');document.querySelector('meta[name=theme-color]').content=(window.PAL_BG&&PAL_BG[document.documentElement.dataset.pal]||['#f6f4ef','#0a1b2e'])[d?1:0]}
 themeIcon();matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{themeIcon();chatTemaOppd()});
+/* Merke på app-ikonet (Badging API, når appen er lagt på hjemskjermen): uleste samtaler + uleste nyheter + nye bookinger. Ingen uleste fjerner merket. Android viser en prikk, iPhone og noen andre viser tallet. */
+function ikonMerke(){try{if(!navigator.setAppBadge)return;const n=(state.user&&state.member?chatUlest():0)+nyhUlest()+(state.utNye||0);if(n>0)navigator.setAppBadge(n).catch(()=>{});else navigator.clearAppBadge&&navigator.clearAppBadge().catch(()=>{})}catch(e){}}
 function badge(){
+  ikonMerke();
   const nBell=(state.unread||0)+(state.utNye||0);$('#badge').textContent=nBell;$('#badge').hidden=!nBell;{const bb=$('#bellBtn');if(bb)bb.setAttribute('aria-label',nBell?'Varsler: '+(state.unread||0)+' nye nyheter'+(state.utNye?' og '+state.utNye+' nye bookinger':''):'Varsler')}
   const eb=$('#editBtn');if(eb){if(!eb.innerHTML)eb.innerHTML=PEN;eb.hidden=!canEdit();eb.classList.toggle('on',state.edit);eb.setAttribute('aria-pressed',String(state.edit));eb.setAttribute('aria-label',state.edit?'Skjul knappene for å opprette og redigere':'Vis knappene for å opprette og redigere')}
   const vb=$('#viewBtn');if(vb){if(!vb.innerHTML)vb.innerHTML=EYE;vb.hidden=!canPreview();vb.classList.toggle('on',state.view!=='meg'||!!state.real);vb.setAttribute('aria-label',state.view==='meg'?'Vis appen som en annen':'Du ser appen som '+(state.view==='medlem'?'vanlig medlem':'besøkende')+'. Trykk for å endre.')}

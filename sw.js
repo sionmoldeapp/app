@@ -1,4 +1,4 @@
-const V='sion-v25',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','bilder/ingar-jensen.jpg','icon-192.png','badge-96.png','fb.js','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
+const V='sion-v26',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','bilder/ingar-jensen.jpg','icon-192.png','badge-96.png','fb.js','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(V).then(c=>c.addAll(F)))});   // ny versjon tar over med en gang, uten å vente på at appen lukkes
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V&&x!=='sion-varsel').map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('message',e=>{if(e.data&&e.data.type==='skip')self.skipWaiting()});
@@ -24,7 +24,9 @@ self.addEventListener('push',e=>{
   const si=clients.matchAll({type:'window',includeUncontrolled:true}).then(l=>l.forEach(c=>c.postMessage({type:'push',title:n.title||'Sion Molde',body:n.body||''}))).catch(()=>{});
   // Varselet vises alltid, også hvis hurtigbuffer eller meldinger til appen feiler. Feiler visningen med alle valg, prøves en enklere versjon.
   const vis=self.registration.showNotification(n.title||'Sion Molde',{body:n.body||'',icon:'icon-192.png',badge:'badge-96.png',silent:false,vibrate:[200,100,200],data:{url:(d.fcmOptions&&d.fcmOptions.link)||(d.data&&d.data.url)||'./',bok:(d.data&&d.data.bok)||'',tr:(d.data&&d.data.tr)||''},actions:(d.data&&d.data.bok)?[{action:'ja',title:'Kommer'},{action:'nei',title:'Kommer ikke'},{action:'vet',title:'Vet ikke ennå'}]:[]}).catch(()=>self.registration.showNotification(n.title||'Sion Molde',{body:n.body||''}));
-  e.waitUntil(Promise.allSettled([lagre,si,vis]))});
+  // Merke på app-ikonet når appen er lukket: antall varsler som står i varselfeltet (appen setter riktig tall når den åpnes).
+  const ikon=vis.then(()=>self.registration.getNotifications()).then(l=>self.navigator&&self.navigator.setAppBadge?self.navigator.setAppBadge(Math.max(1,l.length)):0).catch(()=>{});
+  e.waitUntil(Promise.allSettled([lagre,si,vis,ikon]))});
 self.addEventListener('notificationclick',e=>{
   e.notification.close();
   const url=(e.notification.data&&e.notification.data.url)||'./';
