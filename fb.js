@@ -132,6 +132,8 @@ const FB={
     /* Online-merke i Sionchat: tilstede/{e-post} {sist}. Skrives av egen app med jevne mellomrom mens den er åpen; andre leser bare dem som er oppdatert siste 10 min. */
     tilstedePuls:()=>S.setDoc(S.doc(db,'tilstede',auth.currentUser.email.toLowerCase()),{sist:S.serverTimestamp()}),
     tilstedeBort:()=>S.deleteDoc(S.doc(db,'tilstede',auth.currentUser.email.toLowerCase())),
+    /* Billig variant: leser listen én gang (brukes med jevne mellomrom i stedet for en lytter, som leser på nytt hver gang noen sender en puls). */
+    hentTilstede:()=>S.getDocs(S.query(S.collection(db,'tilstede'),S.where('sist','>',S.Timestamp.fromMillis(Date.now()-10*60e3)))).then(s=>s.docs.map(d=>{const t=d.data({serverTimestamps:'estimate'}).sist;return {id:d.id,ms:t&&t.toMillis?t.toMillis():Date.now()}})),
     watchTilstede:(cb,err)=>S.onSnapshot(S.query(S.collection(db,'tilstede'),S.where('sist','>',S.Timestamp.fromMillis(Date.now()-10*60e3))),s=>cb(s.docs.map(d=>{const t=d.data({serverTimestamps:'estimate'}).sist;return {id:d.id,ms:t&&t.toMillis?t.toMillis():Date.now()}})),e=>err&&err(e)),
     watchAvst:(id,cb,err)=>S.onSnapshot(S.doc(db,'avst',id),s=>cb(s.exists()?{id,...s.data()}:null),e=>err&&err(e)),
     voteAvst:(id,ny,gammel)=>{const me=auth.currentUser.email.toLowerCase(),u={};if(gammel>=0)u['v'+gammel]=S.arrayRemove(me);if(ny>=0&&ny!==gammel)u['v'+ny]=S.arrayUnion(me);return S.updateDoc(S.doc(db,'avst',id),u)},

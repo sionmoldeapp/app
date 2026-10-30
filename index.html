@@ -3687,21 +3687,23 @@ function chatFullSett2(på){const c=state.chat;c.full=!!på;setTimeout(chatFullF
 function chatLukk(){const c=state.chat;if(c.vy==='samtale'&&c.id)c.sist={id:c.id,ms:Date.now()};tilstStopp();chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen','chatfull');c.vis=false;chatFullFarge();c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
 /* Online-merke: tilstede/{e-post} oppdateres hvert ~2. minutt mens appen er synlig (hvis Innstillinger → Sionchat tillater det). Den som har samtalen åpen leser listen og viser prikken ved private samtaler hvis den andre var aktiv for under 5 minutter siden. */
 const tilst={};
-const chatOnline=e=>{const t=tilst[String(e||'').toLowerCase()];return !!t&&Date.now()-t<5*60e3};
+const chatOnline=e=>{const t=tilst[String(e||'').toLowerCase()];return !!t&&Date.now()-t<7*60e3};
 let tilstSist=0,tilstVarslet=false;
 const tilstFeil=e=>{if(tilstVarslet)return;tilstVarslet=true;try{push('Online-merket virker ikke','Feil: '+((e&&e.code)||'ukjent')+(e&&e.code==='permission-denied'?'. De nyeste Firebase-reglene er ikke publisert ennå.':''))}catch(x){}};
-function tilstPuls(){try{if(!FB||!state.user||!state.member||document.hidden||UI.synlig===false||Date.now()-tilstSist<100e3)return;tilstSist=Date.now();FB.tilstedePuls().catch(tilstFeil)}catch(e){}}
+function tilstPuls(){try{if(!FB||!state.user||!state.member||document.hidden||UI.synlig===false||Date.now()-tilstSist<150e3)return;tilstSist=Date.now();FB.tilstedePuls().catch(tilstFeil)}catch(e){}}
 function tilstOppd(){try{const c=state.chat;if(!c||!c.vis)return;const meg=meEmail();
   const an=(el,t)=>{const a=el&&el.querySelector('.cav');if(a)a.classList.toggle('onl',!!t&&t.kind==='dm'&&chatOnline((t.parts||[]).find(p=>p!==meg)))};
   document.querySelectorAll('#chat .crad[data-chatopen]').forEach(r=>an(r,chatTraad(r.dataset.chatopen)));
   if(c.vy==='samtale'&&c.id)an(document.querySelector('#chat .chd'),chatTraad(c.id))}catch(e){}}
 function tilstLytt(){
   tilstPuls();if(state.tilUnsub||!FB||!state.user||!state.member)return;
-  state.tilUnsub=FB.watchTilstede(l=>{Object.keys(tilst).forEach(k=>delete tilst[k]);l.forEach(x=>{tilst[x.id]=x.ms});tilstOppd()},tilstFeil);
+  /* Sjekker listen over hvem som er aktive hvert 2,5. minutt mens samtalelisten er åpen (en lytter ville lest listen på nytt ved hver puls fra hver bruker og brukt opp gratiskvoten). */
+  const hent=()=>{if(document.hidden||!FB.hentTilstede)return;FB.hentTilstede().then(l=>{Object.keys(tilst).forEach(k=>delete tilst[k]);l.forEach(x=>{tilst[x.id]=x.ms});tilstOppd()}).catch(()=>{})};
+  state.tilUnsub=()=>{};hent();state.tilPoll=setInterval(hent,150e3);
   const el=chatEl();if(el&&!state.tilObs){state.tilObs=new MutationObserver(()=>{cancelAnimationFrame(state.tilRaf);state.tilRaf=requestAnimationFrame(tilstOppd)});state.tilObs.observe(el,{childList:true,subtree:true})}
   state.tilTik=setInterval(tilstOppd,60e3)}
-function tilstStopp(){if(state.tilUnsub){try{state.tilUnsub()}catch(e){}state.tilUnsub=null}clearInterval(state.tilTik);if(state.tilObs){state.tilObs.disconnect();state.tilObs=null}}
-setInterval(tilstPuls,45e3);document.addEventListener('visibilitychange',tilstPuls);
+function tilstStopp(){if(state.tilUnsub){try{state.tilUnsub()}catch(e){}state.tilUnsub=null}clearInterval(state.tilTik);clearInterval(state.tilPoll);if(state.tilObs){state.tilObs.disconnect();state.tilObs=null}}
+setInterval(tilstPuls,60e3);document.addEventListener('visibilitychange',tilstPuls);
 function chatListeInn(){
   const q=norm((state.chat&&state.chat.q)||'').trim(),meg=meEmail(),fil=(state.chat&&state.chat.fil)||'alle',l=state.threads&&state.threads.filter(t=>!(t.gone||[]).includes(meg)&&(!q||norm(chatNavn(t,meg)+' '+(t.last||'')).includes(q))&&(fil==='alle'||(fil==='uleste'?(t.unread||[]).includes(meg):t.kind==='gruppe')));
   if(l===undefined)return '<p class="small" style="padding:14px">Henter samtaler …</p>';
@@ -5085,7 +5087,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='31.10.2026 kl. 06:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='31.10.2026 kl. 07:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
