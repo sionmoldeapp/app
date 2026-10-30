@@ -1398,7 +1398,8 @@ function tabIndFlytt(){
 addEventListener('resize',()=>tabIndFlytt());
 function drawTabs(){try{settBred()}catch(e){}
   if(sistFane==='news'&&state.tab!=='news')nyhMarkerSett();if(state.tab==='news'&&sistFane!=='news')state.nyhInn=Date.now();sistFane=state.tab;const chatApen=!!(state.chat&&state.chat.vis);const knapper=TABS.map(([k,l,i])=>`<button data-t="${k}" ${state.tab===k&&!chatApen?'aria-current="page"':''}><svg viewBox="0 0 24 24">${ICON[i]}</svg>${l}${k==='me'&&meTall().sum>0?`<span class="tab-bdg" aria-label="${meTall().sum} å sjekke">${meTall().sum}</span>`:''}${k==='news'&&state.tab!=='news'&&nyhUlest()>0?`<span class="tab-bdg" aria-label="${nyhUlest()} uleste nyheter">${nyhUlest()}</span>`:''}</button>`);
-  if(state.user&&state.member){const nC=chatUlest();knapper.splice(knapper.length-1,0,`<button data-chattab ${chatApen?'aria-current="page"':''} aria-label="Sionchat${nC?', '+nC+' uleste':''}"><svg viewBox="0 0 24 24">${ICON.chat}</svg>Sionchat${nC>0?`<span class="tab-bdg" aria-label="${nC} uleste">${nC}</span>`:''}</button>`)}
+  /* Under rask oppstart (innlogget sist) vises Sionchat-knappen med en gang sammen med de andre, før innloggingen er bekreftet. */
+  if((state.user&&state.member)||(state.authVent&&!state.user)){const nC=state.user?chatUlest():0;knapper.splice(knapper.length-1,0,`<button data-chattab ${chatApen?'aria-current="page"':''} aria-label="Sionchat${nC?', '+nC+' uleste':''}"><svg viewBox="0 0 24 24">${ICON.chat}</svg>Sionchat${nC>0?`<span class="tab-bdg" aria-label="${nC} uleste">${nC}</span>`:''}</button>`)}
   tabsSync(knapper)}
 
 function when(d){const diff=Math.round((new Date(d).setHours(0,0,0,0)-new Date(now).setHours(0,0,0,0))/864e5);
@@ -5058,7 +5059,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 23:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 23:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
