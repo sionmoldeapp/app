@@ -3586,16 +3586,19 @@ function thrStopp(){if(state.thrUnsub){try{state.thrUnsub()}catch(e){}state.thrU
 let lydCtx=null;
 const lydKlar=()=>{try{if(!lydCtx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;lydCtx=new A()}if(lydCtx.state==='suspended')lydCtx.resume()}catch(e){}};
 document.addEventListener('pointerdown',lydKlar,{passive:true});document.addEventListener('keydown',lydKlar);
-function chatPling(){
+function chatPling(svar){
   try{if(UI.lyd===false||document.hidden)return;lydKlar();const c=lydCtx;if(!c||c.state!=='running')return;
     const t0=c.currentTime+.02;
-    [[1318.5,0],[1975.5,.11]].forEach(([f,d])=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;
-      g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(.22,t0+d+.012);g.gain.exponentialRampToValueAtTime(.0001,t0+d+.42);
-      o.connect(g);g.connect(c.destination);o.start(t0+d);o.stop(t0+d+.45)})}catch(e){}}
+    /* svar = noen svarer i samtalen du har åpen: én lav, myk «pop» som er stillere enn plinget for en ny samtale/melding */
+    (svar?[[880,0,.09,.16]]:[[1318.5,0,.22,.42],[1975.5,.11,.22,.42]]).forEach(([f,d,v,l])=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;
+      g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(v,t0+d+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+d+l);
+      o.connect(g);g.connect(c.destination);o.start(t0+d);o.stop(t0+d+l+.03)})}catch(e){}}
 function plingSjekk(ny){
   const meg=meEmail(),gml=state.threads;if(!gml)return;
   const m={};gml.forEach(t=>{m[t.id]=t.ms||0});
-  if(ny.some(t=>t.lastBy!==meg&&(t.ms||0)>(m[t.id]!==undefined?m[t.id]:Infinity)&&!(t.dempet||[]).includes(meg)&&!(t.gone||[]).includes(meg)))chatPling()}
+  const nye=ny.filter(t=>t.lastBy!==meg&&(t.ms||0)>(m[t.id]!==undefined?m[t.id]:Infinity)&&!(t.dempet||[]).includes(meg)&&!(t.gone||[]).includes(meg));
+  if(!nye.length)return;const c=state.chat;
+  chatPling(!!(c&&c.vis&&c.vy==='samtale'&&nye.every(t=>t.id===c.id)))}
 function loadThreads(){
   if(!FB||!state.user||!state.member)return Promise.resolve();
   if(state.thrUnsub)return state.thrPromise||Promise.resolve();
@@ -4997,7 +5000,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='30.10.2026 kl. 05:35';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='30.10.2026 kl. 05:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
