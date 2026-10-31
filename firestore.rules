@@ -44,6 +44,22 @@ service cloud.firestore {
         && (isAdmin() || get(/databases/$(database)/documents/members/$(request.auth.token.email)).data.get('groups', []).toSet().intersection(get(/databases/$(database)/documents/posts/$(pid)).data.get('groups', []).toSet()).size() > 0);
       allow delete: if signedIn() && (uid == request.auth.token.email || isAdmin());
     }
+    // Ringing i Sionchat (kun ringelyd, ikke samtale). Dokument-ID er samtalens id. Den som ringer oppretter/fornyer og avbryter;
+    // mottakerne kan bare sette status til svart. Bare deltakere i samtalen kan ringe.
+    match /ringer/{tid} {
+      allow read: if signedIn() && (request.auth.token.email in resource.data.til || request.auth.token.email == resource.data.fra);
+      allow create, update: if isMember() && request.resource.data.fra == request.auth.token.email
+        && request.resource.data.keys().hasOnly(['fra', 'fraNavn', 'til', 'status', 'ms', 'svarNavn'])
+        && request.resource.data.til is list && request.resource.data.til.size() >= 1 && request.resource.data.til.size() <= 8
+        && request.resource.data.fraNavn is string && request.resource.data.fraNavn.size() <= 60
+        && request.resource.data.status in ['ring', 'avbrutt'] && request.resource.data.ms is number
+        && request.auth.token.email in get(/databases/$(database)/documents/threads/$(tid)).data.parts;
+      allow update: if signedIn() && request.auth.token.email in resource.data.til
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'svarNavn'])
+        && request.resource.data.status == 'svart'
+        && (!('svarNavn' in request.resource.data) || request.resource.data.svarNavn.size() <= 60);
+      allow delete: if signedIn() && request.auth.token.email == resource.data.fra;
+    }
     // Ansvarsområder: bare medlemmer leser, bare administrator endrer.
     match /roles/{id} {
       allow read: if isMember();

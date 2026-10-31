@@ -134,6 +134,12 @@ const FB={
     tilstedeBort:()=>S.deleteDoc(S.doc(db,'tilstede',auth.currentUser.email.toLowerCase())),
     /* Billig variant: leser listen én gang (brukes med jevne mellomrom i stedet for en lytter, som leser på nytt hver gang noen sender en puls). */
     hentTilstede:()=>S.getDocs(S.query(S.collection(db,'tilstede'),S.where('sist','>',S.Timestamp.fromMillis(Date.now()-10*60e3)))).then(s=>s.docs.map(d=>{const t=d.data({serverTimestamps:'estimate'}).sist;return {id:d.id,ms:t&&t.toMillis?t.toMillis():Date.now()}})),
+    /* Ringing: ringer/{samtale-id} {fra, fraNavn, til[], status:'ring'|'svart'|'avbrutt', ms (fornyes mens det ringer), svarNavn} */
+    ringStart:(tid,til,navn)=>S.setDoc(S.doc(db,'ringer',tid),{fra:auth.currentUser.email.toLowerCase(),fraNavn:navn,til,status:'ring',ms:Date.now()}),
+    ringPuls:tid=>S.updateDoc(S.doc(db,'ringer',tid),{ms:Date.now()}),
+    ringSett:(tid,status,navn)=>S.updateDoc(S.doc(db,'ringer',tid),status==='svart'?{status,svarNavn:navn}:{status}),
+    watchRinger:(me,cb,err)=>S.onSnapshot(S.query(S.collection(db,'ringer'),S.where('til','array-contains',me)),s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))),e=>err&&err(e)),
+    watchRing:(tid,cb)=>S.onSnapshot(S.doc(db,'ringer',tid),s=>cb(s.exists()?s.data():null),()=>{}),
     watchTilstede:(cb,err)=>S.onSnapshot(S.query(S.collection(db,'tilstede'),S.where('sist','>',S.Timestamp.fromMillis(Date.now()-10*60e3))),s=>cb(s.docs.map(d=>{const t=d.data({serverTimestamps:'estimate'}).sist;return {id:d.id,ms:t&&t.toMillis?t.toMillis():Date.now()}})),e=>err&&err(e)),
     watchAvst:(id,cb,err)=>S.onSnapshot(S.doc(db,'avst',id),s=>cb(s.exists()?{id,...s.data()}:null),e=>err&&err(e)),
     voteAvst:(id,ny,gammel)=>{const me=auth.currentUser.email.toLowerCase(),u={};if(gammel>=0)u['v'+gammel]=S.arrayRemove(me);if(ny>=0&&ny!==gammel)u['v'+ny]=S.arrayUnion(me);return S.updateDoc(S.doc(db,'avst',id),u)},

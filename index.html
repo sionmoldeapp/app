@@ -580,6 +580,14 @@ nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .chd .ctit{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.2}
 .chd .ctit b{font-size:var(--t-b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chd .ctit span{font-size:var(--t-s);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ringov{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px;text-align:center;background:rgba(10,18,30,.94);color:#fff;backdrop-filter:blur(10px);animation:onlInn .3s ease both}
+.ringov .rb{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.1);animation:ringSving 1.1s ease-in-out infinite;transform-origin:50% 20%}
+.ringov h2{margin:6px 0 0;font-size:24px}.ringov p{margin:0;opacity:.75}
+.ringov .rk{display:flex;gap:14px;margin-top:22px}
+.ringov button{border:0;border-radius:999px;padding:14px 30px;font:inherit;font-weight:600;font-size:17px;color:#fff;background:rgba(255,255,255,.16)}
+.ringov button.rsvar{background:#2ea36b}.ringov button.rav{background:#d4483f}
+@keyframes ringSving{0%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(16deg)}20%,40%,60%{transform:rotate(-16deg)}70%{transform:rotate(0)}}
+@media (prefers-reduced-motion:reduce){.ringov .rb{animation:none}}
 .cbtn{border:0;background:var(--chip);color:var(--ink);width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:22px;line-height:1}
 .cbtn svg{width:20px;height:20px}
 .cav{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 16px/1 var(--f-body,inherit);flex:none}
@@ -3648,6 +3656,8 @@ const LYDER={
   mic0:['lydMic',()=>{lydTone(660,0,.07,.18);lydTone(990,.07,.07,.2)}],             // opptak starter: opp
   mic1:['lydMic',()=>{lydTone(990,0,.07,.18);lydTone(660,.07,.07,.24)}],            // opptak slutter: ned
   lik:['lydLik',()=>{lydTone(784,0,.11,.26);lydTone(1174.7,.065,.11,.4)}],           // du liker/reagerer: varm «pluck» opp, litt fyldigere enn tikkene du får
+  ring:['lyd',()=>{[0,.18,.5,.68].forEach(d=>{lydTone(1568,d,.2,.22);lydTone(1318.5,d+.07,.14,.22)})}],  // innkommende ringing: to raske dobbelt-ringetoner
+  ringut:['lyd',()=>{lydTone(440,0,.1,.9);lydTone(480,0,.1,.9)}],                    // du ringer: lang, dempet ventetone
   fei:['lydFei',()=>{                                                                  // feiring: full fanfare i C-dur med dyp bass, jubel og klapping
     lydTone(130.8,0,.22,1.6);lydTone(196,.3,.2,1.4);
     [[523.25,659.25,783.99],[587.33,739.99,880],[659.25,830.6,987.77]].forEach((a,i)=>a.forEach(f=>lydTone(f,i*.14,.16,.7)));
@@ -3714,6 +3724,34 @@ function tilstOppd(){try{const c=state.chat;if(!c||!c.vis)return;const meg=meEma
   const an=(el,t)=>{const a=el&&el.querySelector('.cav');if(a)a.classList.toggle('onl',!!t&&t.kind==='dm'&&chatOnline((t.parts||[]).find(p=>p!==meg)))};
   document.querySelectorAll('#chat .crad[data-chatopen]').forEach(r=>an(r,chatTraad(r.dataset.chatopen)));
   if(c.vy==='samtale'&&c.id)an(document.querySelector('#chat .chd'),chatTraad(c.id))}catch(e){}}
+/* Ringebjelle: den som ringer lager ringer/{samtale-id}; mottakerne får et ringevindu med bare «Svar» (stopper lyden, ingen samtale) og «Ikke nå». Ringer til noen svarer eller den som ringer avbryter. */
+const ring={ut:null,inn:null,iv:null,hb:null,unsub:null,nei:{}};
+const RINGIKON='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/></svg>';
+function ringLyd(navn){clearInterval(ring.iv);ring.iv=null;if(!navn)return;lydSpill(navn);ring.iv=setInterval(()=>lydSpill(navn),navn==='ring'?2200:3200);try{navigator.vibrate&&navn==='ring'&&navigator.vibrate([300,150,300])}catch(e){}}
+function ringVindu(html){let e=document.getElementById('ringov');if(!html){if(e)e.remove();return}
+  if(!e){e=document.createElement('div');e.id='ringov';e.className='ringov';e.setAttribute('role','alertdialog');document.body.appendChild(e)}e.innerHTML=html}
+function ringBjelle(){return '<div class="rb">'+RINGIKON.replace('width="20" height="20"','width="44" height="44"')+'</div>'}
+function ringUtVis(){const r=ring.ut;if(!r)return;ringVindu(ringBjelle()+'<h2>Ringer '+esc(r.navn)+' …</h2><p>Det ringer til noen svarer.</p><div class="rk"><button type="button" class="rav" data-ringavbryt>Avbryt</button></div>')}
+function ringInnVis(){const r=ring.inn;if(!r){ringVindu('');return}ringVindu(ringBjelle()+'<h2>'+esc(r.fraNavn||'Noen')+'</h2><p>ringer deg i Sionchat</p><div class="rk"><button type="button" class="rsvar" data-ringsvar>Svar</button><button type="button" data-ringnei>Ikke nå</button></div>')}
+function ringSlutt(){ring.ut=null;clearInterval(ring.hb);ring.hb=null;if(ring.utUnsub){try{ring.utUnsub()}catch(e){}ring.utUnsub=null}if(!ring.inn){ringLyd(null);ringVindu('')}}
+function ringStart(){try{const c=state.chat,meg=meEmail(),t=c&&c.id&&chatTraad(c.id);if(!t||ring.ut||ring.inn)return;
+  const til=(t.parts||[]).filter(p=>p!==meg);if(!til.length)return;const navn=nyBeskjedNavn(),tid=c.id;
+  ring.ut={tid,navn:chatNavn(t,meg)};ringUtVis();ringLyd('ringut');
+  FB.ringStart(tid,til,navn).then(()=>{
+    FB.addMsg(t,'🔔 Ringer …',navn).then(()=>{if(PUSH_URL)FB.notifyThread(PUSH_URL,tid).catch(()=>{})}).catch(()=>{});
+    ring.hb=setInterval(()=>FB.ringPuls(tid).catch(()=>{}),20e3);
+    ring.utUnsub=FB.watchRing(tid,d=>{if(!ring.ut||ring.ut.tid!==tid)return;if(d&&d.status==='svart'){const n=d.svarNavn||'Noen';ringSlutt();push('Ringingen ble besvart',n+' svarte på ringingen.')}})
+  }).catch(e=>{ringSlutt();push('Kunne ikke ringe',(e&&e.code==='permission-denied')?'Reglene i Firebase må oppdateres først.':'Prøv igjen.')})}catch(e){ringSlutt()}}
+function ringAvbryt(){const r=ring.ut;if(!r)return;ringSlutt();FB.ringSett(r.tid,'avbrutt').catch(()=>{})}
+function ringSvar(){const r=ring.inn;if(!r)return;ring.inn=null;ringLyd(null);ringVindu('');FB.ringSett(r.id,'svart',nyBeskjedNavn()).catch(()=>{})}
+function ringNei(){const r=ring.inn;if(!r)return;ring.nei[r.id]=r.ms;ring.inn=null;ringLyd(null);ringVindu('')}
+function ringInn(l){try{const nu=Date.now();const d=l.find(x=>x.status==='ring'&&nu-(x.ms||0)<60e3&&ring.nei[x.id]!==x.ms);
+  if(d&&!ring.ut){if(!ring.inn||ring.inn.id!==d.id){ring.inn=d;ringInnVis();ringLyd('ring')}else ring.inn=d}
+  else if(ring.inn){ring.inn=null;if(!ring.ut){ringLyd(null);ringVindu('')}}}catch(e){}}
+function ringLytt(){try{if(!FB||!state.user||!state.member){if(ring.unsub){ring.unsub();ring.unsub=null}return}
+  if(!ring.unsub)ring.unsub=FB.watchRinger(meEmail(),ringInn,()=>{});
+  if(ring.inn&&Date.now()-(ring.inn.ms||0)>=60e3)ringInn([])}catch(e){}}
+setInterval(ringLytt,5e3);
 function tilstLytt(){
   tilstPuls();if(state.tilUnsub||!FB||!state.user||!state.member)return;
   /* Sjekker listen over hvem som er aktive hvert 2,5. minutt mens samtalelisten er åpen (en lytter ville lest listen på nytt ved hver puls fra hver bruker og brukt opp gratiskvoten). */
@@ -4038,7 +4076,7 @@ const chatBareEmoji=t=>{t=String(t||'').trim();const u=t.replace(SION_TOKEN,'�
 
 function chatRamme(tittel,under,av,innhold,hint){
   const c=state.chat;c.svar=null;c.red=null;c.verk=false;
-  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(c.id?'<button type="button" class="cbtn" data-chatfull aria-label="'+(c.full?'Normal visning':'Fullskjerm')+'" title="'+(c.full?'Normal visning':'Fullskjerm')+'">'+(c.full?CHAT_FULL_UT:CHAT_FULL_INN)+'</button><button type="button" class="cbtn" data-chatdelt aria-label="Se hvem som er med i samtalen" title="Hvem er med?"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 13.6c2.6.2 4.5 2 4.5 4.9"/></svg></button><button type="button" class="cbtn" data-chatmeny aria-label="Samtaleinnstillinger"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.7" fill="currentColor" stroke="none"/></svg></button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
+  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(c.id?'<button type="button" class="cbtn" data-chatring aria-label="Ring" title="Ring">'+RINGIKON+'</button><button type="button" class="cbtn" data-chatfull aria-label="'+(c.full?'Normal visning':'Fullskjerm')+'" title="'+(c.full?'Normal visning':'Fullskjerm')+'">'+(c.full?CHAT_FULL_UT:CHAT_FULL_INN)+'</button><button type="button" class="cbtn" data-chatdelt aria-label="Se hvem som er med i samtalen" title="Hvem er med?"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 13.6c2.6.2 4.5 2 4.5 4.9"/></svg></button><button type="button" class="cbtn" data-chatmeny aria-label="Samtaleinnstillinger"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.7" fill="currentColor" stroke="none"/></svg></button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
    +'<div class="cbar" id="cBar" hidden></div>'+chatPanelHtml()
    +'<div class="crec" id="cRec" hidden></div><form class="cinp" id="cForm"><button type="button" class="cik cchev" data-cchev aria-label="Vis flere valg: bilde, lyd og mer" hidden>'+CHEVIKON+'</button><div class="cverk" id="cVerk"><button type="button" class="cik" data-cfoto aria-label="Ta bilde" '+(c.id?'':'disabled')+'>'+KAMIKON+'</button><button type="button" class="cik" data-cgalleri aria-label="Velg bilde fra galleriet" '+(c.id?'':'disabled')+'>'+GALLERIKON+'</button><button type="button" class="cik cmic" data-cmic aria-label="Send stemmemelding" '+(c.id?'':'disabled')+'>'+MIKIKON+'</button></div><input type="file" id="cFil" accept="image/*" hidden><input type="file" id="cKam" accept="image/*" capture="environment" hidden><div class="cfelt"><textarea id="cT" rows="1" maxlength="1000" placeholder="Melding" aria-label="'+esc(hint||'Skriv en melding')+'"></textarea><button type="button" class="cik csmil" data-cemoknapp aria-label="Klistremerker, emoji, spill og avstemning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M8.2 14.2c.9 1.6 2.3 2.4 3.8 2.4s2.9-.8 3.8-2.4"/><circle cx="9" cy="9.7" r=".6" fill="currentColor"/><circle cx="15" cy="9.7" r=".6" fill="currentColor"/></svg></button></div><button type="submit" class="csend" aria-label="Send" hidden>'+chatSend+'</button><button type="button" class="csend ctommel" data-ctommel aria-label="Send hurtigemoji. Hold inne for å bytte ikon." title="Hold inne for å bytte ikon">'+chatHurtigHtml()+'</button></form></form>'}
 /* Bytter mellom send-knapp (når det står tekst) og 👍 (når feltet er tomt), som i Messenger. */
@@ -4738,6 +4776,10 @@ document.addEventListener('click',e=>{
   else if(d.bokcal)utApneId(d.bokcal);
   else if(d.bokop){const [mid,o]=d.bokop.split('|');chatBokOppg(mid,o)}
   else if('chatavstny' in d)chatAvstNy('gruppe');
+  else if('chatring' in d)ringStart();
+  else if('ringavbryt' in d)ringAvbryt();
+  else if('ringsvar' in d)ringSvar();
+  else if('ringnei' in d)ringNei();
   else if('chatfull' in d)chatFullSett(!state.chat.full);
   else if(d.chatfil){state.chat.fil=d.chatfil;const l=document.getElementById('cListe');if(l){l.innerHTML=chatListeInn();l.scrollTop=0}const p=document.getElementById('cPille');if(p){const u=chatUlest();p.outerHTML=chatPille()}try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}}
   else if('chatspill' in d)chatQuiz();
@@ -5106,7 +5148,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='31.10.2026 kl. 07:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='31.10.2026 kl. 09:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
