@@ -2877,7 +2877,7 @@ const userRow=(x,me)=>{
 
 /* Gruppeleder: se, legge til og fjerne medlemmer i gruppene en leder. */
 function leaderGroups(){
-  return `<details class="card acc" data-acc="mingr" ${state.acc.mingr?'open':''}><summary><h2>Mine grupper</h2></summary>
+  return `<details class="card acc" data-acc="mingr" ${state.acc.mingr?'open':''}><summary><h2>Gruppene jeg leder</h2></summary>
   <p class="small" style="margin:0 0 8px">Legg til og fjern medlemmer i gruppene du leder. En ny person får en e-post for å velge passord. Å fjerne tar bare personen ut av gruppen, ikke ut av appen.</p>
   <p class="small" role="status" style="margin:0 0 6px">${esc(state.lgMsg||'')}</p>
   ${(state.leads||[]).map(g=>{const l=leaderMem.filter(u=>u.groups.includes(g));return `<details class="acc sub" data-acc="mg_${g}" ${state.acc['mg_'+g]?'open':''}><summary><h3 style="font-size:var(--t-l)">${esc(gName(g))} (${l.length})</h3></summary>
@@ -2887,22 +2887,23 @@ function leaderGroups(){
 const slug=n=>String(n).toLowerCase().replace(/æ/g,'ae').replace(/ø/g,'o').replace(/å/g,'a').replace(/[^a-z0-9]+/g,'').slice(0,30)||'gruppe';
 /* Hver gruppe er en rad som åpnes og viser medlemmene (og lederne) rett i gruppen. */
 const grpNavn=u=>u.name||u.id,grpSort=(a,b)=>grpNavn(a).localeCompare(grpNavn(b),'nb');
-const grpMedl=u=>'<div class="r grm"><div class="grow">'+esc(grpNavn(u))+(u.name?'<span class="small" style="display:block">'+esc(u.id)+'</span>':'')+'</div>'+(u.role==='admin'?'<span class="tag m">Administrator</span>':'')+'</div>';
+const grpMedl=(u,gid,leder)=>'<div class="r grm"><div class="grow">'+esc(grpNavn(u))+(u.name?'<span class="small" style="display:block">'+esc(u.id)+'</span>':'')+'</div>'+(u.role==='admin'?'<span class="tag m">Administrator</span>':'')+(gid&&!leder?'<button class="btn" data-grfjern="'+esc(u.id)+'|'+esc(gid)+'" aria-label="Fjern '+esc(grpNavn(u))+' fra gruppen">Fjern</button>':'')+'</div>';
 function grpRad(g){
   const id=g[0],med=members.filter(u=>(u.groups||[]).includes(id)||(u.leads||[]).includes(id)).sort(grpSort),ledere=med.filter(u=>(u.leads||[]).includes(id)),vanlige=med.filter(u=>!(u.leads||[]).includes(id));
   return '<details class="acc sub grp" data-acc="gr_'+esc(id)+'" '+(state.acc['gr_'+id]?'open':'')+'><summary><h3 style="font-size:var(--t-l)">'+esc(g[1])+' <span class="small">('+med.length+')</span></h3>'+(g[2]?'<span class="small" style="display:block">'+esc(g[2])+'</span>':'')+'</summary>'
     +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px">'+(grVakt(id)?'<span class="tag">Vaktliste</span>':'')+(grRemind(id)?'<span class="tag m">Påminnelse</span>':'')+'</div>'
-    +(ledere.length?'<p class="small" style="margin:0 0 4px"><b>Ledere ('+ledere.length+')</b></p><div class="reg">'+ledere.map(grpMedl).join('')+'</div>':'')
-    +'<p class="small" style="margin:8px 0 4px"><b>Medlemmer ('+vanlige.length+')</b></p><div class="reg">'+(vanlige.map(grpMedl).join('')||'<p class="small">Ingen ennå. Legg dem til under Brukere eller Tilhørighet og varsler.</p>')+'</div>'
+    +(ledere.length?'<p class="small" style="margin:0 0 4px"><b>Ledere ('+ledere.length+')</b></p><div class="reg">'+ledere.map(u=>grpMedl(u,id,true)).join('')+'</div>':'')
+    +'<p class="small" style="margin:8px 0 4px"><b>Medlemmer ('+vanlige.length+')</b></p><div class="reg">'+(vanlige.map(u=>grpMedl(u,id)).join('')||'<p class="small">Ingen ennå.</p>')+'</div>'
+    +(()=>{const ute=members.filter(u=>!med.includes(u)).sort(grpSort);return ute.length?'<div class="grleggtil" style="display:flex;gap:8px;align-items:center;margin-top:10px"><select id="grS_'+esc(id)+'" aria-label="Velg person å legge til i '+esc(g[1])+'" style="flex:1;min-width:0">'+ute.map(u=>'<option value="'+esc(u.id)+'">'+esc(grpNavn(u))+'</option>').join('')+'</select><button class="btn primary" data-grlegg="'+esc(id)+'" style="width:auto">Legg til</button></div>':''})()
     +'<div class="btns" style="margin-top:10px"><button class="btn" data-grpedit="'+esc(id)+'">Endre gruppen</button><button class="btn" data-grpdel="'+esc(id)+'">Slett gruppen</button></div></details>'}
 function grpUten(){
   const u=members.filter(x=>!(x.groups||[]).length&&!(x.leads||[]).length).sort(grpSort);
   return u.length?'<details class="acc sub grp" data-acc="gr__uten" '+(state.acc.gr__uten?'open':'')+'><summary><h3 style="font-size:var(--t-l)">Ikke i noen gruppe <span class="small">('+u.length+')</span></h3><span class="small" style="display:block">Brukere som ennå ikke er satt i en gruppe</span></summary><div class="reg">'+u.map(grpMedl).join('')+'</div></details>':''}
 function groupsCard(){
-  return `<details class="card acc" data-acc="grupper" ${state.acc.grupper?'open':''}><summary><h2>Grupper (${GROUPS.length})</h2></summary>
+  return `<details class="card acc" data-acc="grupper" ${state.acc.grupper?'open':''}><summary><h2>Alle grupper (${GROUPS.length})</h2></summary>
   <p class="small" style="margin:0 0 8px">Trykk på en gruppe for å se hvem som er med. Grupper brukes til å velge hvem som ser et arrangement eller en nyhet, og hvem en gruppeleder leder. Endrer du navnet, gjelder det overalt. Sletter du en gruppe, tas den ut av alle brukere, og innhold som bare var for gruppen blir «Bare medlemmer».</p>
   <button class="btn primary" data-grpnew style="width:auto">+ Ny gruppe</button>
-  <div class="grlist" style="margin-top:10px">${GROUPS.map(g=>grpRad(g)).join('')}${grpUten()}</div></details>`}
+  <p class="small" role="status" style="margin:8px 0 0">${esc(state.tlMsg||'')}</p><div class="grlist" style="margin-top:10px">${GROUPS.map(g=>grpRad(g)).join('')}${grpUten()}</div></details>`}
 async function grpSeed(){
   if(state.grDb)return;
   let i=0;for(const g of GROUPS_DEFAULT){await FB.setGroupDoc(g[0],{name:g[1],desc:g[2]||'',ord:i++,vakt:grVakt(g[0]),remind:grRemind(g[0])})}
@@ -3019,7 +3020,7 @@ function profilKort(){
   if(!state.profile)return '';   // administratorer har profilen sin i admins (navn og avslåtte gruppevarsler)
   const p=state.profile,gs=state.groups||[];
   return '<details class="card acc" data-acc="profil" '+(state.acc.profil?'open':'')+'><summary><h2>Min profil</h2></summary>'
-   +profSub('prnavn','Navn','<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre</button>')+profSub('prvarsel','Varsler fra gruppene mine',(gs.length?'<p class="small" style="margin:0 0 8px">Fjern haken for å slippe varsler som sendes bare til en gruppe. Du blir stående i gruppen.</p><div style="display:grid;gap:6px">'+gs.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" data-prmute="'+esc(g)+'" style="width:22px;height:22px;flex:none" '+((p.muted||[]).includes(g)?'':'checked')+'>'+esc(gName(g))+'</label>').join('')+'</div>':'<p class="small" style="margin:0">Du er ikke med i noen grupper ennå.</p>'))
+   +profSub('prnavn','Navn','<label class="f">Navn<input id="prN" maxlength="60" value="'+esc(p.name||'')+'" autocomplete="name"></label><p class="small" style="margin:4px 0 8px">Navnet brukes når du melder deg på arrangementer.</p><button class="btn" data-prsave>Lagre</button>')
    +profSub('prdata','Mine data','<p class="small" style="margin:0 0 8px">Se eller last ned alt appen har lagret om deg (profil, politiattest med dokument, notater, forbønner du har sendt inn og beskjedene dine). Du kan når som helst slette deg selv under «Slett meg»; det trenger ingen godkjenning fra gruppeleder eller administrator.</p><div class="btns"><button class="btn" data-presee>Se mine data</button><button class="btn" data-prexport>Last ned mine data</button></div>')
    +(state.admin?profSub('prslett','Slett meg','<p class="small" style="margin:0">Som administrator kan du ikke slette deg selv her. Be en annen administrator gjøre deg til vanlig medlem eller fjerne deg under Brukere, så kan du slette deg selv etterpå.</p>'):profSub('prslett','Slett meg','<p class="small" style="margin:0 0 8px">Fjerner kontoen din, notatene, forbønnene dine, samtalene du har startet og varselkoden på denne telefonen. Dette kan ikke angres. Du kan alltid bli lagt til igjen av en leder.</p><button class="btn danger" data-prdel>Slett meg og dataene mine</button>'))
    +'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.prMsg||'')+'</p></details>'}
@@ -5152,7 +5153,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='31.10.2026 kl. 09:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='31.10.2026 kl. 10:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5561,25 +5562,23 @@ const ADM_LAT=['brukere','tilh'];
 const admLat=(acc,tittel,bygg)=>state.acc[acc]?bygg():'<details class="card acc" data-acc="'+acc+'"><summary><h2>'+tittel+'</h2></summary></details>';
 /* Alt om ansvarsområder og brukere ligger samlet i kortet Ansvarsområder: oversikten, brukere, grupper, tilhørighet og varsler, gruppelederens grupper og politiattester. */
 const ANSVAR_KORT={
-  medlem:()=>state.view==='meg'&&state.admin?admLat('brukere','Brukere ('+members.length+')',memberCard):'',grupper:()=>state.view==='meg'&&state.admin?groupsCard():'',
-  tilh:()=>state.view==='meg'&&(state.admin||isLeader())?admLat('tilh','Tilhørighet og varsler',tilhKort):'',
-  ledergr:()=>state.view==='meg'&&!state.admin&&isLeader()?leaderGroups():'',
+  medlem:()=>state.view==='meg'&&state.admin?admLat('brukere','Brukere ('+members.length+')',memberCard):'',grupper:()=>'',
+  tilh:()=>'',
+  ledergr:()=>'',
   attester:()=>state.view==='meg'&&(state.admin||isLeader())?attesterCard():''};
 /* Enkel oversikt øverst: viser sammenhengen mellom brukere, grupper, tilhørighet og ansvarsområder, og åpner hver del med ett trykk. */
 function ansvarOversikt(){
   const roller=state.roles===undefined?'':' ('+state.roles.length+')',
     trinn=[['brukere','Brukere',members.length+' personer med konto','Alle som kan logge inn. Hver har en rolle: administrator, leder, gruppeleder eller medlem.'],
-      ['grupper','Grupper',GROUPS.length+' grupper','Lag av brukere, for eksempel Vertskap eller Hangout. Trykk på en gruppe for å se medlemmene. Gruppene styrer hvem som ser arrangementer og nyheter.'],
-      ['tilh','Tilhørighet og varsler','','Hvem som er med i hvilken gruppe, og hvem som får varsler fra den.'],
       ['ansvar','Hvem har ansvar for hva',roller?'':'','Kontaktpersonene i menigheten. Alle kan trykke «Send beskjed» til dem.']];
-  return '<div class="ansov" role="group" aria-label="Slik henger det sammen"><p class="small" style="margin:0 0 6px"><b>Slik henger det sammen</b><br>Brukere settes i grupper. Gruppene gir tilhørighet og varsler. Ansvarsområdene viser hvem som er kontaktperson for hva. Trykk på et trinn for å åpne det.</p>'
+  return '<div class="ansov" role="group" aria-label="Slik henger det sammen"><p class="small" style="margin:0 0 6px"><b>Slik henger det sammen</b><br>Brukere settes i grupper (se kortet Grupper under Meg). Gruppene gir tilhørighet og varsler. Ansvarsområdene viser hvem som er kontaktperson for hva. Trykk på et trinn for å åpne det.</p>'
     +trinn.map((t,i)=>'<button type="button" class="ansrad" data-ansgo="'+t[0]+'"><span class="ansn">'+(i+1)+'</span><span class="anst"><b>'+t[1]+(t[0]==='ansvar'?roller:'')+'</b>'+(t[2]?' <span class="small">· '+t[2]+'</span>':'')+'<span class="small" style="display:block">'+t[3]+'</span></span><span class="anspil" aria-hidden="true">›</span></button>').join('')+'</div>'}
 function ansvarKort(){
   const alle=Object.fromEntries(Object.entries(ANSVAR_KORT).map(([k,f])=>[k,f()])),ok=x=>x&&String(x).trim(),
     ekstra=Object.values(alle).filter(ok);
   if(!ekstra.length)return ansvarCard();
   const forst=['medlem','grupper','tilh'].map(k=>alle[k]).filter(ok),sist=['ledergr','attester'].map(k=>alle[k]).filter(ok);
-  const tekst=state.admin?'Ansvarsområder, brukere, grupper, tilhørighet og varsler og politiattester samlet på ett sted.':'Gruppene du leder, medlemmene i dem og politiattester.';
+  const tekst=state.admin?'Ansvarsområder, brukere og politiattester. Grupper og hvem som er med i dem ligger under Meg → Grupper.':'Politiattester for gruppene du leder. Gruppene og medlemmene ligger under Meg → Grupper.';
   return subSorter('ansv','<details class="card acc" data-acc="ansvarkort" '+(state.acc.ansvarkort?'open':'')+'><summary><h2>Ansvarsområder</h2></summary>'+(state.admin?ansvarOversikt():'<p class="small" style="margin:0 0 4px">'+tekst+'</p>')+'<div class="megboks">'+forst.join('')+ansvarCard('Hvem har ansvar for hva')+sist.join('')+'</div></details>','.megboks')}
 const ADM_KORT={
   gruppebesk:()=>gruppeBeskjedCard(),publiser:()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'',
@@ -5589,13 +5588,24 @@ const ADM_KORT={
 function admCard(){
   const deler=Object.values(ADM_KORT).map(f=>f()).filter(x=>x&&String(x).trim());
   if(!deler.length)return '';
-  const tekst=state.admin?'Statistikk, sikkerhetskopi og andre verktøy for å styre appen. Brukere, grupper og politiattester ligger under Ansvarsområder, og Utleie har eget kort under Mer.':'Verktøy for gruppene du leder: beskjeder og publisering. Medlemmer og tilhørighet ligger under Ansvarsområder.';
+  const tekst=state.admin?'Statistikk, sikkerhetskopi og andre verktøy for å styre appen. Brukere og politiattester ligger under Ansvarsområder, grupper under Meg, og Utleie har eget kort under Mer.':'Verktøy for gruppene du leder: beskjeder og publisering. Medlemmer og tilhørighet ligger under Meg → Grupper.';
   return subSorter('adm','<details class="card acc" data-acc="admkort" '+(state.acc.admkort?'open':'')+'><summary><h2>Administrer</h2></summary><p class="small" style="margin:0 0 4px">'+tekst+' Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>','.megboks')}
+/* Grupper: alt om grupper og hvem som er med samlet i ett kort. Alle ser gruppene sine og slår varsler av/på; gruppeledere styrer medlemmene i gruppene sine; administratorer ser alle grupper med medlemmer og kan legge til og fjerne direkte, eller se det person for person. */
+function minGrupperKort(){
+  const p=state.profile,gs=state.groups||[],ledere=state.leads||[];
+  return '<details class="card acc" data-acc="mingrv" '+(state.acc.mingrv?'open':'')+'><summary><h2>Mine grupper ('+gs.length+')</h2></summary>'
+   +(gs.length?'<p class="small" style="margin:0 0 8px">Gruppene du er med i. Fjern haken for å slippe varsler som sendes bare til en gruppe. Du blir stående i gruppen.</p><div class="reg">'+gs.map(g=>'<div class="r" style="display:flex;align-items:center;gap:10px"><label style="display:flex;gap:10px;align-items:center;font-weight:400;flex:1;min-width:0"><input type="checkbox" data-prmute="'+esc(g)+'" style="width:22px;height:22px;flex:none" '+(p&&(p.muted||[]).includes(g)?'':'checked')+(p?'':' disabled')+'><span>'+esc(gName(g))+'</span></label>'+(ledere.includes(g)?'<span class="tag">Leder</span>':'')+'</div>').join('')+'</div>':'<p class="small" style="margin:0">Du er ikke med i noen grupper ennå.</p>')+'</details>'}
+function gruppeKort(){
+  if(!state.user||!state.member)return '';
+  const leder=!state.admin&&isLeader();
+  const deler=[minGrupperKort(),leder?leaderGroups():'',state.admin?groupsCard():'',(state.admin||leder)?admLat('tilh','Tilhørighet og varsler',tilhKort):''].filter(x=>x&&String(x).trim());
+  const tekst=state.admin?'Alle gruppene med medlemmer. Åpne en gruppe for å legge til eller fjerne folk, eller bruk «Tilhørighet og varsler» for å se det person for person.':leder?'Gruppene du er med i og leder. Åpne en gruppe for å se, legge til og fjerne medlemmer.':'Gruppene du er med i, og varsler fra dem.';
+  return subSorter('grp','<details class="card acc" data-acc="gruppekort" '+(state.acc.gruppekort?'open':'')+'><summary><h2>Grupper</h2></summary><p class="small" style="margin:0 0 4px">'+tekst+'</p><div class="megboks">'+deler.join('')+'</div></details>','.megboks')}
 function megCard(){return subSorter('meg',megKort(),'.megboks')}
 function megKort(){
-  const deler=[state.user?profileCard():'',attestKort(),settingsCard(),state.user?vakterCard():'',state.user?lrCard():'',state.user?verktoyCard():'',state.user?loginCard():''].filter(x=>x&&String(x).trim());
+  const deler=[state.user?profileCard():'',state.user?gruppeKort():'',attestKort(),settingsCard(),state.user?vakterCard():'',state.user?lrCard():'',state.user?verktoyCard():'',state.user?loginCard():''].filter(x=>x&&String(x).trim());
   if(!deler.length)return '';
-  return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, innstillinger, vakter, saker til lederrådet og møteverktøy. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
+  return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, grupper, innstillinger, vakter, saker til lederrådet og møteverktøy. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
 const ME_KORT={
   meg:['Meg',()=>megCard()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],utleie:['Utleie',()=>utleieCard()],
   ansvar:['Ansvarsområder',()=>ansvarKort()],
@@ -5988,6 +5998,8 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.tlmode){keep(()=>{state.tl.mode=c.dataset.tlmode;state.acc.tilh=true})}
   else if(c.dataset.tlbytt!==undefined){keep(()=>{state.tl.apen=true})}
   else if(c.dataset.tlg){keep(()=>{state.tl.g=c.dataset.tlg;state.tl.q='';state.tl.apen=false})}
+  else if(c.dataset.grfjern){const gi=c.dataset.grfjern.split('|')[1];state.acc['gr_'+gi]=true;state.acc.gruppekort=true;tlMed(c.dataset.grfjern,false)}
+  else if(c.dataset.grlegg){const gi=c.dataset.grlegg,sel=document.getElementById('grS_'+gi);if(sel&&sel.value){state.acc['gr_'+gi]=true;state.acc.gruppekort=true;tlMed(sel.value+'|'+gi,true)}}
   else if(c.dataset.tlmed){tlMed(c.dataset.tlmed,c.getAttribute('aria-checked')!=='true')}
   else if(c.dataset.tlvar){tlVarsel(c.dataset.tlvar,c.getAttribute('aria-checked')!=='true')}
   else if(c.dataset.subsort){const c2=c.dataset.subsort;keep(()=>{state.subSort=state.subSort===c2?null:c2})}
