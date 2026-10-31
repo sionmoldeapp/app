@@ -1,0 +1,39 @@
+# Bare på PC-en, aldri på serveren (står i COMPOSE_FILE i .env lokalt).
+# - Databasen ligger i et Docker-volum (Postgres tåler ikke Windows-mapper som datamappe).
+# - E-post fra innloggingen (bekreftelse, glemt passord) fanges i Inbucket: http://localhost:9000
+# - Firebase-emulatoren med dagens testdatabase (lokal/data): appen på http://localhost:8090
+
+services:
+
+  db:
+    volumes:
+      - sion_db_data:/var/lib/postgresql/data
+
+  mail:
+    container_name: supabase-mail
+    image: inbucket/inbucket:3.0.3
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:9000:9000
+
+  firebase:
+    container_name: sion-firebase
+    build: ./sion/firebase
+    restart: unless-stopped
+    stop_grace_period: 60s   # tid til å lagre databasen til lokal/data ved stopp
+    ports:
+      # Så lokal/seed.js, importer.js og hent-fra-ekte.js virker som før
+      - 127.0.0.1:8080:8080
+      - 127.0.0.1:9099:9099
+    volumes:
+      - ./sion/firebase/firebase.json:/app/firebase.json:ro
+      - ../firestore.rules:/app/firestore.rules:ro
+      - ../lokal/data:/data
+
+  # Testversjonen på port 8090 (appen kjenner seg igjen på porten og bruker emulatoren).
+  sion-web:
+    ports:
+      - 127.0.0.1:8090:8090
+
+volumes:
+  sion_db_data:

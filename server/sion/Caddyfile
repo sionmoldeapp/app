@@ -1,0 +1,75 @@
+{
+	admin off
+}
+
+# Appens offentlige filer. Alt annet i repoet (notater, scripts, lokal/, server/, .git) gir 404.
+(app) {
+	@public path / /index.html /fb.js /sw.js /manifest.webmanifest /fonts.css /icon.svg /icon-180.png /icon-192.png /icon-512.png /logo-512.png /badge-96.png /fonts/* /data/* /bilder/*
+	handle @public {
+		root * /repo
+		@fersk path / /index.html /sw.js /fb.js /manifest.webmanifest /data/*
+		header @fersk Cache-Control "no-cache"
+		file_server
+	}
+	handle {
+		respond "Ikke funnet" 404
+	}
+}
+
+# Appen + Supabase på samme adresse. APP_SITE er ":80" lokalt og domenet på serveren (gir HTTPS automatisk).
+{$APP_SITE} {
+	encode zstd gzip
+	@supabase path /auth/v1/* /rest/v1/* /realtime/v1/* /storage/v1/* /functions/v1/*
+	handle @supabase {
+		reverse_proxy api-gw:8000
+	}
+	import app
+	header -Server
+}
+
+# Supabase Studio (database-GUI) med passord. Porten er bare åpen fra maskinen selv (STUDIO_BIND).
+:3001 {
+	# Ikoner og manifest hentes av nettleseren uten passord (ufarlige, offentlige filer fra Studio)
+	@ikoner path /favicon/*
+	handle @ikoner {
+		reverse_proxy studio:3000
+	}
+	handle {
+		basic_auth {
+			{$DASHBOARD_USERNAME} {$DASHBOARD_PASSWORD_HASH}
+		}
+		reverse_proxy studio:3000
+	}
+	# Uten innlogging: forklaring i stedet for en hvit side
+	handle_errors 401 {
+		header Content-Type "text/html; charset=utf-8"
+		respond `<!doctype html><meta charset="utf-8"><title>Logg inn</title><body style="font-family:sans-serif;padding:40px;max-width:560px">
+<h2>Supabase Studio krever innlogging</h2>
+<p>Last siden på nytt og logg inn i boksen nettleseren viser.<br>Brukernavn: <b>sion</b>, passord: <b>DASHBOARD_PASSWORD</b> i <code>server/.env</code>.</p>
+<p>Kommer det ingen boks, åpne <b>http://localhost:3001</b> i Chrome, Edge eller Brave (ikke nettleseren inni VS Code).</p></body>` 401
+	}
+}
+
+# Testversjonen mot Firebase-emulatoren (bare PC-en; porten publiseres i docker-compose.lokal.yml).
+# Samme regler som lokal/server.js: emulatorens administrasjon stengt, «Bearer owner» fjernes.
+:8090 {
+	@admin path /emulator/*
+	handle @admin {
+		respond 403
+	}
+
+	@owner header_regexp Authorization (?i)^bearer\s+owner$
+	request_header @owner -Authorization
+
+	@auth path /identitytoolkit.googleapis.com/* /securetoken.googleapis.com/* /www.googleapis.com/*
+	handle @auth {
+		reverse_proxy firebase:9099
+	}
+	@firestore path /google.firestore.* /v1/projects/*
+	handle @firestore {
+		reverse_proxy firebase:8080 {
+			flush_interval -1
+		}
+	}
+	import app
+}

@@ -2870,7 +2870,7 @@ const lgBrukerHtml=()=>{const l=lgBrukere(),pc=!!window.PasswordCredential;if(!l
 const pwField=(id,label,ac,extra)=>`<label class="f">${label}<span class="pw"><input id="${id}" type="password" autocomplete="${ac}" ${extra||''} required><button type="button" class="eye" data-eye aria-label="Vis passord" aria-pressed="false">${EYE}</button></span></label>`;
 const userRow=(x,me)=>{
   const self=x.id===me,adm=x.role==='admin',leader=(x.leads||[]).length>0;
-  return `<div class="r" style="flex-wrap:wrap"><div class="grow" style="min-width:60%">${esc(x.id)}${self?' (deg)':''}<br><span class="tag ${adm?'':'m'}">${adm?'Administrator':x.leder?ltName(x):leader?'Gruppeleder':'Medlem'}</span>${x.leder&&leader?' <span class="tag">Gruppeleder</span>':''}${x.leder?ltSelect(x):''}</div>
+  return `<div class="r" style="flex-wrap:wrap"><div class="grow" style="min-width:60%">${esc(x.id)}${self?' (deg)':''}${x.name||x.tlf?'<br><span class="small">'+esc([x.name,x.tlf].filter(Boolean).join(' · '))+'</span>':''}<br><span class="tag ${adm?'':'m'}">${adm?'Administrator':x.leder?ltName(x):leader?'Gruppeleder':'Medlem'}</span>${x.leder&&leader?' <span class="tag">Gruppeleder</span>':''}${x.leder?ltSelect(x):''}</div>
    <details ${state.ugOpen===x.id?'open':''} style="flex-basis:100%"><summary class="small" style="cursor:pointer">Grupper (${(x.groups||[]).length})${(x.groups||[]).length?': '+esc((x.groups||[]).map(gName).join(', ')):''}</summary><div style="display:grid;gap:6px;margin:6px 0">${GROUPS.map(g=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-ug="${esc(x.id)}" data-gid="${g[0]}" style="width:22px;height:22px;flex:none" ${(x.groups||[]).includes(g[0])?'checked':''}>${esc(gLabel(g[0]))}</label>`).join('')}</div></details>
    ${adm?'':`<details ${state.ulOpen===x.id?'open':''} style="flex-basis:100%"><summary class="small" style="cursor:pointer">Leder for (${(x.leads||[]).length})${(x.leads||[]).length?': '+esc((x.leads||[]).map(gName).join(', ')):''}</summary><div class="small" style="margin:4px 0">Kan publisere nyheter, arrangementer og varsler, men bare til gruppene som er avkrysset. Personen legges også inn i gruppen.</div><div style="display:grid;gap:6px;margin:6px 0">${GROUPS.map(g=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-ul="${esc(x.id)}" data-gid="${g[0]}" style="width:22px;height:22px;flex:none" ${(x.leads||[]).includes(g[0])?'checked':''}>${esc(gLabel(g[0]))}</label>`).join('')}</div></details>`}
    <div class="btns"><button class="btn" data-memreset="${esc(x.id)}">Nytt passord</button>${adm||self?'':`<button class="btn" data-ledertoggle="${esc(x.id)}" data-on="${x.leder?'0':'1'}">${x.leder?'Fjern lederrolle':'Gjør til leder'}</button>`}${self?'':`<button class="btn" data-memrole="${esc(x.id)}" data-to="${adm?'member':'admin'}">${adm?'Gjør til medlem':'Gjør til admin'}</button><button class="btn" data-memdel="${esc(x.id)}">Fjern</button>`}</div></div>`};
@@ -3546,6 +3546,7 @@ function memberCard(onlyBody){
   ${sec('b_bulk','Legg til flere samtidig','','<form class="form" id="memBulk" style="margin:0 0 10px;padding:10px;background:var(--bg);border-radius:var(--r-s)"><p class="small" style="margin:0">Lim inn e-postadresser, én per linje eller adskilt med komma eller mellomrom (maks 50 om gangen). Alle legges til som <b>medlemmer</b>, ikke administratorer. <b>Appen skal ikke inneholde opplysninger om barn under 13 år. Legg ikke inn dem.</b> Nye personer får e-post for å velge passord. De som allerede finnes, hoppes over, men legges i valgte grupper.</p><label class="f">E-postadresser<textarea id="mBulkT" rows="6" placeholder="kari@eksempel.no&#10;ola@eksempel.no">'+esc(state.memBulk)+'</textarea></label>'+grBoks(state.memGB,'Legg også i grupper (valgfritt)')+'<button class="btn primary" type="submit">Legg til alle</button></form>')}`;
   if(onlyBody)return body;
   return `<details class="card acc" data-acc="brukere" ${state.acc.brukere?'open':''}><summary><h2>Brukere (${forced?ml.length+' av '+members.length:members.length})</h2></summary>
+  <button class="btn primary" data-brveiviser style="width:auto;margin:0 0 10px">+ Ny bruker (veiviser)</button>
   <p class="small" style="margin:0 0 6px">Søk eller velg gruppe for å finne folk. Åpne riktig rolle for å legge til en ny bruker. Personen får en e-post og velger passord selv.</p>
   <p class="small" role="status" style="margin:0 0 6px">${esc(state.memMsg)}</p>
   <div style="display:grid;gap:8px;margin:0 0 10px"><input type="search" id="brQ" placeholder="Søk etter e-post, gruppe eller rolle …" aria-label="Søk i brukere" autocomplete="off" value="${esc(state.brQ)}"><select id="brG" aria-label="Filtrer på gruppe"><option value="">Alle grupper</option>${GROUPS.map(g=>`<option value="${esc(g[0])}" ${gf===g[0]?'selected':''}>${esc(g[1])}</option>`).join('')}</select></div>
@@ -5153,7 +5154,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='31.10.2026 kl. 10:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='01.11.2026 kl. 10:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5600,7 +5601,62 @@ function gruppeKort(){
   const leder=!state.admin&&isLeader();
   const deler=[minGrupperKort(),leder?leaderGroups():'',state.admin?groupsCard():'',(state.admin||leder)?admLat('tilh','Tilhørighet og varsler',tilhKort):''].filter(x=>x&&String(x).trim());
   const tekst=state.admin?'Alle gruppene med medlemmer. Åpne en gruppe for å legge til eller fjerne folk, eller bruk «Tilhørighet og varsler» for å se det person for person.':leder?'Gruppene du er med i og leder. Åpne en gruppe for å se, legge til og fjerne medlemmer.':'Gruppene du er med i, og varsler fra dem.';
-  return subSorter('grp','<details class="card acc" data-acc="gruppekort" '+(state.acc.gruppekort?'open':'')+'><summary><h2>Grupper</h2></summary><p class="small" style="margin:0 0 4px">'+tekst+'</p><div class="megboks">'+deler.join('')+'</div></details>','.megboks')}
+  return subSorter('grp','<details class="card acc" data-acc="gruppekort" '+(state.acc.gruppekort?'open':'')+'><summary><h2>Grupper</h2></summary><p class="small" style="margin:0 0 4px">'+tekst+'</p>'+(state.admin?'<button class="btn primary" data-brveiviser style="width:auto;margin:6px 0 8px">+ Ny bruker (veiviser)</button>':'')+'<div class="megboks">'+deler.join('')+'</div></details>','.megboks')}
+/* Veiviser for ny bruker (administrator): 1 Hvem · 2 Rolle · 3 Grupper · 4 Ansvarsområder · 5 Oppsummering. En person kan ha flere grupper og flere ansvarsområder. */
+async function brukerVeiviser(){
+  if(!state.admin||!FB||document.querySelector('dialog.pub'))return;
+  const W={s:0,navn:'',epost:'',tlf:'',rolle:'medlem',lt:(LTYPES[0]||[''])[0],leder:[],grp:[],ans:[],feil:'',lagrer:false},STEG=['Hvem','Rolle','Grupper','Ansvar','Ferdig'];
+  const dlg=document.createElement('dialog');dlg.className='lp pub';document.body.appendChild(dlg);
+  const ROLLER=[['medlem','Medlem','Ser medlemsinnhold og innhold for gruppene personen er med i. Brukes også for frivillige.'],['gruppeleder','Gruppeleder','Kan publisere nyheter, arrangementer og varsler for gruppene vedkommende leder.'],['leder','Leder','Ser ledersamlinger og innhold for ledere (for eksempel hovedledere eller ungdomsledere).'],['admin','Administrator','Kan endre alt innhold og alle brukere. Gi bare til dem som trenger det.']];
+  const rolleNavn=()=>{const r=ROLLER.find(x=>x[0]===W.rolle)[1];return W.rolle==='leder'?'Leder ('+((LTYPES.find(t=>t[0]===W.lt)||[0,''])[1])+')':r};
+  const boks=(navn,liste,valgt,tekst)=>'<div style="display:grid;gap:6px">'+liste.map(g=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-vv="'+navn+'" value="'+esc(g[0])+'" style="width:22px;height:22px;flex:none" '+(valgt.includes(g[0])?'checked':'')+'>'+esc(tekst?tekst(g):g[1])+'</label>').join('')+'</div>';
+  const tegn=()=>{
+    const gr=GROUPS,ledGr=W.rolle==='gruppeleder';
+    let inn='';
+    if(W.s===0)inn='<label class="f">Navn<input id="vN" maxlength="60" autocomplete="off" value="'+esc(W.navn)+'"></label><label class="f">E-postadresse<input id="vE" type="email" autocomplete="off" value="'+esc(W.epost)+'"></label><label class="f">Mobilnummer (valgfritt)<input id="vT" type="tel" maxlength="30" autocomplete="off" value="'+esc(W.tlf)+'"></label><p class="small" style="margin:0"><b>Appen skal ikke inneholde opplysninger om barn under 13 år. Legg ikke inn dem.</b> Personen får en e-post for å velge passord selv.</p>';
+    else if(W.s===1)inn='<div style="display:grid;gap:8px">'+ROLLER.map(r=>'<label style="display:block;border:1px solid var(--line);border-radius:var(--r-s);padding:10px;font-weight:400"><span style="display:flex;gap:8px;align-items:center"><input type="radio" name="vR" data-vv="rolle" value="'+r[0]+'" style="width:20px;height:20px;flex:none" '+(W.rolle===r[0]?'checked':'')+'><b>'+r[1]+'</b></span><span class="small" style="display:block;margin:4px 0 0 28px">'+r[2]+'</span>'+(r[0]==='leder'&&W.rolle==='leder'?'<span style="display:grid;gap:6px;margin:8px 0 0 28px">'+LTYPES.map(t=>'<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="radio" name="vL" data-vv="lt" value="'+esc(t[0])+'" style="width:20px;height:20px;flex:none" '+(W.lt===t[0]?'checked':'')+'>'+esc(t[1])+'</label>').join('')+'</span>':'')+'</label>').join('')+'</div>';
+    else if(W.s===2)inn=(ledGr?'<p style="margin:0"><b>Leder for</b> <span class="small">(velg minst én, flere er lov)</span></p>'+boks('leder',gr,W.leder)+'<p style="margin:10px 0 0"><b>Er også med som medlem i</b> <span class="small">(valgfritt)</span></p>':'<p style="margin:0"><b>Med i grupper</b> <span class="small">(valgfritt, flere er lov)</span></p>')+boks('grp',gr.filter(g=>!(ledGr&&W.leder.includes(g[0]))),W.grp);
+    else if(W.s===3){const rl=state.roles;inn='<p style="margin:0"><b>Ansvarsområder</b> <span class="small">(valgfritt, flere er lov)</span></p><p class="small" style="margin:0">Personen legges inn som ansvarlig med navn, mobil og e-post, og kan få beskjeder fra medlemmene.</p>'+(rl===undefined?'<p class="small">Henter …</p>':rl.length?'<div style="display:grid;gap:6px">'+rl.map(a=>{const full=(a.persons||[]).length>=4;return '<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-vv="ans" value="'+esc(a.id)+'" style="width:22px;height:22px;flex:none" '+(W.ans.includes(a.id)?'checked':'')+(full?' disabled':'')+'>'+esc(a.name)+(full?' <span class="small">(full, 4 av 4)</span>':'')+'</label>'}).join('')+'</div>':'<p class="small">Ingen ansvarsområder er opprettet ennå.</p>')}
+    else{const gn=l=>l.map(gName).join(', ')||'ingen';
+      const rad=(a,b)=>'<div class="r" style="display:block"><span class="small">'+a+'</span><div>'+b+'</div></div>';
+      inn='<div class="reg">'+rad('Navn',esc(W.navn||'(ikke oppgitt)'))+rad('E-post',esc(W.epost))+(W.tlf?rad('Mobil',esc(W.tlf)):'')+rad('Rolle',esc(rolleNavn()))+(ledGr?rad('Leder for',esc(gn(W.leder))):'')+rad(ledGr?'Medlem også i':'Med i grupper',esc(gn(W.grp)))+rad('Ansvarsområder',esc((state.roles||[]).filter(a=>W.ans.includes(a.id)).map(a=>a.name).join(', ')||'ingen'))+'</div>'}
+    dlg.innerHTML='<form class="form" method="dialog" onsubmit="return false"><p class="small" style="margin:0">Ny bruker · steg '+(W.s+1)+' av '+STEG.length+' · <b>'+STEG[W.s]+'</b></p><div style="display:flex;gap:4px">'+STEG.map((x,i)=>'<span style="flex:1;height:4px;border-radius:2px;background:'+(i<=W.s?'var(--brand)':'var(--line)')+'"></span>').join('')+'</div>'+inn
+     +'<p class="small" role="status" style="margin:0;color:var(--danger,#c0392b)">'+esc(W.feil)+'</p><div class="btns"><button type="button" class="btn" data-vb="'+(W.s?'tilbake':'avbryt')+'" '+(W.lagrer?'disabled':'')+'>'+(W.s?'Tilbake':'Avbryt')+'</button>'+(W.s<STEG.length-1?'<button type="button" class="btn primary" data-vb="neste" style="width:auto">Neste</button>':'<button type="button" class="btn primary" data-vb="opprett" style="width:auto" '+(W.lagrer?'disabled':'')+'>'+(W.lagrer?'Oppretter …':'Opprett bruker')+'</button>')+'</div></form>'};
+  const les=()=>{const v=id=>{const e=dlg.querySelector(id);return e?e.value:null};
+    if(W.s===0){W.navn=(v('#vN')||'').trim().replace(/\s+/g,' ');W.epost=(v('#vE')||'').trim().toLowerCase();W.tlf=(v('#vT')||'').trim()}
+    if(W.s===2||W.s===3){const samle=n=>[...dlg.querySelectorAll('[data-vv="'+n+'"]')].filter(x=>x.checked).map(x=>x.value);
+      if(W.s===2){if(W.rolle==='gruppeleder')W.leder=samle('leder');W.grp=samle('grp')}else W.ans=samle('ans')}};
+  dlg.addEventListener('change',e=>{const t=e.target,k=t.dataset&&t.dataset.vv;if(!k)return;
+    if(k==='rolle'){W.rolle=t.value;W.feil='';tegn()}else if(k==='lt'){W.lt=t.value}
+    else if(k==='leder'){les();W.grp=W.grp.filter(g=>!W.leder.includes(g));tegn()}});
+  dlg.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('[data-vb]');if(!b)return;const a=b.dataset.vb;
+    if(a==='avbryt'){dlg.close();return}
+    les();W.feil='';
+    if(a==='tilbake'){W.s--;tegn();return}
+    if(a==='neste'){
+      if(W.s===0){if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(W.epost))W.feil='Skriv en gyldig e-postadresse.';else if(!W.navn)W.feil='Skriv navnet til personen.';else if(members.some(x=>x.id===W.epost))W.feil='Denne e-postadressen finnes allerede. Endre personen under Brukere i stedet.'}
+      if(W.s===2&&W.rolle==='gruppeleder'&&!W.leder.length)W.feil='Velg minst én gruppe personen skal lede.';
+      if(!W.feil){W.s++;if(W.s===3&&state.roles===undefined&&FB){tegn();try{state.roles=await FB.rolesList()}catch(er){state.roles=[]}}}
+      tegn();return}
+    if(a==='opprett'){
+      if(W.rolle==='admin'&&!await bekreft('Gi '+W.epost+' full tilgang som administrator?\n\nAdministratorer kan endre alt innhold, alle brukere og sende varsler til alle.'))return;
+      W.lagrer=true;tegn();const m=W.epost,adm=W.rolle==='admin';
+      try{
+        const r=await FB.addUser(m,adm?'admin':'member');
+        const pr={name:W.navn};if(W.tlf)pr.tlf=W.tlf;await FB.setProfile(m,pr,adm);
+        if(W.rolle==='leder'){await FB.setLeder(m,true);await FB.setLtype(m,W.lt)}
+        if(W.rolle==='gruppeleder')await FB.setLeads(m,W.leder,[...new Set([...W.leder,...W.grp])]);
+        else if(W.grp.length)await FB.setGroups(m,adm?'admin':'member',W.grp);
+        const feilAns=[];
+        for(const id of W.ans){const a=(state.roles||[]).find(x=>x.id===id);if(!a)continue;
+          try{const persons=[...(a.persons||[]),{n:W.navn,tlf:W.tlf,e:m}].slice(0,4),emails=[...new Set([...(a.emails||[]),m])].slice(0,4),d={...a,persons,emails};await FB.setRole(id,d);Object.assign(a,d)}catch(er){feilAns.push(a.name)}}
+        dlg.close();
+        state.memMsg=(r.created?W.navn+' er opprettet som ':W.navn+' hadde allerede en konto og er lagt inn som ')+rolleNavn().toLowerCase()+'.'+(r.created?' '+m+' har fått en e-post for å velge passord.'+await velkomst([m]):'')+(feilAns.length?' Kunne ikke legges til som ansvarlig i: '+feilAns.join(', ')+'.':'');
+        state.acc.brukere=true;state.acc.ansvarkort=true;push('Bruker opprettet',W.navn);await refresh();
+      }catch(er){W.lagrer=false;W.feil=er&&er.code==='auth/admin-restricted-operation'?'Registrering er slått av i Firebase (Authentication → Settings → User actions).':er&&er.code==='auth/invalid-email'?'Ugyldig e-postadresse.':saveMsg(er&&er.code);tegn()}}});
+  dlg.addEventListener('close',()=>dlg.remove());
+  tegn();dlg.showModal();
+}
 function megCard(){return subSorter('meg',megKort(),'.megboks')}
 function megKort(){
   const deler=[state.user?profileCard():'',state.user?gruppeKort():'',attestKort(),settingsCard(),state.user?vakterCard():'',state.user?lrCard():'',state.user?verktoyCard():'',state.user?loginCard():''].filter(x=>x&&String(x).trim());
@@ -5998,6 +6054,7 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.tlmode){keep(()=>{state.tl.mode=c.dataset.tlmode;state.acc.tilh=true})}
   else if(c.dataset.tlbytt!==undefined){keep(()=>{state.tl.apen=true})}
   else if(c.dataset.tlg){keep(()=>{state.tl.g=c.dataset.tlg;state.tl.q='';state.tl.apen=false})}
+  else if('brveiviser' in c.dataset)brukerVeiviser();
   else if(c.dataset.grfjern){const gi=c.dataset.grfjern.split('|')[1];state.acc['gr_'+gi]=true;state.acc.gruppekort=true;tlMed(c.dataset.grfjern,false)}
   else if(c.dataset.grlegg){const gi=c.dataset.grlegg,sel=document.getElementById('grS_'+gi);if(sel&&sel.value){state.acc['gr_'+gi]=true;state.acc.gruppekort=true;tlMed(sel.value+'|'+gi,true)}}
   else if(c.dataset.tlmed){tlMed(c.dataset.tlmed,c.getAttribute('aria-checked')!=='true')}
