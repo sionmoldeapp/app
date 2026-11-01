@@ -3434,11 +3434,12 @@ function noteAsk(id){
     try{const sl=getSelection();if(sl.rangeCount)sistRange=sl.getRangeAt(0).cloneRange()}catch(x){}});
   ed.addEventListener('paste',e=>{e.preventDefault();const t=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,t)});
   ed.addEventListener('drop',e=>e.preventDefault());
-  // Lukk lagrer automatisk når det er gjort endringer (tomme notater lagres ikke). Feiler lagringen, spørres det før vinduet lukkes.
+  // Lukk lagrer det som ikke er lagret (tomme notater lagres ikke), uten dialogbokser. Feiler lagringen, blir notatet stående åpent med en melding; et nytt trykk på Lukk lukker uten å lagre.
+  let lukkFeil=false;
   const lukk=async()=>{
     if(snap()!==start){const tomt=!dlg.querySelector('#nT').value.trim()&&!noteText(sanitizeNote(ed.innerHTML));
-      if(!tomt&&!await lagre()&&!await bekreft('Notatet kunne ikke lagres. Lukke uten å lagre?'))return}
-    dlg.close()};
+      if(!tomt&&!await lagre()){if(!lukkFeil){lukkFeil=true;msg('Kunne ikke lagre. Notatet står åpent så ingenting går tapt. Trykk Lukk igjen for å lukke uten å lagre.');return}}}
+    dlg.close();keep(()=>{})};
   dlg.querySelector('#nX').addEventListener('click',lukk);
   dlg.addEventListener('cancel',e=>{if(snap()!==start){e.preventDefault();lukk()}});
   let lagrer=false,lagret=!!ex;const vent=()=>new Promise(res=>setTimeout(res,80));
@@ -3449,9 +3450,9 @@ function noteAsk(id){
     const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML),img:foto,lyd:lydL};
     if(!d.title&&!noteText(d.html)){if(!stille)msg('Skriv en tittel eller litt tekst.');return false}
     if(!d.title)d.title=noteText(d.html).slice(0,40);
-    const sn=snap();lagrer=true;if(stille)msg('Lagrer …');
+    const sn=snap();lagrer=true;
     try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();lagret=true;
-      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.verktoy=true;state.acc.vnotat=true;if(!stille)dlg.querySelector('#nT').value=d.title;start=stille?sn:snap();msg('Lagret automatisk kl. '+oTall(new Date().getHours())+':'+oTall(new Date().getMinutes())+'.');keep(()=>{});lagrer=false;return true}
+      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.verktoy=true;state.acc.vnotat=true;if(!stille)dlg.querySelector('#nT').value=d.title;start=stille?sn:snap();msg('Lagret automatisk kl. '+oTall(new Date().getHours())+':'+oTall(new Date().getMinutes())+'.');if(!stille)keep(()=>{});lagrer=false;return true}
     catch(er){lagrer=false;msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?');return false}};
   dlg.querySelector('#nShare').addEventListener('click',async()=>{
     const t=dlg.querySelector('#nT').value.trim(),tekst=[t,[noDato(dlg.querySelector('#nD').value),dlg.querySelector('#nP').value.trim()].filter(Boolean).join(' · '),'',noteLinjer(ed.innerHTML)].join('\n').trim();
@@ -3490,8 +3491,16 @@ function noteAsk(id){
       if(!nok){hvil();return}
       await lukk();if(dlg.isConnected)hvil()});
     dlg.addEventListener('touchcancel',()=>{if(modus){modus='';hvil()}}) }
-  const autoTik=()=>{if(lagrer||rec||snap()===start)return;if(!dlg.querySelector('#nT').value.trim()&&!noteText(sanitizeNote(ed.innerHTML)))return;lagre(true)};
-  const aut=setInterval(autoTik,2500),bort=()=>{if(document.hidden)autoTik()};
+  /* Lagres sjelden: først når det har vært rolig i 15 sekunder (eller senest etter 2 minutter med endringer), når appen legges bort, og når notatet lukkes. */
+  let sistS=snap(),sistT=Date.now(),skittenFra=0;
+  const tomtNotat=()=>!dlg.querySelector('#nT').value.trim()&&!noteText(sanitizeNote(ed.innerHTML));
+  const autoTik=(tving)=>{if(lagrer||rec)return;const s=snap();
+    if(s===start){skittenFra=0;sistS=s;return}
+    if(!skittenFra)skittenFra=Date.now();
+    if(s!==sistS){sistS=s;sistT=Date.now()}
+    if(tomtNotat())return;
+    if(tving||Date.now()-sistT>=15000||Date.now()-skittenFra>=120000){skittenFra=0;lagre(true)}};
+  const aut=setInterval(()=>autoTik(false),3000),bort=()=>{if(document.hidden)autoTik(true)};
   document.addEventListener('visibilitychange',bort);
   dlg.addEventListener('close',()=>{clearInterval(aut);document.removeEventListener('visibilitychange',bort);document.removeEventListener('selectionchange',sync);dlg.remove()});
   dlg.showModal();start=snap();
@@ -5386,7 +5395,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='01.11.2026 kl. 17:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='01.11.2026 kl. 18:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
