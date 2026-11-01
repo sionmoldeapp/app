@@ -994,6 +994,16 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 @keyframes snurr{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
 .nwrap{position:relative}
+.nlyd:empty{display:none}.nlyd{margin:8px 0 0;display:grid;gap:6px}
+.nlydrad{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.nlydrad>span:first-child{font-size:var(--t-s);font-weight:600}.nlydrad audio{flex:1;min-width:160px;height:36px}
+.nlydprikk{width:10px;height:10px;border-radius:50%;background:#e5383b;animation:nlydP 1s ease-in-out infinite}
+@keyframes nlydP{50%{opacity:.25}}
+.nmeny{position:fixed;z-index:60;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:8px;width:min(300px,calc(100vw - 16px));background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 34px rgba(0,0,0,.3)}
+.nmeny[hidden]{display:none}
+.nmeny button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px;border-radius:12px;font-size:var(--t-s);cursor:pointer;text-align:center;color:var(--text,inherit)}
+.nmeny button:hover,.nmeny button:active,.nmeny button:focus-visible{background:var(--chip)}
+.nmeny .nmi{font-size:1.3em;line-height:1}
 .nslide{flex:1;min-width:90px;max-width:200px;height:36px;margin:0 4px;padding:0;border:0;accent-color:var(--brand);touch-action:pan-y;background:transparent}   /* padding 0: ellers er det 10 px luft i hver ende, og kulen når ikke enden */
 .merow{display:flex;align-items:center;gap:10px;padding:14px;margin:0 0 8px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .merow b{flex:1;min-width:0}
@@ -3269,25 +3279,105 @@ function noteAsk(id){
    +'<div class="ntools" role="toolbar" aria-label="Tekstverktøy"><button type="button" class="btn" data-ncmd="bold" aria-label="Fet"><b>B</b></button><button type="button" class="btn" data-ncmd="italic" aria-label="Kursiv"><i>I</i></button>'
    +'<span class="nsep"></span><button type="button" class="btn" data-nsize="-1" aria-label="Mindre tekst" style="font-size:var(--t-s);font-weight:700">A</button><input type="range" class="nslide" id="nSlide" min="0" max="3" step="1" value="1" aria-label="Tekststørrelse: dra til høyre for større og til venstre for mindre"><button type="button" class="btn" data-nsize="1" aria-label="Større tekst" style="font-size:var(--t-xl);font-weight:700;line-height:1">A</button></div>'
    +'<div class="nwrap"><div id="nEd" class="ned" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notat">'+(ex?sanitizeNote(ex.html):'')+'</div><div class="ngrip" id="nGrip" role="separator" aria-label="Dra for å endre størrelsen på tekstfeltet" title="Dra for å endre størrelse"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5L5 14M14 10l-4 4"/></svg></div></div>'
+   +'<div id="nLyd" class="nlyd"></div>'
    +'<p class="small" role="status" id="nMsg" style="margin:6px 0 0"></p>'
    +'<div class="btns nbtns"><button type="button" class="btn primary" id="nSave" style="flex:1">Lagre</button><button type="button" class="btn primary" id="nClose" style="flex:1">'+(ex?'Lukk':'Avbryt')+'</button></div><div class="btns nbtns" style="margin-top:8px">'+(PUSH_URL?'<button type="button" class="btn" id="nMail" style="flex:1" aria-label="Send til e-post" title="Send til e-post">E-post</button>':'')+'<button type="button" class="btn" id="nShare" style="flex:1">Del</button>'+(ex?'<button type="button" class="btn danger" id="nDel" style="flex:1">Slett</button>':'')+'</div>';   // Lukk vises først etter at et nytt notat er lagret
   document.body.appendChild(dlg);
   const ed=dlg.querySelector('#nEd'),msg=t=>{dlg.querySelector('#nMsg').textContent=t};
-  /* Dobbelttrykk et sted i notatet: det settes inn et lite listepunkt (◆) akkurat der, og det kan gjøres flere ganger utover. */
-  ed.addEventListener('dblclick',e=>{
-    let r=null;
-    if(document.caretRangeFromPoint)r=document.caretRangeFromPoint(e.clientX,e.clientY);
-    else if(document.caretPositionFromPoint){const p=document.caretPositionFromPoint(e.clientX,e.clientY);if(p){r=document.createRange();r.setStart(p.offsetNode,p.offset);r.collapse(true)}}
-    if(!r||!ed.contains(r.startContainer))return;
-    e.preventDefault();r.collapse(true);
-    const f=document.createElement('font');f.size='2';f.textContent='◆';const t=document.createTextNode(' ');   // liten, rolig rombe (font size 2 tillates av notatrenseren)
-    const fr=document.createDocumentFragment();fr.append(f,t);r.insertNode(fr);
-    const sel=getSelection(),k=document.createRange();k.setStartAfter(t);k.collapse(true);sel.removeAllRanges();sel.addRange(k);
-    ed.dispatchEvent(new Event('input',{bubbles:true}))});
+  /* Punkter, avkrysning, klokkeslett og lydklipp. Dobbelttrykk setter inn et punkt (på en linje som har punkt: underpunkt, og tilbake igjen).
+     Hold inne (eller høyreklikk) åpner en meny med flere valg. Lydklipp lagres i notatet (maks 3 på ca. 40 sekunder). */
+  const LYD_MAKS=3,LYD_SEK=40,LYD_TEGN=250000;
+  let lydL=(Array.isArray(ex&&ex.lyd)?ex.lyd:[]).filter(l=>l&&typeof l.data==='string'&&/^data:audio\//.test(l.data)).slice(0,LYD_MAKS).map(l=>({id:String(l.id||'l'+Math.random().toString(36).slice(2,7)),data:l.data,sek:Math.max(1,Math.min(120,+l.sek||1))}));
+  const P1='<font size="2">◆</font>&nbsp;',P2='&emsp;&emsp;<font size="2">◦</font>&nbsp;',KRYSS='<font size="3">☐</font>&nbsp;';
+  const ins=h=>{ed.focus();document.execCommand('insertHTML',false,h);sync()};
+  const settMark=r=>{ed.focus();const s=getSelection();s.removeAllRanges();s.addRange(r)};
+  const mSek=n=>Math.floor(n/60)+':'+oTall(n%60);
+  const rVedPunkt=(x,y)=>{let r=null;
+    if(document.caretRangeFromPoint)r=document.caretRangeFromPoint(x,y);
+    else if(document.caretPositionFromPoint){const p=document.caretPositionFromPoint(x,y);if(p){r=document.createRange();r.setStart(p.offsetNode,p.offset)}}
+    if(!r||!ed.contains(r.startContainer))return null;r.collapse(true);return r};
+  const punktVedTrykk=r=>{
+    const s=getSelection();settMark(r);
+    try{
+      if(!s.modify)throw 0;
+      try{s.modify('move','backward','paragraphboundary')}catch(x){s.modify('move','backward','lineboundary')}
+      for(let i=0;i<4;i++)s.modify('extend','forward','character');
+      const t=s.toString();s.collapseToStart();
+      if(t.charAt(0)==='◆'){s.modify('extend','forward','character');s.modify('extend','forward','character');ins(P2);return}
+      if(t.slice(0,3)==='  ◦'){for(let i=0;i<4;i++)s.modify('extend','forward','character');ins(P1);return}
+    }catch(x){}
+    settMark(r);ins(P1)};
+  ed.addEventListener('dblclick',e=>{const r=rVedPunkt(e.clientX,e.clientY);if(!r)return;e.preventDefault();punktVedTrykk(r)});
+  ed.addEventListener('click',e=>{const f=e.target;if(f&&f.tagName==='FONT'&&/^[☐☑]$/.test(f.textContent)){f.textContent=f.textContent==='☐'?'☑':'☐';ed.dispatchEvent(new Event('input',{bubbles:true}))}});
+  const lydBar=dlg.querySelector('#nLyd');let rec=null;
+  const lydTegn=()=>{lydBar.innerHTML=(rec?'<div class="nlydrad"><span class="nlydprikk" aria-hidden="true"></span><b id="nLydT">0:00</b><span class="small" style="flex:1">Tar opp …</span><button type="button" class="btn primary" data-nlstopp>Stopp og legg til</button><button type="button" class="btn" data-nlavbryt>Avbryt</button></div>':'')
+    +lydL.map((l,i)=>'<div class="nlydrad"><span>🎤 Lydklipp '+(i+1)+' ('+mSek(l.sek)+')</span><audio controls preload="none" src="'+l.data+'"></audio><button type="button" class="btn" data-nlslett="'+esc(l.id)+'" aria-label="Slett lydklipp '+(i+1)+'">✕</button></div>').join('')};
+  lydTegn();
+  lydBar.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    if(b.hasAttribute('data-nlstopp')&&rec){try{rec.mr.stop()}catch(x){}}
+    else if(b.hasAttribute('data-nlavbryt')&&rec){rec.avbrutt=true;try{rec.mr.stop()}catch(x){}}
+    else if(b.dataset.nlslett){lydL=lydL.filter(l=>l.id!==b.dataset.nlslett);lydTegn();msg('Lydklippet er fjernet. Trykk Lagre.')}});
+  const lydStart=async()=>{
+    if(rec)return;if(lydL.length>=LYD_MAKS){push('Maks '+LYD_MAKS+' lydklipp','Slett et klipp for å ta opp et nytt.');return}
+    try{
+      if(!navigator.mediaDevices||!window.MediaRecorder)throw {msg:'Opptak støttes ikke i denne nettleseren.'};
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true}),typer=['audio/webm;codecs=opus','audio/mp4','audio/webm'],mime=typer.find(t=>MediaRecorder.isTypeSupported(t))||'',
+        mr=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:48000}:{audioBitsPerSecond:48000});
+      const r={mr,chunks:[],t0:Date.now(),mime:mime||'audio/webm',avbrutt:false,iv:0,sted:menyR};rec=r;
+      mr.ondataavailable=e=>{if(e.data&&e.data.size)r.chunks.push(e.data)};
+      mr.onstop=async()=>{
+        clearInterval(r.iv);try{stream.getTracks().forEach(t=>t.stop())}catch(x){}rec=null;
+        if(r.avbrutt||!r.chunks.length){lydTegn();return}
+        const sek=Math.max(1,Math.round((Date.now()-r.t0)/1000)),blob=new Blob(r.chunks,{type:r.mime.split(';')[0]});
+        const data=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result));fr.onerror=()=>res('');fr.readAsDataURL(blob)});
+        if(!data){lydTegn();return}
+        if(data.length>LYD_TEGN){push('Lydklippet er for langt','Hold hvert klipp under ca. '+LYD_SEK+' sekunder.');lydTegn();return}
+        lydL.push({id:'l'+Date.now().toString(36),data,sek:Math.min(sek,120)});lydTegn();
+        if(r.sted){try{settMark(r.sted)}catch(x){ed.focus()}}
+        ins('🎤&nbsp;Lydklipp '+lydL.length+' ('+mSek(Math.min(sek,120))+')&nbsp;');
+        msg('Lydklippet er lagt til. Trykk Lagre for å ta det med.')};
+      mr.start(500);lydTegn();
+      r.iv=setInterval(()=>{const s=Math.floor((Date.now()-r.t0)/1000),t=dlg.querySelector('#nLydT');if(t)t.textContent=mSek(s);if(s>=LYD_SEK){try{mr.stop()}catch(x){}}},400)}
+    catch(er){rec=null;lydTegn();push('Kunne ikke starte opptaket',er&&er.name==='NotAllowedError'?'Slå på mikrofon for appen i telefonens innstillinger.':(er&&er.msg)||'Prøv igjen.')}};
+  dlg.addEventListener('close',()=>{if(rec){rec.avbrutt=true;try{rec.mr.stop()}catch(x){}}});
+  const meny=document.createElement('div');meny.className='nmeny';meny.hidden=true;meny.setAttribute('role','menu');dlg.appendChild(meny);
+  let menyR=null;
+  const MENY=[['punkt','◆','Listepunkt'],['under','◦','Underpunkt'],['kryss','☐','Avkrysning'],['tid','🕒','Klokkeslett'],['dato','📅','Dato'],['lyd','🎤','Lydklipp'],['kopi','⧉','Kopier'],['lim','📋','Lim inn'],['alt','▦','Merk alt']];
+  const menyVis=(x,y)=>{
+    const s=getSelection(),iEd=s.rangeCount&&ed.contains(s.anchorNode);
+    menyR=iEd&&!s.isCollapsed?s.getRangeAt(0).cloneRange():(rVedPunkt(x,y)||(iEd?s.getRangeAt(0).cloneRange():null));
+    meny.innerHTML=MENY.map(m=>'<button type="button" role="menuitem" data-nm="'+m[0]+'"><span class="nmi" aria-hidden="true">'+m[1]+'</span>'+m[2]+'</button>').join('');
+    meny.hidden=false;
+    const w=meny.offsetWidth,h=meny.offsetHeight,vx=Math.max(8,Math.min(innerWidth-w-8,x-w/2)),vy=Math.max(8,Math.min(innerHeight-h-8,y-h-14));
+    meny.style.left=vx+'px';meny.style.top=vy+'px';
+    const rb=meny.getBoundingClientRect();meny.style.left=(vx+(vx-rb.left))+'px';meny.style.top=(vy+(vy-rb.top))+'px'};
+  const menyLukk=()=>{meny.hidden=true};
+  { let tm=0,x0=0,y0=0;
+    ed.addEventListener('pointerdown',e=>{clearTimeout(tm);x0=e.clientX;y0=e.clientY;tm=setTimeout(()=>menyVis(x0,y0),650)});
+    ed.addEventListener('pointermove',e=>{if(Math.hypot(e.clientX-x0,e.clientY-y0)>10)clearTimeout(tm)});
+    ['pointerup','pointercancel'].forEach(n=>ed.addEventListener(n,()=>clearTimeout(tm)));
+    ed.addEventListener('contextmenu',e=>{e.preventDefault();clearTimeout(tm);menyVis(e.clientX,e.clientY)}) }
+  dlg.addEventListener('pointerdown',e=>{if(!meny.hidden&&!e.target.closest('.nmeny'))menyLukk()},true);
+  meny.addEventListener('mousedown',e=>e.preventDefault());
+  meny.addEventListener('click',e=>{
+    const b=e.target.closest('[data-nm]');if(!b)return;const k=b.dataset.nm;menyLukk();
+    if(menyR&&k!=='kopi'){try{settMark(menyR)}catch(x){ed.focus()}}
+    const MND=['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'],n=new Date();
+    if(k==='punkt')ins(P1);
+    else if(k==='under')ins(P2);
+    else if(k==='kryss')ins(KRYSS);
+    else if(k==='tid')ins('kl. '+oTall(n.getHours())+':'+oTall(n.getMinutes())+'&nbsp;');
+    else if(k==='dato')ins(n.getDate()+'. '+MND[n.getMonth()]+' '+n.getFullYear()+'&nbsp;');
+    else if(k==='lyd')lydStart();
+    else if(k==='kopi'){const t=(menyR?menyR.toString():'')||getSelection().toString();
+      if(!t){push('Ingenting å kopiere','Marker teksten først.');return}
+      (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t):Promise.reject()).then(()=>push('Kopiert','Teksten er kopiert.')).catch(()=>{try{document.execCommand('copy');push('Kopiert','Teksten er kopiert.')}catch(x){}})}
+    else if(k==='lim'){(navigator.clipboard&&navigator.clipboard.readText?navigator.clipboard.readText():Promise.reject()).then(t=>{if(t)ins(esc(t).replace(/\n/g,'<br>'))}).catch(()=>push('Kunne ikke lime inn','Bruk Lim inn fra tastaturet i stedet.'))}
+    else if(k==='alt'){ed.focus();const r=document.createRange();r.selectNodeContents(ed);const s=getSelection();s.removeAllRanges();s.addRange(r)}});
   let foto=ex&&ex.img||'';const fb1=dlg.querySelector('#nFoto'),fx=dlg.querySelector('#nFotoX');
   const visFoto=()=>{fb1.innerHTML=foto?'<img src="'+foto+'" alt="Bilde av forkynneren">':BILDE_IKON;fx.hidden=!foto;fb1.setAttribute('aria-label',foto?'Ta nytt bilde av forkynneren':'Ta bilde av forkynneren')};visFoto();
   fb1.addEventListener('click',()=>taBilde(d=>{foto=d;visFoto()}));fx.addEventListener('click',()=>{foto='';visFoto()});
-  const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,dlg.querySelector('#nP').value,sanitizeNote(ed.innerHTML),foto]);let start;
+  const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,dlg.querySelector('#nP').value,sanitizeNote(ed.innerHTML),foto,lydL.map(l=>l.id)]);let start;
   { const g=dlg.querySelector('#nGrip');let y0=0,h0=0,on=false;
     g.addEventListener('pointerdown',e=>{on=true;y0=e.clientY;h0=ed.getBoundingClientRect().height;try{g.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault()});
     g.addEventListener('pointermove',e=>{if(!on)return;ed.style.height=Math.max(140,Math.min(innerHeight*0.8,h0+(e.clientY-y0)))+'px'});
@@ -3325,7 +3415,7 @@ function noteAsk(id){
   dlg.querySelector('#nX').addEventListener('click',lukk);
   dlg.addEventListener('cancel',e=>{if(snap()!==start){e.preventDefault();lukk()}});
   const lagre=async()=>{
-    const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML),img:foto};
+    const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML),img:foto,lyd:lydL};
     if(!d.title&&!noteText(d.html)){msg('Skriv en tittel eller litt tekst.');return false}
     if(!d.title)d.title=noteText(d.html).slice(0,40);
     try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();
@@ -5243,7 +5333,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='01.11.2026 kl. 14:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='01.11.2026 kl. 15:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
