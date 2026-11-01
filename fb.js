@@ -155,7 +155,7 @@ const FB={
     // Lyttere for chat: nye samtaler og meldinger kommer med en gang (leser bare det som endres).
     watchThreads:(me,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads'),S.where('parts','array-contains',me),S.limit(50)),s=>cb(s.docs.map(d=>({id:d.id,...d.data({serverTimestamps:'estimate'})})).sort((x,y)=>(y.ms||0)-(x.ms||0))),e=>err&&err(e)),
     lastMsgs:async(id,n)=>(await S.getDocs(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created','desc'),S.limit(n||3)))).docs.map(d=>({id:d.id,...d.data()})),
-    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created','desc'),S.limit(200)),s=>cb(s.docs.slice().reverse().map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,reak:Object.fromEntries(['likes','r_hjerte','r_ler','r_wow','r_trist','r_be','r_ild','r_hender','r_sion','r_amen'].map(k=>[k,Array.isArray(x[k])?x[k]:[]])),stjerne:Array.isArray(x.stjerne)?x.stjerne:[],avst:x.avst&&typeof x.avst==='object'?x.avst:null,lyd:typeof x.lyd==='string'?x.lyd:'',lsek:typeof x.lsek==='number'?x.lsek:0,svar:x.svar&&typeof x.svar==='object'?x.svar:null,img:typeof x.img==='string'?x.img:'',redigert:x.redigert===true,slettet:x.slettet===true,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
+    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created','desc'),S.limit(200)),s=>cb(s.docs.slice().reverse().map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,reak:Object.fromEntries(['likes','r_hjerte','r_ler','r_wow','r_trist','r_be','r_ild','r_hender','r_sion','r_amen'].map(k=>[k,Array.isArray(x[k])?x[k]:[]])),stjerne:Array.isArray(x.stjerne)?x.stjerne:[],avst:x.avst&&typeof x.avst==='object'?x.avst:null,lyd:typeof x.lyd==='string'?x.lyd:'',lsek:typeof x.lsek==='number'?x.lsek:0,svar:x.svar&&typeof x.svar==='object'?x.svar:null,img:typeof x.img==='string'?x.img:'',pam:x.pam===true,redigert:x.redigert===true,slettet:x.slettet===true,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
     // Reaksjon på en melding (👍 ❤️ 😂 😮 😢 🙏): fjerner din e-post fra feltene du hadde, og legger den til i det nye. Den andre får beskjed i samtalelisten.
     async reakMsg(tid,mid,r,info){
       const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db),u={};
@@ -192,8 +192,9 @@ const FB={
       if(ekstra&&ekstra.img)d.img=String(ekstra.img);
       if(ekstra&&ekstra.lyd){d.lyd=String(ekstra.lyd);d.lsek=Math.min(120,Math.max(1,ekstra.lsek|0))}
       if(ekstra&&ekstra.avst&&ekstra.avst.id)d.avst={id:String(ekstra.avst.id).slice(0,40)};
+      if(ekstra&&ekstra.pam)d.pam=true;   // påminnelse: kopi av en eldre melding, lenket til originalen (svar)
       b.set(mref,d);
-      b.update(tref,{last:(String(text).replace(/⟦[^⟧]*⟧/g,'').trim()?String(text).replace(/⟦[^⟧]*⟧/g,'').trim():(ekstra&&ekstra.lyd?'🎤 Stemmemelding':'📷 Bilde')).slice(0,140),lastBy:me,ms:Date.now(),unread:t.parts.filter(p=>p!==me),gone:[]});
+      b.update(tref,{last:(ekstra&&ekstra.pam?'🔔 Påminnelse: ':'')+(String(text).replace(/⟦[^⟧]*⟧/g,'').trim()?String(text).replace(/⟦[^⟧]*⟧/g,'').trim():(ekstra&&ekstra.lyd?'🎤 Stemmemelding':'📷 Bilde')).slice(0,ekstra&&ekstra.pam?122:140),lastBy:me,ms:Date.now(),unread:t.parts.filter(p=>p!==me),gone:[]});
       await b.commit()},
     // Angre en melding du har sendt (teksten tømmes og meldingen merkes slettet), skjul/vis en samtale for deg selv, eller slett den for alle.
     async angreMsg(tid,mid,sist){const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db);

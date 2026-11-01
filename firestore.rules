@@ -199,7 +199,7 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stjerne'])
           && lykOK('stjerne');
         allow create: if signedIn() && request.auth.token.email in getAfter(/databases/$(database)/documents/threads/$(id)).data.parts
-          && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created', 'svar', 'img', 'lyd', 'lsek', 'avst'])
+          && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created', 'svar', 'img', 'lyd', 'lsek', 'avst', 'pam'])
           && request.resource.data.by == request.auth.token.email
           && request.resource.data.name is string && request.resource.data.name.size() <= 60
           && request.resource.data.text is string && request.resource.data.text.size() <= 1000
@@ -210,6 +210,7 @@ service cloud.firestore {
           && (!('svar' in request.resource.data) || (request.resource.data.svar is map && request.resource.data.svar.keys().hasOnly(['id', 'navn', 'tekst'])
               && request.resource.data.svar.navn is string && request.resource.data.svar.navn.size() <= 60
               && request.resource.data.svar.tekst is string && request.resource.data.svar.tekst.size() <= 120))
+          && (!('pam' in request.resource.data) || request.resource.data.pam == true)
           && request.resource.data.created == request.time;
       }
     }
