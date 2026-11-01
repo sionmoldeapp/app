@@ -118,7 +118,11 @@ const FB={
     // Chat: farge per samtale, avstemninger (avst), bønneliste (threads/{id}/bonner).
     setFarge:(tid,farge)=>S.updateDoc(S.doc(db,'threads',tid),{farge}),
     setBilde:(tid,v)=>S.updateDoc(S.doc(db,'threads',tid),{bilde:v===null?S.deleteField():v}),
-    setUtseende:(tid,felt,verdi)=>S.updateDoc(S.doc(db,'threads',tid),{[felt==='bakgrunn'?'bakgrunn':'farge']:verdi===null?S.deleteField():verdi}),
+    setUtseende:(tid,felt,verdi,v)=>S.updateDoc(S.doc(db,'threads',tid),{[felt==='bakgrunn'?'bakgrunn':'farge']:verdi===null?S.deleteField():verdi,...(v?{bgv:v}:{})}),
+    /* Eget bakgrunnsbilde i samtalen: ligger i en egen liten samling (threads/{id}/bg/ett) så samtalelisten ikke blir tung. Alle i samtalen ser det. */
+    setBg:(tid,data,v)=>S.setDoc(S.doc(db,'threads',tid,'bg','ett'),{data,by:auth.currentUser.email.toLowerCase(),v}),
+    hentBg:tid=>S.getDoc(S.doc(db,'threads',tid,'bg','ett')).then(s=>s.exists()?s.data():null),
+    delBg:tid=>S.deleteDoc(S.doc(db,'threads',tid,'bg','ett')),
     // Stjernemerke (bare egen e-post i stjerne), dempe en samtale (egen e-post i dempet), moderator sletter en melding, og ny gruppesamtale (kind gruppe, opptil 40 deltakere).
     stjerneMsg:(tid,mid,paa)=>{const me=auth.currentUser.email.toLowerCase();return S.updateDoc(S.doc(db,'threads',tid,'messages',mid),{stjerne:paa?S.arrayUnion(me):S.arrayRemove(me)})},
     dempChat:(tid,paa)=>{const me=auth.currentUser.email.toLowerCase();return S.updateDoc(S.doc(db,'threads',tid),{dempet:paa?S.arrayUnion(me):S.arrayRemove(me)})},

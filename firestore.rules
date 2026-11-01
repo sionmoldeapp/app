@@ -137,9 +137,18 @@ service cloud.firestore {
         && resource.data.get('gone', []).toSet().difference(request.resource.data.gone.toSet()).hasOnly([request.auth.token.email]);
       // Farge på samtalen: begge deltakerne kan velge en av de faste fargene.
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['farge', 'bakgrunn'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['farge', 'bakgrunn', 'bgv'])
+        && request.resource.data.get('bgv', 0) is number
         && request.resource.data.get('farge', 'blaa') in ['blaa', 'rosa', 'gronn', 'lilla', 'oransje', 'rod', 'turkis', 'gull']
-        && request.resource.data.get('bakgrunn', 'ingen') in ['ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion'];
+        && request.resource.data.get('bakgrunn', 'ingen') in ['ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget'];
+      // Eget bakgrunnsbilde: ett JPEG-bilde (data-URL, opptil ca. 600 kB) som alle i samtalen kan bytte og se.
+      match /bg/{b} {
+        allow read, delete: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts;
+        allow create, update: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
+          && request.resource.data.keys().hasOnly(['data', 'by', 'v'])
+          && request.resource.data.by == request.auth.token.email && request.resource.data.v is number
+          && request.resource.data.data is string && request.resource.data.data.size() <= 640000 && request.resource.data.data.matches('^data:image/jpeg;base64,.*');
+      }
       // Samtalebilde: et lite bilde (data-URL) som begge deltakerne kan bytte.
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bilde'])
