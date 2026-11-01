@@ -388,7 +388,7 @@ const FB={
     // tilbakerulling. Brukerlistene (members, admins) flettes: ingen brukere slettes, og ingen administrator kan låses ute.
     async collect(cols){
       const res={};
-      for(const c of cols){const snap=await S.getDocs(S.collection(db,c));res[c]=snap.docs.map(d=>({id:d.id,data:utTid(d.data())}))}
+      for(const c of cols){const snap=await S.getDocs(S.collection(db,c));res[c]=snap.docs.map(d=>({id:d.id,data:utTid((({img,...rest})=>rest)(d.data()))}))}   // bilder (img) tas ikke med i sikkerhetspunkter: de kan bli for store for ett dokument
       return res;
     },
     async makeSnapshot(label){
