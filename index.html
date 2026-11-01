@@ -994,6 +994,7 @@ dialog.note #nT,dialog.note #nD{height:44px;box-sizing:border-box;margin:0}
 @keyframes snurr{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
 .nwrap{position:relative}
+.nrund{display:flex;gap:6px;flex:none}
 .nlyd:empty{display:none}.nlyd{margin:8px 0 0;display:grid;gap:6px}
 .nlydrad{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
 .nlydrad>span:first-child{font-size:var(--t-s);font-weight:600}.nlydrad audio{flex:1;min-width:160px;height:36px}
@@ -3273,15 +3274,14 @@ function noteAsk(id){
     if(!slot){push('Fullt','Du har '+NOTE_MAX+' notater.');return}}
   const idag=toDT(Date.now()).slice(0,10),dlg=document.createElement('dialog');dlg.className='lp note';
   const datoV=ex?ex.date:idag,dd=new Date(datoV+'T12:00'),datoTxt=isNaN(dd)?'':cap(DAYS[dd.getDay()])+' '+dd.getDate()+'. '+MON[dd.getMonth()]+(dd.getFullYear()!==new Date().getFullYear()?' '+dd.getFullYear():'');
-  dlg.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:-20px;z-index:3;background:var(--surface);padding:20px 0 8px;margin:-20px 0 0"><h3 style="margin:0">'+(ex?'Notat':'Nytt notat')+'</h3><span class="small" id="nDS" style="color:var(--muted);flex:1;text-align:right">'+esc(datoTxt)+'</span><button type="button" class="btn" id="nX" aria-label="Lukk notatet">Lukk</button></div>'
+  dlg.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:-20px;z-index:3;background:var(--surface);padding:20px 0 8px;margin:-20px 0 0"><div style="min-width:0;flex:1"><h3 style="margin:0">'+(ex?'Notat':'Nytt notat')+'</h3><span class="small" id="nDS" style="color:var(--muted);display:block">'+esc(datoTxt)+'</span></div><div class="nrund">'+(PUSH_URL?'<button type="button" class="cbtn" id="nMail" aria-label="Send til e-post" title="Send til e-post"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6.5L20.5 7"/></svg></button>':'')+'<button type="button" class="cbtn" id="nShare" aria-label="Del notatet" title="Del"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="M8.2 10.8l7.6-4M8.2 13.2l7.6 4"/></svg></button><button type="button" class="cbtn" id="nDel" aria-label="'+(ex?'Slett notatet':'Forkast notatet')+'" title="'+(ex?'Slett':'Forkast')+'" style="color:#b3261e"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12.5a1 1 0 0 0 1 .9h8a1 1 0 0 0 1-.9L18 7M9 7V4.5h6V7"/></svg></button><button type="button" class="cbtn" id="nX" aria-label="Lukk notatet (lagres automatisk)" title="Lukk"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>'
    +'<input id="nD" type="hidden" value="'+esc(datoV)+'">'
    +'<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px"><div class="fotoboks"><button type="button" id="nFoto"></button><button type="button" id="nFotoX" hidden aria-label="Fjern bildet">✕</button></div><div style="flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Tittel<input id="nT" maxlength="120" placeholder="Tema" value="'+esc(ex?ex.title:'')+'"></label><label class="f">Forkynner<input id="nP" maxlength="80" placeholder="Hvem taler?" value="'+esc(ex?(ex.speaker||''):'')+'"></label></div></div>'
    +'<div class="ntools" role="toolbar" aria-label="Tekstverktøy"><button type="button" class="btn" data-ncmd="bold" aria-label="Fet"><b>B</b></button><button type="button" class="btn" data-ncmd="italic" aria-label="Kursiv"><i>I</i></button>'
    +'<span class="nsep"></span><button type="button" class="btn" data-nsize="-1" aria-label="Mindre tekst" style="font-size:var(--t-s);font-weight:700">A</button><input type="range" class="nslide" id="nSlide" min="0" max="3" step="1" value="1" aria-label="Tekststørrelse: dra til høyre for større og til venstre for mindre"><button type="button" class="btn" data-nsize="1" aria-label="Større tekst" style="font-size:var(--t-xl);font-weight:700;line-height:1">A</button></div>'
    +'<div class="nwrap"><div id="nEd" class="ned" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Notat">'+(ex?sanitizeNote(ex.html):'')+'</div><div class="ngrip" id="nGrip" role="separator" aria-label="Dra for å endre størrelsen på tekstfeltet" title="Dra for å endre størrelse"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5L5 14M14 10l-4 4"/></svg></div></div>'
    +'<div id="nLyd" class="nlyd"></div>'
-   +'<p class="small" role="status" id="nMsg" style="margin:6px 0 0"></p>'
-   +'<div class="btns nbtns"><button type="button" class="btn primary" id="nSave" style="flex:1">Lagre</button><button type="button" class="btn primary" id="nClose" style="flex:1">'+(ex?'Lukk':'Avbryt')+'</button></div><div class="btns nbtns" style="margin-top:8px">'+(PUSH_URL?'<button type="button" class="btn" id="nMail" style="flex:1" aria-label="Send til e-post" title="Send til e-post">E-post</button>':'')+'<button type="button" class="btn" id="nShare" style="flex:1">Del</button>'+(ex?'<button type="button" class="btn danger" id="nDel" style="flex:1">Slett</button>':'')+'</div>';   // Lukk vises først etter at et nytt notat er lagret
+   +'<p class="small" role="status" id="nMsg" style="margin:6px 0 0"></p>';
   document.body.appendChild(dlg);
   const ed=dlg.querySelector('#nEd'),msg=t=>{dlg.querySelector('#nMsg').textContent=t};
   /* Punkter, avkrysning, klokkeslett og lydklipp. Dobbelttrykk setter inn et punkt (på en linje som har punkt: underpunkt, og tilbake igjen).
@@ -3411,17 +3411,20 @@ function noteAsk(id){
     if(snap()!==start){const tomt=!dlg.querySelector('#nT').value.trim()&&!noteText(sanitizeNote(ed.innerHTML));
       if(!tomt&&!await lagre()&&!await bekreft('Notatet kunne ikke lagres. Lukke uten å lagre?'))return}
     dlg.close()};
-  dlg.querySelector('#nClose').addEventListener('click',lukk);
   dlg.querySelector('#nX').addEventListener('click',lukk);
   dlg.addEventListener('cancel',e=>{if(snap()!==start){e.preventDefault();lukk()}});
-  const lagre=async()=>{
+  let lagrer=false,lagret=!!ex;const vent=()=>new Promise(res=>setTimeout(res,80));
+  /* Autolagring: lagrer av seg selv et par sekunder etter siste endring, og når appen legges bort. stille=true gir ingen melding i toppen. */
+  const lagre=async(stille)=>{
+    while(lagrer)await vent();
+    if(lagret&&snap()===start)return true;
     const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML),img:foto,lyd:lydL};
-    if(!d.title&&!noteText(d.html)){msg('Skriv en tittel eller litt tekst.');return false}
+    if(!d.title&&!noteText(d.html)){if(!stille)msg('Skriv en tittel eller litt tekst.');return false}
     if(!d.title)d.title=noteText(d.html).slice(0,40);
-    try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();
-      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.verktoy=true;state.acc.vnotat=true;dlg.querySelector('#nT').value=d.title;start=snap();dlg.querySelector('#nClose').textContent='Lukk';msg('Lagret. Trykk Lukk når du er ferdig.');keep(()=>{});push('Lagret','Notatet er lagret.');return true}
-    catch(er){msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?');return false}};
-  dlg.querySelector('#nSave').addEventListener('click',()=>{lagre()});
+    const sn=snap();lagrer=true;if(stille)msg('Lagrer …');
+    try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();lagret=true;
+      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.verktoy=true;state.acc.vnotat=true;if(!stille)dlg.querySelector('#nT').value=d.title;start=stille?sn:snap();msg('Lagret automatisk kl. '+oTall(new Date().getHours())+':'+oTall(new Date().getMinutes())+'.');keep(()=>{});lagrer=false;return true}
+    catch(er){lagrer=false;msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?');return false}};
   dlg.querySelector('#nShare').addEventListener('click',async()=>{
     const t=dlg.querySelector('#nT').value.trim(),tekst=[t,[noDato(dlg.querySelector('#nD').value),dlg.querySelector('#nP').value.trim()].filter(Boolean).join(' · '),'',noteLinjer(ed.innerHTML)].join('\n').trim();
     if(!t&&!noteText(sanitizeNote(ed.innerHTML))){msg('Skriv en tittel eller litt tekst først.');return}
@@ -3436,11 +3439,15 @@ function noteAsk(id){
     catch(er){msg('Kunne ikke sende (ingen kontakt med tjenesten).')}
     mailKnapp.disabled=false});
   const del=dlg.querySelector('#nDel');
-  if(del)del.addEventListener('click',async()=>{
-    if(!await bekreft('Slette dette notatet? Det kan ikke angres.'))return;
-    try{await FB.delNote(noteEmail(),slot);state.notes=(state.notes||[]).filter(x=>x.id!==slot);state.noteMsg='Notatet er slettet.';start=snap();dlg.close();keep(()=>{});push('Slettet','Notatet er fjernet.')}
+  del.addEventListener('click',async()=>{
+    if(!await bekreft(lagret?'Slette dette notatet? Det kan ikke angres.':'Forkaste dette notatet?'))return;
+    while(lagrer)await vent();
+    try{if(lagret)await FB.delNote(noteEmail(),slot);state.notes=(state.notes||[]).filter(x=>x.id!==slot);state.noteMsg='Notatet er slettet.';start=snap();dlg.close();keep(()=>{});push('Slettet','Notatet er fjernet.')}
     catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}});
-  dlg.addEventListener('close',()=>{document.removeEventListener('selectionchange',sync);dlg.remove()});
+  const autoTik=()=>{if(lagrer||rec||snap()===start)return;if(!dlg.querySelector('#nT').value.trim()&&!noteText(sanitizeNote(ed.innerHTML)))return;lagre(true)};
+  const aut=setInterval(autoTik,2500),bort=()=>{if(document.hidden)autoTik()};
+  document.addEventListener('visibilitychange',bort);
+  dlg.addEventListener('close',()=>{clearInterval(aut);document.removeEventListener('visibilitychange',bort);document.removeEventListener('selectionchange',sync);dlg.remove()});
   dlg.showModal();start=snap();
 }
 /* Vakter: én liste per gruppe (Kjøkken, Lovsangsteamet, Elevate ...), bare synlig for gruppens medlemmer. Lagres i shifts/{gruppe}/items/{dato_vakt}.
@@ -5333,7 +5340,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='01.11.2026 kl. 15:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='01.11.2026 kl. 15:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
