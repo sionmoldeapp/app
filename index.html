@@ -689,12 +689,12 @@ nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .cmsg[data-bg=skog]{background:linear-gradient(180deg,#cfe9d0,#7fc08a)}
 .cmsg[data-bg=natt]{background:linear-gradient(180deg,#0b1d3a,#243a6b)}
 .cmsg[data-bg=rosa]{background:linear-gradient(180deg,#ffe3ec,#ffc2d6)}
-.cmsg[data-bg=himmel] .cdag,.cmsg[data-bg=himmel] .ct,.cmsg[data-bg=solnedgang] .cdag,.cmsg[data-bg=solnedgang] .ct,.cmsg[data-bg=skog] .cdag,.cmsg[data-bg=skog] .ct,.cmsg[data-bg=natt] .cdag,.cmsg[data-bg=natt] .ct,.cmsg[data-bg=rosa] .cdag,.cmsg[data-bg=rosa] .ct{background:rgba(255,255,255,.75);color:#333;padding:1px 9px;border-radius:99px;width:fit-content}
+.cmsg[data-bg=himmel] .cdag,.cmsg[data-bg=himmel] .ct,.cmsg[data-bg=solnedgang] .cdag,.cmsg[data-bg=solnedgang] .ct,.cmsg[data-bg=skog] .cdag,.cmsg[data-bg=skog] .ct,.cmsg[data-bg=natt] .cdag,.cmsg[data-bg=natt] .ct,.cmsg[data-bg=rosa] .cdag,.cmsg[data-bg=rosa] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
 .cmsg[data-bg=sion]{background-size:190px 190px}
 .cmsg[data-bg=aurora]{background-image:url(bilder/chat-aurora.jpg);background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#050614}
-.cmsg[data-bg=aurora] .cdag,.cmsg[data-bg=aurora] .ct{background:rgba(255,255,255,.75);color:#333;padding:1px 9px;border-radius:99px;width:fit-content}
+.cmsg[data-bg=aurora] .cdag,.cmsg[data-bg=aurora] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
 .cmsg[data-bg=eget]{background-size:cover;background-position:center;background-repeat:no-repeat}
-.cmsg[data-bg=eget] .cdag,.cmsg[data-bg=eget] .ct{background:rgba(255,255,255,.75);color:#333;padding:1px 9px;border-radius:99px;width:fit-content}
+.cmsg[data-bg=eget] .cdag,.cmsg[data-bg=eget] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
 .cbgeget{display:grid;gap:6px}
 .pbild{display:grid;gap:8px;margin:2px 0}.pbild img{max-width:100%;max-height:220px;object-fit:cover;border-radius:12px;justify-self:start}
 .pbilde{display:block;max-width:100%;border-radius:12px;margin:10px 0 0;cursor:zoom-in}
@@ -5232,7 +5232,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='01.11.2026 kl. 13:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='01.11.2026 kl. 13:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
