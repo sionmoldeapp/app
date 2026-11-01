@@ -140,7 +140,7 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['farge', 'bakgrunn', 'bgv'])
         && request.resource.data.get('bgv', 0) is number
         && request.resource.data.get('farge', 'blaa') in ['blaa', 'rosa', 'gronn', 'lilla', 'oransje', 'rod', 'turkis', 'gull']
-        && request.resource.data.get('bakgrunn', 'ingen') in ['ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget'];
+        && request.resource.data.get('bakgrunn', 'ingen') in ['ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget', 'aurora'];
       // Eget bakgrunnsbilde: ett JPEG-bilde (data-URL, opptil ca. 600 kB) som alle i samtalen kan bytte og se.
       match /bg/{b} {
         allow read, delete: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts;
