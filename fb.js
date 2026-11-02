@@ -318,7 +318,8 @@ const FB={
         const nokkel=Uint8Array.from(atob(K.vapid.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
         let sub=await reg.pushManager.getSubscription();
         if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:nokkel});
-        const j=sub.toJSON();return j.endpoint&&j.keys?JSON.stringify({e:j.endpoint,p:j.keys.p256dh,a:j.keys.auth}):'';
+        const j=sub.toJSON();   // koden brukes som dokument-id, så den kan ikke ha skråstreker: tekstformen kodes som base64url
+        return j.endpoint&&j.keys?btoa(JSON.stringify({e:j.endpoint,p:j.keys.p256dh,a:j.keys.auth})).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''):'';
       })():await M.getToken(M.getMessaging(app),{vapidKey:VAPID,serviceWorkerRegistration:reg});
       if(!token)throw {code:'push/no-token'};
       // Er brukeren innlogget, kobles koden til e-posten. Da kan tjenesten sende til medlemmer og grupper. Besøkende får bare «alle»-varsler.
