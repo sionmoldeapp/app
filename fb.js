@@ -308,11 +308,18 @@ const FB={
       else if(delta>0)await S.setDoc(ref,{n:1});
     },
     // ---- Push-varsler (Firebase Cloud Messaging). Enhetens varselkode lagres i pushTokens; bare administratorer kan lese dem.
-    async pushSupported(){try{return !!M&&await M.isSupported()&&'Notification' in window&&'serviceWorker' in navigator}catch(e){return false}},
+    // På egen server (Supabase) brukes vanlig Web Push (VAPID) i stedet for Firebase; koden er abonnementet som tekst {e: endpoint, p: p256dh, a: auth}. Tjenesten ligger i server/sion/varsel.
+    async pushSupported(){try{if(SUPA)return 'Notification' in window&&'serviceWorker' in navigator&&'PushManager' in window;return !!M&&await M.isSupported()&&'Notification' in window&&'serviceWorker' in navigator}catch(e){return false}},
     async enablePush(reg){
       if(!(await FB.pushSupported()))throw {code:'push/unsupported'};
       if(await Notification.requestPermission()!=='granted')throw {code:'push/denied'};
-      const token=await M.getToken(M.getMessaging(app),{vapidKey:VAPID,serviceWorkerRegistration:reg});
+      const token=SUPA?await (async()=>{
+        const K=await (await fetch('sion-konfig.json',{cache:'no-store'})).json();if(!K.vapid)return '';
+        const nokkel=Uint8Array.from(atob(K.vapid.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+        let sub=await reg.pushManager.getSubscription();
+        if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:nokkel});
+        const j=sub.toJSON();return j.endpoint&&j.keys?JSON.stringify({e:j.endpoint,p:j.keys.p256dh,a:j.keys.auth}):'';
+      })():await M.getToken(M.getMessaging(app),{vapidKey:VAPID,serviceWorkerRegistration:reg});
       if(!token)throw {code:'push/no-token'};
       // Er brukeren innlogget, kobles koden til e-posten. Da kan tjenesten sende til medlemmer og grupper. Besøkende får bare «alle»-varsler.
       const ref=S.doc(db,'pushTokens',token);
@@ -333,6 +340,10 @@ const FB={
     // Firebase trenger å vite hvilken service worker som eier abonnementet (reg) før koden kan slettes etter en sideinnlasting.
     // Mislykkes den vanlige slettingen, avslutter vi abonnementet direkte i nettleseren. Mislykkes begge, feiler vi høyt.
     async disablePush(token,reg){
+      if(SUPA){   // Web Push på egen server: avslutt abonnementet i nettleseren og fjern koden (feiler høyt)
+        const sub=reg&&await reg.pushManager.getSubscription();if(sub&&!(await sub.unsubscribe()))throw {code:'push/not-removed'};
+        if(token)await S.deleteDoc(S.doc(db,'pushTokens',token));return;
+      }
       const m=M.getMessaging(app);
       let done=false,err;
       try{
@@ -457,7 +468,7 @@ const FB={
       return {skrevet:sets.length,slettet:dels.length};
     },
     // Varsel som kommer mens appen er åpen (da viser ikke nettleseren noe selv).
-    onPush(cb){FB.pushSupported().then(ok=>{if(ok)M.onMessage(M.getMessaging(app),cb)})},
+    onPush(cb){FB.pushSupported().then(ok=>{if(ok&&M)M.onMessage(M.getMessaging(app),cb)})},   // Web Push (egen server) går gjennom service worker, som sender beskjed til appen
     // Gruppene innlogget bruker tilhører (fra egen oppføring i members og admins).
     async myGroups(email){
       const ut=new Set();

@@ -587,6 +587,9 @@ html.chatfull .chat{padding-top:env(safe-area-inset-top,0)}
 .mapp-n{position:absolute;top:-5px;left:calc(50% + 16px);min-width:22px;height:22px;border-radius:99px;background:#e0443a;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;padding:0 6px;box-shadow:0 0 0 2px var(--surface)}
 .mapp-inn{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
 .mapp-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.appgrid{margin:2px 0 16px}
+.appgrid>.mapps{margin:6px 0 4px}
+.appgrid>.mapp-inn{margin-top:18px;border-top:0}
 .appinn>details.card{padding:0;margin:0;background:none;box-shadow:none;border:0}
 .appinn>details.card>summary{display:none}
 .tilgdash{padding:12px 14px;border-radius:var(--r-m,14px);background:var(--bg);margin:0 0 12px}
@@ -1600,7 +1603,9 @@ const SV_URL=TEST?'/__ingen':'https://docs.google.com/forms/d/e/1FAIpQLScYERloVM
 /* «Jeg kommer»: navn og svar sendes til Google Skjema «Jeg kommer – arrangementer» (regneark i Drive).
    Tallet som vises i appen telles separat i databasen. Google svarer ikke tilbake, så vi ser ikke om det lyktes. */
 /* Adressen til Apps Script-tjenesten som sender varsler (varsel-script.gs). Tom = skjemaene for å sende varsel skjules. */
-let PUSH_URL=TEST?'':'https://script.google.com/macros/s/AKfycbz-t4PruOcRFJQ_bXwEcpdab9ks6_AMl2wlJZSO7UztI05fUK7UcnPEvV9gsEvwcbV5/exec';
+/* På egen server (Supabase: port 8091, eller tunnel med merket sion-db=supa) sendes varsler gjennom varseltjenesten der (server/sion/varsel), med samme kall. */
+const SUPA_NA=location.port==='8091'||(!location.port&&/(trycloudflare.com|.ts.net)$/.test(location.hostname)&&/(^|; )sion-db=supa/.test(document.cookie));
+let PUSH_URL=SUPA_NA?location.origin+'/varsel':TEST?'':'https://script.google.com/macros/s/AKfycbz-t4PruOcRFJQ_bXwEcpdab9ks6_AMl2wlJZSO7UztI05fUK7UcnPEvV9gsEvwcbV5/exec';
 const RS_URL=TEST?'/__ingen':'https://docs.google.com/forms/d/e/1FAIpQLScVKs0aIg8RU7Ess9mFMnKUOHudetvn5AtQIqiIn-OA94rXcg/formResponse';
 const RS={arr:'entry.568243152',dato:'entry.1403655940',navn:'entry.1951632759',kontakt:'entry.722221792',svar:'entry.903786018'};
 const lsGet=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}};
@@ -3359,30 +3364,32 @@ function notesInner(){
   return inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.noteMsg||'')+'</p>'}
 /* Apper: eget kort rett under Mer med app-ikoner (notater, lyd, video, tilganger, booking, personvern og statistikk). Trykk på et ikon åpner appen under ikonene, trykk igjen eller Lukk lukker.
    Kortene som før lå for seg selv (Ansvarsområder for administratorer og gruppeledere, Utleie, Personvern, Statistikk) vises her åpne og uten egen tittel. */
-const APP_KEYS=['vnotat','vlyd','vvideo','atilg','abook','apv','astat'],APP_ACC={atilg:'ansvarkort',abook:'utleie',apv:'personvern',astat:'oversikt'};
+const APP_KEYS=['ameg','aadm','vnotat','vlyd','vvideo','aans','atilg','abook','apv','astat'],APP_ACC={ameg:'megkort',aadm:'admkort',aans:'ansvar',atilg:'ansvarkort',abook:'utleie',apv:'personvern',astat:'oversikt'};
 function apneApp(k){APP_KEYS.forEach(x=>{state.acc[x]=false});state.acc[k]=true;state.acc.apper=true;if(APP_ACC[k])state.acc[APP_ACC[k]]=true}   // åpner en app under Apper (brukes av lenker til booking og brukere)
 const tilgOK=()=>!!(state.user&&state.member&&state.view==='meg'&&(state.admin||isLeader()));
 function verktoyKort(){
   const valgt0=APP_KEYS.find(k=>state.acc[k]);if(valgt0&&APP_ACC[valgt0])state.acc[APP_ACC[valgt0]]=true;   // kortet inni appen skal stå åpent
   const med=!!(state.user&&state.member),l=state.notes,n=l?l.length:0,nl=(OPPT.liste||[]).filter(x=>(x.type||'lyd')==='lyd').length,nv=(OPPT.liste||[]).filter(x=>x.type==='video').length;
   const tilg=tilgOK()?(state.admin?'<div class="tilgdash"><p class="small" style="margin:0 0 8px">Tilgangsoversikten viser alle roller, grupper og kategorier i flere nivåer, og hva hver enkelt person har tilgang til. Laget for PC i fullskjerm.</p><a class="btn primary" href="tilgang.html" style="width:auto;display:inline-block">Åpne tilgangsoversikten</a></div>':'')+ansvarKort():'',
-    book=utleieCard(),pv=personvernCard(),st=statCard();
+    book=utleieCard(),pv=personvernCard(),st=statCard(),meg=megCard(),adm=admCard(),ans=tilgOK()?'':ansvarKort(),tall=meTall().sum;
   const ik=(p)=>'<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>',
-    alle=[['vnotat','Notater',ik('<path d="M6 3.5h9l4 4V20a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 20z"/><path d="M14.5 3.5V8H19M9 12h6M9 15.5h6"/>'),l?n:0,'linear-gradient(145deg,#f7c04a,#e08a12)','Møtenotater'],
+    alle=[['ameg','Meg',ik('<circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5c.9-3.9 3.9-6 7.5-6s6.6 2.1 7.5 6"/>'),tall,'linear-gradient(145deg,#5f8fd6,#1f3f7a)','Meg'],
+      ['aadm','Administrer',ik('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/>'),0,'linear-gradient(145deg,#6b7a8c,#2b3542)','Administrer'],
+      ['vnotat','Notater',ik('<path d="M6 3.5h9l4 4V20a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 20z"/><path d="M14.5 3.5V8H19M9 12h6M9 15.5h6"/>'),l?n:0,'linear-gradient(145deg,#f7c04a,#e08a12)','Møtenotater'],
       ['vlyd','Lyd',ik('<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5M9 20.5h6"/>'),nl,'linear-gradient(145deg,#ff6b78,#c81d3a)','Lydopptak'],
       ['vvideo','Video',ik('<rect x="3.5" y="6.5" width="12.5" height="11" rx="2.5"/><path d="m16 11 4.5-2.8v7.6L16 13"/>'),nv,'linear-gradient(145deg,#8a6cf5,#3f3fd4)','Videoopptak'],
+      ['aans','Ansvar',ik('<circle cx="9" cy="8.5" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/><path d="M3.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M14.5 14.6c.6-.2 1.3-.3 2-.3 2.2 0 3.8 1.5 4.3 4.2"/>'),0,'linear-gradient(145deg,#c58cf0,#7b3fc4)','Ansvarsområder'],
       ['atilg','Tilganger',ik('<path d="M12 3.2 19 6v5.2c0 4.4-2.9 8.1-7 9.6-4.1-1.5-7-5.2-7-9.6V6z"/><circle cx="12" cy="10.2" r="2.1"/><path d="M12 12.3v3.4"/>'),0,'linear-gradient(145deg,#3fcfa6,#0f7468)','Tilganger'],
       ['abook','Booking',ik('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4M7.5 13.5h3v3h-3z"/>'),0,'linear-gradient(145deg,#52b1ff,#1d5fd0)','Booking og utleie'],
       ['apv','Personvern',ik('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5M12 14.3v2.6"/>'),0,'linear-gradient(145deg,#9fb2c6,#4a5d73)','Personvern'],
       ['astat','Statistikk',ik('<path d="M4 20.5h16"/><rect x="5.5" y="12" width="3" height="6" rx=".8"/><rect x="10.5" y="7" width="3" height="11" rx=".8"/><rect x="15.5" y="10" width="3" height="8" rx=".8"/>'),0,'linear-gradient(145deg,#ffa95c,#de5422)','Statistikk']],
-    vis={vnotat:med,vlyd:med,vvideo:med,atilg:!!tilg,abook:!!book,apv:!!pv,astat:!!st},
+    vis={ameg:!!meg,aadm:!!adm,vnotat:med,vlyd:med,vvideo:med,aans:!!ans,atilg:!!tilg,abook:!!book,apv:!!pv,astat:!!st},
     app=alle.filter(x=>vis[x[0]]),valgt=app.find(x=>state.acc[x[0]]);
   if(!app.length)return '';
   if(valgt&&valgt[0]==='vnotat'&&state.notes===undefined&&FB&&!state.notesLaster){state.notesLaster=true;setTimeout(()=>loadNotes().finally(()=>{state.notesLaster=false}),0)}
-  const inn=k=>k==='vnotat'?notesInner():k==='vlyd'?opptInner('lyd'):k==='vvideo'?opptInner('video'):'<div class="appinn">'+({atilg:tilg,abook:book,apv:pv,astat:st})[k]+'</div>';
-  return '<details class="card acc" data-acc="apper" '+(state.acc.apper?'open':'')+'><summary><h2>Apper</h2></summary><p class="small" style="margin:0 0 4px">Trykk på en app for å åpne den. Notater og opptak ser bare du.</p>'
-   +'<div class="mapps">'+app.map(x=>'<button type="button" class="mapp" data-moteapp="'+x[0]+'" aria-pressed="'+(valgt===x)+'" aria-label="'+x[5]+(x[3]?', '+x[3]:'')+'"><i style="background:'+x[4]+'">'+x[2]+'</i>'+(x[3]?'<span class="mapp-n">'+x[3]+'</span>':'')+x[1]+'</button>').join('')+'</div>'
-   +(valgt?'<div class="mapp-inn"><div class="mapp-hd"><b>'+valgt[5]+(valgt[3]?' ('+valgt[3]+')':'')+'</b><button type="button" class="btn" data-moteapp="'+valgt[0]+'" style="width:auto">Lukk</button></div>'+inn(valgt[0])+'</div>':'')+'</details>'}
+  const inn=k=>k==='vnotat'?notesInner():k==='vlyd'?opptInner('lyd'):k==='vvideo'?opptInner('video'):'<div class="appinn">'+({ameg:meg,aadm:adm,aans:ans,atilg:tilg,abook:book,apv:pv,astat:st})[k]+'</div>';
+  return '<section class="appgrid" aria-label="Apper"><div class="mapps">'+app.map(x=>'<button type="button" class="mapp" data-moteapp="'+x[0]+'" aria-pressed="'+(valgt===x)+'" aria-label="'+x[5]+(x[3]?', '+x[3]:'')+'"><i style="background:'+x[4]+'">'+x[2]+'</i>'+(x[3]?'<span class="mapp-n">'+x[3]+'</span>':'')+x[1]+'</button>').join('')+'</div>'
+   +(valgt?'<div class="card mapp-inn"><div class="mapp-hd"><h2 style="margin:0">'+valgt[5]+(valgt[3]&&valgt[0][0]==='v'?' ('+valgt[3]+')':'')+'</h2><button type="button" class="btn" data-moteapp="'+valgt[0]+'" style="width:auto">Lukk</button></div>'+inn(valgt[0])+'</div>':'')+'</section>'}
 /* Lister over notater og opptak deles opp per dag og ser ut som hendelsene i Program: dagoverskrift, datoboks og rader. */
 const dagTekst=d=>cap(DAYS[d.getDay()])+' '+d.getDate()+'. '+MON[d.getMonth()]+(d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():'');
 const datoBoks=d=>'<div class="date">'+d.getDate()+'. '+cap(MON[d.getMonth()])+'</div>';
@@ -5564,7 +5571,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 18:48';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='02.11.2026 kl. 18:58';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5998,7 +6005,7 @@ const ADM_KORT={
 function admCard(){
   const deler=Object.values(ADM_KORT).map(f=>f()).filter(x=>x&&String(x).trim());
   if(!deler.length)return '';
-  const tekst=state.admin?'Sikkerhetskopi og andre verktøy for å styre appen. Brukere og politiattester ligger under Apper → Tilganger, grupper under Meg, og Booking og Statistikk er egne apper.':'Verktøy for gruppene du leder: beskjeder og publisering. Medlemmer og tilhørighet ligger under Meg → Grupper.';
+  const tekst=state.admin?'Sikkerhetskopi og andre verktøy for å styre appen. Brukere og politiattester ligger under Tilganger, grupper under Meg, og Booking og Statistikk har egne ikoner under Mer.':'Verktøy for gruppene du leder: beskjeder og publisering. Medlemmer og tilhørighet ligger under Meg → Grupper.';
   return subSorter('adm','<details class="card acc" data-acc="admkort" '+(state.acc.admkort?'open':'')+'><summary><h2>Administrer</h2></summary><p class="small" style="margin:0 0 4px">'+tekst+' Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>','.megboks')}
 /* Grupper: alt om grupper og hvem som er med samlet i ett kort. Alle ser gruppene sine og slår varsler av/på; gruppeledere styrer medlemmene i gruppene sine; administratorer ser alle grupper med medlemmer og kan legge til og fjerne direkte, eller se det person for person. */
 function minGrupperKort(){
@@ -6072,8 +6079,7 @@ function megKort(){
   if(!deler.length)return '';
   return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, grupper, innstillinger, vakter og saker til lederrådet. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
 const ME_KORT={
-  meg:['Meg',()=>megCard()],apper:['Apper',()=>verktoyKort()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],
-  ansvar:['Ansvarsområder',()=>tilgOK()?'':ansvarKort()]};   // Booking (utleie), Personvern, Statistikk og (for administratorer og gruppeledere) Ansvarsområder ligger under Apper
+  login:['Innlogging',()=>state.user?'':loginCard()]};   // alt annet under Mer er app-ikoner (verktoyKort): Meg, Administrer, Notater, Lyd, Video, Ansvar, Tilganger, Booking, Personvern og Statistikk
 /* Kortene under Mer og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
 const ORD={me:{felt:'meorder',ls:'sm-meorder'},home:{felt:'homeorder',ls:'sm-homeorder'}};
 const ov=()=>state.tab==='home'?'home':'me';
@@ -6086,7 +6092,7 @@ function ordHtml(v){
   const vis=ordSynlige(v);
   if(state.reorder)return `<div class="btns" style="margin:-4px 0 12px"><button class="btn on" data-meorder>Ferdig</button><button class="btn" data-meresett>Standard rekkefølge</button></div><p class="small" style="margin:0 0 10px">Hold på ≡ til venstre og dra raden opp eller ned. Slipp der den skal stå. Resten av raden kan du bruke til å bla.</p><div id="meList">${vis.map(([k,,navn],i)=>`<div class="merow" data-mek="${k}"><span class="mehandle" aria-hidden="true">≡</span><b>${esc(navn)}</b><span class="mebtns"><button class="btn" data-meup="${k}" ${i===0?'disabled':''} aria-label="Flytt ${esc(navn)} opp">▲</button><button class="btn" data-medown="${k}" ${i===vis.length-1?'disabled':''} aria-label="Flytt ${esc(navn)} ned">▼</button></span></div>`).join('')}</div>`;
   return vis.map(x=>x[1]).join('')+(vis.length>1&&(+lsGet('sm-hint')||0)<3?'<p class="small" style="text-align:center;margin:8px 0 0">Hold fingeren på et kort for å endre rekkefølgen.</p>':'')}
-function me(){return `<h1>Mer</h1>${ordHtml('me')}`}
+function me(){return `<h1>Mer</h1>${state.reorder?'':verktoyKort()}${ordHtml('me')}`}
 function meLagre(ord){
   const v=ov(),o=ORD[v];state[o.felt]=ord;try{localStorage.setItem(o.ls,JSON.stringify(ord))}catch(e){}
   if(FB&&state.user&&state.user.email)FB.setPrefOrder(state.user.email.toLowerCase(),o.felt,ord).catch(()=>{})}
@@ -7219,7 +7225,7 @@ function apneFraVarsel(tab,tittel,tekst){
       utMarkerSett();fadeRender();rull(b?'[data-ev="ut_'+b.id+'_'+b.dato+'"]':'details[data-acc=utleie]',b?null:null)};
     if(state.ut.liste===undefined)utLast().then(vis);else vis();return true}
   if(/^ny beskjed/.test(lc)&&state.user&&state.member){loadThreads().then(()=>{const t=chatTraadFraVarsel(T,B);chatApne(t?t.id:null)});return true}
-  if(/vakt/.test(lc)&&state.user){state.tab='me';state.acc.megkort=true;state.acc.vakter=true;if(state.shifts===undefined)loadShifts();fadeRender();rull('details[data-acc=vakter]');return true}
+  if(/vakt/.test(lc)&&state.user){state.tab='me';apneApp('ameg');state.acc.vakter=true;if(state.shifts===undefined)loadShifts();fadeRender();rull('details[data-acc=vakter]');return true}
   if(tab==='prog'||/^påminnelse$/.test(lc)){
     const ev=events.find(e=>e.title&&B.includes(e.title)),f=nextFast().find(x=>B.includes(fastInfo(x.fast,x.ex).title)),id=ev?ev.id:f?fastId(f.fast,f.w):'';
     if(id){state.tab='prog';state.filter='Alle';state.q='';state.open[id]=true;fadeRender();rull('.item>button[data-ev="'+id+'"]',null);return true}
@@ -7339,7 +7345,8 @@ function moteappRull(){const el=document.querySelector('.mapp-inn');if(!el)retur
   scrollTo({top:Math.max(0,scrollY+el.getBoundingClientRect().top-topp-8),behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'})}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-moteapp]');if(!b)return;e.preventDefault();const k=b.dataset.moteapp;keep(()=>{const var0=state.acc[k];APP_KEYS.forEach(x=>{state.acc[x]=false});if(!var0){state.acc[k]=true;if(APP_ACC[k])state.acc[APP_ACC[k]]=true}state.acc.apper=true});
   if(state.acc[k]){setTimeout(moteappRull,60);setTimeout(moteappRull,450)}   // to ganger: listen kan laste litt etter at visningen er tegnet
-  if(k==='vnotat'&&state.acc.vnotat&&state.notes===undefined&&FB)loadNotes()});
+  if(k==='vnotat'&&state.acc.vnotat&&state.notes===undefined&&FB)loadNotes();
+  if((k==='aans'||k==='atilg')&&state.acc[k]&&state.roles===undefined&&FB&&state.user)loadRoles()});
 /* Oppstartsskjermen (logoen) tones ut og siden tones inn når første innlasting er ferdig. */
 function splashBort(){
   const sp=document.getElementById('splash');if(!sp||sp.dataset.bort)return;sp.dataset.bort='1';
