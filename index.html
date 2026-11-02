@@ -515,6 +515,14 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .item.open>.detail>.evport{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:90px;height:90px;object-fit:cover;object-position:50% 25%;border-radius:50%;border:3px solid color-mix(in srgb,currentColor 25%,transparent)}
 .next:has(.nport)>.meta{grid-column:1/-1}
 .next:has(.nport) h2{font-size:28px;margin:2px 0 8px}
+.pprog{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:6px 0}
+.prow{display:grid;grid-template-columns:minmax(108px,auto) 1fr;gap:2px 14px;align-items:baseline;padding:9px 12px}
+.prow+.prow{border-top:1px solid var(--line)}
+.ptid{font-variant-numeric:tabular-nums;white-space:nowrap}
+.ptid b{font-weight:600}
+.tbyg{display:grid;gap:6px;margin:-4px 0 4px}
+.tbr{display:flex;flex-wrap:wrap;gap:6px}
+.tbr select,.tbr input{flex:1 1 96px;min-width:0}
 .nspk{font-size:var(--t-m);opacity:.85;margin:-2px 0 8px}
 .nspk.tom{font-style:italic;opacity:.65}
 .nph{display:grid;place-items:center;overflow:hidden;background:linear-gradient(150deg,color-mix(in srgb,currentColor 16%,transparent),color-mix(in srgb,currentColor 4%,transparent));box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 35%,transparent)}
@@ -1399,7 +1407,7 @@ async function fetchAll(){
 /* Arrangementer, nyheter og faste samlinger: filtrerer og sorterer det som er lastet (fra databasen eller fra den lokale kopien). */
 function bruk(e,p,g){
   rawEvents=e;
-  events=e.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)).map(x=>({...x,img:x.img||evBilde(x.title),t:esc(x.title),d:linkify(esc(x.text)),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
+  events=e.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)).map(x=>({...x,img:x.img||evBilde(x.title),t:esc(x.title),d:evBeskr(x.text),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
     .filter(x=>(x.e||x.w)>=todayStart).sort((a,b)=>a.w-b.w);
   posts=p.filter(canSee).filter(liveOK).sort((a,b)=>(!!b.pinned-!!a.pinned)||((b.ms||0)-(a.ms||0)));   // festede nyheter først
   regular=g.filter(r=>canSeeCat(r.cat)&&visOK(r)).sort((a,b)=>((a.day+6)%7-(b.day+6)%7)||String(a.time).localeCompare(String(b.time)));
@@ -1538,7 +1546,33 @@ const fastId=(r,w)=>'f_'+r.id+'_'+dkey(w);
 const fastInfo=(r,ex)=>{const e=ex&&ex.k==='endret'?ex:{};return {title:e.title||r.title,place:e.place||'',who:e.who||r.who||'',note:e.note||r.note||'',text:e.text||''}};
 function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',inf=fastInfo(r,ex),note=inf.note;
   return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(inf.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${note?' · '+esc(note):''}</span>${inf.place?'<span class="small adr">'+esc(inf.place)+'</span>':''}</div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'&&TIDOK(ex.time)&&ex.time!==r.time?'<span class="tag avl" style="background:var(--lamp);color:var(--lamp-ink)">Endret</span>':'<span class="tag">Fast</span>'}</button>
-   <div class="detail">${omDager(w)}${inf.text?'<div>'+linkify(esc(inf.text))+'</div>':''}${inf.who||erHovedFast(r)?'<div class="small">'+(erHovedFast(r)?'Tale ved: '+esc(inf.who||'Navn kommer her'):esc(inf.who))+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}${ukeTekst(r)}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
+   <div class="detail">${omDager(w)}${inf.text?evBeskr(inf.text):''}${inf.who||erHovedFast(r)?'<div class="small">'+(erHovedFast(r)?'Tale ved: '+esc(inf.who||'Navn kommer her'):esc(inf.who))+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}${ukeTekst(r)}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
+/* Beskrivelse med møtetider: linjer som begynner med (dag og) klokkeslett, for eksempel «Fredag 19:00 – Samling», blir en ryddig liste. Andre linjer er vanlig tekst. */
+const BESKR_DAG={man:'Mandag',tir:'Tirsdag',ons:'Onsdag',tor:'Torsdag',fre:'Fredag',lør:'Lørdag',søn:'Søndag'};
+const BESKR_RAD=/^(?:(man|tir|ons|tor|fre|lør|søn)[a-zæøå]*\.?\s+)?(?:kl\.?\s*)?(\d{1,2})[:.](\d{2})(?:\s*[–—-]\s*(\d{1,2})[:.](\d{2}))?\s*(?:[–—:-]\s*|\s+)?(.*)$/i;
+function evBeskr(t){const ut=[];let rad=[];
+  const slipp=()=>{if(rad.length){ut.push('<div class="pprog">'+rad.join('')+'</div>');rad=[]}};
+  const p2=n=>String(n).padStart(2,'0');
+  String(t||'').split(/\r?\n/).forEach(l=>{l=l.trim();if(!l)return;const m=l.match(BESKR_RAD);
+    if(m&&+m[2]<24&&+m[3]<60&&(!m[4]||(+m[4]<24&&+m[5]<60))){
+      const dag=m[1]?BESKR_DAG[m[1].toLowerCase()]:'',tid=p2(m[2])+':'+m[3]+(m[4]?'–'+p2(m[4])+':'+m[5]:'');
+      rad.push('<div class="prow"><span class="ptid">'+(dag?'<b>'+dag+'</b> ':'')+tid+'</span><span class="ptxt">'+linkify(esc(m[6]))+'</span></div>')}
+    else{slipp();ut.push('<div>'+linkify(esc(l))+'</div>')}});
+  slipp();return ut.join('')}
+/* Hjelp i skjemaet: velg dag og klokkeslett, så legges en linje til i beskrivelsen. Dagene følger start- og sluttdatoen. */
+function tbOpts(s,e){const a=s?new Date(s+'T12:00'):null,b=e?new Date(e+'T12:00'):null;let l=[];
+  if(a&&!isNaN(a)){if(b&&!isNaN(b)&&b>a&&(b-a)/864e5<7){for(const d=new Date(a);d<=b;d.setDate(d.getDate()+1))l.push(cap(DAYS[d.getDay()]))}else l.push(cap(DAYS[a.getDay()]))}
+  else l=[1,2,3,4,5,6,0].map(i=>cap(DAYS[i]));
+  return l.map(x=>'<option>'+x+'</option>').join('')+'<option value="">Uten dag</option>'}
+const tbHtml=ed=>'<div class="tbyg" data-tbyg><span class="small">Legg til møtetid, så blir beskrivelsen en ryddig liste:</span><div class="tbr"><select data-tbdag aria-label="Dag">'+tbOpts(ed&&ed.start,ed&&ed.end)+'</select><input type="time" data-tbtid aria-label="Klokkeslett"><input type="text" data-tbtxt maxlength="60" placeholder="Hva skjer? (valgfritt)" aria-label="Hva skjer"><button type="button" class="btn" data-tbadd style="width:auto">Legg til</button></div></div>';
+document.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest('[data-tbadd]');if(!k)return;
+  const rot=k.closest('[data-tbyg]'),f=k.closest('form'),ta=f&&f.querySelector('textarea[name=text]');if(!rot||!ta)return;
+  const tid=rot.querySelector('[data-tbtid]'),txt=rot.querySelector('[data-tbtxt]'),dag=rot.querySelector('[data-tbdag]').value;
+  if(!tid.value){tid.focus();return}
+  const linje=(dag?dag+' ':'')+tid.value+(txt.value.trim()?' – '+txt.value.trim():'');
+  ta.value=(ta.value.trim()?ta.value.replace(/\s+$/,'')+'\n':'')+linje;ta.dispatchEvent(new Event('input',{bubbles:true}));tid.value='';txt.value=''});
+document.addEventListener('change',e=>{const f=e.target.closest&&e.target.closest('form#adm');if(!f||!/^(start|end)$/.test(e.target.name||''))return;
+  const o=tbOpts((f.querySelector('[name=start]')||{}).value,(f.querySelector('[name=end]')||{}).value);f.querySelectorAll('[data-tbdag]').forEach(s=>{s.innerHTML=o})});
 /* Portrett av gjesten på arrangementer (bildene ligger i mappen bilder). Et eget img-felt på arrangementet går foran. */
 const EV_BILDER=[[/ingar jensen/i,'bilder/ingar-jensen.jpg']];
 function evBilde(t){const m=EV_BILDER.find(x=>x[0].test(String(t||'')));return m?m[1]:''}
@@ -2699,7 +2733,7 @@ function progListInn(){
 /* Tidligere arrangementer: alle som er over, nyeste først, med søk. Medlemsarrangementer vises bare for innloggede. */
 function pastEvents(){
   return rawEvents.filter(x=>canSee(x)&&canSeeCat(x.cat)&&liveOK(x)&&!(x.m&&!state.member))
-    .map(x=>({...x,t:esc(x.title),d:linkify(esc(x.text)),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
+    .map(x=>({...x,t:esc(x.title),d:evBeskr(x.text),w:new Date(x.start+'T'+(x.time||'00:00')),e:x.end?new Date(x.end+'T23:59'):null}))
     .filter(x=>(x.e||x.w)<todayStart).sort((a,b)=>b.w-a.w)}
 function pastItem(e){
   const open=state.open['x'+e.id],yr=e.w.getFullYear()!==now.getFullYear()?' '+e.w.getFullYear():'';
@@ -2955,7 +2989,7 @@ function fields(t,ed,only){return FIELDS[t].filter(f=>(!only||only.includes(f[0]
     return `<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:var(--t-m);margin-bottom:4px">${l}</legend>${(state.admin?(isAud?['Alle','Medlem',...GR_IDS]:GR_IDS):myGroupOptions()).map(x=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="${k}" value="${x}" style="width:22px;height:22px;flex:none" ${cur.includes(x)?'checked':''}>${esc(nm(x))}</label>`).join('')}<span class="small">${tips}</span></fieldset>`}
   if(b==='rich')return richBox('',richFra(ed),l)+(k==='b'?pbHtml(ed&&ed.img):'');
   if(b==='bilde')return pbHtml(v);
-  if(b==='area')return `<label class="f">${l}<textarea name="${k}" rows="3" ${req?'required':''}>${esc(v)}</textarea></label>`;
+  if(b==='area')return `<label class="f">${l}<textarea name="${k}" rows="${t==='events'&&k==='text'?5:3}" ${req?'required':''}>${esc(v)}</textarea></label>`+(t==='events'&&k==='text'?tbHtml(ed):'');
   if(b==='sel')return `<label class="f">${l}<select name="${k}">${(k==='cat'?allCats():o).map(x=>`<option value="${x}" ${String(v==null?o[0]:(k==='cat'?normCat(v):v))===String(x)?'selected':''}>${k==='day'?cap(DAYS[x]):k==='remindH'?REMIND_OPT[x]:x}</option>`).join('')}</select></label>`;
   if(b==='chk')return `<label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="${k}" style="width:auto" ${(v||((k==='push'||k==='svar')&&state.pushStd&&!ed))?'checked':''}>${l}</label>`;
   return `<label class="f">${l}<input name="${k}" type="${b}" ${req?'required':''} value="${esc(v)}"></label>`}).join('')}
@@ -5497,7 +5531,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 06:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='02.11.2026 kl. 07:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
