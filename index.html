@@ -716,6 +716,8 @@ nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .cbgp[data-bgp=neon13]{background:url(bilder/chat-neon13.jpg) center/cover,#000;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .cbgp[data-bgp=neon14]{background:url(bilder/chat-neon14.jpg) center/cover,#000;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .cbgp[data-bgp=neon15]{background:url(bilder/chat-neon15.jpg) center/cover,#000;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.cbgp[data-bgp=neon16]{background:url(bilder/chat-neon16.jpg) center/cover,#000;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.cbgp[data-bgp=neon17]{background:url(bilder/chat-neon17.jpg) center/cover,#000;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .cbgp[data-bgp=rosa]{background:linear-gradient(180deg,#ffe3ec,#ffc2d6);color:#123}
 .cmsg[data-bg=himmel]{background:linear-gradient(180deg,#bfe3ff,#eaf6ff)}
 .cmsg[data-bg=solnedgang]{background:linear-gradient(180deg,#ffd29a,#ff9aa8 60%,#b58cff)}
@@ -741,7 +743,9 @@ nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .cmsg[data-bg=neon13]{background-image:url(bilder/chat-neon13.jpg);background-size:cover;background-position:center bottom;background-repeat:no-repeat;background-color:#000}
 .cmsg[data-bg=neon14]{background-image:url(bilder/chat-neon14.jpg);background-size:cover;background-position:center bottom;background-repeat:no-repeat;background-color:#000}
 .cmsg[data-bg=neon15]{background-image:url(bilder/chat-neon15.jpg);background-size:cover;background-position:center bottom;background-repeat:no-repeat;background-color:#000}
-.cmsg[data-bg=neon11] .cdag,.cmsg[data-bg=neon11] .ct,.cmsg[data-bg=neon12] .cdag,.cmsg[data-bg=neon12] .ct,.cmsg[data-bg=neon13] .cdag,.cmsg[data-bg=neon13] .ct,.cmsg[data-bg=neon14] .cdag,.cmsg[data-bg=neon14] .ct,.cmsg[data-bg=neon15] .cdag,.cmsg[data-bg=neon15] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
+.cmsg[data-bg=neon16]{background-image:url(bilder/chat-neon16.jpg);background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#000}
+.cmsg[data-bg=neon17]{background-image:url(bilder/chat-neon17.jpg);background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#000}
+.cmsg[data-bg=neon11] .cdag,.cmsg[data-bg=neon11] .ct,.cmsg[data-bg=neon12] .cdag,.cmsg[data-bg=neon12] .ct,.cmsg[data-bg=neon13] .cdag,.cmsg[data-bg=neon13] .ct,.cmsg[data-bg=neon14] .cdag,.cmsg[data-bg=neon14] .ct,.cmsg[data-bg=neon15] .cdag,.cmsg[data-bg=neon15] .ct,.cmsg[data-bg=neon16] .cdag,.cmsg[data-bg=neon16] .ct,.cmsg[data-bg=neon17] .cdag,.cmsg[data-bg=neon17] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
 .cmsg[data-bg=neon6] .cdag,.cmsg[data-bg=neon6] .ct,.cmsg[data-bg=neon7] .cdag,.cmsg[data-bg=neon7] .ct,.cmsg[data-bg=neon8] .cdag,.cmsg[data-bg=neon8] .ct,.cmsg[data-bg=neon9] .cdag,.cmsg[data-bg=neon9] .ct,.cmsg[data-bg=neon10] .cdag,.cmsg[data-bg=neon10] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
 .cmsg[data-bg=neon1] .cdag,.cmsg[data-bg=neon1] .ct,.cmsg[data-bg=neon2] .cdag,.cmsg[data-bg=neon2] .ct,.cmsg[data-bg=neon3] .cdag,.cmsg[data-bg=neon3] .ct,.cmsg[data-bg=neon4] .cdag,.cmsg[data-bg=neon4] .ct,.cmsg[data-bg=neon5] .cdag,.cmsg[data-bg=neon5] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
 .cmsg[data-bg=eget]{background-size:cover;background-position:center;background-repeat:no-repeat}
@@ -4578,7 +4582,7 @@ function chatBildeMeny(){
   dlg.addEventListener('close',()=>{const v=dlg.returnValue;dlg.remove();if(v==='fjern')chatBildeSett(t,null)});
   dlg.showModal()}
 /* Farge og bakgrunn per samtale (feltene farge og bakgrunn på samtalen; begge ser dem). */
-const CHAT_BG=[['ingen','Ingen'],['himmel','Himmel'],['solnedgang','Solnedgang'],['skog','Skog'],['natt','Natt'],['rosa','Rosa'],['sion','Sion-mønster'],['aurora','Aurora'],['neon1','Neon 1'],['neon2','Neon 2'],['neon3','Neon 3'],['neon4','Neon 4'],['neon5','Neon 5'],['neon6','Neon 6'],['neon7','Neon 7'],['neon8','Neon 8'],['neon9','Neon 9'],['neon10','Neon 5'],['neon11','Neon 11'],['neon12','Neon 12'],['neon13','Neon 13'],['neon14','Neon 14'],['neon15','Neon 15']];
+const CHAT_BG=[['ingen','Ingen'],['himmel','Himmel'],['solnedgang','Solnedgang'],['skog','Skog'],['natt','Natt'],['rosa','Rosa'],['sion','Sion-mønster'],['aurora','Aurora'],['neon1','Neon 1'],['neon2','Neon 2'],['neon3','Neon 3'],['neon4','Neon 4'],['neon5','Neon 5'],['neon6','Neon 6'],['neon7','Neon 7'],['neon8','Neon 8'],['neon9','Neon 9'],['neon10','Neon 5'],['neon11','Neon 11'],['neon12','Neon 12'],['neon13','Neon 13'],['neon14','Neon 14'],['neon15','Neon 15'],['neon16','Jesus verdens lys'],['neon17','Kors']];
 let chatTileCache={};
 function chatTile(mork){
   const k=mork?'m':'l';if(chatTileCache[k])return Promise.resolve(chatTileCache[k]);
@@ -5571,7 +5575,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 19:57';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='02.11.2026 kl. 20:45';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */

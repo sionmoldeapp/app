@@ -328,7 +328,7 @@ begin
   -- Farge og bakgrunn (bgv = versjon av eget bakgrunnsbilde i thread_bg)
   if e <@ array['farge', 'bakgrunn', 'bgv']
      and coalesce(new.farge, 'blaa') in ('blaa', 'rosa', 'gronn', 'lilla', 'oransje', 'rod', 'turkis', 'gull')
-     and coalesce(new.bakgrunn, 'ingen') in ('ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget', 'aurora', 'neon1', 'neon2', 'neon3', 'neon4', 'neon5', 'neon6', 'neon7', 'neon8', 'neon9', 'neon10', 'neon11', 'neon12', 'neon13', 'neon14', 'neon15') then return new; end if;
+     and coalesce(new.bakgrunn, 'ingen') in ('ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget', 'aurora', 'neon1', 'neon2', 'neon3', 'neon4', 'neon5', 'neon6', 'neon7', 'neon8', 'neon9', 'neon10', 'neon11', 'neon12', 'neon13', 'neon14', 'neon15', 'neon16', 'neon17') then return new; end if;
   -- Samtalebilde
   if e <@ array['bilde'] and (new.bilde is null or (length(new.bilde) <= 30000 and new.bilde like 'data:image/jpeg;base64,%')) then return new; end if;
   -- Dempe for seg selv
