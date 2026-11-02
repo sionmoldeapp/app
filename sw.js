@@ -1,4 +1,4 @@
-const V='sion-v69',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','bilder/ingar-jensen.jpg','bilder/pastor.jpg','icon-192.png','badge-96.png','fb.js','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
+const V='sion-v70',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','bilder/ingar-jensen.jpg','bilder/pastor.jpg','icon-192.png','badge-96.png','fb.js','supa.js','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(V).then(c=>c.addAll(F)))});   // ny versjon tar over med en gang, uten å vente på at appen lukkes
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V&&x!=='sion-varsel').map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('message',e=>{if(e.data&&e.data.type==='skip')self.skipWaiting()});
@@ -7,6 +7,7 @@ self.addEventListener('message',e=>{if(e.data&&e.data.type==='skip')self.skipWai
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
   const u=new URL(e.request.url);if(u.origin!==location.origin)return;   // Firebase og andre eksterne adresser går som vanlig
+  if(/^\/(auth|rest|realtime|storage|functions)\/v1\/|^\/sion-konfig\.json$/.test(u.pathname))return;   // databasen på egen server (Supabase): alltid ferskt, aldri fra hurtigbufferen
   const nav=e.request.mode==='navigate';
   e.respondWith(caches.open(V).then(async c=>{
     const nøkkel=nav?new Request(u.origin+u.pathname):e.request;

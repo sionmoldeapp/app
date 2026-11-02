@@ -587,6 +587,9 @@ html.chatfull .chat{padding-top:env(safe-area-inset-top,0)}
 .mapp-n{position:absolute;top:-5px;left:calc(50% + 16px);min-width:22px;height:22px;border-radius:99px;background:#e0443a;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;padding:0 6px;box-shadow:0 0 0 2px var(--surface)}
 .mapp-inn{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
 .mapp-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.appinn>details.card{padding:0;margin:0;background:none;box-shadow:none;border:0}
+.appinn>details.card>summary{display:none}
+.tilgdash{padding:12px 14px;border-radius:var(--r-m,14px);background:var(--bg);margin:0 0 12px}
 nav.tabs{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .chd .ctit{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.2}
@@ -1591,7 +1594,7 @@ function evItem(e){
 /* Påmeldingen går til Google Skjema «Sommerstevne påmeldinger nyhetsbrev». Svarene havner i et regneark i Drive,
    og scriptet i regnearket sender e-postvarsel. Google svarer ikke tilbake til nettsider, så vi kan ikke se om det lyktes. */
 /* Testversjon: samme app, men mot lokal database (Firebase-emulator på en PC, se lokal/LESMEG.md). Kjenner seg igjen på adressen. Ingen ekte varsler, e-post eller Google Skjema sendes herfra. */
-const TEST=location.port==='8090'||/(trycloudflare.com|.ts.net)$/.test(location.hostname);
+const TEST=location.port==='8090'||location.port==='8091'||/(trycloudflare.com|.ts.net)$/.test(location.hostname);
 /* (Den røde TESTVERSJON-stripen og «TEST ·» i tittelen er fjernet etter ønske.) */
 const SV_URL=TEST?'/__ingen':'https://docs.google.com/forms/d/e/1FAIpQLScYERloVM4jsoPdXmpeqJYecXNBGl6GNNjNl5vequqCrTvSWw/formResponse',SV_ENTRY='entry.1990573754';
 /* «Jeg kommer»: navn og svar sendes til Google Skjema «Jeg kommer – arrangementer» (regneark i Drive).
@@ -2089,7 +2092,7 @@ function utAsk(id,dato,pre){
     const k=utKonflikt(d,id);
     if(k.length&&!await bekreft('Dobbeltbooking: '+k.map(x=>(x.tittel||'Utleie')+' '+(x.dato2&&x.dato2>x.dato?utDatoKort(x.dato)+'–'+utDatoKort(x.dato2):x.fra+'–'+x.til)+' ('+(x.program?'Menighetens kalender'+((x.rom||[]).length?', '+x.rom.join(', '):''):(x.rom||[]).join(', '))+')').join('; ')+'. Lagre likevel?',{ok:'Lagre likevel',fare:false}))return;
     const prHas=!!dlg.querySelector('#uPr'),prCat=prHas&&dlg.querySelector('#uPr').checked?dlg.querySelector('#uPrC').value:'';
-    try{const nid=await FB.utSave(id,{...d,by:meEmail()});if(state.admin&&prHas&&(prCat||utProgEv(nid)))utProgSync(nid,d,prCat).catch(()=>push('Menighetens kalender','Bookingen er lagret, men menighetens kalender ble ikke oppdatert.'));state.ut.alle=undefined;state.ut.liste=[...(state.ut.liste||[]).filter(x=>x.id!==nid),{id:nid,...d}].sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;state.ut.mnd=d.dato.slice(0,7);dlg.close();state.acc.utleie=true;keep(()=>{});push('Lagret','Bookingen er lagret.');if(!ex||dlg.querySelector('#uVarsle').checked)utBeskjedLedere({...d,id:nid},!ex);if(ex)utTeamEndring(nid,ex,d).catch(()=>{});if(dlg.querySelector('#uVarsle').checked)utVarsle(d,!ex).then(t=>{if(t)push('Varsel',t)})}
+    try{const nid=await FB.utSave(id,{...d,by:meEmail()});if(state.admin&&prHas&&(prCat||utProgEv(nid)))utProgSync(nid,d,prCat).catch(()=>push('Menighetens kalender','Bookingen er lagret, men menighetens kalender ble ikke oppdatert.'));state.ut.alle=undefined;state.ut.liste=[...(state.ut.liste||[]).filter(x=>x.id!==nid),{id:nid,...d}].sort((a,b)=>String(a.dato).localeCompare(String(b.dato)));state.ut.dag=d.dato;state.ut.mnd=d.dato.slice(0,7);dlg.close();apneApp('abook');keep(()=>{});push('Lagret','Bookingen er lagret.');if(!ex||dlg.querySelector('#uVarsle').checked)utBeskjedLedere({...d,id:nid},!ex);if(ex)utTeamEndring(nid,ex,d).catch(()=>{});if(dlg.querySelector('#uVarsle').checked)utVarsle(d,!ex).then(t=>{if(t)push('Varsel',t)})}
     catch(er){msg(utLagreFeil(er))}});
   dlg.addEventListener('close',()=>dlg.remove());dlg.showModal()}
 /* Forklarer hvorfor en booking ikke ble lagret, og hva som kan gjøres. */
@@ -3198,7 +3201,7 @@ function deleteSelfAsk(){
     if(!e.submitter||e.submitter.value!=='slett')return;
     e.preventDefault();
     const pw=dlg.querySelector('#dsP').value;if(!pw){dlg.querySelector('#dsMsg').textContent='Skriv passordet.';return}
-    try{await FB.deleteSelf(pw);lsSet('sm-push','');dlg.close();push('Du er slettet','Kontoen din er fjernet.')}
+    try{await FB.deleteSelf(pw);lsSet('sm-push','');try{indexedDB.deleteDatabase('sm-notelyd')}catch(x){}dlg.close();push('Du er slettet','Kontoen din er fjernet.')}
     catch(er){dlg.querySelector('#dsMsg').textContent=er&&(er.code==='auth/invalid-credential'||er.code==='auth/wrong-password')?'Passordet er feil.':'Kunne ikke slette ('+((er&&er.code)||'feil')+').'}});
   dlg.addEventListener('close',()=>dlg.remove());
   dlg.showModal();
@@ -3354,20 +3357,32 @@ function notesInner(){
      +(n>2?'<div class="srad">'+sokBtn('note')+'</div>'+sokInp('note','Søk i notatene …','margin:0 0 8px'):'')
      +'<div class="list" id="noteList">'+noteRows(vis)+'</div>'}
   return inn+'<p class="small" role="status" style="margin:8px 0 0">'+esc(state.noteMsg||'')+'</p>'}
-/* Møteverktøy: notater og lyd-/videoopptak samlet i ett kort under Mer. */
-function verktoyCard(){return subSorter('verktoy',verktoyKort())}
+/* Apper: eget kort rett under Mer med app-ikoner (notater, lyd, video, tilganger, booking, personvern og statistikk). Trykk på et ikon åpner appen under ikonene, trykk igjen eller Lukk lukker.
+   Kortene som før lå for seg selv (Ansvarsområder for administratorer og gruppeledere, Utleie, Personvern, Statistikk) vises her åpne og uten egen tittel. */
+const APP_KEYS=['vnotat','vlyd','vvideo','atilg','abook','apv','astat'],APP_ACC={atilg:'ansvarkort',abook:'utleie',apv:'personvern',astat:'oversikt'};
+function apneApp(k){APP_KEYS.forEach(x=>{state.acc[x]=false});state.acc[k]=true;state.acc.apper=true;if(APP_ACC[k])state.acc[APP_ACC[k]]=true}   // åpner en app under Apper (brukes av lenker til booking og brukere)
+const tilgOK=()=>!!(state.user&&state.member&&state.view==='meg'&&(state.admin||isLeader()));
 function verktoyKort(){
-  if(!state.user||!state.member)return '';
-  const l=state.notes,n=l?l.length:0,nl=(OPPT.liste||[]).filter(x=>(x.type||'lyd')==='lyd').length,nv=(OPPT.liste||[]).filter(x=>x.type==='video').length;
+  const valgt0=APP_KEYS.find(k=>state.acc[k]);if(valgt0&&APP_ACC[valgt0])state.acc[APP_ACC[valgt0]]=true;   // kortet inni appen skal stå åpent
+  const med=!!(state.user&&state.member),l=state.notes,n=l?l.length:0,nl=(OPPT.liste||[]).filter(x=>(x.type||'lyd')==='lyd').length,nv=(OPPT.liste||[]).filter(x=>x.type==='video').length;
+  const tilg=tilgOK()?(state.admin?'<div class="tilgdash"><p class="small" style="margin:0 0 8px">Tilgangsoversikten viser alle roller, grupper og kategorier i flere nivåer, og hva hver enkelt person har tilgang til. Laget for PC i fullskjerm.</p><a class="btn primary" href="tilgang.html" style="width:auto;display:inline-block">Åpne tilgangsoversikten</a></div>':'')+ansvarKort():'',
+    book=utleieCard(),pv=personvernCard(),st=statCard();
   const ik=(p)=>'<svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>',
-    app=[['vnotat','Notater',ik('<path d="M6 3.5h9l4 4V20a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 20z"/><path d="M14.5 3.5V8H19M9 12h6M9 15.5h6"/>'),l?n:0,'linear-gradient(145deg,#f7c04a,#e08a12)','Møtenotater'],
+    alle=[['vnotat','Notater',ik('<path d="M6 3.5h9l4 4V20a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 20z"/><path d="M14.5 3.5V8H19M9 12h6M9 15.5h6"/>'),l?n:0,'linear-gradient(145deg,#f7c04a,#e08a12)','Møtenotater'],
       ['vlyd','Lyd',ik('<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5M9 20.5h6"/>'),nl,'linear-gradient(145deg,#ff6b78,#c81d3a)','Lydopptak'],
-      ['vvideo','Video',ik('<rect x="3.5" y="6.5" width="12.5" height="11" rx="2.5"/><path d="m16 11 4.5-2.8v7.6L16 13"/>'),nv,'linear-gradient(145deg,#8a6cf5,#3f3fd4)','Videoopptak']],
-    valgt=app.find(x=>state.acc[x[0]]);
+      ['vvideo','Video',ik('<rect x="3.5" y="6.5" width="12.5" height="11" rx="2.5"/><path d="m16 11 4.5-2.8v7.6L16 13"/>'),nv,'linear-gradient(145deg,#8a6cf5,#3f3fd4)','Videoopptak'],
+      ['atilg','Tilganger',ik('<path d="M12 3.2 19 6v5.2c0 4.4-2.9 8.1-7 9.6-4.1-1.5-7-5.2-7-9.6V6z"/><circle cx="12" cy="10.2" r="2.1"/><path d="M12 12.3v3.4"/>'),0,'linear-gradient(145deg,#3fcfa6,#0f7468)','Tilganger'],
+      ['abook','Booking',ik('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4M7.5 13.5h3v3h-3z"/>'),0,'linear-gradient(145deg,#52b1ff,#1d5fd0)','Booking og utleie'],
+      ['apv','Personvern',ik('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5M12 14.3v2.6"/>'),0,'linear-gradient(145deg,#9fb2c6,#4a5d73)','Personvern'],
+      ['astat','Statistikk',ik('<path d="M4 20.5h16"/><rect x="5.5" y="12" width="3" height="6" rx=".8"/><rect x="10.5" y="7" width="3" height="11" rx=".8"/><rect x="15.5" y="10" width="3" height="8" rx=".8"/>'),0,'linear-gradient(145deg,#ffa95c,#de5422)','Statistikk']],
+    vis={vnotat:med,vlyd:med,vvideo:med,atilg:!!tilg,abook:!!book,apv:!!pv,astat:!!st},
+    app=alle.filter(x=>vis[x[0]]),valgt=app.find(x=>state.acc[x[0]]);
+  if(!app.length)return '';
   if(valgt&&valgt[0]==='vnotat'&&state.notes===undefined&&FB&&!state.notesLaster){state.notesLaster=true;setTimeout(()=>loadNotes().finally(()=>{state.notesLaster=false}),0)}
-  return '<details class="card acc" data-acc="verktoy" '+(state.acc.verktoy?'open':'')+'><summary><h2>Møteapper</h2></summary><p class="small" style="margin:0 0 4px">Notater og opptak fra møtene. Bare du ser dem.</p>'
+  const inn=k=>k==='vnotat'?notesInner():k==='vlyd'?opptInner('lyd'):k==='vvideo'?opptInner('video'):'<div class="appinn">'+({atilg:tilg,abook:book,apv:pv,astat:st})[k]+'</div>';
+  return '<details class="card acc" data-acc="apper" '+(state.acc.apper?'open':'')+'><summary><h2>Apper</h2></summary><p class="small" style="margin:0 0 4px">Trykk på en app for å åpne den. Notater og opptak ser bare du.</p>'
    +'<div class="mapps">'+app.map(x=>'<button type="button" class="mapp" data-moteapp="'+x[0]+'" aria-pressed="'+(valgt===x)+'" aria-label="'+x[5]+(x[3]?', '+x[3]:'')+'"><i style="background:'+x[4]+'">'+x[2]+'</i>'+(x[3]?'<span class="mapp-n">'+x[3]+'</span>':'')+x[1]+'</button>').join('')+'</div>'
-   +(valgt?'<div class="mapp-inn"><div class="mapp-hd"><b>'+valgt[5]+(valgt[3]?' ('+valgt[3]+')':'')+'</b><button type="button" class="btn" data-moteapp="'+valgt[0]+'" style="width:auto">Lukk</button></div>'+(valgt[0]==='vnotat'?notesInner():opptInner(valgt[0]==='vlyd'?'lyd':'video'))+'</div>':'')+'</details>'}
+   +(valgt?'<div class="mapp-inn"><div class="mapp-hd"><b>'+valgt[5]+(valgt[3]?' ('+valgt[3]+')':'')+'</b><button type="button" class="btn" data-moteapp="'+valgt[0]+'" style="width:auto">Lukk</button></div>'+inn(valgt[0])+'</div>':'')+'</details>'}
 /* Lister over notater og opptak deles opp per dag og ser ut som hendelsene i Program: dagoverskrift, datoboks og rader. */
 const dagTekst=d=>cap(DAYS[d.getDay()])+' '+d.getDate()+'. '+MON[d.getMonth()]+(d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():'');
 const datoBoks=d=>'<div class="date">'+d.getDate()+'. '+cap(MON[d.getMonth()])+'</div>';
@@ -3379,13 +3394,21 @@ function noteRows(l){
     if(k!==sist){h+='<div class="day">'+esc(k)+'</div>';sist=k}
     h+='<div class="item"><button type="button" data-noteopen="'+esc(x.id)+'">'+(d?datoBoks(d):'<div class="date">–</div>')+'<div class="grow"><b>'+esc(x.title||'Uten tittel')+'</b><span class="small">'+esc(x.speaker||'Taler ikke oppgitt')+'</span></div>'+(x.img?'<img class="nminitur" src="'+x.img+'" alt="">':'<span class="small">Åpne</span>')+'</button></div>'});
   return h}
+/* Lydklipp i møtenotater ligger bare på telefonen (IndexedDB sm-notelyd, nøkkel e-post|notat|klipp). Notatet i databasen har bare {id,sek}, så andre enheter ser at klippet finnes, men kan ikke spille det. */
+function nlDb(){return new Promise((res,rej)=>{const q=indexedDB.open('sm-notelyd',1);q.onupgradeneeded=()=>q.result.createObjectStore('l');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+async function nlOp(modus,fn){const db=await nlDb();return new Promise((res,rej)=>{const tx=db.transaction('l',modus),r=fn(tx.objectStore('l'));tx.oncomplete=()=>{db.close();res(r&&r.result)};tx.onerror=tx.onabort=()=>{db.close();rej(tx.error)}})}
+const nlNokkel=(slot,id)=>noteEmail()+'|'+slot+'|'+id;
+const nlHent=(slot,id)=>nlOp('readonly',s=>s.get(nlNokkel(slot,id))).catch(()=>null);
+const nlLagre=(slot,id,blob)=>nlOp('readwrite',s=>s.put(blob,nlNokkel(slot,id)));
+const nlSlett=(slot,id)=>nlOp('readwrite',s=>s.delete(nlNokkel(slot,id))).catch(()=>{});
+const nlSlettNotat=slot=>nlOp('readwrite',s=>s.delete(IDBKeyRange.bound(nlNokkel(slot,''),nlNokkel(slot,'￿')))).catch(()=>{});
 function noteDelAsk(id){
   const x=(state.notes||[]).find(n=>n.id===id);if(!x||document.querySelector('dialog.lp'))return;
   const dlg=document.createElement('dialog');dlg.className='lp';
   dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Slette «'+esc(x.title||'Uten tittel')+'»?</h3><p class="small" style="margin:0">Notatet fjernes for godt og kan ikke angres.</p><div class="btns"><button class="btn danger" value="slett">Slett</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('close',async()=>{const ok=dlg.returnValue==='slett';dlg.remove();if(!ok)return;
-    try{await FB.delNote(noteEmail(),id);state.notes=(state.notes||[]).filter(n=>n.id!==id);state.noteMsg='Notatet er slettet.';keep(()=>{});push('Slettet','Notatet er fjernet.')}
+    try{await FB.delNote(noteEmail(),id);nlSlettNotat(id);state.notes=(state.notes||[]).filter(n=>n.id!==id);state.noteMsg='Notatet er slettet.';keep(()=>{});push('Slettet','Notatet er fjernet.')}
     catch(er){push('Kunne ikke slette',saveMsg(er&&er.code))}});
   dlg.showModal();
 }
@@ -3411,9 +3434,10 @@ function noteAsk(id){
   document.body.appendChild(dlg);
   const ed=dlg.querySelector('#nEd'),msg=t=>{dlg.querySelector('#nMsg').textContent=t};
   /* Punkter, avkrysning, klokkeslett og lydklipp. Dobbelttrykk setter inn et punkt (på en linje som har punkt: underpunkt, og tilbake igjen).
-     Hold inne (eller høyreklikk) åpner en meny med flere valg. Lydklipp lagres i notatet (maks 3 på ca. 40 sekunder). */
-  const LYD_MAKS=3,LYD_SEK=40,LYD_TEGN=250000;
-  let lydL=(Array.isArray(ex&&ex.lyd)?ex.lyd:[]).filter(l=>l&&typeof l.data==='string'&&/^data:audio\//.test(l.data)).slice(0,LYD_MAKS).map(l=>({id:String(l.id||'l'+Math.random().toString(36).slice(2,7)),data:l.data,sek:Math.max(1,Math.min(120,+l.sek||1))}));
+     Hold inne (eller høyreklikk) åpner en meny med flere valg. Lydklipp lagres bare på telefonen (maks 3 på inntil en time, se nlDb). Skjermen holdes våken mens det tas opp.
+     Eldre klipp som ligger i notatet (data) flyttes til telefonen når notatet åpnes, og tas ut av databasen neste gang notatet lagres. */
+  const LYD_MAKS=3,LYD_SEK=3600;
+  let lydL=(Array.isArray(ex&&ex.lyd)?ex.lyd:[]).filter(l=>l&&l.id).slice(0,LYD_MAKS).map(l=>({id:String(l.id),sek:Math.max(1,Math.min(LYD_SEK,+l.sek||1)),data:typeof l.data==='string'&&/^data:audio\//.test(l.data)?l.data:'',url:'',laster:true}));
   const P1='<font size="2">◆</font>&nbsp;',P2='&emsp;&emsp;<font size="2">◦</font>&nbsp;',KRYSS='<font size="3">☐</font>&nbsp;';
   const ins=h=>{ed.focus();document.execCommand('insertHTML',false,h);sync()};
   const settMark=r=>{ed.focus();const s=getSelection();s.removeAllRanges();s.addRange(r)};
@@ -3437,12 +3461,19 @@ function noteAsk(id){
   ed.addEventListener('click',e=>{const f=e.target;if(f&&f.tagName==='FONT'&&/^[☐☑]$/.test(f.textContent)){f.textContent=f.textContent==='☐'?'☑':'☐';ed.dispatchEvent(new Event('input',{bubbles:true}))}});
   const lydBar=dlg.querySelector('#nLyd');let rec=null;
   const lydTegn=()=>{lydBar.innerHTML=(rec?'<div class="nlydrad"><span class="nlydprikk" aria-hidden="true"></span><b id="nLydT">0:00</b><span class="small" style="flex:1">Tar opp …</span><button type="button" class="btn primary" data-nlstopp>Stopp og legg til</button><button type="button" class="btn" data-nlavbryt>Avbryt</button></div>':'')
-    +lydL.map((l,i)=>'<div class="nlydrad"><span>🎤 Lydklipp '+(i+1)+' ('+mSek(l.sek)+')</span><audio controls preload="none" src="'+l.data+'"></audio><button type="button" class="btn" data-nlslett="'+esc(l.id)+'" aria-label="Slett lydklipp '+(i+1)+'">✕</button></div>').join('')};
+    +lydL.map((l,i)=>'<div class="nlydrad"><span>🎤 Lydklipp '+(i+1)+' ('+mSek(l.sek)+')</span>'+(l.url?'<audio controls preload="none" src="'+l.url+'"></audio>':'<span class="small" style="flex:1">'+(l.laster?'Henter …':'Ligger på telefonen der det ble tatt opp')+'</span>')+'<button type="button" class="btn" data-nlslett="'+esc(l.id)+'" aria-label="Slett lydklipp '+(i+1)+'">✕</button></div>').join('')};
   lydTegn();
+  (async()=>{for(const l of lydL){
+      let blob=null;
+      if(l.data){try{blob=await (await fetch(l.data)).blob();await nlLagre(slot,l.id,blob);l.data=''}catch(x){blob=null}}   // flyttet: notatet lagres da av seg selv uten klippet (snap endres)
+      if(!blob&&!l.data)blob=await nlHent(slot,l.id);
+      l.laster=false;l.url=blob?URL.createObjectURL(blob):l.data}
+    lydTegn()})();
+  dlg.addEventListener('close',()=>{lydL.forEach(l=>{if(l.url&&l.url.startsWith('blob:'))URL.revokeObjectURL(l.url)})});
   lydBar.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
     if(b.hasAttribute('data-nlstopp')&&rec){try{rec.mr.stop()}catch(x){}}
     else if(b.hasAttribute('data-nlavbryt')&&rec){rec.avbrutt=true;try{rec.mr.stop()}catch(x){}}
-    else if(b.dataset.nlslett){lydL=lydL.filter(l=>l.id!==b.dataset.nlslett);lydTegn();msg('Lydklippet er fjernet. Trykk Lagre.')}});
+    else if(b.dataset.nlslett){const id=b.dataset.nlslett,l=lydL.find(x=>x.id===id);if(l&&l.url&&l.url.startsWith('blob:'))URL.revokeObjectURL(l.url);lydL=lydL.filter(x=>x.id!==id);nlSlett(slot,id);lydTegn();msg('Lydklippet er fjernet.')}});
   const lydStart=async()=>{
     if(rec)return;if(lydL.length>=LYD_MAKS){push('Maks '+LYD_MAKS+' lydklipp','Slett et klipp for å ta opp et nytt.');return}
     try{
@@ -3450,18 +3481,18 @@ function noteAsk(id){
       const stream=await navigator.mediaDevices.getUserMedia({audio:true}),typer=['audio/webm;codecs=opus','audio/mp4','audio/webm'],mime=typer.find(t=>MediaRecorder.isTypeSupported(t))||'',
         mr=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:48000}:{audioBitsPerSecond:48000});
       const r={mr,chunks:[],t0:Date.now(),mime:mime||'audio/webm',avbrutt:false,iv:0,sted:menyR};rec=r;
+      try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>{r.wl=l}).catch(()=>{})}catch(x){}   // lange klipp: skjermen (og opptaket) skal ikke sovne
       mr.ondataavailable=e=>{if(e.data&&e.data.size)r.chunks.push(e.data)};
       mr.onstop=async()=>{
-        clearInterval(r.iv);try{stream.getTracks().forEach(t=>t.stop())}catch(x){}rec=null;
+        clearInterval(r.iv);try{stream.getTracks().forEach(t=>t.stop())}catch(x){}try{r.wl&&r.wl.release()}catch(x){}rec=null;
         if(r.avbrutt||!r.chunks.length){lydTegn();return}
         const sek=Math.max(1,Math.round((Date.now()-r.t0)/1000)),blob=new Blob(r.chunks,{type:r.mime.split(';')[0]});
-        const data=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result));fr.onerror=()=>res('');fr.readAsDataURL(blob)});
-        if(!data){lydTegn();return}
-        if(data.length>LYD_TEGN){push('Lydklippet er for langt','Hold hvert klipp under ca. '+LYD_SEK+' sekunder.');lydTegn();return}
-        lydL.push({id:'l'+Date.now().toString(36),data,sek:Math.min(sek,120)});lydTegn();
+        const id='l'+Date.now().toString(36);
+        try{await nlLagre(slot,id,blob)}catch(x){push('Kunne ikke lagre lydklippet','Telefonen har kanskje ikke plass.');lydTegn();return}
+        lydL.push({id,sek:Math.min(sek,LYD_SEK),data:'',url:URL.createObjectURL(blob),laster:false});lydTegn();
         if(r.sted){try{settMark(r.sted)}catch(x){ed.focus()}}
-        ins('🎤&nbsp;Lydklipp '+lydL.length+' ('+mSek(Math.min(sek,120))+')&nbsp;');
-        msg('Lydklippet er lagt til. Trykk Lagre for å ta det med.')};
+        ins('🎤&nbsp;Lydklipp '+lydL.length+' ('+mSek(Math.min(sek,LYD_SEK))+')&nbsp;');
+        msg('Lydklippet er lagret på denne telefonen.')};
       mr.start(500);lydTegn();
       r.iv=setInterval(()=>{const s=Math.floor((Date.now()-r.t0)/1000),t=dlg.querySelector('#nLydT');if(t)t.textContent=mSek(s);if(s>=LYD_SEK){try{mr.stop()}catch(x){}}},400)}
     catch(er){rec=null;lydTegn();push('Kunne ikke starte opptaket',er&&er.name==='NotAllowedError'?'Slå på mikrofon for appen i telefonens innstillinger.':(er&&er.msg)||'Prøv igjen.')}};
@@ -3510,7 +3541,7 @@ function noteAsk(id){
     v.innerHTML='<form class="form" method="dialog"><img src="'+foto+'" alt="" style="width:100%;max-height:50vh;object-fit:contain;border-radius:12px"><div class="btns"><button class="btn primary" value="nytt" style="flex:1">Ta nytt bilde</button><button class="btn danger" value="fjern" style="flex:1">Fjern bildet</button></div><div class="btns"><button class="btn" value="avbryt" style="flex:1">Avbryt</button></div></form>';
     v.addEventListener('close',()=>{const k=v.returnValue;v.remove();if(k==='fjern'){foto='';visFoto()}else if(k==='nytt')nytt()});
     document.body.appendChild(v);v.showModal()});
-  const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,dlg.querySelector('#nP').value,sanitizeNote(ed.innerHTML),foto,lydL.map(l=>l.id)]);let start;
+  const snap=()=>JSON.stringify([dlg.querySelector('#nT').value,dlg.querySelector('#nD').value,dlg.querySelector('#nP').value,sanitizeNote(ed.innerHTML),foto,lydL.map(l=>l.id+(l.data?'*':''))]);let start;
   { const g=dlg.querySelector('#nGrip');let y0=0,h0=0,on=false;
     g.addEventListener('pointerdown',e=>{on=true;y0=e.clientY;h0=ed.getBoundingClientRect().height;try{g.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault()});
     g.addEventListener('pointermove',e=>{if(!on)return;ed.style.height=Math.max(140,Math.min(innerHeight*0.8,h0+(e.clientY-y0)))+'px'});
@@ -3552,12 +3583,12 @@ function noteAsk(id){
   const lagre=async(stille)=>{
     while(lagrer)await vent();
     if(lagret&&snap()===start)return true;
-    const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML),img:foto,lyd:lydL};
+    const d={title:dlg.querySelector('#nT').value.trim(),date:dlg.querySelector('#nD').value,speaker:dlg.querySelector('#nP').value.trim(),html:sanitizeNote(ed.innerHTML),img:foto,lyd:lydL.map(l=>l.data?{id:l.id,sek:l.sek,data:l.data}:{id:l.id,sek:l.sek})};
     if(!d.title&&!noteText(d.html)){if(!stille)msg('Skriv en tittel eller litt tekst.');return false}
     if(!d.title)d.title=noteText(d.html).slice(0,40);
     const sn=snap();lagrer=true;
     try{await FB.saveNote(noteEmail(),slot,d);d.id=slot;d.ms=Date.now();lagret=true;
-      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.verktoy=true;state.acc.vnotat=true;if(!stille)dlg.querySelector('#nT').value=d.title;start=stille?sn:snap();msg('Lagret automatisk kl. '+oTall(new Date().getHours())+':'+oTall(new Date().getMinutes())+'.');if(!stille)keep(()=>{});lagrer=false;return true}
+      state.notes=[d,...(state.notes||[]).filter(x=>x.id!==slot)];state.noteMsg='Notatet er lagret.';state.acc.apper=true;state.acc.vnotat=true;if(!stille)dlg.querySelector('#nT').value=d.title;start=stille?sn:snap();msg('Lagret automatisk kl. '+oTall(new Date().getHours())+':'+oTall(new Date().getMinutes())+'.');if(!stille)keep(()=>{});lagrer=false;return true}
     catch(er){lagrer=false;msg('Kunne ikke lagre ('+((er&&er.code)||'feil')+'). Er de nye reglene publisert i Firebase?');return false}};
   dlg.querySelector('#nShare').addEventListener('click',async()=>{
     const t=dlg.querySelector('#nT').value.trim(),tekst=[t,[noDato(dlg.querySelector('#nD').value),dlg.querySelector('#nP').value.trim()].filter(Boolean).join(' · '),'',noteLinjer(ed.innerHTML)].join('\n').trim();
@@ -3576,7 +3607,7 @@ function noteAsk(id){
   del.addEventListener('click',async()=>{
     if(!await bekreft(lagret?'Slette dette notatet? Det kan ikke angres.':'Forkaste dette notatet?'))return;
     while(lagrer)await vent();
-    try{if(lagret)await FB.delNote(noteEmail(),slot);state.notes=(state.notes||[]).filter(x=>x.id!==slot);state.noteMsg='Notatet er slettet.';start=snap();dlg.close();keep(()=>{});push('Slettet','Notatet er fjernet.')}
+    try{if(lagret)await FB.delNote(noteEmail(),slot);nlSlettNotat(slot);state.notes=(state.notes||[]).filter(x=>x.id!==slot);state.noteMsg='Notatet er slettet.';start=snap();dlg.close();keep(()=>{});push('Slettet','Notatet er fjernet.')}
     catch(er){msg('Kunne ikke slette ('+((er&&er.code)||'feil')+').')}});
   /* Sveip for å lukke, som i chatten: dra mot høyre fra et sted utenfor tekstfeltet (eller ned fra toppen). Notatet følger fingeren 1:1, blir mer og mer gjennomsiktig og viser siden bak.
      Lukker når det er dratt over 40 % av bredden (eller i en rask, kort sveip), etter at siste endringer er lagret. Ellers glir det tilbake. Dras det tilbake mens fingeren er nede, avbrytes lukkingen. */
@@ -4351,7 +4382,7 @@ async function utTeamEndring(bid,gammel,ny){
 function utApneId(bid){
   const vis=()=>{const b=(state.ut.liste||[]).find(x=>x.id===bid);
     if(!b){push('Fant ikke bookingen','Den kan være slettet eller ligge langt tilbake.');return}
-    state.fraChatId=state.chat&&state.chat.vis?(state.chat.id||null):null;chatLukk();state.tab='me';state.acc.utleie=true;state.ut.fil='alle';state.ut.vis='alle';state.ut.rom='Alle';state.ut.mnd=b.dato.slice(0,7);state.ut.dag=b.dato;state.open['ut_'+b.id+'_'+b.dato]=true;fadeRender();
+    state.fraChatId=state.chat&&state.chat.vis?(state.chat.id||null):null;chatLukk();state.tab='me';apneApp('abook');state.ut.fil='alle';state.ut.vis='alle';state.ut.rom='Alle';state.ut.mnd=b.dato.slice(0,7);state.ut.dag=b.dato;state.open['ut_'+b.id+'_'+b.dato]=true;fadeRender();
     setTimeout(()=>{const e=document.querySelector('[data-ev="ut_'+b.id+'_'+b.dato+'"]');if(e){e.style.scrollMarginTop='90px';e.scrollIntoView({block:'start'})}utDetalj(b.id,b.dato)},520)};
   if(state.ut.liste===undefined)utLast().then(vis);else vis()}
 async function utApneChat(x){
@@ -4912,7 +4943,7 @@ function chatGruppeSkriv(g){
   const c=state.chat,folk=chatGruppeFolk(g);c.vy='samtale';c.id=null;c.ny={mode:'gruppe',gid:g,folk};
   chatRamme('Hele gruppen: '+gName(g),folk.length+(folk.length===1?' person':' personer')+' får meldingen som privat chat',chatAv(gName(g)),'<p class="small" style="align-self:center;text-align:center;margin:20px 10px">Skriv meldingen under. Hver person får den som en privat samtale med deg og kan svare der. Ingen ser hverandres svar.</p>','Melding til hele gruppen …')}
 async function chatTil(epost,gid,navn){
-  if(!FB||!state.user)return;chatApne();await loadThreads();
+  if(!FB||!state.user)return;if(!state.chat.vis)chatApne();await loadThreads();   // står man alt i chatten (Ny melding), ville chatApne vist listen og tatt et steg tilbake i historikken, som så lukket den nye samtalen
   const til=String(epost||'').toLowerCase(),meg=meEmail(),t=(state.threads||[]).find(x=>x.kind==='dm'&&(x.parts||[]).includes(til)&&(x.parts||[]).includes(meg));
   if(t){chatSamtale(t.id);return}
   const c=state.chat,n=navn||til;c.vy='samtale';c.id=null;c.ny={mode:'person',til,gid,navn:n};
@@ -5533,7 +5564,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 07:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='02.11.2026 kl. 18:48';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5963,12 +5994,11 @@ function ansvarKort(){
 const ADM_KORT={
   gruppebesk:()=>gruppeBeskjedCard(),publiser:()=>state.view==='meg'&&!state.admin&&isLeader()?admin():'',
   jul:()=>state.admin?julCard():'',
-  stat:()=>statCard(),
   kategorier:()=>state.admin?katCard():'',snap:()=>state.view==='meg'&&state.admin?snapCard():'',share:()=>shareCard()};
 function admCard(){
   const deler=Object.values(ADM_KORT).map(f=>f()).filter(x=>x&&String(x).trim());
   if(!deler.length)return '';
-  const tekst=state.admin?'Statistikk, sikkerhetskopi og andre verktøy for å styre appen. Brukere og politiattester ligger under Ansvarsområder, grupper under Meg, og Utleie har eget kort under Mer.':'Verktøy for gruppene du leder: beskjeder og publisering. Medlemmer og tilhørighet ligger under Meg → Grupper.';
+  const tekst=state.admin?'Sikkerhetskopi og andre verktøy for å styre appen. Brukere og politiattester ligger under Apper → Tilganger, grupper under Meg, og Booking og Statistikk er egne apper.':'Verktøy for gruppene du leder: beskjeder og publisering. Medlemmer og tilhørighet ligger under Meg → Grupper.';
   return subSorter('adm','<details class="card acc" data-acc="admkort" '+(state.acc.admkort?'open':'')+'><summary><h2>Administrer</h2></summary><p class="small" style="margin:0 0 4px">'+tekst+' Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>','.megboks')}
 /* Grupper: alt om grupper og hvem som er med samlet i ett kort. Alle ser gruppene sine og slår varsler av/på; gruppeledere styrer medlemmene i gruppene sine; administratorer ser alle grupper med medlemmer og kan legge til og fjerne direkte, eller se det person for person. */
 function minGrupperKort(){
@@ -6031,27 +6061,26 @@ async function brukerVeiviser(){
           try{const persons=[...(a.persons||[]),{n:W.navn,tlf:W.tlf,e:m}].slice(0,4),emails=[...new Set([...(a.emails||[]),m])].slice(0,4),d={...a,persons,emails};await FB.setRole(id,d);Object.assign(a,d)}catch(er){feilAns.push(a.name)}}
         dlg.close();
         state.memMsg=(r.created?W.navn+' er opprettet som ':W.navn+' hadde allerede en konto og er lagt inn som ')+rolleNavn().toLowerCase()+'.'+(r.created?' '+m+' har fått en e-post for å velge passord.'+await velkomst([m]):'')+(feilAns.length?' Kunne ikke legges til som ansvarlig i: '+feilAns.join(', ')+'.':'');
-        state.acc.brukere=true;state.acc.ansvarkort=true;push('Bruker opprettet',W.navn);await refresh();
+        state.acc.brukere=true;if(tilgOK())apneApp('atilg');else state.acc.ansvarkort=true;push('Bruker opprettet',W.navn);await refresh();
       }catch(er){W.lagrer=false;W.feil=er&&er.code==='auth/admin-restricted-operation'?'Registrering er slått av i Firebase (Authentication → Settings → User actions).':er&&er.code==='auth/invalid-email'?'Ugyldig e-postadresse.':saveMsg(er&&er.code);tegn()}}});
   dlg.addEventListener('close',()=>dlg.remove());
   tegn();dlg.showModal();
 }
 function megCard(){return subSorter('meg',megKort(),'.megboks')}
 function megKort(){
-  const deler=[state.user?profileCard():'',state.user?gruppeKort():'',attestKort(),settingsCard(),state.user?vakterCard():'',state.user?lrCard():'',state.user?verktoyCard():'',state.user?loginCard():''].filter(x=>x&&String(x).trim());
+  const deler=[state.user?profileCard():'',state.user?gruppeKort():'',attestKort(),settingsCard(),state.user?vakterCard():'',state.user?lrCard():'',state.user?loginCard():''].filter(x=>x&&String(x).trim());
   if(!deler.length)return '';
-  return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, grupper, innstillinger, vakter, saker til lederrådet og møteverktøy. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
+  return '<details class="card acc" data-acc="megkort" '+(state.acc.megkort?'open':'')+'><summary><h2>Meg</h2></summary><p class="small" style="margin:0 0 4px">Profil, grupper, innstillinger, vakter og saker til lederrådet. Hold inne på en undermeny for å sortere dem.</p><div class="megboks">'+deler.join('')+'</div></details>'}
 const ME_KORT={
-  meg:['Meg',()=>megCard()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],utleie:['Utleie',()=>utleieCard()],
-  ansvar:['Ansvarsområder',()=>ansvarKort()],
-  personvern:['Personvern',()=>personvernCard()]};
+  meg:['Meg',()=>megCard()],apper:['Apper',()=>verktoyKort()],adm:['Administrer',()=>admCard()],login:['Innlogging',()=>state.user?'':loginCard()],
+  ansvar:['Ansvarsområder',()=>tilgOK()?'':ansvarKort()]};   // Booking (utleie), Personvern, Statistikk og (for administratorer og gruppeledere) Ansvarsområder ligger under Apper
 /* Kortene under Mer og Hjem kan stokkes om (langt trykk på et kort, så dra i ≡). Rekkefølgen lagres per bruker (userPrefs) og som reserve på enheten. */
 const ORD={me:{felt:'meorder',ls:'sm-meorder'},home:{felt:'homeorder',ls:'sm-homeorder'}};
 const ov=()=>state.tab==='home'?'home':'me';
 const ordKort=v=>v==='home'?homeDeler():ME_KORT;
 function ordRekke(v,kort){
   let lagret=state[ORD[v].felt]||[];if(!lagret.length)try{lagret=JSON.parse(localStorage.getItem(ORD[v].ls)||'[]')}catch(e){}
-  const alle=Object.keys(kort);let l=lagret.filter(k=>alle.includes(k));if(v==='me')['meg','chat'].forEach(k=>{if(alle.includes(k)&&!l.includes(k))l=[k,...l]});return [...l,...alle.filter(k=>!l.includes(k))]}
+  const alle=Object.keys(kort);let l=lagret.filter(k=>alle.includes(k));if(v==='me'){['meg','chat'].forEach(k=>{if(alle.includes(k)&&!l.includes(k))l=[k,...l]});if(alle.includes('apper')&&!l.includes('apper'))l.splice(l.indexOf('meg')+1,0,'apper')}return [...l,...alle.filter(k=>!l.includes(k))]}   // Apper står rett under Meg til brukeren flytter det
 function ordSynlige(v){const kort=ordKort(v);return ordRekke(v,kort).map(k=>[k,kort[k][1](),kort[k][0]]).filter(x=>x[1]&&x[1].trim())}
 function ordHtml(v){
   const vis=ordSynlige(v);
@@ -6379,7 +6408,7 @@ document.addEventListener('click',async e=>{
   else if('oppdater' in c.dataset){c.disabled=true;c.textContent='Henter …';
     /* Henter alt på nytt (også forbi nettleserens egen hurtigbuffer), og åpner appen på nytt av seg selv med en ny adresse så den eldre versjonen ikke vises. Varselabonnementet (service worker) røres ikke. */
     try{const ks=await caches.keys();await Promise.all(ks.filter(k=>k!=='sion-varsel').map(k=>caches.delete(k)));const reg=await navigator.serviceWorker.getRegistration();if(reg){await reg.update();if(reg.waiting)reg.waiting.postMessage({type:'skip'})}
-      await Promise.all(['./','fb.js','sw.js','fonts.css','manifest.webmanifest'].map(f=>fetch(f,{cache:'reload'}).catch(()=>{})))}catch(er){}
+      await Promise.all(['./','fb.js','supa.js','sw.js','fonts.css','manifest.webmanifest'].map(f=>fetch(f,{cache:'reload'}).catch(()=>{})))}catch(er){}
     c.textContent='Åpner på nytt …';
     setTimeout(()=>{try{location.replace(location.pathname+'?oppd='+Date.now())}catch(er){location.reload()}},350)}
   else if('lradd' in c.dataset){lrAdd()}
@@ -6419,13 +6448,13 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.utmer){const u=state.ut;keep(()=>{if(c.dataset.utmer==='fra')u.timeFra=(u.timeFra||0)+1;else u.timeTil=(u.timeTil||0)+1})}
   else if('utlas' in c.dataset){keep(()=>{state.ut.las=!state.ut.las})}
   else if('utvindu' in c.dataset){e.preventDefault();e.stopPropagation();const w=window.open(location.pathname+'?vindu=utleie','sion-utleie','popup=yes,width=520,height='+Math.min(screen.availHeight||900,960));if(!w)push('Vinduet ble blokkert','Tillat sprettoppvinduer for denne siden og prøv igjen.')}
-  else if('ututv' in c.dataset){const pa=!state.ut.utv;keep(()=>{state.ut.utv=pa;if(pa){state.acc.utleie=true;if(!state.ut.visn||state.ut.visn==='mnd')state.ut.visn='dag'}});const k=document.querySelector('#view details[data-acc="utleie"]');if(k)requestAnimationFrame(()=>kortTilToppen(k))}
+  else if('ututv' in c.dataset){const pa=!state.ut.utv;keep(()=>{state.ut.utv=pa;if(pa){apneApp('abook');if(!state.ut.visn||state.ut.visn==='mnd')state.ut.visn='dag'}});const k=document.querySelector('#view details[data-acc="utleie"]');if(k)requestAnimationFrame(()=>kortTilToppen(k))}
   else if(c.dataset.utmnd){const [y,m]=state.ut.mnd.split('-').map(Number),d=new Date(y,m-1+parseInt(c.dataset.utmnd,10),1);keep(()=>{state.ut.mnd=dkey(d).slice(0,7)})}
   else if(c.dataset.utvisn){keep(()=>{const u=state.ut;u.visn=c.dataset.utvisn;if(u.visn==='mnd')u.mnd=u.dag.slice(0,7)})}
   else if(c.dataset.utnav){const n=parseInt(c.dataset.utnav,10),d=new Date(state.ut.dag+'T12:00');d.setDate(d.getDate()+n);keep(()=>{state.ut.dag=dkey(d);state.ut.mnd=state.ut.dag.slice(0,7)})}
   else if(c.dataset.utdagvisn){keep(()=>{state.ut.dag=c.dataset.utdagvisn;state.ut.mnd=state.ut.dag.slice(0,7);state.ut.visn='dag'})}
   else if(c.dataset.utblokk){if(UTD.lost||Date.now()-UTD.sup<600)return;const par=c.dataset.utblokk,i=par.lastIndexOf('|');utDetalj(par.slice(0,i),par.slice(i+1))}
-  else if(c.dataset.ansgo){const k=c.dataset.ansgo;keep(()=>{state.acc[k]=true;state.acc.ansvarkort=true});if(k==='ansvar'&&state.roles===undefined&&FB)loadRoles();setTimeout(()=>{const e=document.querySelector('details[data-acc="'+k+'"]');if(e)kortTilToppen(e)},80)}
+  else if(c.dataset.ansgo){const k=c.dataset.ansgo;keep(()=>{state.acc[k]=true;if(tilgOK())apneApp('atilg');else state.acc.ansvarkort=true});if(k==='ansvar'&&state.roles===undefined&&FB)loadRoles();setTimeout(()=>{const e=document.querySelector('details[data-acc="'+k+'"]');if(e)kortTilToppen(e)},80)}
   else if(c.dataset.utrom){const r=c.dataset.utrom,l=utSkjul();keep(()=>{const i=l.indexOf(r);if(r==='__alle')l.length=0;else if(i>=0)l.splice(i,1);else l.push(r);lsSet('sm-utskjul',JSON.stringify(l))})}
   else if('utidag' in c.dataset){const t=dkey(new Date());keep(()=>{state.ut.mnd=t.slice(0,7);state.ut.dag=t})}
   else if('utledere' in c.dataset){utLedereAsk()}
@@ -6511,7 +6540,7 @@ document.addEventListener('click',async e=>{
   else if(c.dataset.memrole){
     const to=c.dataset.to;
     if(!await bekreft((to==='admin'?'Gjøre ':'Gjøre ')+c.dataset.memrole+' til '+(to==='admin'?'administrator':'medlem')+'?'))return;
-    try{await FB.setRole(c.dataset.memrole,to);state.memMsg='Rollen er endret.'}catch(er){state.memMsg=saveMsg(er.code)}
+    try{await FB.setUserRole(c.dataset.memrole,to);state.memMsg='Rollen er endret.'}catch(er){state.memMsg=saveMsg(er.code)}
     await refresh()}
   else if(c.dataset.memreset){
     try{await FB.reset(c.dataset.memreset);state.memMsg='E-post for nytt passord er sendt til '+c.dataset.memreset+'.'}catch(er){state.memMsg=authMsg(er.code)}
@@ -7185,7 +7214,7 @@ function apneFraVarsel(tab,tittel,tekst){
   if(/booking/.test(lc)&&utLes()){
     const navn=(T.replace(/^(ny booking|endret booking|påminnelse: booking):?\s*/i,'')||((B.match(/kl\. \d{1,2}:\d{2}: ([^(,.]+)/)||[])[1]||'')).trim().toLowerCase();
     const finn=()=>{const l=(state.ut.liste||[]).filter(x=>!x.program);return l.filter(x=>navn&&String(x.tittel||'').toLowerCase()===navn).sort((a,b)=>(b.ms||0)-(a.ms||0))[0]||l.sort((a,b)=>(b.ms||0)-(a.ms||0))[0]};
-    const vis=()=>{const b=finn();state.tab='me';state.acc.utleie=true;state.ut.fil='alle';state.ut.vis='alle';state.ut.rom='Alle';
+    const vis=()=>{const b=finn();state.tab='me';apneApp('abook');state.ut.fil='alle';state.ut.vis='alle';state.ut.rom='Alle';
       if(b){state.ut.mnd=b.dato.slice(0,7);state.ut.dag=b.dato;state.open['ut_'+b.id+'_'+b.dato]=true}
       utMarkerSett();fadeRender();rull(b?'[data-ev="ut_'+b.id+'_'+b.dato+'"]':'details[data-acc=utleie]',b?null:null)};
     if(state.ut.liste===undefined)utLast().then(vis);else vis();return true}
@@ -7304,11 +7333,11 @@ document.addEventListener('click',e=>{
   /* Slippes fingeren etter en dra-bevegelse, skal det ikke regnes som et trykk på knappen under. */
   document.addEventListener('click',e=>{if(svelg&&e.target.closest&&e.target.closest('#tabs')){svelg=false;e.preventDefault();e.stopImmediatePropagation()}},true);
   document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('#tabs'))e.preventDefault()}) }
-/* Møteapper: trykk på et ikon for å åpne det (notater, lyd eller video), trykk igjen eller Lukk for å lukke. */
-/* Velges notater, lyd eller video under Møteapper, rulles visningen slik at innholdet starter rett under toppen og får mest mulig plass. */
+/* Apper: trykk på et ikon for å åpne det, trykk igjen eller Lukk for å lukke. */
+/* Velges en app under Apper, rulles visningen slik at innholdet starter rett under toppen og får mest mulig plass. */
 function moteappRull(){const el=document.querySelector('.mapp-inn');if(!el)return;const h=document.querySelector('header.top'),topp=h?h.getBoundingClientRect().bottom:0;
   scrollTo({top:Math.max(0,scrollY+el.getBoundingClientRect().top-topp-8),behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'})}
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-moteapp]');if(!b)return;e.preventDefault();const k=b.dataset.moteapp;keep(()=>{const var0=state.acc[k];['vnotat','vlyd','vvideo'].forEach(x=>{state.acc[x]=false});if(!var0)state.acc[k]=true;state.acc.verktoy=true});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-moteapp]');if(!b)return;e.preventDefault();const k=b.dataset.moteapp;keep(()=>{const var0=state.acc[k];APP_KEYS.forEach(x=>{state.acc[x]=false});if(!var0){state.acc[k]=true;if(APP_ACC[k])state.acc[APP_ACC[k]]=true}state.acc.apper=true});
   if(state.acc[k]){setTimeout(moteappRull,60);setTimeout(moteappRull,450)}   // to ganger: listen kan laste litt etter at visningen er tegnet
   if(k==='vnotat'&&state.acc.vnotat&&state.notes===undefined&&FB)loadNotes()});
 /* Oppstartsskjermen (logoen) tones ut og siden tones inn når første innlasting er ferdig. */

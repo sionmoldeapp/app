@@ -1,24 +1,30 @@
 // Firebase (Spark-planen): innlogging og database. Lastes som modul fra index.html.
 // firebaseConfig er ikke hemmelig. Det er reglene i firestore.rules som beskytter dataene.
+// På menighetens egen server brukes Supabase i stedet: supa.js har de samme funksjonene (A og S), så resten av filen er lik.
 const V='10.14.1',B='https://www.gstatic.com/firebasejs/'+V+'/';
 try{
-  const [{initializeApp},A,S]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
-  const TEST=location.port==='8090'||/(trycloudflare.com|.ts.net)$/.test(location.hostname);   // testversjon: lokal emulator, se lokal/LESMEG.md
-  const M=TEST?null:await import(B+'firebase-messaging.js').catch(()=>null);   // varsler; appen virker uten
+  const SUPA=location.port==='8091'||(!location.port&&/(trycloudflare.com|.ts.net)$/.test(location.hostname)&&/(^|; )sion-db=supa/.test(document.cookie));   // egen server: foreløpig bare testversjonen (også gjennom tunnel, merket av Caddy), se server/SION.md
+  const TEST=location.port==='8090'||SUPA||/(trycloudflare.com|.ts.net)$/.test(location.hostname);   // testversjon: lokal emulator, se lokal/LESMEG.md
   const VAPID='BN0qXSST7zltP6MnXUbUiQg7HUDkobWNyUKld6kpW2TkKPiXtz9n3xbqquMKb0iakhv2wQt3kpDpofroi144D3M';   // offentlig nøkkel for web-push
-  const app=initializeApp({
-    apiKey:"AIzaSyAd8OmuuLWJYI2ICbPdn7VN6DQge4lp5mA",
-    authDomain:"sion-molde-app.firebaseapp.com",
-    projectId:"sion-molde-app",
-    storageBucket:"sion-molde-app.firebasestorage.app",
-    messagingSenderId:"792770444668",
-    appId:"1:792770444668:web:ee5b9814f1190666adf8f9"});
-  const auth=A.getAuth(app),db=TEST?S.initializeFirestore(app,{host:location.host,ssl:location.protocol==='https:',experimentalAutoDetectLongPolling:true}):S.getFirestore(app);
-  if(TEST)A.connectAuthEmulator(auth,location.origin,{disableWarnings:true});
+  let A,S,M=null,app=null,auth,db,secAuth;
+  if(SUPA)({A,S,auth,db,secAuth}=await (await import('./supa.js')).lag());   // varsler (M) er ikke laget for egen server ennå
+  else{
+    let initializeApp;[{initializeApp},A,S]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
+    M=TEST?null:await import(B+'firebase-messaging.js').catch(()=>null);   // varsler; appen virker uten
+    app=initializeApp({
+      apiKey:"AIzaSyAd8OmuuLWJYI2ICbPdn7VN6DQge4lp5mA",
+      authDomain:"sion-molde-app.firebaseapp.com",
+      projectId:"sion-molde-app",
+      storageBucket:"sion-molde-app.firebasestorage.app",
+      messagingSenderId:"792770444668",
+      appId:"1:792770444668:web:ee5b9814f1190666adf8f9"});
+    auth=A.getAuth(app);db=TEST?S.initializeFirestore(app,{host:location.host,ssl:location.protocol==='https:',experimentalAutoDetectLongPolling:true}):S.getFirestore(app);
+    if(TEST)A.connectAuthEmulator(auth,location.origin,{disableWarnings:true});
+    // Egen forekomst brukes til å opprette brukere, slik at administratoren ikke logges ut av seg selv.
+    secAuth=A.getAuth(initializeApp(app.options,'oppretter'));
+    if(TEST)A.connectAuthEmulator(secAuth,location.origin,{disableWarnings:true});
+  }
   await A.setPersistence(auth,A.browserLocalPersistence).catch(()=>{});   // brukeren forblir innlogget til vedkommende logger ut
-  // Egen forekomst brukes til å opprette brukere, slik at administratoren ikke logges ut av seg selv.
-  const secAuth=A.getAuth(initializeApp(app.options,'oppretter'));
-  if(TEST)A.connectAuthEmulator(secAuth,location.origin,{disableWarnings:true});
   // Sikkerhetspunkter (snapshots): innholdet lagres som tekst i databasen så administratorer kan rulle tilbake etter et uhell.
   const SNAP_COLS=['events','posts','regular','members','admins'],KEEP_COLS=['events','posts','regular'];
   const utTid=v=>v&&typeof v.toDate==='function'?{__tid:v.toDate().toISOString()}:Array.isArray(v)?v.map(utTid):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,utTid(x)])):v;
@@ -515,7 +521,7 @@ const FB={
       if(created)await A.sendPasswordResetEmail(auth,email);
       return {created};
     },
-    async setRole(email,role){
+    async setUserRole(email,role){   // flytter en bruker mellom admins og members (het tidligere setRole og overstyrte setRole for ansvarsområder)
       const to=role==='admin'?'admins':'members',from=role==='admin'?'members':'admins';
       await S.setDoc(S.doc(db,to,email),{email,rolle:role==='admin'?'admin':'medlem',created:S.serverTimestamp(),by:auth.currentUser.email});
       await S.deleteDoc(S.doc(db,from,email));
