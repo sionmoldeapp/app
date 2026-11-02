@@ -515,6 +515,8 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .item.open>.detail>.evport{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:90px;height:90px;object-fit:cover;object-position:50% 25%;border-radius:50%;border:3px solid color-mix(in srgb,currentColor 25%,transparent)}
 .next:has(.nport)>.meta{grid-column:1/-1}
 .next:has(.nport) h2{font-size:28px;margin:2px 0 8px}
+.nspk{font-size:var(--t-m);opacity:.85;margin:-2px 0 8px}
+.nspk.tom{font-style:italic;opacity:.65}
 .nph{display:grid;place-items:center;overflow:hidden;background:linear-gradient(150deg,color-mix(in srgb,currentColor 16%,transparent),color-mix(in srgb,currentColor 4%,transparent));box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 35%,transparent)}
 .nph svg{width:100%;height:100%;opacity:.72}
 .nport{grid-column:2!important;grid-row:1/span 2;width:68px;height:68px;border-radius:50%;object-fit:cover;border:3px solid color-mix(in srgb,currentColor 30%,transparent)}
@@ -1533,10 +1535,10 @@ function fastIntervall(fra,til){const out=[];
 function omDager(d){const dg=Math.round((new Date(d).setHours(0,0,0,0)-new Date().setHours(0,0,0,0))/864e5);if(dg<0)return '';return '<div class="small omdager" style="opacity:.7;margin:0 0 6px">'+(dg===0?'I dag':dg===1?'I morgen':'Om '+dg+' dager')+'</div>'}
 const fastId=(r,w)=>'f_'+r.id+'_'+dkey(w);
 /* Enkeltdato på en fast samling kan ha egen tittel, tid, sted, taler, merknad og beskrivelse (ex[dato] med k:'endret'). */
-const fastInfo=(r,ex)=>{const e=ex&&ex.k==='endret'?ex:{};return {title:e.title||r.title,place:e.place||'',who:e.who||'',note:e.note||r.note||'',text:e.text||''}};
+const fastInfo=(r,ex)=>{const e=ex&&ex.k==='endret'?ex:{};return {title:e.title||r.title,place:e.place||'',who:e.who||r.who||'',note:e.note||r.note||'',text:e.text||''}};
 function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',inf=fastInfo(r,ex),note=inf.note;
   return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(inf.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${note?' · '+esc(note):''}</span>${inf.place?'<span class="small adr">'+esc(inf.place)+'</span>':''}</div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'&&TIDOK(ex.time)&&ex.time!==r.time?'<span class="tag avl" style="background:var(--lamp);color:var(--lamp-ink)">Endret</span>':'<span class="tag">Fast</span>'}</button>
-   <div class="detail">${omDager(w)}${inf.text?'<div>'+linkify(esc(inf.text))+'</div>':''}${inf.who?'<div class="small">'+esc(inf.who)+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}${ukeTekst(r)}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
+   <div class="detail">${omDager(w)}${inf.text?'<div>'+linkify(esc(inf.text))+'</div>':''}${inf.who||erHovedFast(r)?'<div class="small">'+(erHovedFast(r)?'Tale ved: '+esc(inf.who||'Navn kommer her'):esc(inf.who))+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}${ukeTekst(r)}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
 /* Portrett av gjesten på arrangementer (bildene ligger i mappen bilder). Et eget img-felt på arrangementet går foran. */
 const EV_BILDER=[[/ingar jensen/i,'bilder/ingar-jensen.jpg']];
 function evBilde(t){const m=EV_BILDER.find(x=>x[0].test(String(t||'')));return m?m[1]:''}
@@ -2612,7 +2614,7 @@ const erHovedFast=r=>/søndagsmøte|storsamling|hovedsamling|hovedmøte|gudstjen
 function nesteHoved(vis,fast){
   let n=vis.find(e=>['Møter','Møte','Stevne','Happeninger'].includes(normCat(e.cat)));
   {const fn=fast.filter(f=>erHovedFast(f.fast)&&!(f.ex&&f.ex.k==='avlyst')).sort((x,y)=>x.w-y.w)[0];
-    if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:inf.place}}}
+    if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:inf.place,who:inf.who}}}
   return n}
 function homeDeler(){
   const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome),fast=nextFast();
@@ -2621,6 +2623,7 @@ function homeDeler(){
   const post=hjemNyhet();
   return {
    neste:['Neste hovedsamling',()=>(n?`<div class="card next" data-t="prog" data-nid="${esc(String(n.id))}" data-nw="${+n.w}" role="link" tabindex="0" style="cursor:pointer">${n.img?`<img class="nport" src="${esc(n.img)}" alt="" loading="lazy">`:'<span class="nport nph" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="29.5" stroke-opacity=".28"/><circle cx="32" cy="24.5" r="8.8"/><path d="M13.5 54c1.7-10.6 9-16.2 18.5-16.2S48.8 43.4 50.5 54"/><path d="M26.8 38.4 32 44.6l5.2-6.2" stroke-opacity=".55"/></svg></span>'}<div class="eyebrow">Neste hovedsamling</div><h2>${n.t}</h2>
+   <div class="nspk${n.who?'':' tom'}">Tale ved: ${esc(n.who||'Navn kommer her')}</div>
    <div class="meta">${nesteTid(n)}</div></div>`
   :`<div class="card next" data-t="prog"><div class="eyebrow">Neste hovedsamling</div><h2>Ingen planlagt</h2><div class="meta">Se Program.</div></div>`)],
    gruppebesk:['Send beskjed til gruppa',()=>state.admin?'':gruppeBeskjedCard()],
@@ -5494,7 +5497,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 05:55';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='02.11.2026 kl. 06:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
