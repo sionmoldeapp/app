@@ -3997,7 +3997,7 @@ function ringAvbryt(){const r=ring.ut;if(!r)return;ringSlutt();FB.ringSett(r.tid
 function ringSvar(){const r=ring.inn;if(!r)return;ring.inn=null;ringLyd(null);ringVindu('');FB.ringSett(r.id,'svart',nyBeskjedNavn()).catch(()=>{})}
 function ringNei(){const r=ring.inn;if(!r)return;ring.nei[r.id]=r.ms;ring.inn=null;ringLyd(null);ringVindu('')}
 function ringInn(l){try{const nu=Date.now();
-  l.forEach(x=>{if(x.status==='vibr'&&nu-(x.ms||0)<30e3&&ring.vib[x.id]!==x.ms){ring.vib[x.id]=x.ms;summVibr()}});   // noen summer i samtalen
+  l.forEach(x=>{if(x.status==='vibr'){if(summ.vm[x.id]!==x.ms&&nu-(x.ms||0)<15e3){summ.vm[x.id]=x.ms;if(summ.akt&&summ.akt.inn===x.id)summ.seen=nu;else if(!summ.akt)summStart({inn:x.id})}}else if(summ.akt&&summ.akt.inn===x.id)summStopp()});   // noen summer i samtalen
   const d=l.find(x=>x.status==='ring'&&nu-(x.ms||0)<60e3&&ring.nei[x.id]!==x.ms);
   if(d&&!ring.ut){if(!ring.inn||ring.inn.id!==d.id){ring.inn=d;ringInnVis();ringLyd('ring')}else ring.inn=d}
   else if(ring.inn){ring.inn=null;if(!ring.ut){ringLyd(null);ringVindu('')}}}catch(e){}}
@@ -4005,17 +4005,27 @@ function ringLytt(){try{if(!FB||!state.user||!state.member){if(ring.unsub){ring.
   if(!ring.unsub)ring.unsub=FB.watchRinger(meEmail(),ringInn,()=>{});
   if(ring.inn&&Date.now()-(ring.inn.ms||0)>=60e3)ringInn([])}catch(e){}}
 setInterval(ringLytt,5e3);
-/* Summing: hold fingeren stille på tom plass i en samtale (utenfor meldingene), så vibrerer telefonen i tre pulser, både hos deg og hos de andre i samtalen (så lenge appen er åpen hos dem). */
-function summVibr(){try{navigator.vibrate&&navigator.vibrate([220,120,220,120,220])}catch(e){}}
-let summSist=0;
-function summSend(){try{const c=state.chat,meg=meEmail(),t=c&&c.id&&chatTraad(c.id);if(!t||ring.ut||ring.inn||Date.now()-summSist<4e3)return;
-  const til=(t.parts||[]).filter(p=>p!==meg);if(!til.length)return;summSist=Date.now();summVibr();
-  FB.ringVibr(c.id,til,nyBeskjedNavn()).catch(e=>push('Kunne ikke summe',(e&&e.code==='permission-denied')?'Reglene må oppdateres først.':'Prøv igjen.'))}catch(e){}}
-{ let tm=0,x0=0,y0=0;const stopp=()=>{clearTimeout(tm);tm=0};
-  document.addEventListener('pointerdown',e=>{stopp();const t=e.target;if(!e.isPrimary||!t.closest||!t.closest('#cMsg')||t.closest('.cb,.cavt,button,a,img,audio,video,input,textarea,[data-msg]'))return;
-    x0=e.clientX;y0=e.clientY;tm=setTimeout(()=>{tm=0;summSend()},450)});
+/* Summing: hold fingeren stille på tom plass i en samtale (utenfor meldingene). Telefonen begynner å vibrere forsiktig og er på maks etter 3 sekunder, og stopper når fingeren slippes.
+   De andre i samtalen får det samme så lenge du holder (så lenge appen er åpen hos dem). Vibrasjon har ingen styrke å velge; styrken lages ved at hvert støt gjøres lengre (15 til 200 ms av 200 ms). */
+const summ={tm:0,t0:0,akt:null,hb:0,seen:0,vm:{}};
+function summTrinn(){const t=Date.now()-summ.t0,f=Math.min(1,t/3000);
+  if(summ.akt&&summ.akt.inn&&Date.now()-summ.seen>9e3){summStopp();return}   // avsenderen har falt ut: ikke vibrer for alltid
+  try{navigator.vibrate&&navigator.vibrate(f<1?Math.round(15+f*185):400)}catch(e){}
+  summ.tm=setTimeout(summTrinn,f<1?200:350)}
+function summStart(akt){summStopp();summ.akt=akt;summ.t0=summ.seen=Date.now();summTrinn()}
+function summStopp(){clearTimeout(summ.tm);summ.tm=0;clearInterval(summ.hb);summ.hb=0;summ.akt=null;try{navigator.vibrate&&navigator.vibrate(0)}catch(e){}}
+function summSend(){try{const c=state.chat,meg=meEmail(),t=c&&c.id&&chatTraad(c.id);if(!t||ring.ut||ring.inn||summ.akt)return false;
+  const til=(t.parts||[]).filter(p=>p!==meg);if(!til.length)return false;const send=()=>FB.ringVibr(c.id,til,nyBeskjedNavn());
+  summStart({tid:c.id});send().catch(e=>{summStopp();push('Kunne ikke summe',(e&&e.code==='permission-denied')?'Reglene må oppdateres først.':'Prøv igjen.')});
+  summ.hb=setInterval(()=>send().catch(()=>{}),4e3);return true}catch(e){return false}}
+function summSlutt(){const a=summ.akt;if(!a||!a.tid)return;summStopp();try{FB.ringSett(a.tid,'avbrutt').catch(()=>{})}catch(e){}}
+{ let tm=0,x0=0,y0=0,i=false;const stopp=()=>{clearTimeout(tm);tm=0};
+  document.addEventListener('pointerdown',e=>{stopp();i=false;const t=e.target;if(!e.isPrimary||!t.closest||!t.closest('#cMsg')||t.closest('.cb,.cavt,button,a,img,audio,video,input,textarea,[data-msg]'))return;
+    x0=e.clientX;y0=e.clientY;tm=setTimeout(()=>{tm=0;i=summSend()},450)});
   document.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>10)stopp()});
-  document.addEventListener('pointerup',stopp);document.addEventListener('pointercancel',stopp);document.addEventListener('scroll',stopp,true);
+  const slipp=()=>{stopp();if(i){i=false;summSlutt()}};
+  document.addEventListener('pointerup',slipp);document.addEventListener('pointercancel',slipp);document.addEventListener('scroll',stopp,true);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)slipp()});
   document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('#cMsg')&&!e.target.closest('a,img,input,textarea'))e.preventDefault()});
   document.addEventListener('selectstart',e=>{const t=e.target.nodeType===1?e.target:e.target.parentElement;if(t&&t.closest&&t.closest('#cMsg'))e.preventDefault()}) }
 function tilstLytt(){
@@ -5458,7 +5468,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 02:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='02.11.2026 kl. 03:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
