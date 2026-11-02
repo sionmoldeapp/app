@@ -285,6 +285,8 @@ const FB={
     setGiving:d=>S.setDoc(S.doc(db,'settings','giving'),{konto:String(d.konto||'').slice(0,40),bank:String(d.bank||'').slice(0,40),vipps:String(d.vipps||'').slice(0,20),giro:String(d.giro||'').slice(0,400),annet:String(d.annet||'').slice(0,800),testament:String(d.testament||'').slice(0,600)}),
     async getContact(){const s=await S.getDoc(S.doc(db,'settings','contact'));return s.exists()?s.data():null},
     setContact:d=>S.setDoc(S.doc(db,'settings','contact'),{address:String(d.address||'').slice(0,120),hours:String(d.hours||'').slice(0,120),phone:String(d.phone||'').slice(0,30),email:String(d.email||'').slice(0,100)}),
+    async getPastor(){const s=await S.getDoc(S.doc(db,'settings','pastor'));return s.exists()?s.data():null},   // portrett til Pastorens hilsen
+    setPastor:d=>S.setDoc(S.doc(db,'settings','pastor'),{img:String(d.img||'').slice(0,250000)}),
     // Kategorier (samlingen categories): navn og rekkefølge.
     async catsList(){const s=await S.getDocs(S.collection(db,'categories'));return s.docs.map(d=>({id:d.id,...d.data()}))},
     setCatDoc:(id,d)=>S.setDoc(S.doc(db,'categories',id),d,{merge:true}),

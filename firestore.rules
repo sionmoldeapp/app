@@ -430,6 +430,7 @@ service cloud.firestore {
             && (!('vertskapLedere' in request.resource.data) || (request.resource.data.vertskapLedere is list && request.resource.data.vertskapLedere.size() <= 6))
             && (!('rom' in request.resource.data) || (request.resource.data.rom is list && request.resource.data.rom.size() <= 20))
             && (!('fakturaEpost' in request.resource.data) || (request.resource.data.fakturaEpost is string && request.resource.data.fakturaEpost.size() <= 100)))
+        || (id == 'pastor' && request.resource.data.keys().hasOnly(['img']) && request.resource.data.img is string && request.resource.data.img.size() <= 250000)
         || (id == 'personvern' && request.resource.data.keys().hasOnly(['text', 'updated'])
             && request.resource.data.text is string && request.resource.data.text.size() <= 20000
             && request.resource.data.updated is string && request.resource.data.updated.size() <= 10));
