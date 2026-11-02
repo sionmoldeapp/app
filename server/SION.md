@@ -20,13 +20,14 @@ Supabase-oppsettet for egen server (alle filene her unntatt de under), med et eg
 | `sion-web` (Caddy) | Appen + Supabase-API på samme adresse | http://localhost:8088 |
 | | Supabase Studio, database-GUI (bruker `sion`, passord `DASHBOARD_PASSWORD` i `.env`) | http://localhost:3001 |
 | | Testversjonen mot Firebase-emulatoren (som `lokal/start-test.bat`) | http://localhost:8090 |
+| | Testversjonen mot Supabase (`supa.js`) | http://localhost:8091 |
 | `supabase-*` | Postgres, innlogging, API, sanntid, filer, Studio | |
 | `sion-backup` | pg_dump + filer hver natt kl. 03:00, beholder 14 dager | mappen `backups/` |
 | `supabase-mail` | Fanger e-post fra innloggingen | http://localhost:9000 |
 | `sion-firebase` | Firebase-emulatoren med dataene i `lokal/data` | |
 
-**Status fase 1:** appen bruker fortsatt Firebase (ekte på 8088, emulatoren på 8090). Supabase står klar,
-men er tom til `fb.js` er skrevet om (fase 2). Obs: http://localhost:8088 bruker den **ekte** Firebase-databasen.
+**Status:** appen kan kjøre mot Supabase (testversjonen på 8091), men den ekte appen bruker fortsatt Firebase
+(ekte på 8088, emulatoren på 8090). Obs: http://localhost:8088 bruker den **ekte** Firebase-databasen.
 
 ## Bruk på PC-en
 
@@ -77,15 +78,56 @@ oppdateres av seg selv.
 
 - `sion/sql/001_tabeller.sql`: 37 tabeller, én per samling i Firestore (undersamlinger som chatmeldinger, notater,
   vakter og teamsvar har egne tabeller). Kolonnene heter det samme som feltene i appen. Felt uten egen kolonne
-  havner i `ekstra` (jsonb). Row Level Security er på overalt, uten regler ennå: API-et gir ingenting til appen
-  før reglene er skrevet. Kjøres på nytt uten skade:
+  havner i `ekstra` (jsonb). Row Level Security er på overalt (reglene ligger i 002). Kjøres på nytt uten skade:
   `docker compose exec -T db psql -U postgres -d postgres < sion/sql/001_tabeller.sql`
+- `sion/sql/002_tilgang.sql`: tilgangsreglene (Row Level Security), oversatt fra `firestore.rules`. Regler for hvem som
+  leser og skriver hvilke rader; «bare disse feltene kan endres» ligger i triggere (`sion.sjekk_*`); tellere, påmelding,
+  varselkoder og påminnelser skrives via funksjoner (`rsvp_tell`, `nyhet_sett`, `meld_paa`, `meld_av`, `kode_lagre`,
+  `kode_fjern`, `paaminnelse_fjern`). Kjøres etter 001, og på nytt etter hver endring:
+  `docker compose exec -T db psql -U postgres -d postgres < sion/sql/002_tilgang.sql`
+- `sion/test-tilgang.js`: tester reglene som besøkende, fremmed, medlem, gruppeleder og administrator (75 tester, lager og
+  sletter egne testbrukere). Kjør etter hver endring av reglene: `node sion/test-tilgang.js`. Bare lokalt.
 - `sion/importer-firestore.js`: kopierer alt fra Firebase-emulatoren til tabellene (upsert, sletter ingenting).
   `node sion/importer-firestore.js --prove` viser først hva som ville blitt kopiert. Ekte data: hent dem inn i
   emulatoren med `lokal/hent-ekte-data.bat` først. Brukerkontoer (innlogging) flyttes ikke av dette skriptet.
 
+## Appen mot Supabase (fase 2)
+
+- `fb.js` velger database ved oppstart: på port 8091 lastes `supa.js`, ellers Firebase som før. `supa.js` etterligner de
+  Firebase-funksjonene `fb.js` bruker (dokumenter, spørringer, batcher, sanntid og innlogging) mot tabellene, så resten
+  av `fb.js` og hele `index.html` er felles. Supabase-klienten ligger i `lib/` (ikke fra CDN, av personvernhensyn).
+- `sion-konfig.json` lages av Caddy fra `ANON_KEY` i `.env` (offentlig nøkkel), så nøkkelen ikke ligger i repoet.
+- Kolonnelisten `KOL` øverst i `supa.js` må holdes lik tabellene. Ny kolonne: legg den til i `001_tabeller.sql`
+  (`alter table … add column`), og i `KOL`. Felt uten kolonne havner i `ekstra` og virker likevel.
+- Nye brukere og «Glemt passord?»: e-post med lenke, lenken åpner appen med `?velg=1`, og brukeren velger passord der.
+  Lokalt fanges e-posten i Inbucket (http://localhost:9000). Lenken må peke til en adresse i `SITE_URL` eller
+  `ADDITIONAL_REDIRECT_URLS` i `.env`.
+- `sql/003_sanntid_og_konto.sql`: sanntid for chat, ringing og avstemninger, og `slett_min_konto()` for «Slett meg».
+- Virker ikke ennå mot Supabase: push-varsler, e-post via Apps Script (varsler, notat, forbønn, saker, velkomst),
+  anonym forbønn uten innlogging. Det kommer i fase 3. E-postene fra innloggingen er på engelsk (malene kan oversettes).
+- `importer-firestore.js` oppdaterer bare felt som finnes i kilden; felt som er fjernet i Firestore blir stående.
+
 ## Neste faser
 
-- **Fase 2:** `fb.js` skrives om mot Supabase (innlogging, tabeller, sanntid, filer), `firestore.rules` blir
-  Row Level Security, og et skript flytter data og brukere. `sw.js` må da la `/auth/v1`, `/rest/v1` osv. gå forbi hurtigbufferen.
+- **Resten av fase 2:** flytte de ekte dataene og brukerne (brukerne må velge nytt passord; Firebase sine passord kan
+  ikke flyttes), og slå på Supabase for den ekte adressen på serveren (`SUPA` øverst i `fb.js`).
 - **Fase 3:** en `worker`-container erstatter Apps Script (push med Web Push/VAPID, e-post, påminnelser, rydding).
+
+## E-post fra innloggingen (passordlenker og nye brukere)
+
+- Avsender: Gmail via SMTP (`SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER` = Gmail-adressen, `SMTP_PASS` = et **app-passord** fra Google, ikke det vanlige passordet). Krever totrinnsbekreftelse på Google-kontoen. Gmail tillater ca. 500 e-poster i døgnet.
+- Norske maler i `sion/epost/` (ny bruker, nytt passord, invitasjon, ny e-post, innlogging). `sion-web` viser dem på den interne porten 8099, og `auth` henter dem (`GOTRUE_MAILER_TEMPLATES_*` og emnene `GOTRUE_MAILER_SUBJECTS_*` i `docker-compose.sion.yml`). Endres en mal: `docker restart sion-web supabase-auth`.
+- Lenkene i e-posten bygges fra `API_EXTERNAL_URL` og `SITE_URL` i `.env`. På PC-en peker de til Tailscale-adressen (`lokal/start-tailscale-supabase.bat` må kjøre), på serveren til serverens domene.
+- Endringer i `.env` krever at `auth` lages på nytt: `docker compose -f docker-compose.yml -f docker-compose.sion.yml -f docker-compose.lokal.yml up -d auth` (på serveren uten `docker-compose.lokal.yml`).
+- Tilbake til Inbucket (falsk postkasse, http://localhost:9000): `SMTP_HOST=supabase-mail`, `SMTP_PORT=2500`, `SMTP_USER` og `SMTP_PASS` tomme.
+
+## Push-varsler (sion-varsel)
+
+Appen sender varsler gjennom `/varsel` på samme adresse som appen (Caddy sender det videre til containeren `sion-varsel`, se `sion/varsel/varsel.js`). Det er de samme kallene som tidligere gikk til Apps Script, så `index.html` og `fb.js` bruker `PUSH_URL` uendret.
+
+- Enhetene registrerer seg med Web Push (VAPID). Abonnementet lagres som tekst `{e: endpoint, p: p256dh, a: auth}` i `push_tokens` (funksjonen `kode_lagre`).
+- Nøklene ligger i `server/.env`: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. Den offentlige nøkkelen leses av appen fra `sion-konfig.json`. Bytter du nøkler, må alle slå på varsler på nytt.
+- Støttet: vanlige varsler (administrator eller gruppeleder), beskjeder i Sionchat (`beskjed`), planlagte varsler (`scheduled`) og påminnelser (`reminders`), sjekket hvert minutt.
+- Automatiske varsler (`sion/varsel/auto.js`, hvert minutt, hvert tilfelle én gang i tabellen `varsel_sendt`, `sion/sql/004_varsel.sql`): vakt dagen før (etter kl. 17), politiattest 60 dager før utløp (til personen og administratorer/gruppeledere), samlingspåminnelse `remindH` timer før (grupper med `remind`), bookingpåminnelse til vertskap og «kvelden før» til teamet.
+- Ikke flyttet fra Apps Script: e-post (faktura, velkomst, notat, saker, forbønn, påmeldte, Pastorens hilsen på e-post) og rydding av gamle data (`ryddGamle`). Kallene gir svaret «ikke flyttet til egen server ennå».
+- Start/oppdatering: `docker compose up -d sion-varsel` (installerer pakkene første gang). Logg: `docker logs sion-varsel`.

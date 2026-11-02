@@ -4,15 +4,24 @@
 
 # Appens offentlige filer. Alt annet i repoet (notater, scripts, lokal/, server/, .git) gir 404.
 (app) {
-	@public path / /index.html /fb.js /sw.js /manifest.webmanifest /fonts.css /icon.svg /icon-180.png /icon-192.png /icon-512.png /logo-512.png /badge-96.png /fonts/* /data/* /bilder/*
+	@public path / /index.html /tilgang.html /fb.js /sw.js /supa.js /manifest.webmanifest /fonts.css /icon.svg /icon-180.png /icon-192.png /icon-512.png /logo-512.png /badge-96.png /fonts/* /data/* /bilder/* /lib/*
 	handle @public {
 		root * /repo
-		@fersk path / /index.html /sw.js /fb.js /manifest.webmanifest /data/*
+		@fersk path / /index.html /tilgang.html /sw.js /fb.js /supa.js /manifest.webmanifest /data/*
 		header @fersk Cache-Control "no-cache"
 		file_server
 	}
 	handle {
 		respond "Ikke funnet" 404
+	}
+}
+
+# Supabase-nøkkelen appen trenger (anon er offentlig, som firebaseConfig). Hentes fra .env, så den ikke ligger i repoet.
+(konfig) {
+	handle /sion-konfig.json {
+		header Content-Type application/json
+		header Cache-Control no-store
+		respond `{"anon":"{$ANON_KEY}","vapid":"{$VAPID_PUBLIC_KEY}"}` 200
 	}
 }
 
@@ -23,6 +32,11 @@
 	handle @supabase {
 		reverse_proxy api-gw:8000
 	}
+	# Push-varsler: samme kall som før gikk til Apps Script
+	handle /varsel {
+		reverse_proxy sion-varsel:8110
+	}
+	import konfig
 	import app
 	header -Server
 }
@@ -53,6 +67,7 @@
 # Testversjonen mot Firebase-emulatoren (bare PC-en; porten publiseres i docker-compose.lokal.yml).
 # Samme regler som lokal/server.js: emulatorens administrasjon stengt, «Bearer owner» fjernes.
 :8090 {
+	header Set-Cookie "sion-db=fb; Path=/; SameSite=Lax; Max-Age=31536000"   # motsatt merke av :8091, så samme tunneladresse kan brukes til begge
 	@admin path /emulator/*
 	handle @admin {
 		respond 403
@@ -72,4 +87,26 @@
 		}
 	}
 	import app
+}
+
+# Testversjonen mot Supabase (bare PC-en; porten publiseres i docker-compose.lokal.yml). fb.js bruker supa.js på port 8091.
+:8091 {
+	encode zstd gzip
+	# Gjennom en tunnel (lokal/start-tunnel-supabase.bat) er porten borte; fb.js kjenner da igjen Supabase-versjonen på denne informasjonskapselen.
+	header Set-Cookie "sion-db=supa; Path=/; SameSite=Lax; Max-Age=31536000"
+	@supabase path /auth/v1/* /rest/v1/* /realtime/v1/* /storage/v1/* /functions/v1/*
+	handle @supabase {
+		reverse_proxy api-gw:8000
+	}
+	handle /varsel {
+		reverse_proxy sion-varsel:8110
+	}
+	import konfig
+	import app
+}
+
+# E-postmalene på norsk (server/sion/epost). Bare innloggingstjenesten (auth) henter dem, internt i Docker; porten publiseres ikke.
+:8099 {
+	root * /repo/server/sion/epost
+	file_server
 }

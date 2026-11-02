@@ -2,12 +2,16 @@
 # - Databasen ligger i et Docker-volum (Postgres tåler ikke Windows-mapper som datamappe).
 # - E-post fra innloggingen (bekreftelse, glemt passord) fanges i Inbucket: http://localhost:9000
 # - Firebase-emulatoren med dagens testdatabase (lokal/data): appen på http://localhost:8090
+# - Appen mot Supabase (supa.js): http://localhost:8091
 
 services:
 
   db:
     volumes:
       - sion_db_data:/var/lib/postgresql/data
+
+  # E-post går nå via Gmail (SMTP_* i .env). Tilbake til Inbucket (falsk postkasse, http://localhost:9000):
+  # sett SMTP_HOST=supabase-mail, SMTP_PORT=2500 og SMTP_USER/SMTP_PASS tomme i .env (innloggingen nekter å sende passord ukryptert).
 
   mail:
     container_name: supabase-mail
@@ -30,10 +34,11 @@ services:
       - ../firestore.rules:/app/firestore.rules:ro
       - ../lokal/data:/data
 
-  # Testversjonen på port 8090 (appen kjenner seg igjen på porten og bruker emulatoren).
+  # Testversjonene: 8090 mot Firebase-emulatoren, 8091 mot Supabase (appen kjenner seg igjen på porten).
   sion-web:
     ports:
       - 127.0.0.1:8090:8090
+      - 127.0.0.1:8091:8091
 
 volumes:
   sion_db_data:

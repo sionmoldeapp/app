@@ -11,8 +11,8 @@ create table if not exists events (
   id          text primary key default gen_random_uuid()::text,
   title       text not null default '',
   cat         text,
-  start       date,
-  "end"       date,
+  start       text,
+  "end"       text,
   time        text,
   place       text,
   who         text,
@@ -34,6 +34,7 @@ create table if not exists posts (
   t           text not null default '',
   b           text,
   bh          text,
+  img         text,
   tag         text,
   audience    text[] not null default '{}',
   groups      text[] not null default '{}',
@@ -157,6 +158,7 @@ create table if not exists notes (
   speaker  text,
   html     text,
   img      text,
+  lyd      jsonb,
   ekstra   jsonb not null default '{}',
   updated  timestamptz not null default now(),
   primary key (owner, id)
@@ -230,7 +232,7 @@ comment on table scheduled is 'Planlagte varsler som sendes når fireAt er passe
 create table if not exists shift_items (
   gruppe  text not null,
   id      text not null,
-  date    date,
+  date    text,
   role    text,
   emails  text[] not null default '{}',
   names   text[] not null default '{}',
@@ -243,7 +245,7 @@ create table if not exists shift_requests (
   gruppe      text not null,
   id          text not null default gen_random_uuid()::text,
   "shiftId"   text,
-  date        date,
+  date        text,
   role        text,
   "from"      text,
   "fromName"  text,
@@ -274,12 +276,23 @@ create table if not exists threads (
   dempet      text[] not null default '{}',
   farge       text,
   bakgrunn    text,
+  bgv         bigint,
   bilde       text,
   ekstra      jsonb not null default '{}',
   created     timestamptz not null default now()
 );
-comment on table threads is 'Samtaler i Sionchat. parts = deltakernes e-post, unread = hvem som ikke har lest.';
+comment on table threads is 'Samtaler i Sionchat. parts = deltakernes e-post, unread = hvem som ikke har lest. bgv = versjon av eget bakgrunnsbilde.';
 create index if not exists threads_parts on threads using gin (parts);
+
+create table if not exists thread_bg (
+  thread_id  text not null references threads(id) on delete cascade,
+  id         text not null,
+  data       text,
+  "by"       text,
+  v          bigint,
+  primary key (thread_id, id)
+);
+comment on table thread_bg is 'Eget bakgrunnsbilde i en samtale (JPEG som data-URL). Firestore: threads/{id}/bg/ett.';
 
 create table if not exists messages (
   thread_id  text not null references threads(id) on delete cascade,
@@ -292,6 +305,7 @@ create table if not exists messages (
   lyd        text,
   lsek       integer,
   avst       jsonb,
+  pam        boolean not null default false,
   redigert   boolean not null default false,
   slettet    boolean not null default false,
   stjerne    text[] not null default '{}',
@@ -309,7 +323,7 @@ create table if not exists messages (
   created    timestamptz not null default now(),
   primary key (thread_id, id)
 );
-comment on table messages is 'Meldinger i en samtale. Firestore: threads/{id}/messages. likes og r_* = reaksjoner (e-post).';
+comment on table messages is 'Meldinger i en samtale. Firestore: threads/{id}/messages. likes og r_* = reaksjoner (e-post). pam = påminnelse (kopi av eldre melding).';
 create index if not exists messages_tid on messages (thread_id, created);
 
 create table if not exists bonner (
@@ -406,7 +420,7 @@ comment on table post_svar is 'Raske svar på gruppebeskjeder. Firestore: posts/
 
 create table if not exists attester (
   email     text primary key,
-  dato      date,
+  dato      text,
   "by"      text,
   godkjent  boolean not null default true,
   fil       boolean not null default false,
@@ -436,7 +450,7 @@ comment on table attestfilny is 'Foreslått nytt dokument, venter på bekreftels
 create table if not exists attestforslag (
   email    text primary key,
   k        text,
-  dato     date,
+  dato     text,
   "by"     text,
   "okM"    boolean not null default false,
   "okL"    boolean not null default false,
@@ -453,8 +467,8 @@ create table if not exists bookinger (
   id                  text primary key default gen_random_uuid()::text,
   tittel              text,
   rom                 text[] not null default '{}',
-  dato                date,
-  dato2               date,
+  dato                text,
+  dato2               text,
   tider               text[] not null default '{}',
   fra                 text,
   til                 text,
@@ -516,6 +530,13 @@ create table if not exists snapshot_data (
   json  text
 );
 comment on table snapshot_data is 'Innholdet i et sikkerhetspunkt. Firestore: snapshotData.';
+
+-- ============ Kolonner lagt til senere (for databaser laget før de kom) ============
+alter table threads add column if not exists bgv bigint;
+alter table messages add column if not exists pam boolean not null default false;
+alter table posts add column if not exists img text;
+alter table regular add column if not exists img text;   -- bilde på faste samlinger (02.11.2026)
+alter table notes add column if not exists lyd jsonb;
 
 -- ============ Låst til reglene er skrevet ============
 do $$

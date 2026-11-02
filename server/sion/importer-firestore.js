@@ -30,7 +30,7 @@ const TOPP = {
 const UNDER = {   // forelder/undersamling → [tabell, forelder-kolonne, nøkkelkolonne]
   'members/notes': ['notes', 'owner', 'id'], 'shifts/items': ['shift_items', 'gruppe', 'id'],
   'shifts/requests': ['shift_requests', 'gruppe', 'id'], 'threads/messages': ['messages', 'thread_id', 'id'],
-  'threads/bonner': ['bonner', 'thread_id', 'id'], 'posts/svar': ['post_svar', 'post_id', 'email'],
+  'threads/bonner': ['bonner', 'thread_id', 'id'], 'threads/bg': ['thread_bg', 'thread_id', 'id'], 'posts/svar': ['post_svar', 'post_id', 'email'],
   'bookinger/team': ['booking_team', 'booking_id', 'email'],
 };
 const NOKKEL = { members: 'email', admins: 'email', user_prefs: 'email', tilstede: 'email', attester: 'email', attestfil: 'email',

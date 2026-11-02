@@ -1,0 +1,193 @@
+// Tester tilgangsreglene (sql/002_tilgang.sql) mot den lokale Supabase, som ulike brukere.
+// Lager egne testbrukere (@test.sion) og testrader, og sletter dem til slutt. Rører ikke andre data.
+// Innloggingsbevisene lages med JWT_SECRET fra server/.env, så det trengs ingen ekte kontoer.
+//
+// Bruk (fra server/):  node sion/test-tilgang.js        Bare lokalt, aldri mot serveren.
+
+const fs = require('fs'), path = require('path'), crypto = require('crypto');
+const env = Object.fromEntries(fs.readFileSync(path.join(__dirname, '..', '.env'), 'utf8')
+  .split(/\r?\n/).filter(l => /^[A-Z_]+=/.test(l)).map(l => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]));
+const API = 'http://localhost:8088/rest/v1';
+if (!/localhost|127\.0\.0\.1/.test(env.SUPABASE_PUBLIC_URL || '')) { console.error('Bare for lokal Supabase'); process.exit(1); }
+
+const b64 = o => Buffer.from(JSON.stringify(o)).toString('base64url');
+function jwt(claims) {
+  const h = b64({ alg: 'HS256', typ: 'JWT' }), p = b64({ iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600, ...claims });
+  return h + '.' + p + '.' + crypto.createHmac('sha256', env.JWT_SECRET).update(h + '.' + p).digest('base64url');
+}
+const D = '@test.sion';
+const bruker = navn => ({ navn, sub: crypto.randomUUID(), email: navn + D });
+const B = { admin: bruker('admin'), leder: bruker('leder'), medlem: bruker('medlem'), annen: bruker('annen'), fremmed: bruker('fremmed') };
+const tok = b => b ? jwt({ role: 'authenticated', aud: 'authenticated', sub: b.sub, email: b.email }) : env.ANON_KEY;
+const TJ = env.SERVICE_ROLE_KEY;
+
+async function kall(hvem, metode, sti, body, ekstra = {}) {
+  const t = hvem === 'tjener' ? TJ : tok(hvem);
+  const r = await fetch(API + sti, { method: metode, headers: { apikey: env.ANON_KEY, Authorization: 'Bearer ' + t,
+    'Content-Type': 'application/json', Prefer: 'return=representation', ...ekstra }, body: body === undefined ? undefined : JSON.stringify(body) });
+  const tekst = await r.text();
+  let data; try { data = JSON.parse(tekst); } catch { data = tekst; }
+  return { status: r.status, data, ok: r.ok };
+}
+let ok = 0, feil = 0;
+function sjekk(navn, betingelse, info) {
+  if (betingelse) ok++; else { feil++; console.log('FEIL: ' + navn + (info ? '  → ' + JSON.stringify(info).slice(0, 300) : '')); }
+}
+// Lov = gikk gjennom og endret/ga rader. Nektet = feilkode, eller ingen rader berørt.
+const lov = (navn, r) => sjekk(navn + ' (skal gå)', r.ok && (!Array.isArray(r.data) || r.data.length > 0), r);
+const nekt = (navn, r) => sjekk(navn + ' (skal nektes)', !r.ok || (Array.isArray(r.data) && r.data.length === 0), r);
+const ant = (navn, r, n) => sjekk(navn + ' (skal gi ' + n + ')', r.ok && Array.isArray(r.data) && r.data.length === n, r);
+
+async function rydd() {
+  const e = Object.values(B).map(b => b.email).join(',');
+  for (const [t, k] of [['messages', 'by'], ['threads', 'from'], ['notes', 'owner'], ['members', 'email'], ['admins', 'email'],
+    ['attester', 'email'], ['attestforslag', 'email'], ['attestfil', 'email'], ['attestfilny', 'email'], ['user_prefs', 'email'], ['lrsaker', 'by']])
+    await kall('tjener', 'DELETE', '/' + t + '?' + k + '=in.(' + e + ')');
+  for (const t of ['events', 'posts', 'rsvp_counts', 'push_tokens', 'prayers', 'settings', 'bookinger'])
+    await kall('tjener', 'DELETE', '/' + t + '?' + (t === 'push_tokens' ? 'token' : 'id') + '=like.test-*');
+}
+
+(async () => {
+  await rydd();
+  // Testbrukere og testinnhold (som tjener)
+  // Alle radene i én innsending må ha de samme feltene (PostgREST)
+  for (const [t, rader] of [
+    ['admins', [{ email: B.admin.email }]],
+    ['members', [
+      { email: B.leder.email, groups: ['activ8'], leads: ['activ8'] },
+      { email: B.medlem.email, groups: ['activ8', 'lederradet'], leads: [] },
+      { email: B.annen.email, groups: ['kjokken'], leads: [] }]],
+    ['events', [{ id: 'test-apen', title: 'Åpen', m: false }, { id: 'test-medlem', title: 'Medlem', m: true }]]]) {
+    const r = await kall('tjener', 'POST', '/' + t, rader);
+    if (!r.ok) throw new Error('Fikk ikke lagt inn testdata i ' + t + ': ' + JSON.stringify(r.data));
+  }
+
+  // --- Program ---
+  const ev = h => kall(h, 'GET', '/events?id=like.test-*&select=id');
+  ant('besøkende ser bare åpent', await ev(null), 1);
+  ant('fremmed (innlogget, ikke medlem) ser bare åpent', await ev(B.fremmed), 1);
+  ant('medlem ser alt', await ev(B.medlem), 2);
+  nekt('medlem oppretter arrangement', await kall(B.medlem, 'POST', '/events', { id: 'test-x1', title: 'x', m: true }));
+  lov('gruppeleder oppretter for egen gruppe', await kall(B.leder, 'POST', '/events', { id: 'test-l1', title: 'x', m: true, groups: ['activ8'] }));
+  nekt('gruppeleder oppretter for annen gruppe', await kall(B.leder, 'POST', '/events', { id: 'test-l2', title: 'x', m: true, groups: ['kjokken'] }));
+  nekt('gruppeleder oppretter åpent innhold', await kall(B.leder, 'POST', '/events', { id: 'test-l3', title: 'x', m: false, groups: ['activ8'] }));
+  nekt('gruppeleder endrer annet innhold', await kall(B.leder, 'PATCH', '/events?id=eq.test-medlem', { title: 'hack' }));
+  lov('administrator endrer', await kall(B.admin, 'PATCH', '/events?id=eq.test-medlem', { title: 'Medlem 2' }));
+  nekt('besøkende sletter', await kall(null, 'DELETE', '/events?id=eq.test-apen'));
+
+  // --- Medlemmer ---
+  ant('medlem ser bare seg selv', await kall(B.medlem, 'GET', '/members?email=like.*' + D), 1);
+  ant('gruppeleder ser listen', await kall(B.leder, 'GET', '/members?email=like.*' + D), 3);
+  nekt('fremmed ser medlemmer', await kall(B.fremmed, 'GET', '/members?email=like.*' + D));
+  lov('medlem endrer eget navn', await kall(B.medlem, 'PATCH', '/members?email=eq.' + B.medlem.email, { name: 'Medlem Test' }));
+  nekt('medlem gir seg selv grupper', await kall(B.medlem, 'PATCH', '/members?email=eq.' + B.medlem.email, { groups: ['utleie'] }));
+  nekt('medlem gjør seg til gruppeleder', await kall(B.medlem, 'PATCH', '/members?email=eq.' + B.medlem.email, { leads: ['activ8'] }));
+  lov('gruppeleder legger annen inn i egen gruppe', await kall(B.leder, 'PATCH', '/members?email=eq.' + B.annen.email, { groups: ['kjokken', 'activ8'] }));
+  nekt('gruppeleder legger inn i annen gruppe', await kall(B.leder, 'PATCH', '/members?email=eq.' + B.medlem.email, { groups: ['activ8', 'lederradet', 'kjokken'] }));
+  nekt('gruppeleder fjerner annen gruppe', await kall(B.leder, 'PATCH', '/members?email=eq.' + B.annen.email, { groups: ['activ8'] }));
+  nekt('gruppeleder endrer navn på andre', await kall(B.leder, 'PATCH', '/members?email=eq.' + B.annen.email, { name: 'x' }));
+  nekt('fremmed melder seg inn', await kall(B.fremmed, 'POST', '/members', { email: B.fremmed.email }));
+  nekt('medlem gjør seg til administrator', await kall(B.medlem, 'POST', '/admins', { email: B.medlem.email }));
+
+  // --- Sionchat ---
+  const tid = 'test-' + crypto.randomUUID();
+  const dm = { id: tid, roleId: 'dm', roleName: 'Privat', kind: 'dm', toName: 'M', from: B.leder.email, fromName: 'L',
+    parts: [B.leder.email, B.medlem.email], last: 'Hei', lastBy: B.leder.email, ms: Date.now(), unread: [B.medlem.email] };
+  nekt('medlem starter privat beskjed til annen', await kall(B.medlem, 'POST', '/threads', { ...dm, id: 'test-t2', from: B.medlem.email, lastBy: B.medlem.email, parts: [B.medlem.email, B.annen.email] }));
+  lov('gruppeleder starter privat beskjed til medlem i egen gruppe', await kall(B.leder, 'POST', '/threads', dm));
+  ant('annen ser ikke samtalen', await kall(B.annen, 'GET', '/threads?id=eq.' + tid), 0);
+  lov('medlem sender melding', await kall(B.medlem, 'POST', '/messages', { thread_id: tid, id: 'm1', by: B.medlem.email, name: 'M', text: 'Takk' }));
+  nekt('annen sender melding i samtalen', await kall(B.annen, 'POST', '/messages', { thread_id: tid, id: 'm2', by: B.annen.email, name: 'A', text: 'Hei' }));
+  nekt('medlem sender melding som en annen', await kall(B.medlem, 'POST', '/messages', { thread_id: tid, id: 'm3', by: B.leder.email, name: 'L', text: 'x' }));
+  ant('annen leser ikke meldingene', await kall(B.annen, 'GET', '/messages?thread_id=eq.' + tid), 0);
+  lov('gruppeleder liker meldingen', await kall(B.leder, 'PATCH', '/messages?thread_id=eq.' + tid + '&id=eq.m1', { likes: [B.leder.email] }));
+  nekt('gruppeleder liker på vegne av andre', await kall(B.leder, 'PATCH', '/messages?thread_id=eq.' + tid + '&id=eq.m1', { likes: [B.leder.email, B.annen.email] }));
+  nekt('gruppeleder redigerer andres melding', await kall(B.leder, 'PATCH', '/messages?thread_id=eq.' + tid + '&id=eq.m1', { text: 'hack', redigert: true }));
+  lov('medlem redigerer egen melding', await kall(B.medlem, 'PATCH', '/messages?thread_id=eq.' + tid + '&id=eq.m1', { text: 'Tusen takk', redigert: true }));
+  lov('medlem markerer som lest', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { unread: [] }));
+  nekt('medlem legger til deltaker', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { parts: [B.leder.email, B.medlem.email, B.annen.email] }));
+  nekt('medlem setter ulest for utenforstående', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { unread: [B.annen.email] }));
+  lov('medlem skjuler samtalen for seg', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { gone: [B.medlem.email] }));
+  lov('medlem velger eget bakgrunnsbilde', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'eget', bgv: Date.now() }));
+  lov('medlem velger Aurora-bakgrunnen', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'aurora' }));
+  lov('medlem velger Neon 1-bakgrunnen', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'neon1' }));
+  nekt('medlem velger ukjent bakgrunn', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'hack' }));
+  const bg = { thread_id: tid, id: 'ett', data: 'data:image/jpeg;base64,AAAA', by: B.medlem.email, v: Date.now() };
+  lov('medlem lagrer bakgrunnsbildet', await kall(B.medlem, 'POST', '/thread_bg', bg));
+  ant('gruppeleder (deltaker) ser bakgrunnsbildet', await kall(B.leder, 'GET', '/thread_bg?thread_id=eq.' + tid), 1);
+  ant('annen ser ikke bakgrunnsbildet', await kall(B.annen, 'GET', '/thread_bg?thread_id=eq.' + tid), 0);
+  nekt('medlem lagrer noe annet enn JPEG', await kall(B.medlem, 'PATCH', '/thread_bg?thread_id=eq.' + tid, { data: 'data:text/html;base64,AAAA' }));
+  nekt('annen lagrer bakgrunnsbilde i samtalen', await kall(B.annen, 'POST', '/thread_bg', { ...bg, id: 'to', by: B.annen.email }));
+  lov('medlem sender påminnelse', await kall(B.medlem, 'POST', '/messages', { thread_id: tid, id: 'm4', by: B.medlem.email, name: 'M', text: 'Husk møtet', pam: true, svar: { id: 'm1', navn: 'M', tekst: 'Takk' } }));
+  nekt('medlem sletter samtalen (ikke starteren)',await kall(B.medlem, 'DELETE', '/threads?id=eq.' + tid));
+
+  // --- Notater ---
+  const note = { owner: B.medlem.email, id: 'n1', title: 'Søndag', speaker: 'P', date: '2026-11-01', html: 'tekst' };
+  lov('medlem lagrer notat', await kall(B.medlem, 'POST', '/notes', note));
+  ant('administrator ser ikke notatet', await kall(B.admin, 'GET', '/notes?owner=eq.' + B.medlem.email), 0);
+  nekt('medlem lagrer notat n101', await kall(B.medlem, 'POST', '/notes', { ...note, id: 'n101' }));
+  nekt('medlem lagrer notat for andre', await kall(B.medlem, 'POST', '/notes', { ...note, owner: B.annen.email }));
+  const klipp = { id: 'l1', data: 'data:audio/webm;base64,AAAA', sek: 3 };
+  lov('medlem lagrer notat med lydklipp', await kall(B.medlem, 'PATCH', '/notes?owner=eq.' + B.medlem.email + '&id=eq.n1', { lyd: [klipp] }));
+  nekt('medlem lagrer fire lydklipp', await kall(B.medlem, 'PATCH', '/notes?owner=eq.' + B.medlem.email + '&id=eq.n1', { lyd: [klipp, klipp, klipp, klipp] }));
+
+  // --- Tellere og varselkoder ---
+  lov('besøkende teller Jeg kommer', await kall(null, 'POST', '/rpc/rsvp_tell', { p_id: 'test-e1', p_d: 1 }));
+  nekt('besøkende setter telleren direkte', await kall(null, 'PATCH', '/rsvp_counts?id=eq.test-e1', { n: 999 }));
+  const kode = 'test-' + 'x'.repeat(150);
+  lov('besøkende registrerer varselkode', await kall(null, 'POST', '/rpc/kode_lagre', { p_token: kode }));
+  nekt('besøkende kobler kode til andres e-post', await kall(null, 'POST', '/rpc/kode_lagre', { p_token: kode, p_email: B.admin.email }));
+  ant('besøkende leser varselkoder', await kall(null, 'GET', '/push_tokens?token=like.test-*'), 0);
+  nekt('besøkende sletter alle varselkoder', await kall(null, 'DELETE', '/push_tokens?token=like.*'));
+  ant('administrator leser varselkoder', await kall(B.admin, 'GET', '/push_tokens?token=like.test-*'), 1);
+
+  // --- Innstillinger ---
+  const forKontakt = (await kall('tjener', 'GET', '/settings?id=eq.contact')).data[0];   // settes tilbake etterpå
+  nekt('administrator lager ukjent innstilling', await kall(B.admin, 'POST', '/settings', { id: 'test-x', data: {} }));
+  lov('administrator lagrer kontaktinfo', await kall(B.admin, 'POST', '/settings?on_conflict=id',
+    { id: 'contact', data: { address: 'Kometvegen 7', hours: '', phone: '', email: '' } }, { Prefer: 'return=representation,resolution=merge-duplicates' }));
+  nekt('administrator lagrer ukjent felt', await kall(B.admin, 'PATCH', '/settings?id=eq.contact', { data: { address: 'x', hack: 1 } }));
+  nekt('medlem endrer kontaktinfo', await kall(B.medlem, 'PATCH', '/settings?id=eq.contact', { data: { address: 'x' } }));
+  ant('besøkende leser kontaktinfo', await kall(null, 'GET', '/settings?id=eq.contact'), 1);
+  if (forKontakt) await kall('tjener', 'PATCH', '/settings?id=eq.contact', { data: forKontakt.data });
+  else await kall('tjener', 'DELETE', '/settings?id=eq.contact');
+  // Portrett til Pastorens hilsen (settings/pastor)
+  const forPastor = (await kall('tjener', 'GET', '/settings?id=eq.pastor')).data[0];
+  lov('administrator lagrer pastorportrett', await kall(B.admin, 'POST', '/settings?on_conflict=id',
+    { id: 'pastor', data: { img: 'data:image/jpeg;base64,AAAA' } }, { Prefer: 'return=representation,resolution=merge-duplicates' }));
+  nekt('pastorportrett med ekstra felt', await kall(B.admin, 'PATCH', '/settings?id=eq.pastor', { data: { img: 'x', hack: 1 } }));
+  nekt('pastorportrett over 250 000 tegn', await kall(B.admin, 'PATCH', '/settings?id=eq.pastor', { data: { img: 'x'.repeat(250001) } }));
+  nekt('medlem bytter pastorportrett', await kall(B.medlem, 'PATCH', '/settings?id=eq.pastor', { data: { img: 'x' } }));
+  if (forPastor) await kall('tjener', 'PATCH', '/settings?id=eq.pastor', { data: forPastor.data });
+  else await kall('tjener', 'DELETE', '/settings?id=eq.pastor');
+
+  // --- Politiattest (to-parts-bekreftelse) ---
+  const fs1 = { email: B.medlem.email, k: 'sett', dato: '2026-10-01', by: B.medlem.email, okM: true, okL: false, okLby: '', fil: false, ms: Date.now() };
+  nekt('medlem setter attest uten forslag', await kall(B.medlem, 'POST', '/attester', { email: B.medlem.email, dato: '2026-10-01', by: B.medlem.email, godkjent: true, fil: false }));
+  nekt('medlem bekrefter på vegne av leder', await kall(B.medlem, 'POST', '/attestforslag', { ...fs1, okL: true, okLby: B.medlem.email }));
+  lov('medlem foreslår dato', await kall(B.medlem, 'POST', '/attestforslag', fs1));
+  nekt('medlem fullfører alene', await kall(B.medlem, 'POST', '/attester', { email: B.medlem.email, dato: '2026-10-01', by: B.medlem.email, godkjent: true, fil: false }));
+  nekt('annen (ikke leder) bekrefter', await kall(B.annen, 'PATCH', '/attestforslag?email=eq.' + B.medlem.email, { okL: true, okLby: B.annen.email }));
+  nekt('gruppeleder endrer datoen', await kall(B.leder, 'PATCH', '/attestforslag?email=eq.' + B.medlem.email, { dato: '2030-01-01', okL: true, okLby: B.leder.email }));
+  lov('gruppeleder bekrefter', await kall(B.leder, 'PATCH', '/attestforslag?email=eq.' + B.medlem.email, { okL: true, okLby: B.leder.email }));
+  nekt('gruppeleder setter feil dato', await kall(B.leder, 'POST', '/attester', { email: B.medlem.email, dato: '2030-01-01', by: B.leder.email, godkjent: true, fil: false }));
+  lov('gruppeleder fullfører', await kall(B.leder, 'POST', '/attester', { email: B.medlem.email, dato: '2026-10-01', by: B.leder.email, godkjent: true, fil: false }));
+  ant('annen ser ikke attesten', await kall(B.annen, 'GET', '/attester?email=eq.' + B.medlem.email), 0);
+
+  // --- Lederrådet, forbønn, utleie ---
+  lov('medlem i lederrådet legger inn sak', await kall(B.medlem, 'POST', '/lrsaker', { id: 'test-s1', t: 'Sak', name: 'M', by: B.medlem.email, ms: Date.now() }));
+  ant('annen ser ikke sakene', await kall(B.annen, 'GET', '/lrsaker?id=eq.test-s1'), 0);
+  nekt('medlem endrer teksten i saken', await kall(B.medlem, 'PATCH', '/lrsaker?id=eq.test-s1', { t: 'Endret' }));
+  lov('medlem merker saken som behandlet', await kall(B.medlem, 'PATCH', '/lrsaker?id=eq.test-s1', { done: true, doneMs: Date.now() }));
+  lov('medlem sender forbønn', await kall(B.medlem, 'POST', '/prayers', { id: 'test-p1', t: 'Be for meg', name: 'M', by: B.medlem.sub, ms: Date.now() }));
+  ant('annen leser ikke forbønn', await kall(B.annen, 'GET', '/prayers?id=eq.test-p1'), 0);
+  nekt('besøkende sender forbønn direkte', await kall(null, 'POST', '/prayers', { id: 'test-p2', t: 'x', name: 'x', by: 'x', ms: 1 }));
+  nekt('medlem uten utleie ser bookinger', await kall(B.medlem, 'POST', '/bookinger', { id: 'test-b1', tittel: 'x', rom: ['Salen'], dato: '2026-12-01', fra: '10:00', til: '12:00', leier: 'x', kontakt: 'x', pris: '0', status: 'bekreftet', notat: '', by: 'x', ms: 1 }));
+  lov('administrator lager booking', await kall(B.admin, 'POST', '/bookinger', { id: 'test-b1', tittel: 'x', rom: ['Salen'], dato: '2026-12-01', fra: '10:00', til: '12:00', leier: 'x', kontakt: 'x', pris: '0', status: 'bekreftet', notat: '', by: 'x', ms: 1 }));
+  nekt('administrator lager ugyldig booking', await kall(B.admin, 'POST', '/bookinger', { id: 'test-b2', tittel: 'x', rom: [], dato: '2026-12-01', fra: '10', til: '12:00', leier: 'x', kontakt: 'x', pris: '0', status: 'hmm', notat: '', by: 'x', ms: 1 }));
+  ant('medlem ser ikke bookinger', await kall(B.medlem, 'GET', '/bookinger?id=like.test-*'), 0);
+
+  await rydd();
+  console.log(`\n${ok} riktige, ${feil} feil`);
+  process.exit(feil ? 1 : 0);
+})().catch(async e => { console.error(e); await rydd().catch(() => {}); process.exit(1); });

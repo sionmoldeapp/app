@@ -1,0 +1,11 @@
+{
+  "name": "sion-varsel",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Push-varsler for Sion Molde-appen på egen server (Web Push / VAPID)",
+  "main": "varsel.js",
+  "dependencies": {
+    "pg": "^8.13.0",
+    "web-push": "^3.6.7"
+  }
+}

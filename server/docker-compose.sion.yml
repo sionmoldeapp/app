@@ -14,6 +14,20 @@ services:
       - 127.0.0.1:${POOLER_PROXY_PORT_TRANSACTION}:6543
 
   # Caddy: viser appen, sender /auth/v1, /rest/v1 osv. til Supabase og gir HTTPS på serveren.
+  # Norske e-poster fra innloggingen (malene ligger i sion/epost og vises av sion-web på den interne porten 8099).
+  auth:
+    environment:
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "Velkommen til Sion Molde-appen"
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: "Nytt passord til Sion Molde-appen"
+      GOTRUE_MAILER_SUBJECTS_INVITE: "Du er invitert til Sion Molde-appen"
+      GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: "Bekreft ny e-postadresse"
+      GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: "Logg inn i Sion Molde-appen"
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: http://sion-web:8099/ny-bruker.html
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: http://sion-web:8099/nytt-passord.html
+      GOTRUE_MAILER_TEMPLATES_INVITE: http://sion-web:8099/invitasjon.html
+      GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: http://sion-web:8099/ny-epost.html
+      GOTRUE_MAILER_TEMPLATES_MAGIC_LINK: http://sion-web:8099/logg-inn.html
+
   # Studio (database-GUI) på egen port med passord (DASHBOARD_USERNAME/PASSWORD).
   sion-web:
     container_name: sion-web
@@ -30,6 +44,8 @@ services:
         condition: service_healthy
     environment:
       APP_SITE: ${APP_SITE:-:80}
+      ANON_KEY: ${ANON_KEY}   # offentlig nøkkel til appen (sion-konfig.json)
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}   # offentlig nøkkel for push-varsler (også i sion-konfig.json)
       DASHBOARD_USERNAME: ${DASHBOARD_USERNAME}
       DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD}
     command:
@@ -44,6 +60,32 @@ services:
       - ./sion/Caddyfile:/etc/caddy/Caddyfile:ro
       - sion_caddy_data:/data
       - sion_caddy_config:/config
+
+  # Push-varsler (Web Push). Appen kaller /varsel (via sion-web) på samme måte som den før kalte Apps Script. Se sion/varsel/varsel.js.
+  sion-varsel:
+    container_name: sion-varsel
+    image: node:22-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      auth:
+        condition: service_started
+    working_dir: /app
+    environment:
+      PGHOST: db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      ANON_KEY: ${ANON_KEY}
+      GOTRUE_URL: http://auth:9999
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:post@sionmolde.no}
+      TZ: ${TZ:-Europe/Oslo}
+    command: ["/bin/sh", "-c", "npm install --omit=dev --no-audit --no-fund --loglevel=error && exec node varsel.js"]
+    volumes:
+      - ./sion/varsel:/app
+      - sion_varsel_modules:/app/node_modules
 
   # Sikkerhetskopi hver natt til mappen backups/ (database + opplastede filer).
   # Samme bilde som databasen, så pg_dump har riktig versjon.
@@ -75,5 +117,6 @@ services:
       - ./volumes/storage:/storage:ro
 
 volumes:
+  sion_varsel_modules:
   sion_caddy_data:
   sion_caddy_config:
