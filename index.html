@@ -4006,16 +4006,17 @@ function ringLytt(){try{if(!FB||!state.user||!state.member){if(ring.unsub){ring.
   if(ring.inn&&Date.now()-(ring.inn.ms||0)>=60e3)ringInn([])}catch(e){}}
 setInterval(ringLytt,5e3);
 /* Summing: hold fingeren stille på tom plass i en samtale (utenfor meldingene), så vibrerer telefonen i tre pulser, både hos deg og hos de andre i samtalen (så lenge appen er åpen hos dem). */
-function summVibr(){try{navigator.vibrate&&navigator.vibrate([220,120,220,120,220])}catch(e){}}
+function summVibr(){try{return navigator.vibrate?navigator.vibrate([220,120,220,120,220]):'ingen vibrate'}catch(e){return 'feil: '+e.message}}
 let summSist=0;
-function summSend(){try{const c=state.chat,meg=meEmail(),t=c&&c.id&&chatTraad(c.id);if(!t||ring.ut||ring.inn||Date.now()-summSist<4e3)return;
-  const til=(t.parts||[]).filter(p=>p!==meg);if(!til.length)return;summSist=Date.now();summVibr();
-  FB.ringVibr(c.id,til,nyBeskjedNavn()).catch(e=>push('Kunne ikke summe',(e&&e.code==='permission-denied')?'Reglene må oppdateres først.':'Prøv igjen.'))}catch(e){}}
-{ let tm=0,x0=0,y0=0;const stopp=()=>{clearTimeout(tm);tm=0};
-  document.addEventListener('pointerdown',e=>{stopp();const t=e.target;if(!e.isPrimary||!t.closest||!t.closest('#cMsg')||t.closest('.cb,.cavt,button,a,img,audio,video,input,textarea,[data-msg]'))return;
+const summDiag=t=>{try{let d=document.getElementById('summDiag');if(!d){d=document.createElement('div');d.id='summDiag';d.style.cssText='position:fixed;left:8px;right:8px;bottom:84px;z-index:3000;background:rgba(0,0,0,.82);color:#fff;font:12px/1.35 system-ui;padding:6px 10px;border-radius:10px;pointer-events:none';document.body.appendChild(d)}d.textContent=t;d.style.display='block';clearTimeout(d._t);d._t=setTimeout(()=>{d.style.display='none'},3500)}catch(e){}};   /* midlertidig diagnose */
+function summSend(){try{const c=state.chat,meg=meEmail(),t=c&&c.id&&chatTraad(c.id);if(!t||ring.ut||ring.inn||Date.now()-summSist<4e3){summDiag('Summing stoppet: '+(!t?'fant ikke samtalen':ring.ut||ring.inn?'ringing pågår':'for tett (4 s)'));return}
+  const til=(t.parts||[]).filter(p=>p!==meg);if(!til.length){summDiag('Summing stoppet: ingen andre i samtalen');return}summSist=Date.now();const v=summVibr();summDiag('Summer. vibrate() ga: '+v);
+  FB.ringVibr(c.id,til,nyBeskjedNavn()).catch(e=>summDiag('Kunne ikke sende: '+((e&&e.code)||e)))}catch(e){summDiag('Feil: '+e.message)}}
+{ let tm=0,x0=0,y0=0;const stopp=(h)=>{if(tm&&h)summDiag('Avbrutt: '+h);clearTimeout(tm);tm=0};
+  document.addEventListener('pointerdown',e=>{stopp();const t=e.target;if(!e.isPrimary||!t.closest)return;if(!t.closest('#cMsg'))return;if(t.closest('.cb,.cavt,button,a,img,audio,video,input,textarea,[data-msg]')){summDiag('Trykket på en melding/knapp');return}
     x0=e.clientX;y0=e.clientY;tm=setTimeout(()=>{tm=0;summSend()},450)});
-  document.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>10)stopp()});
-  document.addEventListener('pointerup',stopp);document.addEventListener('pointercancel',stopp);document.addEventListener('scroll',stopp,true);
+  document.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>10)stopp('fingeren flyttet seg')});
+  document.addEventListener('pointerup',()=>stopp('sluppet for tidlig'));document.addEventListener('pointercancel',()=>stopp('nettleseren tok over (pointercancel)'));document.addEventListener('scroll',()=>stopp('rulling'),true);
   document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('#cMsg')&&!e.target.closest('a,img,input,textarea'))e.preventDefault()});
   document.addEventListener('selectstart',e=>{const t=e.target.nodeType===1?e.target:e.target.parentElement;if(t&&t.closest&&t.closest('#cMsg'))e.preventDefault()}) }
 function tilstLytt(){
@@ -5458,7 +5459,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 02:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='02.11.2026 kl. 02:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
