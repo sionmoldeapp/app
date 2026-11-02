@@ -8,7 +8,7 @@
 const http = require('http'), webpush = require('web-push'), { Pool } = require('pg');
 const env = process.env;
 const PORT = +env.PORT || 8110;
-const GRUPPER = ['sondagsskole', 'activ8', 'hangout', 'debora', 'cdur', 'kjokken', 'torsdagsgruppa', 'vertskap', 'lederradet', 'ungdomsledere', 'sommerstevne', 'elevate', 'lovsang'];
+const GRUPPER = ['sondagsskole', 'activ8', 'hangout', 'debora', 'cdur', 'kjokken', 'torsdagsgruppa', 'vertskap', 'lederradet', 'ungdomsledere', 'sommerstevne', 'elevate', 'lovsang', 'forkynnere'];
 const MIN_SEKUNDER_MELLOM_VARSLER = 10;
 const VERSJON = 'supabase-1';
 

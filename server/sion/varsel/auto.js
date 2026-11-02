@@ -3,7 +3,7 @@
 module.exports = ({ pool, send, brukere, log }) => {
   const TZ = 'Europe/Oslo', MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
   const PAAMINN_STANDARD = ['lederradet', 'ungdomsledere', 'torsdagsgruppa', 'vertskap', 'elevate', 'lovsang'];
-  const GRUPPENAVN = { sondagsskole: 'Søndagsskole', activ8: 'Activ8', hangout: 'Hangout', debora: 'Debora', cdur: 'Sion C-dur', kjokken: 'Kjøkken', torsdagsgruppa: 'Torsdagsgruppa', vertskap: 'Vertskap', lederradet: 'Lederrådet', ungdomsledere: 'Ungdomsledere', sommerstevne: 'Sommerstevne', elevate: 'Elevate', lovsang: 'Lovsangsteamet' };
+  const GRUPPENAVN = { sondagsskole: 'Søndagsskole', activ8: 'Activ8', hangout: 'Hangout', debora: 'Debora', cdur: 'Sion C-dur', kjokken: 'Kjøkken', torsdagsgruppa: 'Torsdagsgruppa', vertskap: 'Vertskap', lederradet: 'Lederrådet', ungdomsledere: 'Ungdomsledere', sommerstevne: 'Sommerstevne', elevate: 'Elevate', lovsang: 'Lovsangsteamet', forkynnere: 'Forkynnere' };
   const osloDel = (d, o) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, ...o }).format(d);
   const osloDato = d => osloDel(d, { year: 'numeric', month: '2-digit', day: '2-digit' });   // åååå-mm-dd
   const osloTime = d => +osloDel(d, { hour: '2-digit', hourCycle: 'h23' });
