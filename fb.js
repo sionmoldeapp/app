@@ -140,6 +140,7 @@ const FB={
     hentTilstede:()=>S.getDocs(S.query(S.collection(db,'tilstede'),S.where('sist','>',S.Timestamp.fromMillis(Date.now()-10*60e3)))).then(s=>s.docs.map(d=>{const t=d.data({serverTimestamps:'estimate'}).sist;return {id:d.id,ms:t&&t.toMillis?t.toMillis():Date.now()}})),
     /* Ringing: ringer/{samtale-id} {fra, fraNavn, til[], status:'ring'|'svart'|'avbrutt', ms (fornyes mens det ringer), svarNavn} */
     ringStart:(tid,til,navn)=>S.setDoc(S.doc(db,'ringer',tid),{fra:auth.currentUser.email.toLowerCase(),fraNavn:navn,til,status:'ring',ms:Date.now()}),
+    ringVibr:(tid,til,navn)=>S.setDoc(S.doc(db,'ringer',tid),{fra:auth.currentUser.email.toLowerCase(),fraNavn:navn,til,status:'vibr',ms:Date.now()}),   // summing: telefonene vibrerer i tre pulser
     ringPuls:tid=>S.updateDoc(S.doc(db,'ringer',tid),{ms:Date.now()}),
     ringSett:(tid,status,navn)=>S.updateDoc(S.doc(db,'ringer',tid),status==='svart'?{status,svarNavn:navn}:{status}),
     watchRinger:(me,cb,err)=>S.onSnapshot(S.query(S.collection(db,'ringer'),S.where('til','array-contains',me)),s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))),e=>err&&err(e)),

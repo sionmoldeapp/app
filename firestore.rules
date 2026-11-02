@@ -52,7 +52,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['fra', 'fraNavn', 'til', 'status', 'ms', 'svarNavn'])
         && request.resource.data.til is list && request.resource.data.til.size() >= 1 && request.resource.data.til.size() <= 8
         && request.resource.data.fraNavn is string && request.resource.data.fraNavn.size() <= 60
-        && request.resource.data.status in ['ring', 'avbrutt'] && request.resource.data.ms is number
+        && request.resource.data.status in ['ring', 'avbrutt', 'vibr'] && request.resource.data.ms is number
         && request.auth.token.email in get(/databases/$(database)/documents/threads/$(tid)).data.parts;
       allow update: if signedIn() && request.auth.token.email in resource.data.til
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'svarNavn'])
