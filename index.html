@@ -515,6 +515,8 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .item.open>.detail>.evport{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:90px;height:90px;object-fit:cover;object-position:50% 25%;border-radius:50%;border:3px solid color-mix(in srgb,currentColor 25%,transparent)}
 .next:has(.nport)>.meta{grid-column:1/-1}
 .next:has(.nport) h2{font-size:28px;margin:2px 0 8px}
+.nph{display:grid;place-items:center;overflow:hidden;background:linear-gradient(150deg,color-mix(in srgb,currentColor 16%,transparent),color-mix(in srgb,currentColor 4%,transparent));box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 35%,transparent)}
+.nph svg{width:100%;height:100%;opacity:.72}
 .nport{grid-column:2!important;grid-row:1/span 2;width:68px;height:68px;border-radius:50%;object-fit:cover;border:3px solid color-mix(in srgb,currentColor 30%,transparent)}
 .kam [hidden]{display:none!important}
 .kam{position:fixed;inset:0;z-index:5;background:#000;color:#fff;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 0}
@@ -2605,9 +2607,11 @@ function hjemNyhet(){
   if(v&&v.ms>lestFra&&!lest['varsel'+v.ms]&&!posts.some(p=>p.t===v.t&&Math.abs((p.ms||0)-v.ms)<2*36e5))kand.push({id:'varsel'+v.ms,t:v.t,b:v.b,ms:v.ms,m:false,pseudo:true});
   return kand.sort((x,y)=>(y.ms||0)-(x.ms||0))[0]||null}
 /* «Neste hovedsamling» er neste søndagsmøte eller neste arrangement i kategoriene Møter, Stevne eller Happeninger, den som kommer først. */
+/* Faste samlinger som regnes som hovedsamling: «søndagsmøte» o.l. i tittelen, eller en søndag i kategorien Møter som ikke er bønnemøte. */
+const erHovedFast=r=>/søndagsmøte|storsamling|hovedsamling|hovedmøte|gudstjeneste/i.test(r.title||'')||(r.day===0&&normCat(r.cat)==='Møter'&&!/bønn/i.test(r.title||''));
 function nesteHoved(vis,fast){
   let n=vis.find(e=>['Møter','Møte','Stevne','Happeninger'].includes(normCat(e.cat)));
-  {const fn=fast.filter(f=>/søndagsmøte/i.test(f.fast.title)&&!(f.ex&&f.ex.k==='avlyst')).sort((x,y)=>x.w-y.w)[0];
+  {const fn=fast.filter(f=>erHovedFast(f.fast)&&!(f.ex&&f.ex.k==='avlyst')).sort((x,y)=>x.w-y.w)[0];
     if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:inf.place}}}
   return n}
 function homeDeler(){
@@ -2616,7 +2620,7 @@ function homeDeler(){
   const wk=[...vis.slice(0,5).map(e=>({ev:e,w:e.w,id:e.id})),...fast.map(f=>({fast:f.fast,w:f.w,ex:f.ex,id:fastId(f.fast,f.w)}))].filter(x=>!(n&&x.id===n.id)).sort((a,b)=>a.w-b.w).slice(0,4);
   const post=hjemNyhet();
   return {
-   neste:['Neste hovedsamling',()=>(n?`<div class="card next" data-t="prog" data-nid="${esc(String(n.id))}" role="link" tabindex="0" style="cursor:pointer">${n.img?`<img class="nport" src="${esc(n.img)}" alt="" loading="lazy">`:''}<div class="eyebrow">Neste hovedsamling</div><h2>${n.t}</h2>
+   neste:['Neste hovedsamling',()=>(n?`<div class="card next" data-t="prog" data-nid="${esc(String(n.id))}" data-nw="${+n.w}" role="link" tabindex="0" style="cursor:pointer">${n.img?`<img class="nport" src="${esc(n.img)}" alt="" loading="lazy">`:'<span class="nport nph" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="29.5" stroke-opacity=".28"/><circle cx="32" cy="24.5" r="8.8"/><path d="M13.5 54c1.7-10.6 9-16.2 18.5-16.2S48.8 43.4 50.5 54"/><path d="M26.8 38.4 32 44.6l5.2-6.2" stroke-opacity=".55"/></svg></span>'}<div class="eyebrow">Neste hovedsamling</div><h2>${n.t}</h2>
    <div class="meta">${nesteTid(n)}</div></div>`
   :`<div class="card next" data-t="prog"><div class="eyebrow">Neste hovedsamling</div><h2>Ingen planlagt</h2><div class="meta">Se Program.</div></div>`)],
    gruppebesk:['Send beskjed til gruppa',()=>state.admin?'':gruppeBeskjedCard()],
@@ -5490,7 +5494,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 05:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='02.11.2026 kl. 05:55';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -7174,7 +7178,9 @@ function viktigApne(id){
 /* Kortet «Neste hovedsamling» på Hjem åpner Program når man trykker på det. */
 { const til=k=>{if(state.reorder)return;state.tab=k.dataset.t;
     // Neste hovedsamling: gå til akkurat den samlingen i Program, åpnet og rullet på plass (uten søk og kategorifilter som kan skjule den).
-    const id=k.dataset.nid;if(id){/* bare denne samlingen skal stå åpen i Program: lukk andre åpne kalenderhendelser (ikke nyheter, viktig, saker eller utleie) */Object.keys(state.open).forEach(x=>{if(x!==id&&!/^(p_|v_|lr_|ut_)/.test(x))delete state.open[x]});state.open[id]=true;state.filter='Alle';state.q='';state.qOpen=false}
+    const id=k.dataset.nid;if(id){/* bare denne samlingen skal stå åpen i Program: lukk andre åpne kalenderhendelser (ikke nyheter, viktig, saker eller utleie) */Object.keys(state.open).forEach(x=>{if(x!==id&&!/^(p_|v_|lr_|ut_)/.test(x))delete state.open[x]});state.open[id]=true;state.filter='Alle';state.q='';state.qOpen=false;
+      /* kommer samlingen etter de to første ukene (for eksempel neste måned), må Program vises langt nok frem og måneden åpnes, ellers finnes ikke raden å lande på */
+      const nw=+k.dataset.nw;if(nw){let mn=state.progMnd||0;while(mn<PROG_MND_MAKS&&+progHor(mn)<=nw)mn++;state.progMnd=mn;const dd=new Date(nw);state.acc['pg_'+dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')]=true}}
     fadeRender();
     if(id)setTimeout(()=>sentrerItem(id,!matchMedia('(prefers-reduced-motion:reduce)').matches),matchMedia('(prefers-reduced-motion:reduce)').matches?30:380)};
   document.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest('.card.next[data-t]');if(k)til(k)});
