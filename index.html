@@ -1137,8 +1137,9 @@ dialog.cvis form:focus{outline:none}
 .nhero .pbody a,.nhero .pbody .pt a{color:var(--hero-link)}
 .nhero .small{color:rgba(255,255,255,.78)}
 .pavt{display:block;border-radius:50%;object-fit:cover;object-position:50% 20%;background:var(--chip)}
-.viktig.mpv .pavt.h{position:absolute;top:16px;right:16px;width:64px;height:64px;border:2px solid rgba(255,255,255,.55)}
-.viktig.mpv .nhero-b{padding-right:96px}
+.nhero.mpv{position:relative}
+.nhero.mpv .pavt.h{pointer-events:none;position:absolute;top:16px;right:16px;width:64px;height:64px;border:2px solid rgba(255,255,255,.55)}
+.nhero.mpv:not(.open) .nhero-b{padding-right:96px}
 .nikon .pavt.n{width:40px;height:40px}
 .nikon:has(.pavt){border-radius:50%}
 .pbody .pavt.m{float:right;width:88px;height:88px;margin:0 0 8px 12px}
@@ -2590,9 +2591,9 @@ function viktigKort(p){
   const open=!!state.open['v_'+p.id];
   const ey=p.pseudo?'Påminnelse':/pastorens hilsen/i.test(p.t||'')?'Pastorens hilsen':'Siste nytt';
   return '<div class="viktig nhero'+(open?' open':'')+(erHilsen(p)?' mpv':'')+'" data-viktig="'+esc(p.id)+'" role="button" aria-expanded="'+open+'" tabindex="0" aria-label="'+esc(ey)+': '+esc(p.t)+'">'
-   +hilsenFoto(p,'h')+'<div class="nhero-b"><span class="nhero-ey"><span class="dot" title="Ulest"></span>'+esc(ey)+(ago(p)?' · '+esc(ago(p)):'')+'</span><span class="nhero-t">'+esc(p.t)+'</span>'
+   +(open?'':hilsenFoto(p,'h'))+'<div class="nhero-b"><span class="nhero-ey"><span class="dot" title="Ulest"></span>'+esc(ey)+(ago(p)?' · '+esc(ago(p)):'')+'</span><span class="nhero-t">'+esc(p.t)+'</span>'
    +(open?'':'<span class="nhero-p">'+esc(tekst)+'</span><span class="nhero-mer">Les mer ›</span>')+'</div>'
-   +(open?'<div class="ndetalj"><div class="pbody open"><span class="pt'+(p.bh?' rt':'')+'">'+richVis(p)+'</span>'+postBilde(p)+'</div><div class="btns" style="margin-top:12px"><button type="button" class="btn primary vik-lest" data-viktiglest="'+esc(p.id)+'" style="width:auto">Lest</button></div></div>':'')+'</div>'}
+   +(open?'<div class="ndetalj"><div class="pbody open">'+hilsenFoto(p,'m')+'<span class="pt'+(p.bh?' rt':'')+'">'+richVis(p)+'</span>'+postBilde(p)+'</div><div class="btns" style="margin-top:12px"><button type="button" class="btn primary vik-lest" data-viktiglest="'+esc(p.id)+'" style="width:auto">Lest</button></div></div>':'')+'</div>'}
 /* Linjen på «Neste hovedsamling»: hvor lenge til, dag og dato og klokkeslett, for eksempel «Om 3 dager · Søndag 25. okt kl. 12:00». */
 function nesteTid(n){
   const w=new Date(n.w),dg=Math.round((new Date(w).setHours(0,0,0,0)-todayStart)/864e5);
@@ -2812,7 +2813,7 @@ function nyhKort(p,hero){
   const open=!!state.open['p_'+p.id],u=ulest(p),fest=p.pinned&&(effAdmin()||(effLeder()&&state.ltype==='forkynner')),tekst=String(p.b||'').replace(/\s+/g,' ').trim();
   const detalj=open?`<div class="ndetalj"><div class="head">${postEtiketter(p).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ')}<span class="small">${statusTag(p).replace(/^ · /,'')}${canStats()?(statusTag(p)?' · ':'')+'sett '+(views[p.id]||0)+' ganger':''}</span></div><div class="pbody open">${hilsenFoto(p,'m')}<span class="pt${p.bh?' rt':''}">${richVis(p)}</span>${postBilde(p)}</div>${svarBlokk(p)}${state.admin&&postSkjult(p)?`<div class="btns" style="margin-top:8px"><button type="button" class="btn" data-postedit="${esc(p.id)}">Endre</button>${p.pubAt>Date.now()?`<button type="button" class="btn" data-avlyshilsen="${esc(p.id)}">Avlys utsendelsen</button>`:''}</div>`:''}</div>`:'';
   const lp=state.admin&&editOn()?` data-lp="posts:${p.id}"`:'';
-  if(hero)return `<div class="nhero ${open?'open':''}"${lp}><button type="button" class="nhero-b" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="nhero-ey">${u?'<span class="dot" title="Ulest"></span>':''}Siste nytt · ${esc(ago(p))}</span><span class="nhero-t">${fest?'<svg class="pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path d="M12 17v5M8 3h8l-1 7 3 3H6l3-3z"/></svg>':''}${esc(p.t)}</span>${open?'':`<span class="nhero-p">${esc(tekst)}</span><span class="nhero-mer">Les mer ›</span>`}</button>${detalj}</div>`;
+  if(hero)return `<div class="nhero${open?' open':''}${erHilsen(p)?' mpv':''}"${lp}>${open?'':hilsenFoto(p,'h')}<button type="button" class="nhero-b" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="nhero-ey">${u?'<span class="dot" title="Ulest"></span>':''}Siste nytt · ${esc(ago(p))}</span><span class="nhero-t">${fest?'<svg class="pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path d="M12 17v5M8 3h8l-1 7 3 3H6l3-3z"/></svg>':''}${esc(p.t)}</span>${open?'':`<span class="nhero-p">${esc(tekst)}</span><span class="nhero-mer">Les mer ›</span>`}</button>${detalj}</div>`;
   return `<div class="nrad ${open?'open':''} ${u?'ulest':''}"${lp}><button type="button" class="nhode ptitle" data-postopen="${esc(p.id)}" aria-expanded="${open}"><span class="nikon">${nyhIkon(p)}${u?'<span class="dot" title="Ulest"></span>':''}</span><span class="ntekst"><b class="ntit">${fest?'<svg class="pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path d="M12 17v5M8 3h8l-1 7 3 3H6l3-3z"/></svg>':''}${esc(p.t)}</b>${open?'':`<span class="nprev">${esc(tekst)}</span>`}</span><span class="nmeta">${esc(ago(p))}</span></button>${detalj}</div>`}
 function nyhGruppe(p){
   if(p.pinned)return 0;
@@ -3240,7 +3241,7 @@ async function pbKomprimer(f){
   throw new Error('for stort')}
 const pbHtml=img=>'<div class="pbild" data-pbild><span style="font-weight:600;font-size:var(--t-m)">Bilde (valgfritt)</span><img alt="" '+(img?'src="'+esc(img)+'"':'hidden')+'><div class="btns"><button type="button" class="btn" data-pbvelg>'+(img?'Bytt bilde …':'Velg bilde …')+'</button><button type="button" class="btn" data-pbfjern '+(img?'':'hidden')+'>Fjern bilde</button></div><input type="file" accept="image/*" data-pbfil hidden><p class="small" role="status" data-pbmsg style="margin:0"></p></div>';
 const pbVerdi=rot=>{const i=rot&&rot.querySelector('[data-pbild] img'),s=i&&!i.hidden?i.getAttribute('src')||'':'';return /^data:image\/jpeg;base64,/.test(s)?s:''};
-const postBilde=p=>p&&p.img&&/^data:image\/jpeg;base64,/.test(p.img)?'<img class="pbilde" data-cbilde src="'+p.img+'" alt="">':'';
+const postBilde=p=>p&&p.img&&!/pastorens hilsen/i.test(p.t||'')&&/^data:image\/jpeg;base64,/.test(p.img)?'<img class="pbilde" data-cbilde src="'+p.img+'" alt="">':'';
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-pbvelg],[data-pbfjern]');if(!b)return;const rot=b.closest('[data-pbild]');if(!rot)return;
   if(b.hasAttribute('data-pbvelg'))rot.querySelector('[data-pbfil]').click();
   else{const i=rot.querySelector('img');i.removeAttribute('src');i.hidden=true;b.hidden=true;rot.querySelector('[data-pbvelg]').textContent='Velg bilde …'}});
@@ -3734,7 +3735,7 @@ function hilsenAsk(){
   const NAAR=[['na','Send med en gang',null],['lor','Lørdag kl. 12:00',nesteDag(6,12,0)],['son','Søndag kl. 08:00',nesteDag(0,8,0)],['egen','Velg selv',null]];
   dlg.innerHTML='<div class="small" id="hN" style="margin:0 0 6px"></div><div style="height:6px;background:var(--line);border-radius:var(--r-pill);overflow:hidden;margin-bottom:12px"><div id="hBar" style="height:100%;background:var(--lamp);width:0;transition:width .25s"></div></div>'
    +'<form class="form" method="dialog" novalidate>'
-   +hSteg(0,'Skriv hilsenen','Tittel og melding. Den legges ut i Nyheter og kan sendes som varsel.','<label class="f">Tittel<input id="hT" maxlength="80" value="Pastorens hilsen"></label>'+richBox('hB','','Melding')+pbHtml(''))
+   +hSteg(0,'Skriv hilsenen','Tittel og melding. Den legges ut i Nyheter og kan sendes som varsel.','<label class="f">Tittel<input id="hT" maxlength="80" value="Pastorens hilsen"></label>'+richBox('hB','','Melding'))
    +hSteg(1,'Hvem skal få den?','Du kan velge flere. Den som er med i flere av dem får bare én melding.','<div style="display:grid;gap:8px" id="hMaalBox">'+maal.map((m,i)=>hRad('hMaal',m.v,m.l,' <span class="small">('+hilsenAntall([m.v])+')</span>',i===0).replace('type="radio"','type="checkbox"')).join('')+'</div><p class="small" id="hAntall" style="margin:0"></p>')
    +hSteg(2,'Når skal den sendes?','','<div style="display:grid;gap:8px">'+NAAR.map(([v,l,d],i)=>hRad('hNaar',v,l,d?' <span class="small">('+esc(kortDato(isoDato(d)))+')</span>':'',i===0)).join('')+'<div id="hEgen" style="display:none;grid-template-columns:1fr 1fr;gap:8px"><label class="f">Dato<input id="hD" type="date" value="'+isoDato(nesteDag(6,12,0))+'"></label><label class="f">Klokkeslett<input id="hK" type="time" value="12:00"></label></div></div>')
    +hSteg(3,'Slik sendes den','Sjekk at alt stemmer før du sender.','<div style="display:grid;gap:8px"><label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hNy" checked style="width:22px;height:22px;flex:none">Legg ut i Nyheter</label>'+(PUSH_URL?'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="checkbox" id="hPu" checked style="width:22px;height:22px;flex:none">Send som varsel til telefonene</label>':'')+'</div><div id="hSum" class="card" style="background:var(--bg);display:grid;gap:4px;font-size:var(--t-b)"></div>')
@@ -5489,7 +5490,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 04:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='02.11.2026 kl. 04:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
