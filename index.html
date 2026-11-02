@@ -1138,11 +1138,11 @@ dialog.cvis form:focus{outline:none}
 .nhero .small{color:rgba(255,255,255,.78)}
 .pavt{display:block;border-radius:50%;object-fit:cover;object-position:50% 20%;background:var(--chip)}
 .nhero.mpv{position:relative}
-.nhero.mpv .pavt.h{pointer-events:none;position:absolute;top:16px;right:16px;width:64px;height:64px;border:2px solid rgba(255,255,255,.55)}
-.nhero.mpv:not(.open) .nhero-b{padding-right:96px}
+.nhero.mpv .pavt.h{pointer-events:none;position:absolute;top:16px;right:16px;width:96px;height:96px;border:2px solid rgba(255,255,255,.55)}
+.nhero.mpv:not(.open) .nhero-b{padding-right:130px;min-height:128px}
 .nikon .pavt.n{width:40px;height:40px}
 .nikon:has(.pavt){border-radius:50%}
-.pbody .pavt.m{float:right;width:88px;height:88px;margin:0 0 8px 12px}
+.pbody .pavt.m{float:right;width:132px;height:132px;margin:0 0 8px 12px}
 .nhero .tag{background:rgba(255,255,255,.18);color:#fff}
 .nhero .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
 .nhero .btn.on{background:#fff;color:var(--hero-b);border-color:#fff}
@@ -5490,7 +5490,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 04:50';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='02.11.2026 kl. 05:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
