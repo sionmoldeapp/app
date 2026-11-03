@@ -952,6 +952,39 @@ html[data-bred="1"] .chat,html[data-bred="1"] .chat[data-mork="1"]{background:va
 .chd [data-chatrull] svg{transition:transform .22s}
 .chd [data-chatrull][aria-expanded=true] svg{transform:rotate(180deg)}
 @media (prefers-reduced-motion:reduce){.chd .chrullin{transition:none}}
+.bmw{display:inline-block;width:132px;height:132px;vertical-align:middle;margin:2px .1em;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.bmw svg{display:block;width:100%;height:100%;overflow:visible}
+.cb.cstor .bmw{width:210px;height:210px;margin:2px 0}
+.bmw.bmmini{width:46px;height:46px;margin:0;pointer-events:none}
+.bmw .bm-bear{transform-origin:120px 226px;animation:bmInn .75s cubic-bezier(.2,.9,.3,1.15) both}
+.bmw .bm-squish{transform-origin:120px 226px;animation:bmSqu 2.3s ease-in-out both}
+.bmw .bm-hode{transform-origin:120px 150px;animation:bmPust 3.4s ease-in-out 2.4s infinite alternate}
+.bmw .bm-oyne{transform-origin:120px 90px;animation:bmBlink 4.6s linear 3s infinite}
+.bmw .bm-aV{animation:bmArmV 2.3s cubic-bezier(.4,0,.2,1) both}
+.bmw .bm-aH{animation:bmArmH 2.3s cubic-bezier(.4,0,.2,1) both}
+.bmw .bm-hjerte{animation:bmHjerte 2.3s cubic-bezier(.2,.9,.3,1.1) both}
+.bmw .bm-slag{animation:bmSlag 1.35s ease-in-out 2.4s infinite}
+.bmw .bm-glod{animation:bmGlod 2.3s ease-out both,bmGlod2 1.35s ease-in-out 2.4s infinite}
+.bmw .bm-sh{opacity:0;animation:bmOpp 2.8s ease-out var(--d) infinite}
+.bmw.klar .bm-bear,.bmw.klar .bm-squish{animation:none}
+.bmw.klar .bm-aV{animation:none;transform:rotate(-22deg)}
+.bmw.klar .bm-aH{animation:none;transform:rotate(22deg)}
+.bmw.klar .bm-hjerte,.bmw.klar .bm-glod{animation:none}
+.bmw.klar .bm-glod{animation:bmGlod2 1.35s ease-in-out infinite}
+.bmw.klar .bm-slag{animation-delay:0s}
+.bmw.klar .bm-sh{animation-delay:calc(var(--d) - 2.4s)}
+@keyframes bmInn{0%{opacity:0;transform:translateY(26px) scale(.55)}55%{opacity:1;transform:translateY(-6px) scale(1.05)}100%{opacity:1;transform:none}}
+@keyframes bmSqu{0%,76%{transform:none}84%{transform:scale(1.035,.955)}93%{transform:scale(.99,1.02)}100%{transform:none}}
+@keyframes bmPust{from{transform:translateY(0)}to{transform:translateY(-2.5px)}}
+@keyframes bmBlink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+@keyframes bmArmV{0%{transform:rotate(112deg)}24%{transform:rotate(120deg)}34%{transform:rotate(108deg)}44%{transform:rotate(120deg)}58%{transform:rotate(116deg)}78%{transform:rotate(-32deg)}90%{transform:rotate(-19deg)}100%{transform:rotate(-22deg)}}
+@keyframes bmArmH{0%{transform:rotate(-112deg)}24%{transform:rotate(-120deg)}34%{transform:rotate(-108deg)}44%{transform:rotate(-120deg)}58%{transform:rotate(-116deg)}78%{transform:rotate(32deg)}90%{transform:rotate(19deg)}100%{transform:rotate(22deg)}}
+@keyframes bmHjerte{0%,66%{transform:scale(0);opacity:0}86%{transform:scale(1.22);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes bmSlag{0%,100%{transform:scale(1)}14%{transform:scale(1.09)}28%{transform:scale(1)}42%{transform:scale(1.06)}56%{transform:scale(1)}}
+@keyframes bmGlod{0%,66%{opacity:0;transform:scale(.3)}100%{opacity:1;transform:scale(1)}}
+@keyframes bmGlod2{0%,100%{opacity:.75}50%{opacity:1}}
+@keyframes bmOpp{0%{opacity:0;transform:translate(0,10px) scale(.3)}18%{opacity:.95}100%{opacity:0;transform:translate(var(--dx),-92px) scale(1)}}
+@media (prefers-reduced-motion:reduce){.bmw .bm-bear,.bmw .bm-squish,.bmw .bm-hode,.bmw .bm-oyne,.bmw .bm-hjerte,.bmw .bm-slag,.bmw .bm-glod,.bmw .bm-sh{animation:none!important}.bmw .bm-aV{animation:none!important;transform:rotate(-22deg)}.bmw .bm-aH{animation:none!important;transform:rotate(22deg)}.bmw .bm-sh{display:none}}
 .cmeny{position:absolute;inset:0;z-index:30}
 .cmeny-bak{position:absolute;inset:0;background:rgba(0,0,0,.4)}
 .cmeny-pill{position:absolute;left:50%;transform:translateX(-50%);max-width:calc(100% - 16px);display:flex;align-items:center;gap:2px;padding:7px 9px;border-radius:99px;background:#2b2b2e;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.45);overflow-x:auto;scrollbar-width:none;animation:cmpop .16s ease-out}
@@ -4375,7 +4408,37 @@ const SG='#c9a24a',SG2='#e6c878',SC='#f6ecd0',SGM='#a8801f',SN='#14304f',
   spk=(x,y,sz,c)=>'<path transform="translate('+x+' '+y+') scale('+sz+')" d="M0-9L2.2-2.2 9 0 2.2 2.2 0 9-2.2 2.2-9 0-2.2-2.2z" fill="'+(c||SG)+'"/>',
   flamme=(x,y,sz,c1,c2)=>'<g transform="translate('+x+' '+y+') scale('+sz+')"><path d="M50 -2C56 10 66 14 63 28c-2 8-8 12-13 12s-11-4-13-12C35 20 42 16 50 -2z" fill="'+c1+'"/><path d="M50 14c4 8 8 10 7 17-1 5-4 7-7 7s-6-2-7-7c-1-5 3-9 7-17z" fill="'+c2+'"/></g>',
   hjrt=(x,y,sz,c)=>'<path transform="translate('+x+' '+y+') scale('+sz+')" d="M0 9C-10 1-15-4-15-9a7.5 7.5 0 0 1 15-1.5A7.5 7.5 0 0 1 15-9c0 5-5 10-15 18z" fill="'+c+'"/>';
+/* Bamse med åpne armer som gir en klem med hjerte. Tegnet som SVG og animert med CSS (.bmw): kommer inn, åpner armene, klemmer et hjerte som spretter frem, så rolig pust, blunking og små hjerter som stiger. */
+let bmNr=0;
+function bamseSvg(){const n=++bmNr,id=s=>'bm'+n+s,u=s=>'url(#'+id(s)+')';
+  return '<svg viewBox="0 0 240 240" aria-hidden="true" focusable="false"><defs>'
+  +'<radialGradient id="'+id('f')+'" cx=".35" cy=".28" r=".95"><stop offset="0" stop-color="#d9a06a"/><stop offset=".55" stop-color="#b87a47"/><stop offset="1" stop-color="#8f5a31"/></radialGradient>'
+  +'<radialGradient id="'+id('t')+'" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#f8e2c0"/><stop offset="1" stop-color="#e6bf8d"/></radialGradient>'
+  +'<linearGradient id="'+id('h')+'" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#ff7d9b"/><stop offset="1" stop-color="#df2158"/></linearGradient>'
+  +'<radialGradient id="'+id('g')+'"><stop offset="0" stop-color="#ff8aa8" stop-opacity=".55"/><stop offset="1" stop-color="#ff8aa8" stop-opacity="0"/></radialGradient>'
+  +'<filter id="'+id('b')+'" x="-30%" y="-100%" width="160%" height="300%"><feGaussianBlur stdDeviation="4"/></filter></defs>'
+  +'<ellipse cx="120" cy="228" rx="64" ry="8" fill="#000" opacity=".2" filter="'+u('b')+'"/>'
+  +'<g class="bm-bear"><g class="bm-squish">'
+  /* føtter, kropp, mage */
+  +'<ellipse cx="84" cy="210" rx="23" ry="15" fill="'+u('f')+'"/><ellipse cx="156" cy="210" rx="23" ry="15" fill="'+u('f')+'"/>'
+  +'<ellipse cx="84" cy="212" rx="12" ry="8" fill="#e9aaa0" opacity=".85"/><ellipse cx="156" cy="212" rx="12" ry="8" fill="#e9aaa0" opacity=".85"/>'
+  +'<ellipse cx="120" cy="162" rx="53" ry="54" fill="'+u('f')+'"/><ellipse cx="120" cy="170" rx="33" ry="35" fill="'+u('t')+'"/>'
+  /* hode (puster rolig) */
+  +'<g class="bm-hode"><circle cx="78" cy="52" r="20" fill="'+u('f')+'"/><circle cx="162" cy="52" r="20" fill="'+u('f')+'"/><circle cx="78" cy="54" r="11" fill="#eab79b"/><circle cx="162" cy="54" r="11" fill="#eab79b"/>'
+  +'<circle cx="120" cy="94" r="49" fill="'+u('f')+'"/><ellipse cx="100" cy="64" rx="22" ry="11" fill="#fff" opacity=".13" transform="rotate(-24 100 64)"/>'
+  +'<ellipse cx="88" cy="108" rx="10" ry="6.5" fill="#ff8fa5" opacity=".5"/><ellipse cx="152" cy="108" rx="10" ry="6.5" fill="#ff8fa5" opacity=".5"/>'
+  +'<ellipse cx="120" cy="110" rx="25" ry="19" fill="'+u('t')+'"/>'
+  +'<g class="bm-oyne"><circle cx="100" cy="90" r="6.3" fill="#2a1810"/><circle cx="140" cy="90" r="6.3" fill="#2a1810"/><circle cx="102.2" cy="87.6" r="2.3" fill="#fff"/><circle cx="142.2" cy="87.6" r="2.3" fill="#fff"/><circle cx="98.4" cy="93" r="1.1" fill="#fff" opacity=".6"/><circle cx="138.4" cy="93" r="1.1" fill="#fff" opacity=".6"/></g>'
+  +'<ellipse cx="120" cy="102" rx="9" ry="6.3" fill="#47281a"/><ellipse cx="117.3" cy="100" rx="2.8" ry="1.7" fill="#fff" opacity=".6"/>'
+  +'<path d="M120 108v6M120 114q-7 7-14 1M120 114q7 7 14 1" fill="none" stroke="#47281a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g></g>'
+  /* armer: åpne, så rundt hjertet (bak hjertet) */
+  +[[76,'bm-aV'],[164,'bm-aH']].map(([x,k])=>'<g transform="translate('+x+' 134)"><g class="'+k+'"><rect x="-12.5" y="-6" width="25" height="64" rx="12.5" fill="'+u('f')+'"/><circle cx="0" cy="52" r="13.5" fill="'+u('f')+'"/><circle cx="0" cy="54" r="7.6" fill="#e9aaa0" opacity=".9"/><path d="M-6 -2q-3 14 0 30" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".12" fill="none"/></g></g>').join('')
+  /* hjertet, lysglød og små hjerter */
+  +'<g transform="translate(120 176) scale(1.02)"><circle class="bm-glod" r="46" fill="'+u('g')+'"/><g class="bm-hjerte"><g class="bm-slag"><path d="M0 24C-38-2-36-37-13-37-4-37 0-30 0-26 0-30 4-37 13-37 36-37 38-2 0 24z" fill="'+u('h')+'"/><ellipse cx="-15" cy="-22" rx="7" ry="4.2" fill="#fff" opacity=".55" transform="rotate(-35 -15 -22)"/></g></g></g>'
+  +[[66,172,-24,'2.4s',.42],[176,168,26,'3.2s',.5],[152,150,46,'4s',.36]].map(([x,y,dx,d,s])=>'<g transform="translate('+x+' '+y+')"><g class="bm-sh" style="--dx:'+dx+'px;--d:'+d+'"><path transform="scale('+s+')" d="M0 24C-38-2-36-37-13-37-4-37 0-30 0-26 0-30 4-37 13-37 36-37 38-2 0 24z" fill="#ff6f93"/></g></g>').join('')
+  +'</g></svg>'}
 const SION_STIKK={
+  bamse:['Bamse med klem',''],
   fest:['Fest',spk(12,16,1.2)+spk(88,24,.85,SG2)+spk(78,7,.55,SC)+spk(9,64,.7,SG2)+spk(92,70,1)+spk(50,95,.6,SC)+'<path d="M4 34Q18 46 32 34" fill="none" stroke="'+SG+'" stroke-width="1" opacity=".55" stroke-linecap="round"/><path d="M68 90Q82 80 96 90" fill="none" stroke="'+SG2+'" stroke-width="1" opacity=".55" stroke-linecap="round"/>'],
   bursdag:['Bursdag','<rect x="30.4" y="12" width="5" height="15" rx="1.6" fill="'+SC+'" stroke="'+SG+'" stroke-width=".8"/><path d="M33 1c2.6 3 3.8 4.8 3.8 6.8a3.8 3.8 0 0 1-7.6 0C29.2 5.8 30.4 4 33 1z" fill="'+SG2+'"/><path d="M33 4.4c1.2 1.6 1.8 2.6 1.8 3.6a1.8 1.8 0 0 1-3.6 0c0-1 .6-2 1.8-3.6z" fill="'+SC+'"/>'+spk(86,18,1)+spk(94,50,.7,SG2)+spk(10,70,.8,SG2)+spk(78,90,.6,SC)],
   krone:['Krone','<path d="M44 15L46 2l5 6 4-9 4 9 5-6 2 13z" fill="'+SG2+'" stroke="'+SGM+'" stroke-width="1.1" stroke-linejoin="round"/><circle cx="46" cy="2" r="1.7" fill="'+SC+'"/><circle cx="55" cy="-1" r="1.7" fill="'+SC+'"/><circle cx="64" cy="2" r="1.7" fill="'+SC+'"/>'],
@@ -4388,12 +4451,13 @@ const SION_STIKK={
 const SION_TOKEN=new RegExp(':sion(?:-(sort|hvit|solbriller|ild|'+Object.keys(SION_STIKK).join('|')+'))?:','g');
 const sionHtml=v=>{
   if(v==='solbriller'||v==='ild')v='';   // fjernet klistremerke: eldre meldinger viser vanlig logo
+  if(v==='bamse')return '<span class="bmw" role="img" aria-label="Bamse som gir deg en klem med hjerte" title="Trykk for en ny klem">'+bamseSvg()+'</span>';
   if(v&&SION_STIKK[v])return '<span class="sionx" role="img" aria-label="Sion-klistremerke: '+SION_STIKK[v][0]+'"><span class="sione"></span><svg viewBox="0 0 100 100" aria-hidden="true">'+SION_STIKK[v][1]+'</svg></span>';
   return '<span class="sione'+(v==='sort'?' sort':v==='hvit'?' hvit':'')+'" role="img" aria-label="Sion-logo'+(v==='sort'?' i sort':v==='hvit'?' i hvitt':'')+'"></span>'};
 /* Panelet under meldingsfeltet: Sion-logoen i tre farger, klistremerkene, hurtigtekster for feiring og vanlige emojier. */
 function chatPanelHtml(){
   const logo=[['','Sion-logo','color:#0084ff'],['sort','Sion-logo i sort',''],['hvit','Sion-logo i hvitt','']].map(([v,n,st])=>'<button type="button" data-cemo=":sion'+(v?'-'+v:'')+':" aria-label="'+n+'"><span class="sione'+(v?' '+v:'')+'" style="width:26px;height:26px;'+st+'"></span></button>').join('');
-  const stikk=Object.entries(SION_STIKK).map(([k,x])=>'<button type="button" class="cst" data-cemo=":sion-'+k+':" aria-label="'+x[0]+'"><span class="sionx" style="width:40px;height:40px"><span class="sione"></span><svg viewBox="0 0 100 100" aria-hidden="true">'+x[1]+'</svg></span></button>').join('');
+  const stikk=Object.entries(SION_STIKK).map(([k,x])=>k==='bamse'?'<button type="button" class="cst" data-cemo=":sion-bamse:" aria-label="Bamse med klem"><span class="bmw klar bmmini">'+bamseSvg()+'</span></button>':'<button type="button" class="cst" data-cemo=":sion-'+k+':" aria-label="'+x[0]+'"><span class="sionx" style="width:40px;height:40px"><span class="sione"></span><svg viewBox="0 0 100 100" aria-hidden="true">'+x[1]+'</svg></span></button>').join('');
   const feir=[['Gratulerer med dagen!','Gratulerer med dagen! :sion-bursdag:'],['Gratulerer!','Gratulerer! :sion-fest:'],['Halleluja!','Halleluja! :sion-hender:'],['Takk!','Takk! :sion-takk:'],['Activ8!','Activ8! :sion-activ8:']].map(([n,t])=>'<button type="button" class="cmal" data-cmal="'+esc(t)+'">'+esc(n)+'</button>').join('');
   return '<div class="cemoji" id="cEmoji" hidden><span class="cegrep" aria-hidden="true"></span><div class="cetit">Sion</div><div class="cegrid cstikk">'+logo+'</div><div class="cegrid cstikk2">'+stikk+'</div><div class="cetit">Hurtigsvar</div><div class="cmalrad">'+feir+'</div><div class="cetit">Aktiviteter</div><div class="cmalrad"><button type="button" class="cmal" data-cspill="terning">Terning</button><button type="button" class="cmal" data-cspill="mynt">Mynt</button><button type="button" class="cmal" data-cspill="quiz">Bibelquiz</button>'+(chatKan()&&state.chat.id?'<button type="button" class="cmal" data-cspill="avst">Avstemning</button>':'')+'</div><div class="cetit">Emoji</div><div class="cegrid">'+CHAT_EMOJIER.map(e=>'<button type="button" data-cemo="'+e+'">'+e+'</button>').join('')+'</div></div>'}
 /* Feiringseffekter: konfetti, ballonger, duer eller hjerter over samtalen når en ny melding inneholder for eksempel «gratulerer», «bursdag», 🎉 eller et Sion-klistremerke. */
@@ -4403,7 +4467,7 @@ function chatEffektFor(tekst){
   if(/bursdag|gratulerer med dagen|grattis med dagen|:sion-bursdag:|🎂/.test(t))return 'bursdag';
   if(/gratulerer|grattis|🎉|🥳|:sion-fest:|:sion-stjerne:|:sion-krone:/.test(t))return 'konfetti';
   if(/halleluja|hallelujah|\bamen\b|🕊|:sion-amen:|:sion-hender:/.test(t))return 'duer';
-  if(/:sion-hjerte:|💖|💕/.test(t))return 'hjerter';
+  if(/:sion-hjerte:|:sion-bamse:|💖|💕/.test(t))return 'hjerter';
   return null}
 /* Activ8: lysshow i 4 sekunder: scenelys i mange farger som feier fram og tilbake, konfetti fra begge sider og blitz i takt. Tones inn raskt og ut de siste 0,9 sekundene. */
 function chatLysshow(w){
@@ -4483,7 +4547,7 @@ const bokTok=t=>{const x=/⟦bok:([A-Za-z0-9_-]+):([am])⟧/.exec(t||'');return 
 const svarTok=t=>{const x=/⟦svar:([A-Za-z0-9_-]+):(ja|nei|vet):([am])⟧/.exec(t||'');return x?{id:x[1],k:x[2],auto:x[3]==='a'}:null};
 const lbokId=t=>(/⟦lbok:([A-Za-z0-9_-]+)⟧/.exec(t||'')||[])[1]||'';
 const UT_DETALJ_RE=/\s*─── Detaljer[\s\S]*$/;
-const chatForh=t=>chatRens(t).replace(/^📅 /,'').replace(UT_DETALJ_RE,'').replace(/\n+/g,' · ').replace(SION_TOKEN,'[Sion]');
+const chatForh=t=>chatRens(t).replace(/^📅 /,'').replace(UT_DETALJ_RE,'').replace(/\n+/g,' · ').replace(/:sion-bamse:/g,'🧸 Bamse').replace(SION_TOKEN,'[Sion]');
 const chatTekstHtml=t=>linkify(esc(chatRens(t))).replace(SION_TOKEN,(m,v)=>sionHtml(v));
 const BOK_VALG=[['ja','Kommer'],['nei','Kommer ikke'],['vet','Vet ikke ennå']];
 const bokKalMerket=()=>{try{return JSON.parse(lsGet('sm-bokkal')||'[]')}catch(e){return[]}};
@@ -4772,8 +4836,16 @@ function chatMsgs(sist){
     if(gr&&!m.slettet)h+=chatLesereHtml(m,t,mine);
     forrige=m});
   box.innerHTML=h||'<p class="small" style="align-self:center;margin-top:20px">Ingen meldinger ennå. Skriv den første.</p>';
+  chatBamseKlar(box);
   box.insertAdjacentHTML('beforeend','<div class="cnedw"><button type="button" class="cned" data-cned aria-label="Gå til siste melding" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5.5 12.5 12 19l6.5-6.5"/></svg></button><button type="button" class="cned" data-cfullut aria-label="Avslutt fullskjerm" title="Avslutt fullskjerm" hidden>'+CHAT_FULL_UT+'</button></div>');
   if(nær||sist){box.scrollTop=box.scrollHeight;chatHoldNede(box)}chatNedKnapp(box);chatLesPlan()}
+/* Bamsen spiller hele inngangen (kommer inn, åpner armene, klemmer) bare for en ny melding, én gang. Ellers står den ferdig (rolig pust og små hjerter). Trykk på bamsen spiller klemmen på nytt. */
+const bmSett=new Set();
+function chatBamseKlar(box){let rolig=false;try{rolig=matchMedia('(prefers-reduced-motion:reduce)').matches}catch(e){}
+  box.querySelectorAll('.bmw:not(.bmmini)').forEach(e=>{const b=e.closest('[data-msg]'),id=b&&b.dataset.msg,m=id&&(state.chat.msgs||[]).find(x=>x.id===id);
+    if(rolig||!id||bmSett.has(id)||!m||Date.now()-(m.ms||0)>30e3)e.classList.add('klar');bmSett.add(id)})}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#cMsg .bmw');if(!b||!b.classList.contains('klar'))return;try{if(matchMedia('(prefers-reduced-motion:reduce)').matches)return}catch(x){}
+  b.classList.remove('klar');void b.offsetWidth});
 function chatNedKnapp(b){const k=b&&b.querySelector('[data-cned]'),f=b&&b.querySelector('[data-cfullut]'),nede=b&&b.scrollHeight-b.scrollTop-b.clientHeight<120;if(k)k.hidden=!!nede;if(f)f.hidden=!(nede&&state.chat&&state.chat.full)}   // nederst i fullskjerm: samme knapp bytter til «Avslutt fullskjerm»
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-cfullut]')){chatFullSett(false);return}const k=e.target.closest&&e.target.closest('[data-cned]');if(!k)return;const b=document.getElementById('cMsg');if(b){b._pin=true;b.scrollTo({top:b.scrollHeight,behavior:'smooth'})}});
 /* Nyeste melding skal vises når samtalen åpnes. Bilder, skrifter og lyd lastes etter at meldingene er tegnet og gjør samtalen høyere, så vi holder den nederst til alt er lastet (og til du selv blar oppover). */
@@ -5986,7 +6058,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='04.11.2026 kl. 01:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='04.11.2026 kl. 02:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
