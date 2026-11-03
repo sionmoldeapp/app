@@ -928,16 +928,14 @@ html[data-bred="1"] .chat,html[data-bred="1"] .chat[data-mork="1"]{background:va
 .cremo{display:flex;justify-content:space-around;gap:2px;padding:4px 6px;border-radius:99px;background:var(--chip)}
 .bvprev{background:var(--chip,#f0f2f5);color:var(--ink);border-radius:18px;padding:8px 13px;max-height:46vh;overflow:auto}
 .chd{position:relative;z-index:6}
-.chd .chrull{position:absolute;right:12px;top:calc(100% + 8px);display:flex;flex-direction:column;gap:10px;z-index:7;pointer-events:none}
+.chd .chrull{position:absolute;right:12px;top:calc(100% - 1px);z-index:-1;display:flex;flex-direction:row;gap:10px;box-sizing:border-box;height:0;padding:0 10px;overflow:hidden;border-radius:0 0 20px 20px;background:var(--cfarge,var(--brand));color:var(--cfarge-ink,var(--brand-ink));box-shadow:0 8px 20px rgba(0,0,0,.35);transition:height .3s cubic-bezier(.2,.8,.3,1),padding .3s cubic-bezier(.2,.8,.3,1)}
 .chd .chrull[hidden]{display:none}
-.chd .chrull .cbtn{box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:auto;opacity:0;transform:translateY(-14px) scale(.8)}
-.chd .chrull.vis .cbtn{animation:chrullInn .26s cubic-bezier(.2,.8,.3,1) forwards;animation-delay:calc(var(--i,0)*55ms)}
-.chd .chrull.ut .cbtn{animation:chrullUt .18s ease-in forwards;animation-delay:calc(var(--i,0)*30ms)}
-@keyframes chrullInn{from{opacity:0;transform:translateY(-14px) scale(.8)}to{opacity:1;transform:none}}
-@keyframes chrullUt{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-14px) scale(.8)}}
+.chd .chrull.vis{padding:10px}
+.chd .chrull .cbtn{background:rgba(255,255,255,.22);color:inherit;opacity:0;transition:opacity .2s ease .08s}
+.chd .chrull.vis .cbtn{opacity:1}
 .chd [data-chatrull] svg{transition:transform .22s}
 .chd [data-chatrull][aria-expanded=true] svg{transform:rotate(180deg)}
-@media (prefers-reduced-motion:reduce){.chd .chrull .cbtn{animation:none!important;opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.chd .chrull,.chd .chrull .cbtn{transition:none}}
 .cmeny{position:absolute;inset:0;z-index:30}
 .cmeny-bak{position:absolute;inset:0;background:rgba(0,0,0,.4)}
 .cmeny-pill{position:absolute;left:50%;transform:translateX(-50%);max-width:calc(100% - 16px);display:flex;align-items:center;gap:2px;padding:7px 9px;border-radius:99px;background:#2b2b2e;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.45);overflow-x:auto;scrollbar-width:none;animation:cmpop .16s ease-out}
@@ -5459,11 +5457,10 @@ function bildeZoom(dlg){
 /* Rull-ned-knappen i samtaleoverskriften: video, ring, fullskjerm og deltakere ruller ned under og lukkes igjen. */
 function chatRull(vis){
   const g=document.getElementById('chRull'),k=document.querySelector('#chat [data-chatrull]');if(!g||!k)return;
-  const apen=!g.hidden&&!g.classList.contains('ut'),mal=vis==null?!apen:!!vis;if(mal===apen)return;
-  g.querySelectorAll('.cbtn').forEach((b,i)=>b.style.setProperty('--i',i));
-  k.setAttribute('aria-expanded',String(mal));
-  if(mal){g.classList.remove('ut');g.hidden=false;void g.offsetWidth;g.classList.add('vis')}
-  else{g.classList.remove('vis');g.classList.add('ut');setTimeout(()=>{if(g.classList.contains('ut')){g.hidden=true;g.classList.remove('ut')}},320)}}
+  const apen=g.classList.contains('vis'),mal=vis==null?!apen:!!vis;if(mal===apen)return;
+  k.setAttribute('aria-expanded',String(mal));clearTimeout(g._t);
+  if(mal){g.hidden=false;g.style.height='0px';void g.offsetWidth;g.classList.add('vis');g.style.height='60px'}
+  else{g.classList.remove('vis');g.style.height='0px';g._t=setTimeout(()=>{g.hidden=true},320)}}
 document.addEventListener('pointerdown',e=>{const g=document.getElementById('chRull');if(g&&!g.hidden&&e.target.closest&&!e.target.closest('#chRull,[data-chatrull]'))chatRull(false)});
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#chRull .cbtn'))setTimeout(()=>chatRull(false),0)});
 /* Hold på en melding (520 ms) åpner menyen. */
@@ -5908,7 +5905,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='03.11.2026 kl. 21:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='03.11.2026 kl. 21:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
