@@ -5266,10 +5266,13 @@ function chatHjerteVokser(mid){
   const h=document.createElement('div');h.className='chjerte';h.setAttribute('aria-hidden','true');
   h.style.cssText='left:'+(r.left+r.width/2-S/2)+'px;top:'+(r.top+r.height/2-S/2)+'px;width:'+S+'px;height:'+S+'px';
   h.innerHTML='<svg viewBox="0 0 24 24" width="100%" height="100%"><path fill="#e0245e" d="M12 21s-8.5-5.3-8.5-11.2A4.8 4.8 0 0 1 12 7.1a4.8 4.8 0 0 1 8.5 2.7C20.5 15.700 12 21 12 21z"/></svg>';
-  w.style.isolation='isolate';w.insertBefore(h,w.firstChild);   // inni meldingsflaten: over bakgrunnen, under boblene
-  const ob=new MutationObserver(()=>{if(!h.isConnected&&!h.dataset.ferdig){const m2=document.getElementById('cMsg');if(m2)m2.insertBefore(h,m2.firstChild)}});ob.observe(w,{childList:true});
-  const a=h.animate([{transform:'scale(.4)',opacity:.75},{transform:'scale('+mal+')',opacity:0}],{duration:1500,easing:'cubic-bezier(.2,.6,.3,1)',fill:'forwards'});
-  const fjernH=()=>{h.dataset.ferdig='1';ob.disconnect();h.remove()};a.onfinish=a.oncancel=fjernH;setTimeout(fjernH,2200)}
+  const kf=[{transform:'scale(.4)',opacity:.75},{transform:'scale('+mal+')',opacity:0}],valg={duration:1500,easing:'cubic-bezier(.2,.6,.3,1)',fill:'forwards'},t0=Date.now();
+  let a=null,ob=null;const fjernH=()=>{if(ob)ob.disconnect();h.remove()};
+  const kjor=(fra)=>{if(a){a.onfinish=a.oncancel=null;try{a.cancel()}catch(e){}}a=h.animate(kf,valg);a.currentTime=fra;a.onfinish=fjernH};
+  w.style.isolation='isolate';w.insertBefore(h,w.firstChild);kjor(0);   // inni meldingsflaten: over bakgrunnen, under boblene
+  // Tegnes meldingene på nytt (nye kvitteringer, reaksjoner) tas hjertet ut av siden: sett det inn igjen og fortsett der animasjonen var
+  ob=new MutationObserver(()=>{if(h.isConnected)return;const el=Date.now()-t0;if(el>=1500)return fjernH();const m2=document.getElementById('cMsg');if(!m2)return fjernH();m2.style.isolation='isolate';m2.insertBefore(h,m2.firstChild);kjor(el)});
+  ob.observe(w,{childList:true});setTimeout(fjernH,1700)}
 async function chatReak(mid,felt){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid),t=c.id&&chatTraad(c.id);if(!m||!t)return;
   const meg=meEmail();m.reak=m.reak||{};const snap=JSON.parse(JSON.stringify(m.reak));
@@ -5876,7 +5879,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='03.11.2026 kl. 20:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='03.11.2026 kl. 20:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
