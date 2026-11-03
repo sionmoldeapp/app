@@ -616,7 +616,8 @@ nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .ringov .rknapp{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:84px}
 .ringov .rknapp span{font-size:16px}
 .ringov button.rrund{width:78px;height:78px;padding:0;border-radius:50%;display:grid;place-items:center;font-size:0;background:rgba(255,255,255,.14);color:#fff}
-.ringov button.rrund.rod{background:#e0314b}.ringov button.rrund.gronn{background:#2ea36b}.ringov button.rrund.gra{background:rgba(255,255,255,.2)}
+.ringov button.rrund.rod{background:#e0314b}.ringov button.rrund.gronn{background:#2ea36b}.ringov button.rrund.gra{background:rgba(255,255,255,.2)}.ringov button.rrund.hvit{background:#fff;color:#111}
+.ringov .rkam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);pointer-events:none}
 .ringov button.rrund:active{transform:scale(.94)}
 @keyframes ringPuls{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
 @media (prefers-reduced-motion:reduce){.ringov .rstor.puls{animation:none}}
@@ -4170,11 +4171,16 @@ function ringBjelle(){return '<div class="rb">'+RINGIKON.replace('width="20" hei
 const RIKON={ut:'<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(135deg)"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>',
   svar:'<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>',
   video:'<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="13" height="14" rx="3"/><path d="m15 9 7-4v14l-7-4"/></svg>',
+  hoyt:'<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  micav:'<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9v2a3 3 0 0 0 5 2.2M15 10V6a3 3 0 0 0-5.7-1.3"/><path d="M5 11a7 7 0 0 0 11 5.7M19 11a7 7 0 0 1-.6 2.8M12 18v3M3 3l18 18"/></svg>',
   ok:'<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>'};
 const rKnapp=(data,farge,ikon,tekst)=>'<div class="rknapp"><button type="button" class="rrund '+farge+'" '+data+' aria-label="'+tekst+'">'+ikon+'</button><span>'+tekst+'</span></div>';
+function ringKamAv(){if(ring.kam){try{ring.kam.getTracks().forEach(x=>x.stop())}catch(e){}ring.kam=null}}
 function ringSkjerm(tid,navn,sub,knapper,ringer){
-  const t=tid&&chatTraad(tid);
-  ringVindu('<div class="cmsg rbg" aria-hidden="true"></div><div class="rscrim"></div><div class="rkont"><div class="rtopp"><h2>'+esc(navn)+'</h2><p>'+sub+'</p></div><div class="rmid"><div class="rstor'+(ringer?' puls':'')+'">'+chatAv(navn,false,t&&t.bilde)+'</div></div><div class="rpanel">'+knapper+'</div></div>');
+  const t=tid&&chatTraad(tid),kam=!!(ring.kam&&ring.ut&&ring.ut.video&&ring.ut.tid===tid);
+  ringVindu('<div class="cmsg rbg" aria-hidden="true"></div>'+(kam?'<video class="rkam" autoplay muted playsinline aria-hidden="true"></video>':'')+'<div class="rscrim"></div><div class="rkont"><div class="rtopp"><h2>'+esc(navn)+'</h2><p>'+sub+'</p></div><div class="rmid"><div class="rstor'+(ringer?' puls':'')+'">'+chatAv(navn,false,t&&t.bilde)+'</div></div><div class="rpanel">'+knapper+'</div></div>');
+  if(kam){const v=document.querySelector('#ringov .rkam');if(v){v.srcObject=ring.kam;v.play().catch(()=>{})}}
   ringBg(tid)}
 /* Samme bakgrunn som i samtalen (fast bakgrunn, mønster eller eget bilde). */
 async function ringBg(tid){
@@ -4191,18 +4197,19 @@ function ringUtVis(){const r=ring.ut;if(!r)return;const f=r.slutt,n=r.navn;let s
   else if(r.levert){sub=r.video?'Videoanrop – ringer …':'Ringer …';ringer=true}
   else{sub='Kobler til …';ringer=true}
   ringSkjerm(r.tid,n,sub,k,ringer)}
-function ringFerdig(f){const r=ring.ut;if(!r||r.slutt)return;clearInterval(ring.hb);ring.hb=null;clearTimeout(ring.tm);ring.tm=null;if(ring.utUnsub){try{ring.utUnsub()}catch(e){}ring.utUnsub=null}r.slutt=f;if(!ring.inn)ringLyd(null);ringUtVis();if(!tale.tid)taleMicAv();try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
+function ringFerdig(f){const r=ring.ut;if(!r||r.slutt)return;clearInterval(ring.hb);ring.hb=null;clearTimeout(ring.tm);ring.tm=null;if(ring.utUnsub){try{ring.utUnsub()}catch(e){}ring.utUnsub=null}r.slutt=f;ringKamAv();if(!ring.inn)ringLyd(null);ringUtVis();if(!tale.tid)taleMicAv();try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
 function ringLukk(){if(ring.ut&&ring.ut.slutt)ringSlutt()}
 function ringInnVis(){const r=ring.inn;if(!r){ringVindu('');return}const vid=/^v:/.test(r.callId||''),tr=chatTraad(r.id),gr=tr&&tr.kind==='gruppe';
   ringSkjerm(r.id,r.fraNavn||'Noen',(vid?'Videoanrop i Sionchat':'Ringer deg i Sionchat')+(gr?'<br><span class="rsm">'+esc(chatNavn(tr,meEmail()))+'</span>':''),
     rKnapp('data-ringnei','rod',RIKON.ut,'Avvis')+rKnapp('data-ringsvar','gronn',vid?RIKON.video:RIKON.svar,'Svar'),true)}
-function ringSlutt(){ring.ut=null;clearInterval(ring.hb);ring.hb=null;clearTimeout(ring.tm);ring.tm=null;if(ring.utUnsub){try{ring.utUnsub()}catch(e){}ring.utUnsub=null}if(!ring.inn){ringLyd(null);ringVindu('')}}
+function ringSlutt(){ringKamAv();ring.ut=null;clearInterval(ring.hb);ring.hb=null;clearTimeout(ring.tm);ring.tm=null;if(ring.utUnsub){try{ring.utUnsub()}catch(e){}ring.utUnsub=null}if(!ring.inn){ringLyd(null);ringVindu('')}}
 function ringStart(video){video=video===true;if(document.querySelector('dialog.svideo')){push('Samtale pågår','Forlat gruppevideo før du ringer.');return}try{const c=state.chat,meg=meEmail(),t=c&&c.id&&chatTraad(c.id);if(!t||ring.ut||ring.inn)return;
   const til=(t.parts||[]).filter(p=>p!==meg);if(!til.length)return;const navn=nyBeskjedNavn(),tid=c.id,dm=til.length===1;
   if(video&&(!dm||!SUPA_NA))return;
   if(dm&&!video&&!tale.tid)taleMic().catch(()=>{});   // privat samtale: spør om mikrofonen med en gang, så samtalen kan starte når den andre svarer
   const callId=(video?'v:':'')+(window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)).slice(0,58);
   ring.ut={tid,navn:chatNavn(t,meg),dm,callId,video,levert:false,slutt:null};ringUtVis();ringLyd('ringut');
+  if(video&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}}).then(s=>{if(ring.ut&&ring.ut.callId===callId&&!ring.ut.slutt){ring.kam=s;ringUtVis()}else s.getTracks().forEach(x=>x.stop())}).catch(()=>{});   // eget kamerabilde bak ringingen
   FB.ringStart(tid,til,navn,callId).then(()=>{
     ring.tm=setTimeout(()=>{if(ring.ut&&ring.ut.tid===tid&&ring.ut.callId===callId&&!ring.ut.slutt)FB.ringEvent(tid,callId,'timeout').then(g=>{if(g===false&&ring.ut&&ring.ut.callId===callId&&!ring.ut.slutt){/* allerede besvart eller avsluttet: statusen kommer fra databasen */}}).catch(()=>ringFerdig('feil'))},RING_FRIST);
     FB.addMsg(t,video?'📹 Videoanrop …':'🔔 Ringer …',navn).then(()=>{if(PUSH_URL)FB.notifyThread(PUSH_URL,tid).catch(()=>{})}).catch(()=>{});
@@ -4252,10 +4259,20 @@ function taleNy(){const pc=new RTCPeerConnection({iceServers:TALE_ICE});
     else if(s==='disconnected')setTimeout(()=>{if(tale.pc===pc&&pc.connectionState==='disconnected')taleSlutt(true,'Samtalen ble brutt.')},8000)};
   tale.pc=pc;return pc}
 const taleKlokke=()=>{const s=Math.floor((Date.now()-tale.t0)/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+/* Høyttaler: bare når nettleseren lar appen velge lydutgang og telefonen oppgir både en høyttaler og en annen utgang (øretelefon, hodetelefon). Ellers vises ikke knappen. */
+async function taleHoyttSjekk(){
+  tale.hoytOK=null;
+  try{if(!tale.lyd||!tale.lyd.setSinkId||!navigator.mediaDevices.enumerateDevices)return;
+    const d=(await navigator.mediaDevices.enumerateDevices()).filter(x=>x.kind==='audiooutput');
+    const h=d.find(x=>/speaker|høyttaler|hoyttaler/i.test(x.label)&&!/ear|headset|bluetooth/i.test(x.label)),a=d.find(x=>x!==h&&x.deviceId);
+    if(h&&a)tale.hoytOK={h:h.deviceId,a:a.deviceId}}catch(e){}
+  if(tale.tid)taleVis()}
 function taleVis(){if(!tale.tid)return;
-  ringVindu('<div class="rb">'+TALEIKON+'</div><h2>'+esc(tale.navn)+'</h2><p id="taleTid">'+(tale.t0?taleKlokke():'Kobler til …')+'</p><div class="rk"><button type="button" data-taledemp aria-pressed="'+tale.demp+'">'+(tale.demp?'Slå på mikrofonen':'Demp')+'</button><button type="button" class="rav" data-talelegg>Legg på</button></div>')}
+  if(tale.hoytOK===undefined&&tale.lyd)taleHoyttSjekk();
+  const k=(tale.hoytOK?rKnapp('data-talehoyt'+(tale.hoyt?' aria-pressed="true"':''),tale.hoyt?'hvit':'gra',RIKON.hoyt,'Høyttaler'):'')+rKnapp('data-taledemp aria-pressed="'+tale.demp+'"',tale.demp?'hvit':'gra',tale.demp?RIKON.micav:RIKON.mic,tale.demp?'Slå på':'Demp')+rKnapp('data-talelegg','rod',RIKON.ut,'Avslutt');
+  ringSkjerm(tale.tid,tale.navn,'<span id="taleTid">'+(tale.t0?taleKlokke():'Kobler til …')+'</span>',k,!tale.t0)}
 function taleTikk(){const e=document.getElementById('taleTid');if(e&&tale.t0)e.textContent=taleKlokke()}
-function taleRydd(){clearInterval(tale.iv);tale.iv=null;clearTimeout(tale.vent);if(tale.unsub){try{tale.unsub()}catch(e){}tale.unsub=null}if(tale.pc){try{tale.pc.close()}catch(e){}tale.pc=null}if(tale.lyd){tale.lyd.srcObject=null;tale.lyd=null}tale.t0=0;tale.demp=false}
+function taleRydd(){clearInterval(tale.iv);tale.iv=null;clearTimeout(tale.vent);if(tale.unsub){try{tale.unsub()}catch(e){}tale.unsub=null}if(tale.pc){try{tale.pc.close()}catch(e){}tale.pc=null}if(tale.lyd){tale.lyd.srcObject=null;tale.lyd=null}tale.t0=0;tale.demp=false;tale.hoyt=false;tale.hoytOK=undefined}
 function taleSlutt(meld,tekst){const tid=tale.tid;if(!tid)return;tale.tid=null;taleRydd();taleMicAv();ringVindu('');if(meld)FB.taleSlutt(tid).catch(()=>{});if(tekst)push('Samtale',tekst)}
 /* Den som ringte: mottakeren har svart. Lager tilbudet og venter på svaret. */
 async function taleRing(tid,navn){
@@ -4278,8 +4295,9 @@ async function taleSvar(r){const svarMs=Date.now();
     try{const pc=taleNy();await pc.setRemoteDescription({type:'offer',sdp:d.offer});const a=await pc.createAnswer();await pc.setLocalDescription(a);await taleIceFerdig(pc);if(tale.tid!==r.id)return;await FB.taleSvar(r.id,pc.localDescription.sdp)}
     catch(e){taleSlutt(true,(e&&e.code==='permission-denied')?'Reglene må oppdateres før dere kan snakke.':'Kunne ikke koble til.')}});
   tale.vent=setTimeout(()=>{if(tale.tid===r.id&&!tale.t0)taleSlutt(true,'Fikk ikke kontakt med den som ringte.')},40e3)}
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-talelegg],[data-taledemp]');if(!b)return;
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-talelegg],[data-taledemp],[data-talehoyt]');if(!b)return;
   if(b.hasAttribute('data-talelegg'))taleSlutt(true,'');
+  else if(b.hasAttribute('data-talehoyt')){if(!tale.hoytOK||!tale.lyd)return;tale.hoyt=!tale.hoyt;tale.lyd.setSinkId(tale.hoyt?tale.hoytOK.h:tale.hoytOK.a).catch(()=>{tale.hoyt=!tale.hoyt;taleVis()});taleVis()}
   else{tale.demp=!tale.demp;if(tale.mic)tale.mic.getAudioTracks().forEach(t=>{t.enabled=!tale.demp});taleVis()}});
 /* Summing: hold fingeren stille på tom plass i en samtale (utenfor meldingene). Telefonen begynner å vibrere forsiktig og er på maks etter 3 sekunder, og stopper når fingeren slippes.
    De andre i samtalen får det samme så lenge du holder (så lenge appen er åpen hos dem). Vibrasjon har ingen styrke å velge; styrken lages ved at hvert støt gjøres lengre (15 til 200 ms av 200 ms). */
@@ -5938,7 +5956,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='03.11.2026 kl. 22:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='03.11.2026 kl. 23:05';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */

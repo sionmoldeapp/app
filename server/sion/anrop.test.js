@@ -18,7 +18,7 @@ async function side(){const p=await browser.newPage({viewport:{width:390,height:
   window.FB={ringStart:async(tid,til,navn,callId)=>events.push('start:'+callId),addMsg:async()=>{},notifyThread:async()=>{},ringPuls:async()=>{},ringSett:async()=>{},
     watchRing:(tid,cb,err)=>{watchCb=cb;watchErr=err;return()=>{}},ringEvent:async(tid,callId,ev)=>{events.push(ev+':'+callId);return true}};
   const st=window.setTimeout;window.setTimeout=(f,ms)=>{if(ms===45e3){timers.push(f);return 0}return st(f,ms)};
-  (0,eval)(k+';window.ring=ring;window.ringStart=ringStart;window.ringInn=ringInn;window.ringSvar=ringSvar;window.ringNei=ringNei;window.ringAvbryt=ringAvbryt;window.ringLukk=ringLukk;');
+  (0,eval)(k+';window.ring=ring;window.ringStart=ringStart;window.ringInn=ringInn;window.ringSvar=ringSvar;window.ringNei=ringNei;window.ringAvbryt=ringAvbryt;window.ringLukk=ringLukk;window.rKnapp=rKnapp;window.RIKON=RIKON;window.ringSkjerm=ringSkjerm;');
  },kode);return p;}
 const vindu=p=>p.evaluate(()=>(document.getElementById('ringov')||{}).textContent||'');
 async function ring(p){await p.evaluate(()=>{ringStart()});await p.waitForFunction(()=>events.some(e=>e.startsWith('start:')));}
@@ -76,3 +76,9 @@ test('Videoanrop: callId merkes v:, ringeren åpner video når mottakeren svarer
     await q.waitForFunction(() => events.includes('video:t1')); assert.equal(await q.evaluate(() => events.includes('taleSvar')), false);
   } finally { await q.close(); }
 });
+const taleKode=source.slice(source.indexOf('const taleKlokke='),source.indexOf('function taleTikk(){'));
+test('Samtaleskjermen (lyd) viser navn, Demp og Avslutt, og Demp gir «Slå på»',async()=>{
+  const p=await side();try{await p.evaluate(k=>{(0,eval)(k+';window.taleVis=taleVis');tale.tid='t1';tale.navn='Ola';taleVis()},taleKode);
+    let v=await vindu(p);assert.match(v,/Ola/);assert.match(v,/Demp/);assert.match(v,/Avslutt/);assert.doesNotMatch(v,/Høyttaler/);   // høyttaler vises bare når telefonen støtter valg av lydutgang
+    await p.evaluate(()=>{tale.demp=true;taleVis()});v=await vindu(p);assert.match(v,/Slå på/);assert.equal(await p.evaluate(()=>!!document.querySelector('#ringov [data-taledemp][aria-pressed="true"]')),true);
+  }finally{await p.close();}});
