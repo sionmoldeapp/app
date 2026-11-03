@@ -4239,14 +4239,16 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   const a=summ.akt;if(a&&a.inn)summ.avv[a.inn]=summ.vm[a.inn]||Date.now();summStopp();
   if(b.hasAttribute('data-summstille')){UI.summ=false;uiLagre();push('Summing er stille','Du får fortsatt «📳 Summet» i chatten. Slå på igjen under Mer → Meg → Innstillinger → Sionchat.')}});
 function summTrinn(){const t=Date.now()-summ.t0,f=Math.min(1,t/3000);
+  if(t>SUMM_MAKS+1500){summStopp();return}   // maks 20 sekunder, også hos mottakeren
   if(summ.akt&&summ.akt.inn&&Date.now()-summ.seen>9e3){summStopp();return}   // avsenderen har falt ut: ikke vibrer for alltid
   try{navigator.vibrate&&navigator.vibrate(f<1?Math.round(15+f*185):400)}catch(e){}
   summ.tm=setTimeout(summTrinn,f<1?200:350)}
+const SUMM_MAKS=20e3;
 function summStart(akt){summStopp();summ.akt=akt;summ.t0=summ.seen=Date.now();summTrinn()}
-function summStopp(){summMerke('');clearTimeout(summ.tm);summ.tm=0;clearInterval(summ.hb);summ.hb=0;summ.akt=null;try{navigator.vibrate&&navigator.vibrate(0)}catch(e){}}
+function summStopp(){summMerke('');clearTimeout(summ.tm);summ.tm=0;clearTimeout(summ.maks);summ.maks=0;clearInterval(summ.hb);summ.hb=0;summ.akt=null;try{navigator.vibrate&&navigator.vibrate(0)}catch(e){}}
 function summSend(){try{const c=state.chat,meg=meEmail(),t=c&&c.id&&chatTraad(c.id);if(!t||ring.ut||ring.inn||summ.akt)return false;
   const til=(t.parts||[]).filter(p=>p!==meg);if(!til.length)return false;const send=()=>FB.ringVibr(c.id,til,nyBeskjedNavn());
-  summStart({tid:c.id});
+  summStart({tid:c.id});summ.maks=setTimeout(summSlutt,SUMM_MAKS);   // slutter etter 20 sekunder selv om fingeren fortsatt ligger på skjermen
   if(Date.now()-(summ.mt[c.id]||0)>60e3){summ.mt[c.id]=Date.now();FB.addMsg(t,'📳 Summet',nyBeskjedNavn()).then(()=>{if(PUSH_URL)FB.notifyThread(PUSH_URL,c.id).catch(()=>{})}).catch(()=>{})}
   send().catch(e=>{summStopp();push('Kunne ikke summe',(e&&e.code==='permission-denied')?'Reglene må oppdateres først.':'Prøv igjen.')});
   summ.hb=setInterval(()=>send().catch(()=>{}),4e3);return true}catch(e){return false}}
@@ -4256,7 +4258,9 @@ function summSlutt(){const a=summ.akt;if(!a||!a.tid)return;summStopp();try{FB.ri
     x0=e.clientX;y0=e.clientY;tm=setTimeout(()=>{tm=0;i=summSend()},450)});
   document.addEventListener('pointermove',e=>{if(tm&&Math.hypot(e.clientX-x0,e.clientY-y0)>10)stopp()});
   const slipp=()=>{stopp();if(i){i=false;summSlutt()}};
-  document.addEventListener('pointerup',slipp);document.addEventListener('pointercancel',slipp);document.addEventListener('scroll',stopp,true);
+  /* Mens det summes kan fingeren flyttes fritt: bevegelsen skal ikke rulle siden (da sender nettleseren pointercancel). Summingen slutter bare når fingeren løftes (touchend/pointerup) eller etter 20 sekunder. */
+  document.addEventListener('touchmove',e=>{if(i&&e.cancelable)e.preventDefault()},{passive:false});
+  document.addEventListener('pointerup',slipp);document.addEventListener('touchend',slipp);document.addEventListener('touchcancel',slipp);document.addEventListener('pointercancel',()=>{if(!i)stopp()});document.addEventListener('scroll',stopp,true);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)slipp()});
   document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('#cMsg')&&!e.target.closest('a,img,input,textarea'))e.preventDefault()});
   document.addEventListener('selectstart',e=>{const t=e.target.nodeType===1?e.target:e.target.parentElement;if(t&&t.closest&&t.closest('#cMsg'))e.preventDefault()}) }
@@ -5796,7 +5800,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='03.11.2026 kl. 18:31';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='03.11.2026 kl. 18:33';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
