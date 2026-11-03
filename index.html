@@ -833,6 +833,8 @@ nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .cqt{border-left:3px solid rgba(255,255,255,.75);padding:2px 8px;margin:0 0 5px;font-size:var(--t-s);opacity:.9;display:flex;flex-direction:column}
 .cb.de .cqt{border-left-color:#0084ff}
 .cqt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+.cimgv{width:220px;height:160px;background:rgba(127,127,127,.25);animation:cimgPuls 1.2s ease-in-out infinite}
+@keyframes cimgPuls{0%,100%{opacity:.55}50%{opacity:1}}
 .cimg{display:block;max-width:100%;max-height:300px;border-radius:12px;margin:0 0 4px;cursor:zoom-in}
 .cbar{display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid var(--line);background:var(--surface)}
 .cbar[hidden],.cemoji[hidden]{display:none}
@@ -4691,11 +4693,19 @@ function chatBar(){
   else{b.hidden=true;b.innerHTML='';b.className='cbar'}
   {const fm=document.getElementById('cForm');if(fm)fm.classList.toggle('cred',!!c.red);const ta2=document.getElementById('cT');if(c.red&&ta2)ta2.dispatchEvent(new Event('input',{bubbles:true}))}
   chatInpOppd()}
+/* Hurtigbuffer for meldinger: de siste meldingene (uten bilder og lyd) lagres på telefonen og vises med en gang når samtalen åpnes, mens nye hentes. Tømmes ved utlogging. */
+const CHAT_CK='sm-meldinger-';
+function chatCacheLes(id){try{const a=JSON.parse(localStorage.getItem(CHAT_CK+id)||'null');return Array.isArray(a)?a:null}catch(e){return null}}
+function chatCacheLagre(id,l){try{
+  const ut=l.slice(-60).map(m=>({...m,img:'',lyd:'',imgVent:!!(m.img||m.imgVent),lydVent:!!(m.lyd||m.lydVent)}));localStorage.setItem(CHAT_CK+id,JSON.stringify(ut));
+  const ix=(JSON.parse(localStorage.getItem(CHAT_CK+'ix')||'[]')).filter(x=>x!==id);ix.push(id);while(ix.length>8)localStorage.removeItem(CHAT_CK+ix.shift());localStorage.setItem(CHAT_CK+'ix',JSON.stringify(ix))}catch(e){}}
+function chatCacheTom(){try{Object.keys(localStorage).filter(k=>k.startsWith(CHAT_CK)).forEach(k=>localStorage.removeItem(k))}catch(e){}}
 function chatSamtale(id){
   const c=state.chat,t=chatTraad(id);if(!t){chatListe();return}
   chatHistSikre();chatStoppMsgs();c.vy='samtale';c.id=id;c.ny=null;c.sett=false;const meg=meEmail(),n=chatNavn(t,meg);
   chatRamme(n,chatUnder(t,meg),chatAv(n,false,t.bilde),'<p class="small" style="align-self:center">Henter meldinger …</p>');
-  chatFargeBruk();c.unsub=FB.watchMsgs(id,l=>{const forrige=c.msgs,forste=!c.sett;c.msgs=l;c.sett=true;chatMsgs(true);chatAvstFolg(l);chatLest();c.eff=c.eff||new Set();
+  {const k=chatCacheLes(id);if(k&&k.length){c.msgs=k;chatMsgs(true)}}   // vis det vi hadde sist, mens nye meldinger hentes
+  chatFargeBruk();c.unsub=FB.watchMsgs(id,l=>{const forrige=c.msgs,forste=!c.sett;c.msgs=l;c.sett=true;chatMsgs(true);chatCacheLagre(id,l);chatAvstFolg(l);chatLest();c.eff=c.eff||new Set();
     (forste?l.filter(m=>Date.now()-m.ms<20000):l.filter(m=>!forrige.some(x=>x.id===m.id))).forEach(m=>{if(m.slettet||c.eff.has(m.id))return;const e=chatEffektFor(m.text);if(e){c.eff.add(m.id);chatEffekt(e)}});
     if(!forste){const meg=meEmail();l.forEach(m=>{const f0=forrige.find(x=>x.id===m.id),nye=((m.reak&&m.reak.r_hjerte)||[]).filter(x=>x!==meg&&!(((f0&&f0.reak&&f0.reak.r_hjerte)||[]).includes(x)));if(f0&&nye.length)chatHjerteVokser(m.id)})}},e=>{const b=document.getElementById('cMsg');if(b)b.innerHTML='<p class="small">Kunne ikke hente meldingene ('+((e&&e.code)||'feil')+').</p>'});
   chatLest()}
@@ -4751,10 +4761,10 @@ function chatMsgs(sist){
     if(m.slettet)inn='<div class="'+kl+' sl">'+(mine?'Du angret meldingen':esc(m.name||'Noen')+' angret meldingen')+'</div>';
     else{
       const rk=chatReaksjoner(m),tot=rk.reduce((n,x)=>n+x[2].length,0),minRk=rk.some(x=>x[2].includes(meg)),stor=chatBareEmoji(m.text)&&!m.img&&!m.svar&&!m.lyd&&!m.avst;
-      inn='<div class="'+kl+(m.pam?' cpam'+(Date.now()-m.ms<20000?' ny':''):'')+(rk.length?' lk':'')+(stor?' cstor':'')+(m.img&&!m.text&&!m.svar&&!m.lyd&&!m.avst?' cbild':'')+(m.lyd&&!m.text&&!m.svar&&!m.img&&!m.avst?' clydbare':'')+'" data-msg="'+esc(m.id)+'">'+(gr&&!mine&&!sammeFor?'<div class="cnvn">'+esc(m.name||'')+'</div>':'')
+      inn='<div class="'+kl+(m.pam?' cpam'+(Date.now()-m.ms<20000?' ny':''):'')+(rk.length?' lk':'')+(stor?' cstor':'')+((m.img||m.imgVent)&&!m.text&&!m.svar&&!m.lyd&&!m.avst?' cbild':'')+(m.lyd&&!m.text&&!m.svar&&!m.img&&!m.avst?' clydbare':'')+'" data-msg="'+esc(m.id)+'">'+(gr&&!mine&&!sammeFor?'<div class="cnvn">'+esc(m.name||'')+'</div>':'')
        +(m.pam?'<div class="cpamt"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/></svg>Påminnelse</div>':'')
        +(m.svar?'<div class="cqt"'+(m.svar.id?' data-cqtid="'+esc(m.svar.id)+'"':'')+'><b>'+esc(m.svar.navn||'')+'</b><span>'+esc(chatForh(m.svar.tekst||''))+'</span></div>':'')
-       +(m.img?'<img class="cimg" src="'+m.img+'" alt="Bilde" data-cbilde>':'')
+       +(m.img?'<img class="cimg" src="'+m.img+'" alt="Bilde" data-cbilde>':m.imgVent?'<span class="cimg cimgv" role="img" aria-label="Henter bildet"></span>':'')+(m.lydVent&&!m.lyd?'<span class="small">🎤 Henter lyd …</span>':'')
        +(m.text?(/^📅 /.test(m.text)?chatBokKort(m.text):chatTekstHtml(m.text)):'')+chatBokKnapper(m,l,meg)+(/^📅 /.test(m.text||'')&&chatKan()&&!bokTok(m.text)?'<button type="button" class="cvid" data-bokvid="'+esc(m.id)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg>Send videre til teamet</button>':'')+(m.avst&&m.avst.id?'<div class="cavst" data-avst="'+esc(m.avst.id)+'">'+chatAvstInn(m.avst.id)+'</div>':'')+(m.lyd?'<audio class="clyd" controls preload="metadata" src="'+m.lyd+'"></audio>':'')
        +((m.stjerne||[]).includes(meg)?'<span class="cstj" aria-label="Stjernemerket">⭐</span>':'')+(rk.length?'<span class="clike'+(minRk?' mine':'')+'" aria-label="'+tot+' reaksjoner">'+rk.map(x=>chatReakHtml(x[1])).join('')+(tot>1?'<small>'+tot+'</small>':'')+'</span>':'')+'</div>'}
     h+='<div class="crow '+(mine?'me':'de')+'">'+av+inn+'</div>';
@@ -5971,7 +5981,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='04.11.2026 kl. 00:05';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='04.11.2026 kl. 00:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -7787,7 +7797,7 @@ async function start(){
     if(u&&state.member){loadMyShifts().then(()=>keep(()=>{}));setTimeout(utSjekkNye,1500)}
     thrStopp();state.thrPromise=null;state.threads=undefined;if(!u&&state.chat.vis)chatLukk();state.roles=undefined;if(u&&state.member){loadThreads();loadVaktReq();if(lrTilgang())loadLr()}
     if(u&&lsGet('sm-push'))FB.linkPush(lsGet('sm-push')).catch(()=>{});
-    try{u?localStorage.setItem('sm-innlogget','1'):localStorage.removeItem('sm-innlogget')}catch(er){}
+    try{u?localStorage.setItem('sm-innlogget','1'):(localStorage.removeItem('sm-innlogget'),chatCacheTom())}catch(er){}
     await load();state.fast=false;state.authVent=false;
     if(first){first=false;if(state.tab==='news')markSeen();render();splashBort()}else keep(()=>{});
     if(!u)bonnForhent();

@@ -115,8 +115,8 @@ export async function lag(){
   const verdi=v=>v instanceof Ts||v instanceof Date?tilJson(v):v;
 
   async function les(ref){return (await kj(medNokler(sb.from(ref.table).select('*'),ref).maybeSingle())).data}
-  async function hentRader(q){
-    let r=sb.from(q.table).select('*');
+  async function hentRader(q,velg){
+    let r=sb.from(q.table).select(velg||'*');
     for(const [k,v] of Object.entries(q.parent||{}))r=r.eq(k,v);
     for(const d of q.deler||[]){
       if(d.w){const [f,op,v0]=d.w,v=verdi(v0);
@@ -127,6 +127,28 @@ export async function lag(){
     return (await kj(r)).data||[]}
   const dokSnap=(ref,rad)=>({id:ref.id,ref,exists:()=>!!rad,data:()=>rad?tilData(ref.table,rad):undefined,get:k=>rad?tilData(ref.table,rad)[k]:undefined});
   const samSnap=(q,rader)=>{const docs=rader.map(r=>dokSnap(dokument(q,r[q.keyCol]),r));return {docs,size:docs.length,empty:!docs.length,forEach:f=>docs.forEach(f)}};
+
+  /* Meldinger: bilder og lydklipp er store (opptil flere hundre kB hver) og hentes ikke sammen med meldingene. Teksten og resten vises med en gang, og mediene hentes én og én etterpå (nyeste først)
+     og lagres i minnet, så senere oppdateringer (reaksjoner, lest) bare henter det som er nytt. */
+  const medier=new Map();
+  async function hentMeldinger(mal,cb,stoppet){
+    const velg=Object.keys(KOL.messages).filter(k=>k!=='img'&&k!=='lyd').join(','),tid=mal.parent&&mal.parent.thread_id;
+    const rader=await hentRader(mal,velg);if(stoppet())return;
+    const ids=rader.map(r=>r.id),har={};
+    for(const r of rader){const m=medier.get(tid+'|'+r.id);if(m){if(m.img)r.img=m.img;if(m.lyd)r.lyd=m.lyd}}
+    cb(samSnap(mal,rader));   // teksten vises med en gang, før vi vet hvilke meldinger som har bilde eller lyd
+    if(ids.length)await Promise.all(['img','lyd'].map(async f=>{
+      const k=await kj(sb.from('messages').select('id').eq('thread_id',tid).in('id',ids).not(f,'is',null).neq(f,''));
+      for(const r of k.data||[])(har[r.id]=har[r.id]||[]).push(f)}));
+    if(stoppet())return;
+    const mangler=[];
+    for(const r of rader){if(!medier.has(tid+'|'+r.id)&&har[r.id]){mangler.push(r);if(har[r.id].includes('img'))r.imgVent=true;if(har[r.id].includes('lyd'))r.lydVent=true}}
+    if(mangler.length)cb(samSnap(mal,rader));
+    let tm=0;const oppdater=()=>{clearTimeout(tm);tm=setTimeout(()=>{if(!stoppet())cb(samSnap(mal,rader))},120)};
+    for(const r of mangler.reverse()){   // nyeste først
+      if(stoppet())return;
+      try{const d=(await kj(sb.from('messages').select('id,img,lyd').eq('thread_id',tid).eq('id',r.id).maybeSingle())).data;
+        delete r.imgVent;delete r.lydVent;if(d){medier.set(tid+'|'+r.id,{img:d.img||'',lyd:d.lyd||''});if(d.img)r.img=d.img;if(d.lyd)r.lyd=d.lyd}oppdater()}catch(e){delete r.imgVent;delete r.lydVent;oppdater()}}}
 
   // Skriving. modus: sett (erstatter dokumentet), flett (setDoc med merge), endre (updateDoc: dokumentet må finnes)
   async function skriv(ref,data,modus){
@@ -204,7 +226,9 @@ export async function lag(){
     // Lytter (sanntid): henter på nytt når en rad i tabellen endres. Reglene bestemmer hvilke endringer brukeren får.
     onSnapshot(mal,cb,err){
       let stopp=false,tm;
-      const hent=async()=>{try{const s=mal.type==='doc'?dokSnap(mal,await les(mal)):samSnap(mal,await hentRader(mal));if(!stopp)cb(s)}catch(e){if(!stopp&&err)err(e)}};
+      const hent=async()=>{try{
+        if(mal.type==='col'&&mal.table==='messages'){await hentMeldinger(mal,cb,()=>stopp);return}
+        const s=mal.type==='doc'?dokSnap(mal,await les(mal)):samSnap(mal,await hentRader(mal));if(!stopp)cb(s)}catch(e){if(!stopp&&err)err(e)}};
       const f=Object.entries(mal.type==='doc'?mal.keys:mal.parent||{})[0];
       const ch=sb.channel('sion-'+(++kanalNr)).on('postgres_changes',{event:'*',schema:'public',table:mal.table,...(f?{filter:f[0]+'=eq.'+f[1]}:{})},
         ()=>{clearTimeout(tm);tm=setTimeout(hent,120)}).subscribe(st=>{if(st==='SUBSCRIBED')hent()});
