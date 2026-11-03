@@ -9,8 +9,8 @@ function oppsett(tr = { kind: 'gruppe', parts: ['test@example.test'] }, config =
     sql.push([q, args]); return { rows: q.includes('from threads') ? (tr ? [tr] : []) : [{ name: 'Testperson' }] };
   } }, rooms: { createRoom: async o => { kall.push(o); }, listParticipants: async () => [] } }) };
 }
-test('Kun gruppemedlemmer får adgang; privat chat og ukjent gruppe avvises', async () => {
-  for (const tr of [null, { kind: 'dm', parts: ['test@example.test'] }, { kind: 'gruppe', parts: ['annen@example.test'] }]) {
+test('Kun deltakere får adgang; ukjent samtale, fremmed og andre samtaletyper avvises', async () => {
+  for (const tr of [null, { kind: 'annet', parts: ['test@example.test'] }, { kind: 'dm', parts: ['annen@example.test'] }, { kind: 'gruppe', parts: ['annen@example.test'] }]) {
     const s = oppsett(tr), r = await s.video({ threadId: 'gruppe' }, 'test@example.test');
     assert.equal(r.ok, false); assert.equal(s.kall.length, 0); assert.equal(r.token, undefined);
   }
@@ -54,4 +54,11 @@ test('Full samtale gir forklaring før kameraet åpnes', async () => {
     rooms: { createRoom: async () => {}, listParticipants: async () => Array.from({ length: 12 }, (_, i) => ({ identity: 'opptatt-' + i })) } });
   const r = await video({ threadId: 'gruppe' }, 'test@example.test'); assert.equal(r.ok, false);
   assert.match(r.feil, /full \(12 deltakere\)/); assert.equal(r.token, undefined);
+});
+test('Videoanrop i privat samtale: rom for to, og en tredje kommer ikke inn', async () => {
+  const s = oppsett({ kind: 'dm', parts: ['test@example.test', 'annen@example.test'] }), r = await s.video({ threadId: 'dm1' }, 'test@example.test');
+  assert.equal(r.ok, true); assert.equal(r.max, 2); assert.equal(s.kall[0].maxParticipants, 2);
+  const full = lagVideo({ env, pool: { query: async () => ({ rows: [{ kind: 'dm', parts: ['test@example.test'] }] }) },
+    rooms: { createRoom: async () => {}, listParticipants: async () => [{ identity: 'a' }, { identity: 'b' }] } });
+  const r2 = await full({ threadId: 'dm1' }, 'test@example.test'); assert.equal(r2.ok, false); assert.match(r2.feil, /full \(2 deltakere\)/); assert.equal(r2.token, undefined);
 });
