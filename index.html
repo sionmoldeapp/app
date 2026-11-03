@@ -959,35 +959,44 @@ html[data-bred="1"] .chat,html[data-bred="1"] .chat[data-mork="1"]{background:va
 .bmw.hjertesendt .bm-hjerte,.bmw.hjertesendt .bm-glod,.bmw.hjertesendt .bm-sh{opacity:0;animation:none;transition:opacity .15s}
 .bmstor{position:fixed;z-index:60;pointer-events:none;will-change:transform,opacity}
 .bmrest{display:inline-block;font-size:30px;margin:6px 8px;opacity:.9}
-.bmw .bm-bear{transform-origin:120px 226px;animation:bmInn .75s cubic-bezier(.2,.9,.3,1.15) both}
-.bmw .bm-squish{transform-origin:120px 226px;animation:bmSqu 2.3s ease-in-out both}
-.bmw .bm-hode{transform-origin:120px 150px;animation:bmPust 3.4s ease-in-out 2.4s infinite alternate}
-.bmw .bm-oyne{transform-origin:120px 90px;animation:bmBlink 4.6s linear 3s infinite}
-.bmw .bm-aV{animation:bmArmV 2.3s cubic-bezier(.4,0,.2,1) both}
-.bmw .bm-aH{animation:bmArmH 2.3s cubic-bezier(.4,0,.2,1) both}
-.bmw .bm-hjerte{animation:bmHjerte 2.3s cubic-bezier(.2,.9,.3,1.1) both}
-.bmw .bm-slag{animation:bmSlag 1.35s ease-in-out 2.4s infinite}
-.bmw .bm-glod{animation:bmGlod 2.3s ease-out both,bmGlod2 1.35s ease-in-out 2.4s infinite}
+.bmw .bm-bear{transform-origin:120px 226px;animation:bmGaa 2s cubic-bezier(.4,0,.55,1) both}
+.bmw .bm-gang{transform-origin:120px 226px;animation:bmVrikk 2s ease-in-out both}
+.bmw .bm-skygge{transform-origin:120px 228px;animation:bmSkygge 2s cubic-bezier(.4,0,.55,1) both}
+.bmw .bm-fV{animation:bmSkritt .5s ease-in-out 4 both}
+.bmw .bm-fH{animation:bmSkritt .5s ease-in-out .25s 4 both}
+.bmw .bm-squish{transform-origin:120px 226px;animation:bmSqu 2.3s ease-in-out 2s both}
+.bmw .bm-hode{transform-origin:120px 150px;animation:bmPust 3.4s ease-in-out 4.4s infinite alternate}
+.bmw .bm-oyne{transform-origin:120px 90px;animation:bmBlink 4.6s linear 5s infinite}
+.bmw .bm-aV{animation:bmSvingV 2s ease-in-out both,bmArmV 2.3s cubic-bezier(.4,0,.2,1) 2s forwards}
+.bmw .bm-aH{animation:bmSvingH 2s ease-in-out both,bmArmH 2.3s cubic-bezier(.4,0,.2,1) 2s forwards}
+.bmw .bm-hjerte{animation:bmHjerte 2.3s cubic-bezier(.2,.9,.3,1.1) 2s both}
+.bmw .bm-slag{animation:bmSlag 1.35s ease-in-out 4.4s infinite}
+.bmw .bm-glod{animation:bmGlod 2.3s ease-out 2s both,bmGlod2 1.35s ease-in-out 4.4s infinite}
 .bmw .bm-sh{opacity:0;animation:bmOpp 2.8s ease-out var(--d) infinite}
-.bmw.klar .bm-bear,.bmw.klar .bm-squish{animation:none}
+.bmw.klar .bm-bear,.bmw.klar .bm-gang,.bmw.klar .bm-skygge,.bmw.klar .bm-fV,.bmw.klar .bm-fH,.bmw.klar .bm-squish{animation:none}
 .bmw.klar .bm-aV{animation:none;transform:rotate(-22deg)}
 .bmw.klar .bm-aH{animation:none;transform:rotate(22deg)}
 .bmw.klar .bm-hjerte,.bmw.klar .bm-glod{animation:none}
 .bmw.klar .bm-glod{animation:bmGlod2 1.35s ease-in-out infinite}
 .bmw.klar .bm-slag{animation-delay:0s}
-.bmw.klar .bm-sh{animation-delay:calc(var(--d) - 2.4s)}
-@keyframes bmInn{0%{opacity:0;transform:translateY(26px) scale(.55)}55%{opacity:1;transform:translateY(-6px) scale(1.05)}100%{opacity:1;transform:none}}
+.bmw.klar .bm-sh{animation-delay:calc(var(--d) - 4.4s)}
+@keyframes bmGaa{0%{opacity:0;transform:translateY(-78px) scale(.13)}7%{opacity:1}90%{transform:translateY(0) scale(.97)}95%{transform:translateY(0) scale(1.035)}100%{opacity:1;transform:none}}
+@keyframes bmSkygge{0%{opacity:0;transform:translateY(-78px) scale(.13)}7%{opacity:1}90%{transform:translateY(0) scale(.97)}95%{transform:translateY(0) scale(1.035)}100%{opacity:1;transform:none}}
+@keyframes bmVrikk{0%{transform:none}12.5%{transform:rotate(-4deg) translateY(-6px)}25%{transform:rotate(0) translateY(0)}37.5%{transform:rotate(4deg) translateY(-6px)}50%{transform:rotate(0) translateY(0)}62.5%{transform:rotate(-4deg) translateY(-6px)}75%{transform:rotate(0) translateY(0)}87.5%{transform:rotate(4deg) translateY(-6px)}100%{transform:none}}
+@keyframes bmSkritt{0%,50%,100%{transform:translate(0,0)}25%{transform:translate(0,-10px)}}
+@keyframes bmSvingV{0%,100%{transform:rotate(0)}25%{transform:rotate(15deg)}50%{transform:rotate(0)}75%{transform:rotate(15deg)}}
+@keyframes bmSvingH{0%,100%{transform:rotate(0)}25%{transform:rotate(-15deg)}50%{transform:rotate(0)}75%{transform:rotate(-15deg)}}
 @keyframes bmSqu{0%,76%{transform:none}84%{transform:scale(1.035,.955)}93%{transform:scale(.99,1.02)}100%{transform:none}}
 @keyframes bmPust{from{transform:translateY(0)}to{transform:translateY(-2.5px)}}
 @keyframes bmBlink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
-@keyframes bmArmV{0%{transform:rotate(112deg)}24%{transform:rotate(120deg)}34%{transform:rotate(108deg)}44%{transform:rotate(120deg)}58%{transform:rotate(116deg)}78%{transform:rotate(-32deg)}90%{transform:rotate(-19deg)}100%{transform:rotate(-22deg)}}
-@keyframes bmArmH{0%{transform:rotate(-112deg)}24%{transform:rotate(-120deg)}34%{transform:rotate(-108deg)}44%{transform:rotate(-120deg)}58%{transform:rotate(-116deg)}78%{transform:rotate(32deg)}90%{transform:rotate(19deg)}100%{transform:rotate(22deg)}}
+@keyframes bmArmV{0%{transform:rotate(0deg)}16%{transform:rotate(114deg)}24%{transform:rotate(120deg)}34%{transform:rotate(108deg)}44%{transform:rotate(120deg)}58%{transform:rotate(116deg)}78%{transform:rotate(-32deg)}90%{transform:rotate(-19deg)}100%{transform:rotate(-22deg)}}
+@keyframes bmArmH{0%{transform:rotate(0deg)}16%{transform:rotate(-114deg)}24%{transform:rotate(-120deg)}34%{transform:rotate(-108deg)}44%{transform:rotate(-120deg)}58%{transform:rotate(-116deg)}78%{transform:rotate(32deg)}90%{transform:rotate(19deg)}100%{transform:rotate(22deg)}}
 @keyframes bmHjerte{0%,66%{transform:scale(0);opacity:0}86%{transform:scale(1.22);opacity:1}100%{transform:scale(1);opacity:1}}
 @keyframes bmSlag{0%,100%{transform:scale(1)}14%{transform:scale(1.09)}28%{transform:scale(1)}42%{transform:scale(1.06)}56%{transform:scale(1)}}
 @keyframes bmGlod{0%,66%{opacity:0;transform:scale(.3)}100%{opacity:1;transform:scale(1)}}
 @keyframes bmGlod2{0%,100%{opacity:.75}50%{opacity:1}}
 @keyframes bmOpp{0%{opacity:0;transform:translate(0,10px) scale(.3)}18%{opacity:.95}100%{opacity:0;transform:translate(var(--dx),-92px) scale(1)}}
-@media (prefers-reduced-motion:reduce){.bmw .bm-bear,.bmw .bm-squish,.bmw .bm-hode,.bmw .bm-oyne,.bmw .bm-hjerte,.bmw .bm-slag,.bmw .bm-glod,.bmw .bm-sh{animation:none!important}.bmw .bm-aV{animation:none!important;transform:rotate(-22deg)}.bmw .bm-aH{animation:none!important;transform:rotate(22deg)}.bmw .bm-sh{display:none}}
+@media (prefers-reduced-motion:reduce){.bmw .bm-bear,.bmw .bm-gang,.bmw .bm-skygge,.bmw .bm-fV,.bmw .bm-fH,.bmw .bm-squish,.bmw .bm-hode,.bmw .bm-oyne,.bmw .bm-hjerte,.bmw .bm-slag,.bmw .bm-glod,.bmw .bm-sh{animation:none!important}.bmw .bm-aV{animation:none!important;transform:rotate(-22deg)}.bmw .bm-aH{animation:none!important;transform:rotate(22deg)}.bmw .bm-sh{display:none}}
 .cmeny{position:absolute;inset:0;z-index:30}
 .cmeny-bak{position:absolute;inset:0;background:rgba(0,0,0,.4)}
 .cmeny-pill{position:absolute;left:50%;transform:translateX(-50%);max-width:calc(100% - 16px);display:flex;align-items:center;gap:2px;padding:7px 9px;border-radius:99px;background:#2b2b2e;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.45);overflow-x:auto;scrollbar-width:none;animation:cmpop .16s ease-out}
@@ -4420,11 +4429,11 @@ function bamseSvg(){const n=++bmNr,id=s=>'bm'+n+s,u=s=>'url(#'+id(s)+')';
   +'<linearGradient id="'+id('h')+'" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#ff7d9b"/><stop offset="1" stop-color="#df2158"/></linearGradient>'
   +'<radialGradient id="'+id('g')+'"><stop offset="0" stop-color="#ff8aa8" stop-opacity=".55"/><stop offset="1" stop-color="#ff8aa8" stop-opacity="0"/></radialGradient>'
   +'<filter id="'+id('b')+'" x="-30%" y="-100%" width="160%" height="300%"><feGaussianBlur stdDeviation="4"/></filter></defs>'
-  +'<ellipse cx="120" cy="228" rx="64" ry="8" fill="#000" opacity=".2" filter="'+u('b')+'"/>'
-  +'<g class="bm-bear"><g class="bm-squish">'
+  +'<ellipse class="bm-skygge" cx="120" cy="228" rx="64" ry="8" fill="#000" opacity=".2" filter="'+u('b')+'"/>'
+  +'<g class="bm-bear"><g class="bm-gang"><g class="bm-squish">'
   /* føtter, kropp, mage */
-  +'<ellipse cx="84" cy="210" rx="23" ry="15" fill="'+u('f')+'"/><ellipse cx="156" cy="210" rx="23" ry="15" fill="'+u('f')+'"/>'
-  +'<ellipse cx="84" cy="212" rx="12" ry="8" fill="#e9aaa0" opacity=".85"/><ellipse cx="156" cy="212" rx="12" ry="8" fill="#e9aaa0" opacity=".85"/>'
+  +'<g class="bm-fV"><ellipse cx="84" cy="210" rx="23" ry="15" fill="'+u('f')+'"/><ellipse cx="84" cy="212" rx="12" ry="8" fill="#e9aaa0" opacity=".85"/></g>'
+  +'<g class="bm-fH"><ellipse cx="156" cy="210" rx="23" ry="15" fill="'+u('f')+'"/><ellipse cx="156" cy="212" rx="12" ry="8" fill="#e9aaa0" opacity=".85"/></g>'
   +'<ellipse cx="120" cy="162" rx="53" ry="54" fill="'+u('f')+'"/><ellipse cx="120" cy="170" rx="33" ry="35" fill="'+u('t')+'"/>'
   /* hode (puster rolig) */
   +'<g class="bm-hode"><circle cx="78" cy="52" r="20" fill="'+u('f')+'"/><circle cx="162" cy="52" r="20" fill="'+u('f')+'"/><circle cx="78" cy="54" r="11" fill="#eab79b"/><circle cx="162" cy="54" r="11" fill="#eab79b"/>'
@@ -4438,8 +4447,8 @@ function bamseSvg(){const n=++bmNr,id=s=>'bm'+n+s,u=s=>'url(#'+id(s)+')';
   +[[76,'bm-aV'],[164,'bm-aH']].map(([x,k])=>'<g transform="translate('+x+' 134)"><g class="'+k+'"><rect x="-12.5" y="-6" width="25" height="64" rx="12.5" fill="'+u('f')+'"/><circle cx="0" cy="52" r="13.5" fill="'+u('f')+'"/><circle cx="0" cy="54" r="7.6" fill="#e9aaa0" opacity=".9"/><path d="M-6 -2q-3 14 0 30" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".12" fill="none"/></g></g>').join('')
   /* hjertet, lysglød og små hjerter */
   +'<g transform="translate(120 176) scale(1.02)"><circle class="bm-glod" r="46" fill="'+u('g')+'"/><g class="bm-hjerte"><g class="bm-slag"><path d="M0 24C-38-2-36-37-13-37-4-37 0-30 0-26 0-30 4-37 13-37 36-37 38-2 0 24z" fill="'+u('h')+'"/><ellipse cx="-15" cy="-22" rx="7" ry="4.2" fill="#fff" opacity=".55" transform="rotate(-35 -15 -22)"/></g></g></g>'
-  +[[66,172,-24,'2.4s',.42],[176,168,26,'3.2s',.5],[152,150,46,'4s',.36]].map(([x,y,dx,d,s])=>'<g transform="translate('+x+' '+y+')"><g class="bm-sh" style="--dx:'+dx+'px;--d:'+d+'"><path transform="scale('+s+')" d="M0 24C-38-2-36-37-13-37-4-37 0-30 0-26 0-30 4-37 13-37 36-37 38-2 0 24z" fill="#ff6f93"/></g></g>').join('')
-  +'</g></svg>'}
+  +[[66,172,-24,'4.4s',.42],[176,168,26,'5.2s',.5],[152,150,46,'6s',.36]].map(([x,y,dx,d,s])=>'<g transform="translate('+x+' '+y+')"><g class="bm-sh" style="--dx:'+dx+'px;--d:'+d+'"><path transform="scale('+s+')" d="M0 24C-38-2-36-37-13-37-4-37 0-30 0-26 0-30 4-37 13-37 36-37 38-2 0 24z" fill="#ff6f93"/></g></g>').join('')
+  +'</g></g></svg>'}
 const SION_STIKK={
   bamse:['Bamse med klem',''],
   fest:['Fest',spk(12,16,1.2)+spk(88,24,.85,SG2)+spk(78,7,.55,SC)+spk(9,64,.7,SG2)+spk(92,70,1)+spk(50,95,.6,SC)+'<path d="M4 34Q18 46 32 34" fill="none" stroke="'+SG+'" stroke-width="1" opacity=".55" stroke-linecap="round"/><path d="M68 90Q82 80 96 90" fill="none" stroke="'+SG2+'" stroke-width="1" opacity=".55" stroke-linecap="round"/>'],
@@ -6079,7 +6088,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='04.11.2026 kl. 02:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='04.11.2026 kl. 03:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
