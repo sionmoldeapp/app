@@ -205,8 +205,42 @@ setInterval(async () => {
   kjorer = false;
 }, 60e3);
 
+// ---- Snakk til tekst: lyden fra appen (webm/mp4 fra MediaRecorder) skrives ut av whisper.cpp i sion-tale. Bare innloggede medlemmer. Én om gangen, maks 3 i kø.
+let taleKo = Promise.resolve(), taleVenter = 0;
+async function taleTekst(req, res) {
+  const svar = (kode, o) => { res.writeHead(kode, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
+  if (req.method === 'GET') return svar(200, { ok: true, tale: !!env.TALE_URL });
+  if (req.method !== 'POST') return svar(405, { ok: false, feil: 'Ikke tillatt' });
+  if (!env.TALE_URL) return svar(200, { ok: false, feil: 'Talegjenkjenning er ikke aktivert på serveren.' });
+  const deler = [];let n = 0;
+  req.on('data', c => { n += c.length; if (n > 8e6) { req.destroy(); return; } deler.push(c); });
+  req.on('end', async () => {
+    try {
+      const tok = String(req.headers.authorization || '').replace(/^Bearer /, ''), e = await epostFraToken(tok);
+      if (!e || !((await pool.query('select 1 from members where lower(email) = $1 union select 1 from admins where lower(email) = $1', [e])).rowCount)) return svar(401, { ok: false, feil: 'Du må være innlogget.' });
+      const lyd = Buffer.concat(deler);
+      if (lyd.length < 800) return svar(200, { ok: true, tekst: '' });
+      if (taleVenter >= 3) return svar(200, { ok: false, feil: 'Talegjenkjenningen er opptatt. Prøv igjen om litt.' });
+      taleVenter++;
+      const jobb = taleKo.then(async () => {
+        const fd = new FormData();
+        fd.append('file', new Blob([lyd], { type: String(req.headers['content-type'] || 'audio/webm').split(';')[0] }), 'tale');
+        fd.append('response_format', 'json'); fd.append('temperature', '0.0'); fd.append('language', 'no');
+        const r = await fetch(env.TALE_URL + '/inference', { method: 'POST', body: fd, signal: AbortSignal.timeout(170e3) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return String((await r.json()).text || '').replace(/\s+/g, ' ').trim();
+      });
+      taleKo = jobb.catch(() => {}).then(() => { taleVenter--; });
+      const tekst = await jobb;
+      log('Tale:', e, lyd.length + ' byte', tekst.length + ' tegn');
+      svar(200, { ok: true, tekst });
+    } catch (er) { log('Tale feilet:', er.message); svar(200, { ok: false, feil: 'Kunne ikke skrive ut talen (' + er.message + ').' }); }
+  });
+}
+
 // ---- HTTP
 http.createServer((req, res) => {
+  if ((req.url || '').split('?')[0] === '/tale') return taleTekst(req, res);
   const svar = (kode, o) => { res.writeHead(kode, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify({ ...o, versjon: VERSJON })); };
   if (req.method === 'GET') return svar(200, { ok: true, tjeneste: 'Sion Molde varsler (egen server)' });
   if (req.method !== 'POST') return svar(405, { ok: false, feil: 'Ikke tillatt' });

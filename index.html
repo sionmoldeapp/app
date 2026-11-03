@@ -5263,7 +5263,7 @@ async function chatDikter(){
   if(state.chat.rec||tale.tid||document.querySelector('dialog.svideo')){push('Mikrofonen er i bruk','Avslutt opptaket eller samtalen først.');return}
   try{const {openDictation}=await import('./lib/chat-dictation.js');if(state.chat.id!==tid||state.chat.ny!==ny||!felt.isConnected)return;
     const start=felt.selectionStart??felt.value.length,slutt=felt.selectionEnd??start;
-    openDictation({isCurrent:()=>state.chat.id===tid&&state.chat.ny===ny&&felt.isConnected,
+    openDictation({tale:SUPA_NA?{url:location.origin+'/tale',token:()=>FB.user.getIdToken(true)}:null,isCurrent:()=>state.chat.id===tid&&state.chat.ny===ny&&felt.isConnected,
       insert:tekst=>{const foran=felt.value.slice(0,start),etter=felt.value.slice(slutt),ny=foran+(foran&&!/\s$/.test(foran)?' ':'')+tekst+(etter&&!/^\s/.test(etter)?' ':'')+etter;
         if(ny.length>(felt.maxLength>0?felt.maxLength:1000))return false;felt.value=ny;felt.dispatchEvent(new Event('input',{bubbles:true}));felt.focus();return true;}});
   }catch(e){push('Snakk til tekst',e.message||'Kunne ikke åpne talegjenkjenningen.');}

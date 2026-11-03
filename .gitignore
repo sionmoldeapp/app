@@ -16,3 +16,6 @@ ui-debug.log
 node_modules/
 
 lib/mediapipe/wasm/*.wasm
+
+# Talemodell (lastes ned med server/sion/hent-tale.js)
+server/volumes/tale/*.bin

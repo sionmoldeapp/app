@@ -36,6 +36,9 @@
 	handle /varsel {
 		reverse_proxy sion-varsel:8110
 	}
+	handle /tale {
+		reverse_proxy sion-varsel:8110
+	}
 	handle_path /video/* {
 		reverse_proxy sion-video:7880
 	}
@@ -102,6 +105,9 @@
 		reverse_proxy api-gw:8000
 	}
 	handle /varsel {
+		reverse_proxy sion-varsel:8110
+	}
+	handle /tale {
 		reverse_proxy sion-varsel:8110
 	}
 	handle_path /video/* {

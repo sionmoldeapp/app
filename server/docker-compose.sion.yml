@@ -78,6 +78,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       ANON_KEY: ${ANON_KEY}
       GOTRUE_URL: http://auth:9999
+      TALE_URL: http://sion-tale:8080
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:post@sionmolde.no}
@@ -94,6 +95,16 @@ services:
     volumes:
       - ./sion/varsel:/app
       - sion_varsel_modules:/app/node_modules
+
+  # Snakk til tekst uten pip: lyden tas opp i appen og skrives ut her (whisper.cpp med norsk modell fra Nasjonalbiblioteket).
+  # Nås bare fra sion-varsel (/tale), lyden forlater aldri serveren. Modellen hentes med: node server/sion/hent-tale.js (ca. 175 MB).
+  sion-tale:
+    container_name: sion-tale
+    image: ghcr.io/ggml-org/whisper.cpp:main
+    restart: unless-stopped
+    entrypoint: ["/app/build/bin/whisper-server", "-m", "/modell/nb-whisper-small-q5_0.bin", "--host", "0.0.0.0", "--port", "8080", "--convert", "-l", "no", "-t", "4"]
+    volumes:
+      - ./volumes/tale:/modell:ro
 
   # Sikkerhetskopi hver natt til mappen backups/ (database + opplastede filer).
   # Samme bilde som databasen, så pg_dump har riktig versjon.
