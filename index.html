@@ -931,6 +931,7 @@ html[data-bred="1"] .chat,html[data-bred="1"] .chat[data-mork="1"]{background:va
 .cmeny-bak{position:absolute;inset:0;background:rgba(0,0,0,.4)}
 .cmeny-pill{position:absolute;left:50%;transform:translateX(-50%);max-width:calc(100% - 16px);display:flex;align-items:center;gap:2px;padding:7px 9px;border-radius:99px;background:#2b2b2e;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.45);overflow-x:auto;scrollbar-width:none;animation:cmpop .16s ease-out}
 .cmeny-flere[hidden]{display:none}
+.chjerte{position:fixed;z-index:-1;pointer-events:none;will-change:transform,opacity}
 .cmeny-flere{flex-wrap:wrap;justify-content:center;width:max-content}
 .cmeny-pill .cmplus{font-size:28px;font-weight:300;width:42px;height:42px;padding:0;display:grid;place-items:center;background:#4a4a4e;color:#fff;margin-left:4px}
 @keyframes cmpop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
@@ -5256,6 +5257,17 @@ function chatSlettMeny(){
     }catch(e){push('Kunne ikke slette','Prøv igjen ('+((e&&e.code)||'feil')+').')}});
   dlg.showModal()}
 /* Setter, bytter eller fjerner din reaksjon på en melding. Du har én reaksjon per melding. */
+/* Hjerte-reaksjon: et rødt hjerte vokser bak meldingen (eller bildet) til det nesten fyller skjermen, og blir gradvis mer gjennomsiktig. */
+function chatHjerteVokser(mid){
+  try{if(matchMedia('(prefers-reduced-motion:reduce)').matches)return}catch(e){}
+  const w=chatW(),b=document.querySelector('#cMsg [data-msg="'+mid+'"]');if(!w||!b||!b.animate)return;
+  const r=b.getBoundingClientRect(),S=100,mal=Math.min(innerWidth,innerHeight)*0.95/S*1.6;
+  const h=document.createElement('div');h.className='chjerte';h.setAttribute('aria-hidden','true');
+  h.style.cssText='left:'+(r.left+r.width/2-S/2)+'px;top:'+(r.top+r.height/2-S/2)+'px;width:'+S+'px;height:'+S+'px';
+  h.innerHTML='<svg viewBox="0 0 24 24" width="100%" height="100%"><path fill="#e0245e" d="M12 21s-8.5-5.3-8.5-11.2A4.8 4.8 0 0 1 12 7.1a4.8 4.8 0 0 1 8.5 2.7C20.5 15.700 12 21 12 21z"/></svg>';
+  w.style.isolation='isolate';w.insertBefore(h,w.firstChild);
+  const a=h.animate([{transform:'scale(.4)',opacity:.75},{transform:'scale('+mal+')',opacity:0}],{duration:1500,easing:'cubic-bezier(.2,.6,.3,1)',fill:'forwards'});
+  a.onfinish=a.oncancel=()=>h.remove();setTimeout(()=>h.remove(),2200)}
 async function chatReak(mid,felt){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid),t=c.id&&chatTraad(c.id);if(!m||!t)return;
   const meg=meEmail();m.reak=m.reak||{};const snap=JSON.parse(JSON.stringify(m.reak));
@@ -5263,6 +5275,7 @@ async function chatReak(mid,felt){
   fjernFra.forEach(f=>{m.reak[f]=m.reak[f].filter(x=>x!==meg)});if(!fjern)m.reak[felt]=[...(m.reak[felt]||[]),meg];chatMsgs(false);
   try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}
   if(!fjern)lydSpill('lik');
+  if(!fjern&&felt==='r_hjerte')chatHjerteVokser(mid);
   const emo0=(CHAT_REAK.find(([f])=>f===felt)||['','👍'])[1],emo=emo0===':sion:'?'Sion':emo0;
   try{await FB.reakMsg(c.id,mid,{fjernFra,legg:fjern?null:felt},(!fjern&&m.by!==meg)?{navn:nyBeskjedNavn(),tekst:m.text||'bildet ditt',emoji:emo,parts:t.parts}:null)}
   catch(e){m.reak=snap;chatMsgs(false);push('Kunne ikke reagere','Prøv igjen ('+((e&&e.code)||'feil')+').')}}
@@ -5861,7 +5874,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='03.11.2026 kl. 19:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='03.11.2026 kl. 19:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
