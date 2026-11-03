@@ -956,6 +956,9 @@ html[data-bred="1"] .chat,html[data-bred="1"] .chat[data-mork="1"]{background:va
 .bmw svg{display:block;width:100%;height:100%;overflow:visible}
 .cb.cstor .bmw{width:210px;height:210px;margin:2px 0}
 .bmw.bmmini{width:46px;height:46px;margin:0;pointer-events:none}
+.bmw.hjertesendt .bm-hjerte,.bmw.hjertesendt .bm-glod,.bmw.hjertesendt .bm-sh{opacity:0;animation:none;transition:opacity .15s}
+.bmstor{position:fixed;z-index:60;pointer-events:none;will-change:transform,opacity}
+.bmrest{display:inline-block;font-size:30px;margin:6px 8px;opacity:.9}
 .bmw .bm-bear{transform-origin:120px 226px;animation:bmInn .75s cubic-bezier(.2,.9,.3,1.15) both}
 .bmw .bm-squish{transform-origin:120px 226px;animation:bmSqu 2.3s ease-in-out both}
 .bmw .bm-hode{transform-origin:120px 150px;animation:bmPust 3.4s ease-in-out 2.4s infinite alternate}
@@ -4451,7 +4454,7 @@ const SION_STIKK={
 const SION_TOKEN=new RegExp(':sion(?:-(sort|hvit|solbriller|ild|'+Object.keys(SION_STIKK).join('|')+'))?:','g');
 const sionHtml=v=>{
   if(v==='solbriller'||v==='ild')v='';   // fjernet klistremerke: eldre meldinger viser vanlig logo
-  if(v==='bamse')return '<span class="bmw" role="img" aria-label="Bamse som gir deg en klem med hjerte" title="Trykk for en ny klem">'+bamseSvg()+'</span>';
+  if(v==='bamse')return '<span class="bmw" role="img" aria-label="Bamse som gir deg en klem med hjerte" title="Trykk for å sende hjertet">'+bamseSvg()+'</span>';
   if(v&&SION_STIKK[v])return '<span class="sionx" role="img" aria-label="Sion-klistremerke: '+SION_STIKK[v][0]+'"><span class="sione"></span><svg viewBox="0 0 100 100" aria-hidden="true">'+SION_STIKK[v][1]+'</svg></span>';
   return '<span class="sione'+(v==='sort'?' sort':v==='hvit'?' hvit':'')+'" role="img" aria-label="Sion-logo'+(v==='sort'?' i sort':v==='hvit'?' i hvitt':'')+'"></span>'};
 /* Panelet under meldingsfeltet: Sion-logoen i tre farger, klistremerkene, hurtigtekster for feiring og vanlige emojier. */
@@ -4839,13 +4842,31 @@ function chatMsgs(sist){
   chatBamseKlar(box);
   box.insertAdjacentHTML('beforeend','<div class="cnedw"><button type="button" class="cned" data-cned aria-label="Gå til siste melding" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5.5 12.5 12 19l6.5-6.5"/></svg></button><button type="button" class="cned" data-cfullut aria-label="Avslutt fullskjerm" title="Avslutt fullskjerm" hidden>'+CHAT_FULL_UT+'</button></div>');
   if(nær||sist){box.scrollTop=box.scrollHeight;chatHoldNede(box)}chatNedKnapp(box);chatLesPlan()}
-/* Bamsen spiller hele inngangen (kommer inn, åpner armene, klemmer) bare for en ny melding, én gang. Ellers står den ferdig (rolig pust og små hjerter). Trykk på bamsen spiller klemmen på nytt. */
-const bmSett=new Set();
+/* Bamsen spiller hele inngangen (kommer inn, åpner armene, klemmer) bare for en ny melding, én gang. Ellers står den ferdig (rolig pust og små hjerter).
+   Trykk på bamsen: den sender hjertet, som vokser og fyller store deler av skjermen og blir mer og mer gjennomsiktig, og bamsen forsvinner. Igjen står et lite hjerte. Husket på denne telefonen. */
+const bmSett=new Set();let bmBorte=new Set();try{bmBorte=new Set(JSON.parse(localStorage.getItem('sm-bamse-borte')||'[]'))}catch(e){}
+const bmRest=()=>'<span class="bmrest" role="img" aria-label="Bamsen har sendt hjertet sitt">💗</span>';
 function chatBamseKlar(box){let rolig=false;try{rolig=matchMedia('(prefers-reduced-motion:reduce)').matches}catch(e){}
   box.querySelectorAll('.bmw:not(.bmmini)').forEach(e=>{const b=e.closest('[data-msg]'),id=b&&b.dataset.msg,m=id&&(state.chat.msgs||[]).find(x=>x.id===id);
-    if(rolig||!id||bmSett.has(id)||!m||Date.now()-(m.ms||0)>30e3)e.classList.add('klar');bmSett.add(id)})}
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#cMsg .bmw');if(!b||!b.classList.contains('klar'))return;try{if(matchMedia('(prefers-reduced-motion:reduce)').matches)return}catch(x){}
-  b.classList.remove('klar');void b.offsetWidth});
+    if(id&&bmBorte.has(id)){e.outerHTML=bmRest();return}
+    if(rolig||!id||bmSett.has(id)||!m||Date.now()-(m.ms||0)>30e3)e.classList.add('klar');if(id)bmSett.add(id)})}
+function bamseSend(w){
+  const b=w.closest('[data-msg]'),id=b&&b.dataset.msg;if(!id||w.classList.contains('sender'))return;
+  w.classList.add('sender');bmBorte.add(id);try{localStorage.setItem('sm-bamse-borte',JSON.stringify([...bmBorte].slice(-200)))}catch(e){}
+  let rolig=false;try{rolig=matchMedia('(prefers-reduced-motion:reduce)').matches}catch(e){}
+  try{navigator.vibrate&&navigator.vibrate(18)}catch(e){}lydSpill('lik');
+  const hj=w.querySelector('.bm-hjerte'),r=(hj||w).getBoundingClientRect(),ch=chatEl();
+  if(!rolig&&ch&&hj&&hj.animate){
+    const S=100,mal=Math.min(innerWidth,innerHeight)*0.95/S*1.5,h=document.createElement('div');h.className='bmstor';h.setAttribute('aria-hidden','true');
+    h.style.cssText='left:'+(r.left+r.width/2-S/2)+'px;top:'+(r.top+r.height/2-S/2)+'px;width:'+S+'px;height:'+S+'px';
+    h.innerHTML='<svg viewBox="-40 -40 80 80" width="100%" height="100%"><defs><linearGradient id="bmsg" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#ff7d9b"/><stop offset="1" stop-color="#df2158"/></linearGradient></defs><path d="M0 24C-38-2-36-37-13-37-4-37 0-30 0-26 0-30 4-37 13-37 36-37 38-2 0 24z" fill="url(#bmsg)"/><ellipse cx="-15" cy="-22" rx="7" ry="4.2" fill="#fff" opacity=".55" transform="rotate(-35 -15 -22)"/></svg>';
+    ch.appendChild(h);
+    const a=h.animate([{transform:'scale(.45)',opacity:.95},{transform:'scale('+(mal*.55)+')',opacity:.8,offset:.35},{transform:'scale('+mal+')',opacity:0}],{duration:1900,easing:'cubic-bezier(.2,.7,.3,1)',fill:'forwards'});
+    const rydd=()=>h.remove();a.onfinish=a.oncancel=rydd;setTimeout(rydd,2300);
+    w.classList.add('hjertesendt');
+    w.animate([{transform:'none',opacity:1},{transform:'scale(1.06) translateY(-4px)',opacity:1,offset:.25},{transform:'scale(.82) translateY(10px)',opacity:0}],{duration:900,easing:'ease-in',fill:'forwards'}).onfinish=()=>{const nå=document.querySelector('#cMsg [data-msg="'+id+'"] .bmw');if(nå)nå.outerHTML=bmRest();else if(w.isConnected)w.outerHTML=bmRest()}}
+  else w.outerHTML=bmRest()}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#cMsg .bmw');if(!b||b.classList.contains('bmmini'))return;bamseSend(b)});
 function chatNedKnapp(b){const k=b&&b.querySelector('[data-cned]'),f=b&&b.querySelector('[data-cfullut]'),nede=b&&b.scrollHeight-b.scrollTop-b.clientHeight<120;if(k)k.hidden=!!nede;if(f)f.hidden=!(nede&&state.chat&&state.chat.full)}   // nederst i fullskjerm: samme knapp bytter til «Avslutt fullskjerm»
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-cfullut]')){chatFullSett(false);return}const k=e.target.closest&&e.target.closest('[data-cned]');if(!k)return;const b=document.getElementById('cMsg');if(b){b._pin=true;b.scrollTo({top:b.scrollHeight,behavior:'smooth'})}});
 /* Nyeste melding skal vises når samtalen åpnes. Bilder, skrifter og lyd lastes etter at meldingene er tegnet og gjør samtalen høyere, så vi holder den nederst til alt er lastet (og til du selv blar oppover). */
@@ -6058,7 +6079,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='04.11.2026 kl. 02:00';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='04.11.2026 kl. 02:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
