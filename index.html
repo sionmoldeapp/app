@@ -5480,6 +5480,7 @@ document.addEventListener('click',e=>{
   else if('cgalleri' in d){const f=document.getElementById('cFil');if(f){f.value='';f.click()}}
   else if('cchev' in d){state.chat.verk=!state.chat.verk;chatInpOppd();const ta0=document.getElementById('cT');if(ta0)ta0.focus({preventScroll:true})}
   else if('cemoknapp' in d){const p=document.getElementById('cEmoji');if(p)p.hidden=!p.hidden}
+  else if(d.cemo&&/^:sion[a-z0-9-]*:$/.test(d.cemo))chatSendStikk(d.cemo);   // Sion-logo og klistremerker sendes med en gang
   else if(d.cemo){const ta=document.getElementById('cT');if(ta){const a=ta.selectionStart==null?ta.value.length:ta.selectionStart,z=ta.selectionEnd==null?a:ta.selectionEnd;ta.value=ta.value.slice(0,a)+d.cemo+ta.value.slice(z);ta.selectionStart=ta.selectionEnd=a+d.cemo.length;ta.dispatchEvent(new Event('input',{bubbles:true}));if(/^:sion/.test(d.cemo))ta.blur();else ta.focus()}}   // klistremerker og Sion-logoer: tastaturet skjules
   else if('chatdelt' in d)chatDeltakere();
   else if('chatmeny' in d)chatMeny();
@@ -5540,6 +5541,12 @@ function chatHurtigMeny(){
 /* Bare mousedown (ikke touchstart, som ville stoppet selve trykket): hindrer at knappen tar fokus fra feltet. */
 document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('#cForm .cchev,#cForm .cverk button,#cForm .csmil,#cForm .cemi,#cForm .csend'))e.preventDefault()});
 document.addEventListener('change',e=>{if(e.target&&(e.target.id==='cFil'||e.target.id==='cKam')&&e.target.files&&e.target.files[0])chatSendBilde(e.target.files[0])});
+/* Klistremerke: sendes direkte i samtalen når det trykkes (ikke via skrivefeltet). */
+async function chatSendStikk(token){
+  const c=state.chat;if(c.sender||c.red)return;c.sender=true;chatPanelLukk();
+  try{await chatSendTekst(token,c.svar?{svar:c.svar}:null);c.svar=null;chatBar()}
+  catch(er){push('Kunne ikke sende','Prøv igjen ('+((er&&er.code)||'feil')+').')}
+  c.sender=false}
 async function chatSendSkjema(tommel){
   const c=state.chat,ta=document.getElementById('cT');if(!ta)return;let tekst=(ta.value||'').trim();if(!tekst&&tommel)tekst=chatHurtig();if(!tekst||c.sender)return;
   const harFokus=document.activeElement===ta;chatPanelLukk();c.sender=true;const btn=document.querySelector('#cForm .csend:not(.ctommel)');if(btn)btn.disabled=true;
@@ -5879,7 +5886,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='03.11.2026 kl. 20:15';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='03.11.2026 kl. 20:30';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
