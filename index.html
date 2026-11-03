@@ -569,7 +569,7 @@ html.chatapen,html.chatapen body,html.chatapen .app,html.chatapen header.top,htm
 .chd{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
 .chd h2{margin:0;font-size:var(--t-xl)}
 /* Fullskjerm i Sionchat: toppen og menylinjen skjules, og listen får logoen (som vanlig øverst til venstre) med «Sionchat» til høyre */
-html.chatfull header.top,html.chatfull nav.tabs{display:none!important}
+html.chatfull:not(.chatovg) header.top,html.chatfull:not(.chatovg) nav.tabs{display:none!important}
 .chd .cfl{width:36px;height:40px;flex:none;display:block;background:var(--ink);-webkit-mask:url(logo-512.png) center/contain no-repeat;mask:url(logo-512.png) center/contain no-repeat}
 html.chatfull .chat{padding-top:env(safe-area-inset-top,0)}
 /* Flytende bunnlinje i fullskjerm: Alle, Uleste, Grupper og Ny melding */
@@ -4189,12 +4189,14 @@ function chatOvergang(dir,endre){
   let spok=null;try{ovgRydd();if(!ovgRedusert()){const e=chatEl();spok=e.cloneNode(true);spok.removeAttribute('id');spok.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));spok.inert=true;spok.setAttribute('aria-hidden','true');spok.style.pointerEvents='none';spok.style.zIndex='4';document.body.appendChild(spok)}}catch(er){spok=null}
   endre();
   try{ovgInn(chatEl(),dir,ovgRedusert());if(spok){const sp=spok;ovgRydde.push(()=>sp.remove());ovgUt(sp,dir,()=>sp.remove())}}catch(er){if(spok)spok.remove()}}
-function chatFullSett(på){const c=state.chat;if(!!på===!!c.full)return;c.auto=false;chatOvergang(på?1:-1,()=>chatFullSett2(på))}
-function chatFullSett2(på){const c=state.chat;c.full=!!på;setTimeout(chatFullFarge,0);
+function chatFullSett(på){const c=state.chat;if(!!på===!!c.full)return;c.auto=false;chatFullSett2(på)}
+/* Fullskjerm: chatboksen vokser/krymper rolig (top/bottom animeres), mens topplinjen og menyen blir stående under til det er ferdig. */
+function chatFullSett2(på){const c=state.chat;const ce=chatEl(),t0=parseFloat(ce.style.top),b0=parseFloat(ce.style.bottom),h=document.documentElement;let anim=!isNaN(t0)&&!isNaN(b0)&&c.vis&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches);if(anim)h.classList.add('chatovg');c.full=!!på;setTimeout(chatFullFarge,0);
   document.querySelectorAll('#chat [data-chatfull]').forEach(b=>{const t=c.full?'Gå ut av fullskjerm':'Fullskjerm';b.innerHTML=c.full?CHAT_FULL_UT:CHAT_FULL_INN;b.setAttribute('aria-label',t);b.title=t});document.documentElement.classList.toggle('chatfull',c.full);chatFullFarge();chatPlasser();{const mb=document.getElementById('cMsg');if(mb)chatNedKnapp(mb)}
   /* Menylinjen var skjult (målte 0 bredde): flytt markeringen på Sionchat-knappen til riktig sted når den vises igjen */
   try{drawTabs();tabIndFlytt();requestAnimationFrame(tabIndFlytt)}catch(e){}
-  if(c.vy==='liste')chatListe();try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
+  if(c.vy==='liste')chatListe();try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}
+  if(anim){const t1=parseFloat(ce.style.top),b1=parseFloat(ce.style.bottom);if(Math.abs(t1-t0)+Math.abs(b1-b0)<2){h.classList.remove('chatovg')}else{try{const a=ce.animate([{top:t0+'px',bottom:b0+'px'},{top:t1+'px',bottom:b1+'px'}],{duration:420,easing:'cubic-bezier(.2,.8,.3,1)'});const ferdig=()=>h.classList.remove('chatovg');a.onfinish=ferdig;a.oncancel=ferdig;setTimeout(ferdig,700)}catch(x){h.classList.remove('chatovg')}}}}
 function chatLukk(){const c=state.chat;if(c.vy==='samtale'&&c.id)c.sist={id:c.id,ms:Date.now()};tilstStopp();chatHistFjern();chatStoppMsgs();document.documentElement.classList.remove('chatapen','chatfull');c.vis=false;chatFullFarge();c.id=null;c.ny=null;chatEl().hidden=true;document.body.style.overflow='';try{drawTabs()}catch(e){}}
 /* Online-merke: tilstede/{e-post} oppdateres hvert ~2. minutt mens appen er synlig (hvis Innstillinger → Sionchat tillater det). Den som har samtalen åpen leser listen og viser prikken ved private samtaler hvis den andre var aktiv for under 5 minutter siden. */
 const tilst={};
@@ -6088,7 +6090,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='04.11.2026 kl. 21:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='04.11.2026 kl. 21:55';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
