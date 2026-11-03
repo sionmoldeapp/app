@@ -3,7 +3,8 @@
 // Enhetene registrerer seg med Web Push (VAPID) og ligger i push_tokens (token = {e: endpoint, p: p256dh, a: auth} som JSON, kodet som base64url).
 // Støttet: vanlige varsler (administrator/gruppeleder), beskjeder i Sionchat, planlagte varsler (scheduled) og påminnelser (reminders).
 // Automatiske varsler (vakt, politiattest, samlings- og bookingpåminnelser) ligger i auto.js og kjøres hvert minutt.
-// Ikke flyttet: e-post (faktura, velkomst, notat, saker, forbønn, påmeldte) og rydding av gamle data.
+// E-post (notat, forbønner, saker, velkomst, påmeldte, hilsen, fakturapåminnelse) og daglig rydding ligger i epost.js.
+// Kall uten innlogging (anonyme forbønner og leietakerens skjema) ligger i apen.js. Dermed brukes ikke Apps Script lenger på egen server.
 
 const http = require('http'), webpush = require('web-push'), { Pool } = require('pg');
 const env = process.env;
@@ -16,6 +17,7 @@ if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) { console.error('VAPID_PUBL
 webpush.setVapidDetails(env.VAPID_SUBJECT || 'mailto:post@sionmolde.no', env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
 const pool = new Pool({ host: env.PGHOST || 'db', port: +env.PGPORT || 5432, user: 'postgres', password: env.POSTGRES_PASSWORD, database: env.POSTGRES_DB || 'postgres', max: 4 });
 const log = (...a) => console.log(new Date().toISOString(), ...a);
+const video = require('./video').lagVideo({ pool, env });
 
 // ---- Innlogging: GoTrue sier hvem tokenet tilhører
 async function epostFraToken(tok) {
@@ -30,6 +32,7 @@ async function epostFraToken(tok) {
 
 // ---- Oppslag
 const erAdmin = async e => (await pool.query('select 1 from admins where lower(email) = $1', [e])).rowCount > 0;
+const erPastor = async e => (await pool.query('select 1 from members where lower(email) = $1 and (pastor or kontor)', [e])).rowCount > 0;   // pastor eller sekretær   // pastor sender som administrator (til alle, medlemmer og alle grupper)
 const lederAv = async e => ((await pool.query('select leads from members where lower(email) = $1', [e])).rows[0] || {}).leads || [];
 async function gyldigeGrupper() {
   const ut = GRUPPER.slice();
@@ -112,8 +115,12 @@ async function send(tittel, tekst, tab, mal, kopiTil, ekstra) {
 // ---- Kall fra appen
 const sistSendt = { alle: 0 }, sistBeskjed = {};
 async function behandle(d) {
+  const aapen = await apen.behandle(d);   // anonym forbønn og leietakerskjema: uten innlogging
+  if (aapen !== undefined) return aapen;
   const email = await epostFraToken(d.idToken);
   if (!email) return { ok: false, feil: 'Ikke innlogget (innloggingsbeviset ble ikke godtatt).' };
+
+  if (d.action === 'video') return video(d, email);
 
   if (d.action === 'beskjed') {   // melding i Sionchat: varsle de andre i samtalen
     const tr = (await pool.query('select parts, dempet, "roleName", last from threads where id = $1', [String(d.threadId || '')])).rows[0];
@@ -134,11 +141,14 @@ async function behandle(d) {
     return { ok: true, sendt: r.sendt };
   }
 
-  if (d.action) return { ok: false, feil: 'Dette (' + d.action + ') er ikke flyttet til egen server ennå.' };
+  if (d.action === 'selvlenke') return apen.lenke(email, d);
+  const ep = await epost.behandle(email, d);   // e-post: notat, forbønner, saker, velkomst, påmeldte, hilsen
+  if (ep !== undefined) return ep;
+  if (d.action && d.action !== 'varsel') return { ok: false, feil: 'Ukjent handling «' + d.action + '».' };
 
   // Vanlig varsel: administrator, eller gruppeleder (bare til egne grupper)
   let leder = null;
-  if (!(await erAdmin(email))) {
+  if (!(await erAdmin(email)) && !(await erPastor(email))) {
     const g = await lederAv(email);
     if (!g.length) return { ok: false, feil: 'Du har ikke tilgang til å sende varsler. Innlogget som ' + email + ', og den adressen er verken administrator eller gruppeleder.' };
     leder = g;
@@ -182,12 +192,16 @@ async function paaminnelser() {
   }
 }
 const auto = require('./auto.js')({ pool, send, brukere, log });
+const epost = require('./epost.js')({ pool, log, erAdmin, erPastor, lederAv, brukere, ledere, lesMal, osloDato: auto.osloDato, osloTime: auto.osloTime, forst: auto.forst });
+const apen = require('./apen.js')({ pool, log, send, erAdmin, osloDato: auto.osloDato, epost });
 let kjorer = false;
 setInterval(async () => {
   if (kjorer) return; kjorer = true;
   try { await planlagte(); await paaminnelser(); } catch (e) { log('Rundt:', e.message); }
   for (const f of ['vakter', 'attester', 'samlinger', 'bookinger']) { try { await auto[f](); } catch (e) { log(f + ':', e.message); } }
   if (new Date().getMinutes() === 0) await auto.rydd().catch(() => {});
+  if (new Date().getMinutes() % 10 === 0) await epost.faktura().catch(e => log('faktura:', e.message));
+  await epost.ryddGamle().catch(e => log('rydding:', e.message));   // én gang i døgnet etter kl. 03
   kjorer = false;
 }, 60e3);
 
@@ -197,7 +211,7 @@ http.createServer((req, res) => {
   if (req.method === 'GET') return svar(200, { ok: true, tjeneste: 'Sion Molde varsler (egen server)' });
   if (req.method !== 'POST') return svar(405, { ok: false, feil: 'Ikke tillatt' });
   let body = '';
-  req.on('data', c => { body += c; if (body.length > 20000) req.destroy(); });
+  req.on('data', c => { body += c; if (body.length > 80000) req.destroy(); });   // møtenotater kan være opptil 20 000 tegn HTML
   req.on('end', async () => {
     try { svar(200, await behandle(JSON.parse(body))); }
     catch (e) { log('Feil:', e.message); svar(200, { ok: false, feil: 'Feil i varseltjenesten: ' + e.message }); }

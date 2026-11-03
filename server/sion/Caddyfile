@@ -36,6 +36,9 @@
 	handle /varsel {
 		reverse_proxy sion-varsel:8110
 	}
+	handle_path /video/* {
+		reverse_proxy sion-video:7880
+	}
 	import konfig
 	import app
 	header -Server
@@ -100,6 +103,9 @@
 	}
 	handle /varsel {
 		reverse_proxy sion-varsel:8110
+	}
+	handle_path /video/* {
+		reverse_proxy sion-video:7880
 	}
 	import konfig
 	import app

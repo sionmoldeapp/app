@@ -88,5 +88,5 @@ module.exports = ({ pool, send, brukere, log }) => {
 
   async function rydd() { await pool.query('delete from varsel_sendt where ms < $1', [Date.now() - 400 * 864e5]); }
 
-  return { vakter, attester, samlinger, bookinger, rydd, tekstFoer, klokkeTilMs, osloDato };
+  return { vakter, attester, samlinger, bookinger, rydd, tekstFoer, klokkeTilMs, osloDato, osloTime, forst };
 };

@@ -1,0 +1,35 @@
+# Tillegg for eksisterende Tailscale Funnel. TLS avsluttes av Tailscale på denne PC-en.
+# Sikker port 443 deles mellom appen og TURN. Interne medieporter er ikke publisert.
+services:
+  sion-video:
+    environment:
+      LIVEKIT_CONFIG: |
+        port: 7880
+        rtc:
+          tcp_port: 7881
+          udp_port: 7882
+          node_ip: 127.0.0.1
+          use_external_ip: false
+          enable_loopback_candidate: true
+        turn:
+          enabled: true
+          domain: ${LIVEKIT_TURN_DOMAIN:?Sett LIVEKIT_TURN_DOMAIN}
+          tls_port: 10000
+          external_tls: true
+          allow_restricted_peer_cidrs:
+            - 127.0.0.1/32
+        keys:
+          ${LIVEKIT_API_KEY:?Sett LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET:?Sett LIVEKIT_API_SECRET}
+        room:
+          max_participants: 12
+          empty_timeout: 120
+          departure_timeout: 30
+    ports: !override
+      - 127.0.0.1:7880:7880
+  sion-video-gateway:
+    image: haproxy:3.2-alpine@sha256:5893840576071e6217cd52ebdcc14f454c6f7a631056fa6f4e0f40d3cac4215b
+    restart: unless-stopped
+    volumes:
+      - ./sion/video-haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - 127.0.0.1:17900:8080

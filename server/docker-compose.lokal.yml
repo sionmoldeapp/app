@@ -34,6 +34,11 @@ services:
       - ../firestore.rules:/app/firestore.rules:ro
       - ../lokal/data:/data
 
+  # Testdataene skal aldri gi e-post til menighetens kontor: fakturapåminnelser går til avsenderen selv på PC-en.
+  sion-varsel:
+    environment:
+      FAKTURA_TIL: ${SMTP_ADMIN_EMAIL}
+
   # Testversjonene: 8090 mot Firebase-emulatoren, 8091 mot Supabase (appen kjenner seg igjen på porten).
   sion-web:
     ports:

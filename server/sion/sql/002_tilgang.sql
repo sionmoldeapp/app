@@ -1,5 +1,6 @@
 -- Sion Molde-appen: tilgangsregler (Row Level Security) oversatt fra firestore.rules.
 -- Kjøres etter 001_tabeller.sql, og kan kjøres på nytt (alle regler slettes og lages på nytt).
+-- NB: dette sletter også reglene fra 006_tale.sql og 007_pastor_omrader.sql. Kjør 003, 005, 006 og 007 på nytt etter denne (de kan kjøres flere ganger).
 --
 -- Slik er det bygget:
 --  * Regler (policies) bestemmer hvem som kan lese, opprette, endre og slette hvilke rader.
@@ -49,6 +50,10 @@ $$ select exists (select 1 from admins where email = sion.epost()) $$;
 
 create or replace function sion.er_medlem() returns boolean language sql stable security definer set search_path = public as
 $$ select sion.er_admin() or exists (select 1 from members where email = sion.epost()) $$;
+
+-- Pastor eller sekretær (members.pastor / members.kontor): sender til alle som administrator, men administrerer ikke appen
+create or replace function sion.er_pastor() returns boolean language sql stable security definer set search_path = public as
+$$ select sion.er_admin() or exists (select 1 from members where lower(email) = sion.epost() and (pastor or kontor)) $$;
 
 create or replace function sion.mine_grupper() returns text[] language sql stable security definer set search_path = public as
 $$ select coalesce((select groups from members where email = sion.epost()), '{}') $$;
@@ -230,7 +235,7 @@ create policy selv_endre on members for update to authenticated using (email = s
 create policy selv_slett on members for delete to authenticated using (email = sion.epost() and not sion.er_admin());
 create policy leder_ny on members for insert to authenticated with check (
   sion.er_gruppeleder() and sion.leder_for_alle(groups)
-  and name is null and leads = '{}' and leder = false and ltype is null and muted = '{}' and extra = '{}' and ekstra = '{}');
+  and name is null and leads = '{}' and leder = false and not pastor and not kontor and ltype is null and muted = '{}' and extra = '{}' and ekstra = '{}');
 create policy leder_endre on members for update to authenticated using (sion.er_gruppeleder()) with check (sion.er_gruppeleder());
 
 create or replace function sion.sjekk_members() returns trigger language plpgsql as $$
@@ -328,7 +333,7 @@ begin
   -- Farge og bakgrunn (bgv = versjon av eget bakgrunnsbilde i thread_bg)
   if e <@ array['farge', 'bakgrunn', 'bgv']
      and coalesce(new.farge, 'blaa') in ('blaa', 'rosa', 'gronn', 'lilla', 'oransje', 'rod', 'turkis', 'gull')
-     and coalesce(new.bakgrunn, 'ingen') in ('ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget', 'aurora', 'neon1', 'neon2', 'neon3', 'neon4', 'neon5', 'neon6', 'neon7', 'neon8', 'neon9', 'neon10', 'neon11', 'neon12', 'neon13', 'neon14', 'neon15', 'neon16', 'neon17') then return new; end if;
+     and coalesce(new.bakgrunn, 'ingen') in ('ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget', 'aurora', 'neon1', 'neon2', 'neon3', 'neon4', 'neon5', 'neon6', 'neon7', 'neon8', 'neon9', 'neon10', 'neon11', 'neon12', 'neon13', 'neon14', 'neon15', 'neon16', 'neon17', 'neon18', 'neon19', 'neon20', 'neon21', 'neon22') then return new; end if;
   -- Samtalebilde
   if e <@ array['bilde'] and (new.bilde is null or (length(new.bilde) <= 30000 and new.bilde like 'data:image/jpeg;base64,%')) then return new; end if;
   -- Dempe for seg selv
@@ -359,7 +364,7 @@ create policy ny on messages for insert to authenticated with check (
   and (avst is null or (jsonb_typeof(avst) = 'object' and sion.nokler_ok(avst, '{id}')))
   and sion.len(img) <= 200000
   and (svar is null or (sion.nokler_ok(svar, '{id,navn,tekst}') and sion.tekst_ok(svar, 'navn', 60, true) and sion.tekst_ok(svar, 'tekst', 120, true)))
-  and redigert = false and slettet = false and stjerne = '{}' and likes = '{}'
+  and redigert = false and slettet = false and seen = '{}' and stjerne = '{}' and likes = '{}'
   and r_hjerte = '{}' and r_ler = '{}' and r_wow = '{}' and r_trist = '{}' and r_be = '{}'
   and r_ild = '{}' and r_hender = '{}' and r_sion = '{}' and r_amen = '{}' and ekstra = '{}');
 create policy endre on messages for update to authenticated using (sion.i_samtale(thread_id)) with check (sion.i_samtale(thread_id));
@@ -370,6 +375,7 @@ create or replace function sion.sjekk_messages() returns trigger language plpgsq
 declare e text[] := sion.endret(to_jsonb(old), to_jsonb(new));
 begin
   if not sion.fra_appen() then return new; end if;
+  if e <@ array['seen'] and cardinality(new.seen) <= 40 and new.seen @> old.seen and sion.bare_meg(old.seen, new.seen) then return new; end if;
   -- Angre egen melding: teksten tømmes, vedlegg fjernes
   if old."by" = sion.epost() and e <@ array['text', 'slettet', 'img', 'svar', 'lyd', 'lsek', 'avst']
      and new.slettet and new.text = '' and new.img is null and new.svar is null
@@ -455,8 +461,8 @@ create or replace function sion.sjekk_ringer() returns trigger language plpgsql 
 declare e text[] := sion.endret(to_jsonb(old), to_jsonb(new));
 begin
   if not sion.fra_appen() then return new; end if;
-  -- Den som ringer: ringer på nytt eller avbryter
-  if old.fra = sion.epost() and new.fra = sion.epost() and cardinality(new.til) between 1 and 8
+  -- Den som ringer eller summer: ringer på nytt, avbryter, eller tar over etter den andre i samtalen (som i Firestore: bare den nye raden sjekkes)
+  if new.fra = sion.epost() and cardinality(new.til) between 1 and 8
      and new."fraNavn" is not null and length(new."fraNavn") <= 60 and new.status in ('ring', 'avbrutt', 'vibr') and new.ms is not null
      and sion.len(new."svarNavn") <= 60 and new.ekstra = '{}' and sion.i_samtale(new.id) then return new; end if;
   -- Mottaker: svarer
@@ -629,7 +635,7 @@ create policy admin on snapshot_data for all to authenticated using (sion.er_adm
 
 create policy ny on scheduled for insert to authenticated with check (
   title is not null and length(title) <= 100 and "fireAt" is not null and ekstra = '{}'
-  and (sion.er_admin() or (sion.er_gruppeleder() and "malType" = 'grupper' and sion.leder_for_alle(groups))));
+  and (sion.er_admin() or sion.er_pastor() or (sion.er_gruppeleder() and "malType" = 'grupper' and sion.leder_for_alle(groups))));   -- er_pastor: se 007
 create policy admin on scheduled for all to authenticated using (sion.er_admin()) with check (sion.er_admin());
 drop trigger if exists tid on scheduled;
 create trigger tid before insert on scheduled for each row execute function sion.tid_naa('created');

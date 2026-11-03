@@ -308,6 +308,7 @@ create table if not exists messages (
   pam        boolean not null default false,
   redigert   boolean not null default false,
   slettet    boolean not null default false,
+  seen       text[] not null default '{}',
   stjerne    text[] not null default '{}',
   likes      text[] not null default '{}',
   r_hjerte   text[] not null default '{}',
@@ -371,6 +372,11 @@ create table if not exists ringer (
   status      text,
   ms          bigint,
   "svarNavn"  text,
+  "callId" text,
+  "startAt" bigint,
+  levert text[] not null default '{}',
+  avvist text[] not null default '{}',
+  opptatt text[] not null default '{}',
   ekstra      jsonb not null default '{}'
 );
 comment on table ringer is 'Ringebjelle i Sionchat (id = samtalen).';
@@ -546,3 +552,10 @@ begin
     execute format('alter table public.%I enable row level security', t.tablename);
   end loop;
 end $$;
+alter table members add column if not exists pastor boolean not null default false;   -- pastor (02.11.2026), se 007
+alter table admins add column if not exists pastor boolean not null default false;
+alter table members add column if not exists kontor boolean not null default false;   -- sekretær, se 007
+alter table admins add column if not exists kontor boolean not null default false;
+
+-- Lesekvitteringer for eksisterende installasjoner (regler/RPC i 009).
+alter table messages add column if not exists seen text[] not null default '{}';

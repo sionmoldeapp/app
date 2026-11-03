@@ -103,6 +103,8 @@ oppdateres av seg selv.
   Lokalt fanges e-posten i Inbucket (http://localhost:9000). Lenken må peke til en adresse i `SITE_URL` eller
   `ADDITIONAL_REDIRECT_URLS` i `.env`.
 - `sql/003_sanntid_og_konto.sql`: sanntid for chat, ringing og avstemninger, og `slett_min_konto()` for «Slett meg».
+- **Rekkefølge ved nyoppsett:** 001, 002, så 003–010 i nummerrekkefølge. `002_tilgang.sql` sletter alle regler før den lager nye, så **kjører du 002 på nytt, må 003 og alle senere filer kjøres på nytt** (ellers forsvinner reglene for tale, lesekvitteringer og anrop). `node server/sion/test-tilgang.js` sjekker at alt henger sammen (125 tester).
+- `010_anropsstatus.sql` og anropsstatuser: den som ringer ser Prøver å nå, Ringer hos, Avvist, Opptatt, Ingen svar (45 s) eller Forbindelsesfeil; mottakeren bekrefter levering (`chat_ring_event`). Klientkoden testes av `server/sion/anrop.test.js`.
 - Virker ikke ennå mot Supabase: push-varsler, e-post via Apps Script (varsler, notat, forbønn, saker, velkomst),
   anonym forbønn uten innlogging. Det kommer i fase 3. E-postene fra innloggingen er på engelsk (malene kan oversettes).
 - `importer-firestore.js` oppdaterer bare felt som finnes i kilden; felt som er fjernet i Firestore blir stående.
@@ -129,5 +131,16 @@ Appen sender varsler gjennom `/varsel` på samme adresse som appen (Caddy sender
 - Nøklene ligger i `server/.env`: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. Den offentlige nøkkelen leses av appen fra `sion-konfig.json`. Bytter du nøkler, må alle slå på varsler på nytt.
 - Støttet: vanlige varsler (administrator eller gruppeleder), beskjeder i Sionchat (`beskjed`), planlagte varsler (`scheduled`) og påminnelser (`reminders`), sjekket hvert minutt.
 - Automatiske varsler (`sion/varsel/auto.js`, hvert minutt, hvert tilfelle én gang i tabellen `varsel_sendt`, `sion/sql/004_varsel.sql`): vakt dagen før (etter kl. 17), politiattest 60 dager før utløp (til personen og administratorer/gruppeledere), samlingspåminnelse `remindH` timer før (grupper med `remind`), bookingpåminnelse til vertskap og «kvelden før» til teamet.
-- Ikke flyttet fra Apps Script: e-post (faktura, velkomst, notat, saker, forbønn, påmeldte, Pastorens hilsen på e-post) og rydding av gamle data (`ryddGamle`). Kallene gir svaret «ikke flyttet til egen server ennå».
+- E-post (`sion/varsel/epost.js`, SMTP fra `.env`, samme Gmail som innloggingen): møtenotat til egen adresse (`notat`), nye forbønner (`bonn`, administrator og bønneledere), saker til lederrådet (`saker`), velkomst til nye brukere (`velkomst`), påmeldte (`paameldte`) og hilsen til medlemmer (`epost`, blindkopi 40 om gangen). Samme tilgangssjekker og «vent 8 sekunder» som i Apps Script.
+- Fakturapåminnelse hvert 10. minutt (1 døgn etter at en utleie er over, gjentas etter `fakturaVentH`), til `settings/utleie.fakturaEpost` eller post@sionmolde.no. **På PC-en** overstyrer `FAKTURA_TIL` (i `docker-compose.lokal.yml`, = `SMTP_ADMIN_EMAIL`), så testdata aldri gir e-post til kontoret.
+- Daglig rydding etter kl. 03 (`ryddGamle`): forbønner etter 30 dager, påmeldinger 90 dager etter arrangementet, samtaler etter 365 dager uten bruk.
+- Uten innlogging (`sion/varsel/apen.js`): anonyme forbønner (`bonnutfordring`/`bonnanon`: signert regnestykke, brukes én gang, 3 s–15 min, maks 10 i timen og 40 i døgnet) og leietakerens skjema (`selvlenke` for administrator/gruppen Utleie, `selvhent`, `selvsend`; tabellen `selvlenker`, `sion/sql/005_selvlenker.sql`). Lenken bruker `APP_URL` (= `SITE_URL`).
+- Dermed brukes ikke Apps Script lenger av Supabase-versjonen.
 - Start/oppdatering: `docker compose up -d sion-varsel` (installerer pakkene første gang). Logg: `docker logs sion-varsel`.
+
+## Tale i Sionchat
+
+`sion/sql/006_tale.sql`: tabellen `tale` (tilbud og svar for WebRTC i private samtaler, med regler og sanntid). Lyden går direkte mellom telefonene. Appen bruker Googles STUN-tjener; for samtaler over mobilnett som stopper direkte forbindelse trengs en TURN-tjener (for eksempel coturn i en egen container på serveren), som ikke er satt opp ennå.
+
+## Passordtilbakestilling med kode (02.11.2026)
+Supabase-versjonens «Glemt passord?» sender engangskode med {{ .Token }} fra sion/epost/nytt-passord.html. supa.js åpner kode-/passorddialog og verifiserer med verifyOtp(type: recovery) før updateUser. Ingen verifiseringslenke i denne e-posten, slik at automatisk lenkekontroll ikke bruker opp koden. Bruk nyeste kode; lukk og be om ny ved behov. Eldre lenker og opprettelse av nye brukere beholder eksisterende flyt. Lokale isolerte tester bestått; ekte e-post og telefon må sluttprøves av brukeren. sw.js v76.

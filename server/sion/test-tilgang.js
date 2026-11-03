@@ -111,6 +111,53 @@ async function rydd() {
   lov('medlem velger eget bakgrunnsbilde', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'eget', bgv: Date.now() }));
   lov('medlem velger Aurora-bakgrunnen', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'aurora' }));
   lov('medlem velger Neon 1-bakgrunnen', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'neon1' }));
+  // Summing (ringer, status vibr): den andre i samtalen kan overskrive forrige summing/ringing, som i Firestore
+  const ups = { Prefer: 'return=representation,resolution=merge-duplicates' }, summ = (fra, til) => ({ id: tid, fra: fra.email, fraNavn: 'Test', til: [til.email], status: 'vibr', ms: Date.now() });
+  lov('gruppeleder summer i samtalen', await kall(B.leder, 'POST', '/ringer?on_conflict=id', summ(B.leder, B.medlem), ups));
+  lov('medlem summer tilbake i samme samtale', await kall(B.medlem, 'POST', '/ringer?on_conflict=id', summ(B.medlem, B.leder), ups));
+  lov('medlem stopper summingen', await kall(B.medlem, 'PATCH', '/ringer?id=eq.' + tid, { status: 'avbrutt' }));
+  nekt('utenforstående summer i samtalen', await kall(B.annen, 'POST', '/ringer?on_conflict=id', summ(B.annen, B.leder), ups));
+  nekt('summing i andres navn', await kall(B.medlem, 'POST', '/ringer?on_conflict=id', summ(B.leder, B.medlem), ups));
+  // Anrop med bekreftelser (010): unik runde, levert/avvist/opptatt per mottaker, tidsavbrudd
+  const anrop = (c, ms = Date.now()) => ({ id: tid, fra: B.leder.email, fraNavn: 'Test', til: [B.medlem.email], status: 'ring', ms, callId: c, startAt: ms, levert: [], avvist: [], opptatt: [] });
+  const hend = (hvem, c, e) => kall(hvem, 'POST', '/rpc/chat_ring_event', { p_thread: tid, p_call: c, p_event: e, p_name: 'Test' });
+  const les = async () => ((await kall('tjener', 'GET', '/ringer?id=eq.' + tid)).data || [])[0] || {};
+  lov('leder starter anrop med runde-id', await kall(B.leder, 'POST', '/ringer?on_conflict=id', anrop('c1'), ups));
+  let h = await hend(B.medlem, 'c1', 'delivered');
+  sjekk('mottaker bekrefter levering', h.ok && h.data === true && (await les()).levert.includes(B.medlem.email), h);
+  h = await hend(B.annen, 'c1', 'delivered');
+  sjekk('utenforstående sender anropshendelse uten virkning', (!h.ok || h.data === false) && !(await les()).levert.includes(B.annen.email), h);
+  h = await hend(B.medlem, 'annen-runde', 'delivered');
+  sjekk('feil runde-id endrer ingenting', h.ok && h.data === false, h);
+  nekt('mottaker setter utløpt selv', await kall(B.medlem, 'PATCH', '/ringer?id=eq.' + tid, { status: 'utlopt' }));
+  nekt('mottaker fjerner levert-bekreftelsen', await kall(B.medlem, 'PATCH', '/ringer?id=eq.' + tid, { levert: [] }));
+  h = await hend(B.medlem, 'c1', 'decline');
+  sjekk('mottaker avviser (én mottaker gir status avvist)', h.ok && h.data === true && (await les()).status === 'avvist', h);
+  await kall(B.leder, 'POST', '/ringer?on_conflict=id', anrop('c2'), ups);
+  h = await hend(B.medlem, 'c2', 'busy');
+  sjekk('mottaker melder opptatt', h.ok && h.data === true && (await les()).status === 'opptatt', h);
+  await kall(B.leder, 'POST', '/ringer?on_conflict=id', anrop('c3'), ups);
+  nekt('mottaker kan ikke gi tidsavbrudd', await hend(B.medlem, 'c3', 'timeout'));
+  h = await hend(B.leder, 'c3', 'timeout');
+  sjekk('den som ringer gir tidsavbrudd', h.ok && h.data === true && (await les()).status === 'utlopt', h);
+  await kall(B.leder, 'POST', '/ringer?on_conflict=id', anrop('c4', Date.now() - 60e3), ups);
+  h = await hend(B.medlem, 'c4', 'answer');
+  sjekk('for sent svar etter 45 sekunder avvises', h.ok && h.data === false && (await les()).status === 'ring', h);
+  await kall(B.leder, 'POST', '/ringer?on_conflict=id', anrop('c5'), ups);
+  h = await hend(B.medlem, 'c5', 'answer');
+  sjekk('mottaker svarer i tide', h.ok && h.data === true && (await les()).status === 'svart', h);
+  await kall('tjener', 'DELETE', '/ringer?id=eq.' + tid);
+  // Tale (WebRTC): den som ringer skriver tilbudet, mottakeren bare svaret og avslutning
+  const tilbud = (fra, til) => ({ id: tid, fra: fra.email, til: [til.email], offer: 'v=0 tilbud', ms: Date.now(), slutt: false });
+  lov('gruppeleder starter tale i samtalen', await kall(B.leder, 'POST', '/tale?on_conflict=id', tilbud(B.leder, B.medlem), ups));
+  ant('utenforstående ser ikke talen', await kall(B.annen, 'GET', '/tale?id=eq.' + tid), 0);
+  nekt('mottakeren endrer tilbudet', await kall(B.medlem, 'PATCH', '/tale?id=eq.' + tid, { offer: 'falskt' }));
+  lov('mottakeren svarer', await kall(B.medlem, 'PATCH', '/tale?id=eq.' + tid, { answer: 'v=0 svar' }));
+  lov('mottakeren legger på', await kall(B.medlem, 'PATCH', '/tale?id=eq.' + tid, { slutt: true }));
+  lov('mottakeren ringer tilbake (tar over raden)', await kall(B.medlem, 'POST', '/tale?on_conflict=id', tilbud(B.medlem, B.leder), ups));
+  nekt('utenforstående starter tale', await kall(B.annen, 'POST', '/tale?on_conflict=id', tilbud(B.annen, B.leder), ups));
+  nekt('tale til flere enn én', await kall(B.leder, 'POST', '/tale?on_conflict=id', { ...tilbud(B.leder, B.medlem), til: [B.medlem.email, B.annen.email] }, ups));
+  await kall('tjener', 'DELETE', '/tale?id=eq.' + tid);
   nekt('medlem velger ukjent bakgrunn', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'hack' }));
   const bg = { thread_id: tid, id: 'ett', data: 'data:image/jpeg;base64,AAAA', by: B.medlem.email, v: Date.now() };
   lov('medlem lagrer bakgrunnsbildet', await kall(B.medlem, 'POST', '/thread_bg', bg));
@@ -148,6 +195,24 @@ async function rydd() {
     { id: 'contact', data: { address: 'Kometvegen 7', hours: '', phone: '', email: '' } }, { Prefer: 'return=representation,resolution=merge-duplicates' }));
   nekt('administrator lagrer ukjent felt', await kall(B.admin, 'PATCH', '/settings?id=eq.contact', { data: { address: 'x', hack: 1 } }));
   nekt('medlem endrer kontaktinfo', await kall(B.medlem, 'PATCH', '/settings?id=eq.contact', { data: { address: 'x' } }));
+  // Pastor (members.pastor): kan legge ut nyheter til alle. Gruppeledere kan ikke lage pastorer, og medlemmer kan ikke gjøre seg selv til pastor.
+  nekt('medlem gjør seg selv til pastor', await kall(B.annen, 'PATCH', '/members?email=eq.' + B.annen.email, { pastor: true }));
+  await kall('tjener', 'PATCH', '/members?email=eq.' + B.annen.email, { pastor: true });
+  lov('pastor legger ut nyhet til alle', await kall(B.annen, 'POST', '/posts', { id: 'test-pastor', t: 'Hilsen', b: 'Hei', audience: ['Alle'], groups: [], m: false }));
+  nekt('medlem (ikke pastor) legger ut nyhet til alle', await kall(B.medlem, 'POST', '/posts', { id: 'test-ikkepastor', t: 'x', b: 'x', audience: ['Alle'], groups: [], m: false }));
+  await kall('tjener', 'PATCH', '/members?email=eq.' + B.annen.email, { pastor: false });
+  await kall('tjener', 'PATCH', '/members?email=eq.' + B.annen.email, { kontor: true });
+  lov('sekretær legger ut nyhet til alle', await kall(B.annen, 'POST', '/posts', { id: 'test-kontor', t: 'Hilsen', b: 'Hei', audience: ['Alle'], groups: [], m: false }));
+  lov('sekretær planlegger varsel til alle', await kall(B.annen, 'POST', '/scheduled', { id: 'test-kontor', title: 'Hilsen', malType: 'alle', fireAt: Date.now() + 864e5 }, { Prefer: 'return=minimal' }));   // bare administratorer kan lese planlagte varsler
+  await kall('tjener', 'PATCH', '/members?email=eq.' + B.annen.email, { kontor: false });
+  await kall('tjener', 'DELETE', '/posts?id=eq.test-kontor');
+  await kall('tjener', 'DELETE', '/scheduled?id=eq.test-kontor');
+  nekt('gruppeleder lager nytt medlem som sekretær', await kall(B.leder, 'POST', '/members', { email: 'ny-kontor' + D, groups: ['activ8'], kontor: true }));
+  nekt('gruppeleder lager nytt medlem som pastor', await kall(B.leder, 'POST', '/members', { email: 'ny-pastor' + D, groups: ['activ8'], pastor: true }));
+  ant('medlem leser områdene (ingen ennå)', await kall(B.medlem, 'GET', '/omrader'), 0);
+  nekt('medlem lager område', await kall(B.medlem, 'POST', '/omrader', { id: 'test-omr', name: 'x' }));
+  await kall('tjener', 'DELETE', '/posts?id=in.(test-pastor,test-ikkepastor)');
+  await kall('tjener', 'DELETE', '/members?email=eq.ny-pastor' + D);
   ant('besøkende leser kontaktinfo', await kall(null, 'GET', '/settings?id=eq.contact'), 1);
   if (forKontakt) await kall('tjener', 'PATCH', '/settings?id=eq.contact', { data: forKontakt.data });
   else await kall('tjener', 'DELETE', '/settings?id=eq.contact');
