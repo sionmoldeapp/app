@@ -14,7 +14,7 @@ async function side(){const p=await browser.newPage({viewport:{width:390,height:
   window.esc=s=>String(s).replace(/[&<>"']/g,'');window.push=(t,b)=>toasts.push(t+': '+b);window.lydSpill=n=>sounds.push(n);
   window.tale={tid:null,mic:null};window.taleMic=async()=>{};window.taleMicAv=()=>{};window.taleRing=()=>{};window.taleSvar=r=>events.push('taleSvar');
   window.summ={vm:{},avv:{},akt:null};window.summStopp=()=>{};window.summStart=()=>{};window.summMerke=()=>{};window.nyBeskjedNavn=()=>'Meg';window.chatNavn=()=> 'Mottaker';window.meEmail=()=> 'meg@example.test';window.PUSH_URL='';window.SUPA_NA=true;window.chatVideoStart=o=>events.push('video:'+o.tid);
-  window.chatTraad=id=>({id,parts:['meg@example.test','dem@example.test']});window.state={chat:{id:'t1'}};
+  window.chatAv=n=>'<span class="cav">'+n[0]+'</span>';window.cbgUrl=async()=>'';window.chatTile=async()=>'';window.chatTraad=id=>({id,parts:['meg@example.test','dem@example.test']});window.state={chat:{id:'t1'}};
   window.FB={ringStart:async(tid,til,navn,callId)=>events.push('start:'+callId),addMsg:async()=>{},notifyThread:async()=>{},ringPuls:async()=>{},ringSett:async()=>{},
     watchRing:(tid,cb,err)=>{watchCb=cb;watchErr=err;return()=>{}},ringEvent:async(tid,callId,ev)=>{events.push(ev+':'+callId);return true}};
   const st=window.setTimeout;window.setTimeout=(f,ms)=>{if(ms===45e3){timers.push(f);return 0}return st(f,ms)};
@@ -24,9 +24,9 @@ const vindu=p=>p.evaluate(()=>(document.getElementById('ringov')||{}).textConten
 async function ring(p){await p.evaluate(()=>{ringStart()});await p.waitForFunction(()=>events.some(e=>e.startsWith('start:')));}
 
 test('Den som ringer ser «Prøver å nå» først og «Ringer hos» først når mottakeren har bekreftet',async()=>{
-  const p=await side();try{await ring(p);assert.match(await vindu(p),/Prøver å nå Mottaker/);
-    await p.evaluate(()=>{const c=ring.ut.callId;watchCb({status:'ring',callId:c,levert:[]})});assert.match(await vindu(p),/Prøver å nå/);
-    await p.evaluate(()=>{const c=ring.ut.callId;watchCb({status:'ring',callId:c,levert:['dem@example.test']})});assert.match(await vindu(p),/Ringer hos Mottaker/);
+  const p=await side();try{await ring(p);assert.match(await vindu(p),/Mottaker.*Kobler til/);
+    await p.evaluate(()=>{const c=ring.ut.callId;watchCb({status:'ring',callId:c,levert:[]})});assert.match(await vindu(p),/Kobler til/);
+    await p.evaluate(()=>{const c=ring.ut.callId;watchCb({status:'ring',callId:c,levert:['dem@example.test']})});assert.match(await vindu(p),/Mottaker.*Ringer …/);
   }finally{await p.close();}});
 test('Avvist, opptatt og ingen svar vises med egne tekster og en OK-knapp som lukker',async()=>{
   for(const [status,tekst] of [['avvist',/Avvist/],['opptatt',/Opptatt/],['utlopt',/Ingen svar/]]){
@@ -65,14 +65,14 @@ test('Svar for sent gir beskjed, og den som allerede er i samtale melder opptatt
 test('Videoanrop: callId merkes v:, ringeren åpner video når mottakeren svarer, og mottakeren åpner video ved Svar', async () => {
   const p = await side(); try {
     await p.evaluate(() => { ringStart(true) }); await p.waitForFunction(() => events.some(e => e.startsWith('start:')));
-    assert.match(await p.evaluate(() => events.find(e => e.startsWith('start:'))), /^start:v:/); assert.match(await vindu(p), /Videoanrop til Mottaker/);
+    assert.match(await p.evaluate(() => events.find(e => e.startsWith('start:'))), /^start:v:/); assert.match(await vindu(p), /Mottaker.*Kobler til/);
     await p.evaluate(() => { watchCb({ status: 'svart', callId: ring.ut.callId, svarNavn: 'Ola' }) });
     assert.ok((await p.evaluate(() => events)).includes('video:t1'));
   } finally { await p.close(); }
   const q = await side(); try {
     const nu = Date.now();
     await q.evaluate(x => { ringInn([x]) }, { id: 't1', status: 'ring', fra: 'dem@example.test', fraNavn: 'Ola', til: ['meg@example.test'], ms: nu, startAt: nu, callId: 'v:abc', levert: [], avvist: [], opptatt: [] });
-    assert.match(await vindu(q), /på video/); await q.evaluate(() => ringSvar());
+    assert.match(await vindu(q), /Videoanrop i Sionchat/); await q.evaluate(() => ringSvar());
     await q.waitForFunction(() => events.includes('video:t1')); assert.equal(await q.evaluate(() => events.includes('taleSvar')), false);
   } finally { await q.close(); }
 });
