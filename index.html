@@ -929,10 +929,15 @@ html[data-bred="1"] .chat,html[data-bred="1"] .chat[data-mork="1"]{background:va
 .bvprev{background:var(--chip,#f0f2f5);color:var(--ink);border-radius:18px;padding:8px 13px;max-height:46vh;overflow:auto}
 .cmeny{position:absolute;inset:0;z-index:30}
 .cmeny-bak{position:absolute;inset:0;background:rgba(0,0,0,.4)}
-.cmeny-pill{position:absolute;left:50%;transform:translateX(-50%);max-width:calc(100% - 16px);display:flex;gap:2px;padding:6px 8px;border-radius:99px;background:var(--chip);box-shadow:0 6px 24px rgba(0,0,0,.3);overflow-x:auto;scrollbar-width:none}
+.cmeny-pill{position:absolute;left:50%;transform:translateX(-50%);max-width:calc(100% - 16px);display:flex;align-items:center;gap:2px;padding:7px 9px;border-radius:99px;background:#2b2b2e;color:#fff;box-shadow:0 6px 24px rgba(0,0,0,.45);overflow-x:auto;scrollbar-width:none;animation:cmpop .16s ease-out}
+.cmeny-flere[hidden]{display:none}
+.cmeny-flere{flex-wrap:wrap;justify-content:center;width:max-content}
+.cmeny-pill .cmplus{font-size:28px;font-weight:300;width:42px;height:42px;padding:0;display:grid;place-items:center;background:#4a4a4e;color:#fff;margin-left:4px}
+@keyframes cmpop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.cmeny-pill{animation:none}}
 .cmeny-pill::-webkit-scrollbar{display:none}
-.cmeny-pill button{all:unset;flex:none;font-size:30px;line-height:1;padding:6px 7px;border-radius:50%;cursor:pointer}
-.cmeny-pill button.on{background:var(--line)}
+.cmeny-pill button{all:unset;flex:none;font-size:30px;line-height:1;padding:5px 6px;border-radius:50%;cursor:pointer}
+.cmeny-pill button.on{background:#4a4a4e}
 .cmeny-pill .sione{width:30px;height:30px;vertical-align:middle}
 .cmeny-pill .camen{font-size:13px;font-weight:700}
 .cmeny-bar{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);background:var(--chip);padding:12px 6px calc(14px + env(safe-area-inset-bottom,0px));border-radius:18px 18px 0 0;box-shadow:0 -4px 22px rgba(0,0,0,.25)}
@@ -5190,7 +5195,7 @@ async function chatSendTekst(tekst,ekstra){
     if(feil)push('Delvis sendt',ok+' fikk beskjeden, '+feil+' feilet.');
     chatListe()}}
 /* Hold på en melding: reaksjoner (👍 ❤️ 😂 😮 😢 🙏), svar, kopier, rediger og angre. Dobbelttrykk setter 👍 direkte. */
-function chatMsgMeny(mid){
+function chatMsgMeny(mid,pos){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid);if(!m||m.slettet||document.querySelector('dialog.pub'))return;
   const gl=document.getElementById('cMeny');if(gl)gl.remove();
   const meg=meEmail(),mine=m.by===meg,min=CHAT_REAK.find(([f])=>((m.reak||{})[f]||[]).includes(meg));
@@ -5199,15 +5204,21 @@ function chatMsgMeny(mid){
   const IK={pam:'<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/>',svar:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v3"/>',kopier:'<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',angre:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',stjerne:'<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.2 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',rediger:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',slettmod:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',mer:'<path d="M4 7h16M4 12h16M4 17h16"/>'};
   const alle=[['svar','Svar',1],['pam','Påminnelse',1],['kopier','Kopier',!!m.text],['angre','Angre',mine,1],['stjerne',stj?'Fjern stjerne':'Stjernemerk',1],['rediger','Rediger',mine&&m.text&&!m.img],['slettmod','Slett (moderator)',mod,1]].filter(x=>x[2]);
   const hoved=alle.length<=4?alle:alle.slice(0,3),rest=alle.length<=4?[]:alle.slice(3);
+  const KF=['r_hjerte','r_ler','r_wow','r_trist','r_be','likes'],KJAPP=KF.map(f=>CHAT_REAK.find(x=>x[0]===f)),rb=(f,e)=>'<button type="button" class="'+(min&&min[0]===f?'on':'')+'" data-cmv="rx:'+f+'" aria-label="Reager med '+(e===':sion:'?'Sion-logo':e)+'">'+chatReakHtml(e)+'</button>';
   const el=document.createElement('div');el.id='cMeny';el.className='cmeny';
-  el.innerHTML='<div class="cmeny-bak" data-cmlukk></div><div class="cmeny-pill" role="group" aria-label="Reager på meldingen">'+CHAT_REAK.map(([f,e])=>'<button type="button" class="'+(min&&min[0]===f?'on':'')+'" data-cmv="rx:'+f+'" aria-label="Reager med '+(e===':sion:'?'Sion-logo':e)+'">'+chatReakHtml(e)+'</button>').join('')+'</div>'
+  el.innerHTML='<div class="cmeny-bak" data-cmlukk></div><div class="cmeny-pill" role="group" aria-label="Reager på meldingen">'+KJAPP.map(([f,e])=>rb(f,e)).join('')+'<button type="button" class="cmplus" data-cmpl aria-expanded="false" aria-label="Flere reaksjoner">+</button></div><div class="cmeny-pill cmeny-flere" hidden>'+CHAT_REAK.filter(x=>!KJAPP.some(k=>k[0]===x[0])).map(([f,e])=>rb(f,e)).join('')+'</div>'
     +'<div class="cmeny-bar">'+hoved.map(x=>'<button type="button" data-cmv="'+x[0]+'">'+ik(IK[x[0]])+'<span>'+x[1]+'</span></button>').join('')+(rest.length?'<button type="button" data-cmmer aria-expanded="false">'+ik(IK.mer)+'<span>Mer</span></button>':'')+'</div>'
     +(rest.length?'<div class="cmeny-mer" hidden>'+rest.map(x=>'<button type="button" class="cmb'+(x[3]?' fare':'')+'" data-cmv="'+x[0]+'">'+ik(IK[x[0]]).replace('width="24" height="24"','width="20" height="20"')+'<span>'+x[1]+'</span></button>').join('')+'</div>':'');
   const ch=chatEl(),b=document.querySelector('#cMsg .cb[data-msg="'+mid+'"]'),pill=el.querySelector('.cmeny-pill');
   ch.appendChild(el);if(b)b.classList.add('cfram');
-  const cr=ch.getBoundingClientRect();let top=8;
-  if(b){const r=b.getBoundingClientRect();top=r.top-cr.top-62;if(top<8)top=Math.min(r.bottom-cr.top+8,cr.height-170)}
-  pill.style.top=Math.max(8,top)+'px';
+  const cr=ch.getBoundingClientRect(),flere=el.querySelector('.cmeny-flere');let top=8,fy=pos?pos[1]:null;
+  if(fy!=null)top=fy-cr.top-92;                                   // rett over fingeren
+  else if(b){const r=b.getBoundingClientRect();top=r.top-cr.top-62}
+  if(top<8)top=(fy!=null?fy-cr.top+38:b?b.getBoundingClientRect().bottom-cr.top+8:8);
+  top=Math.max(8,Math.min(top,cr.height-250));
+  const pw=pill.offsetWidth;let left=pos?pos[0]-cr.left-pw/2:(cr.width-pw)/2;left=Math.max(8,Math.min(left,cr.width-pw-8));
+  pill.style.top=top+'px';pill.style.left=left+'px';pill.style.transform='none';
+  flere.style.top=(top+60)+'px';flere.style.left=left+'px';flere.style.transform='none';
   const t0=Date.now();
   const lukk=v=>{document.removeEventListener('keydown',esc2);el.remove();if(b)b.classList.remove('cfram');
     if(!v)return;
@@ -5220,8 +5231,9 @@ function chatMsgMeny(mid){
     else if(v==='kopier'){try{navigator.clipboard.writeText(m.text);push('Kopiert','Meldingen er kopiert.')}catch(e){push('Kunne ikke kopiere','Prøv å markere teksten.')}}
     else if(v==='angre')chatAngre(mid)};
   el.addEventListener('click',ev=>{
-    const kn=ev.target.closest&&ev.target.closest('[data-cmv],[data-cmmer],[data-cmlukk]');if(!kn)return;ev.preventDefault();ev.stopPropagation();
+    const kn=ev.target.closest&&ev.target.closest('[data-cmv],[data-cmmer],[data-cmlukk],[data-cmpl]');if(!kn)return;ev.preventDefault();ev.stopPropagation();
     if('cmlukk' in kn.dataset){if(Date.now()-t0>400)lukk('');return}
+    if('cmpl' in kn.dataset){const fl=el.querySelector('.cmeny-flere');fl.hidden=!fl.hidden;kn.setAttribute('aria-expanded',String(!fl.hidden));return}
     if('cmmer' in kn.dataset){const mm=el.querySelector('.cmeny-mer');mm.hidden=!mm.hidden;kn.setAttribute('aria-expanded',String(!mm.hidden));return}
     lukk(kn.dataset.cmv)});
   const esc2=ev=>{if(ev.key==='Escape'){document.removeEventListener('keydown',esc2);if(document.body.contains(el))lukk('')}};document.addEventListener('keydown',esc2)}
@@ -5418,7 +5430,7 @@ function bildeZoom(dlg){
 /* Hold på en melding (520 ms) åpner menyen. */
 {let tm=0,p0=null,brukt=false;
   const stopp=()=>{clearTimeout(tm);tm=0;p0=null};
-  document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('#cMsg .cb[data-msg]');if(!b)return;p0=[e.clientX,e.clientY];const id=b.dataset.msg;tm=setTimeout(()=>{tm=0;brukt=true;chatMsgMeny(id)},520)});
+  document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('#cMsg .cb[data-msg]');if(!b)return;p0=[e.clientX,e.clientY];const id=b.dataset.msg;const px=e.clientX,py=e.clientY;tm=setTimeout(()=>{tm=0;brukt=true;chatMsgMeny(id,[px,py])},520)});
   let sv=null;
   document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('#cMsg .cb[data-msg]');sv=b?{row:b.closest('.crow'),id:b.dataset.msg,x0:e.clientX,y0:e.clientY,dx:0,aktiv:false}:null});
   document.addEventListener('pointermove',e=>{
@@ -5849,7 +5861,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='03.11.2026 kl. 18:44';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='03.11.2026 kl. 19:10';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */

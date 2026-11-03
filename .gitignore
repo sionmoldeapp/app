@@ -14,3 +14,5 @@ ui-debug.log
 
 # Nedlastede Node-avhengigheter
 node_modules/
+
+lib/mediapipe/wasm/*.wasm
