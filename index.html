@@ -509,10 +509,10 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .next:has(.nport){display:grid;grid-template-columns:1fr auto;column-gap:14px;align-items:center}
 .next:has(.nport)>*{grid-column:1}
 .item:has(.evport){position:relative}
-.detail:has(.evport){min-height:116px}
-.detail:has(.evport)>:not(.evport):not(.btns){margin-right:122px}
+.detail:has(.evport){min-height:166px}
+.detail:has(.evport)>:not(.evport):not(.btns){margin-right:167px}
 .item:not(.open) .evport{display:none}
-.item.open>.detail>.evport{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:90px;height:90px;object-fit:cover;object-position:50% 25%;border-radius:50%;border:3px solid color-mix(in srgb,currentColor 25%,transparent)}
+.item.open>.detail>.evport{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:135px;height:135px;object-fit:cover;object-position:50% 25%;border-radius:50%;border:3px solid color-mix(in srgb,currentColor 25%,transparent)}
 .next:has(.nport)>.meta{grid-column:1/-1}
 .next:has(.nport) h2{font-size:28px;margin:2px 0 8px}
 .pprog{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:6px 0}
@@ -529,7 +529,7 @@ h3{font-size:var(--t-xl);line-height:1.1}
 .nspk.tom{font-style:italic;opacity:.65}
 .nph{display:grid;place-items:center;overflow:hidden;background:linear-gradient(150deg,color-mix(in srgb,currentColor 16%,transparent),color-mix(in srgb,currentColor 4%,transparent));box-shadow:inset 0 1px 0 color-mix(in srgb,#fff 35%,transparent)}
 .nph svg{width:100%;height:100%;opacity:.72}
-.nport{grid-column:2!important;grid-row:1/span 2;width:68px;height:68px;border-radius:50%;object-fit:cover;border:3px solid color-mix(in srgb,currentColor 30%,transparent)}
+.nport{grid-column:2!important;grid-row:1/span 2;width:102px;height:102px;border-radius:50%;object-fit:cover;border:3px solid color-mix(in srgb,currentColor 30%,transparent)}
 .kam [hidden]{display:none!important}
 .kam{position:fixed;inset:0;z-index:5;background:#000;color:#fff;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 0}
 .kamtop{position:relative;height:64px;flex:none;display:flex;align-items:center;justify-content:center}
@@ -604,6 +604,14 @@ nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .ringov .rb{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.1);animation:ringSving 1.1s ease-in-out infinite;transform-origin:50% 20%}
 .ringov h2{margin:6px 0 0;font-size:24px}.ringov p{margin:0;opacity:.75}
 .ringov .rk{display:flex;gap:14px;margin-top:22px}
+.summov{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 18px!important;position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translateX(-50%);z-index:2147483000;background:#1d2733;color:#fff;padding:10px 18px;border-radius:99px;box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:15px;animation:summRist .35s ease-in-out infinite alternate}
+.summov button{border:0;border-radius:99px;padding:7px 12px;font:600 13px/1 inherit;font-family:inherit;background:rgba(255,255,255,.14);color:#fff;cursor:pointer}
+.summov button[data-summavvis]{background:#d4483f}
+.summov{max-width:calc(100vw - 20px);width:max-content;border-radius:18px!important}
+.summov .summtxt{min-width:0;line-height:1.25}
+.summov button{flex:none}
+@keyframes summRist{from{transform:translateX(calc(-50% - 3px))}to{transform:translateX(calc(-50% + 3px))}}
+@media (prefers-reduced-motion:reduce){.summov{animation:none}}
 .ringov button{border:0;border-radius:999px;padding:14px 30px;font:inherit;font-weight:600;font-size:17px;color:#fff;background:rgba(255,255,255,.16)}
 .ringov button.rsvar{background:#2ea36b}.ringov button.rav{background:#d4483f}
 @keyframes ringSving{0%,100%{transform:rotate(0)}10%,30%,50%{transform:rotate(16deg)}20%,40%,60%{transform:rotate(-16deg)}70%{transform:rotate(0)}}
@@ -750,6 +758,21 @@ nav.tabs.scrub button[aria-current]{transform:scale(1.06)}
 .cmsg[data-bg=neon11] .cdag,.cmsg[data-bg=neon11] .ct,.cmsg[data-bg=neon12] .cdag,.cmsg[data-bg=neon12] .ct,.cmsg[data-bg=neon13] .cdag,.cmsg[data-bg=neon13] .ct,.cmsg[data-bg=neon14] .cdag,.cmsg[data-bg=neon14] .ct,.cmsg[data-bg=neon15] .cdag,.cmsg[data-bg=neon15] .ct,.cmsg[data-bg=neon16] .cdag,.cmsg[data-bg=neon16] .ct,.cmsg[data-bg=neon17] .cdag,.cmsg[data-bg=neon17] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
 .cmsg[data-bg=neon6] .cdag,.cmsg[data-bg=neon6] .ct,.cmsg[data-bg=neon7] .cdag,.cmsg[data-bg=neon7] .ct,.cmsg[data-bg=neon8] .cdag,.cmsg[data-bg=neon8] .ct,.cmsg[data-bg=neon9] .cdag,.cmsg[data-bg=neon9] .ct,.cmsg[data-bg=neon10] .cdag,.cmsg[data-bg=neon10] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
 .cmsg[data-bg=neon1] .cdag,.cmsg[data-bg=neon1] .ct,.cmsg[data-bg=neon2] .cdag,.cmsg[data-bg=neon2] .ct,.cmsg[data-bg=neon3] .cdag,.cmsg[data-bg=neon3] .ct,.cmsg[data-bg=neon4] .cdag,.cmsg[data-bg=neon4] .ct,.cmsg[data-bg=neon5] .cdag,.cmsg[data-bg=neon5] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
+.cbgp[data-bgp=neon18]{background:url(bilder/chat-neon18.jpg) center/cover,#000;color:#fff;text-shadow:0 1px 3px #000}
+.cmsg[data-bg=neon18]{background-image:url(bilder/chat-neon18.jpg);background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#000}
+.cmsg[data-bg=neon18] .cdag,.cmsg[data-bg=neon18] .ct{color:#fff;text-shadow:0 1px 3px #000}
+.cbgp[data-bgp=neon19]{background:url(bilder/chat-neon19.jpg) center/cover,#000;color:#fff;text-shadow:0 1px 3px #000}
+.cmsg[data-bg=neon19]{background-image:url(bilder/chat-neon19.jpg);background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#000}
+.cmsg[data-bg=neon19] .cdag,.cmsg[data-bg=neon19] .ct{color:#fff;text-shadow:0 1px 3px #000}
+.cbgp[data-bgp=neon20]{background:url(bilder/chat-neon20.jpg) center/cover,#000;color:#fff;text-shadow:0 1px 3px #000}
+.cmsg[data-bg=neon20]{background-image:url(bilder/chat-neon20.jpg);background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#000}
+.cmsg[data-bg=neon20] .cdag,.cmsg[data-bg=neon20] .ct{color:#fff;text-shadow:0 1px 3px #000}
+.cbgp[data-bgp=neon21]{background:url(bilder/chat-neon21.jpg) center/cover,#000;color:#fff;text-shadow:0 1px 3px #000}
+.cmsg[data-bg=neon21]{background-image:url(bilder/chat-neon21.jpg);background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#000}
+.cmsg[data-bg=neon21] .cdag,.cmsg[data-bg=neon21] .ct{color:#fff;text-shadow:0 1px 3px #000}
+.cbgp[data-bgp=neon22]{background:url(bilder/chat-neon22.jpg) center/cover,#000;color:#fff;text-shadow:0 1px 3px #000}
+.cmsg[data-bg=neon22]{background-image:url(bilder/chat-neon22.jpg);background-size:cover;background-position:center;background-repeat:no-repeat;background-color:#000}
+.cmsg[data-bg=neon22] .cdag,.cmsg[data-bg=neon22] .ct{color:#fff;text-shadow:0 1px 3px #000}
 .cmsg[data-bg=eget]{background-size:cover;background-position:center;background-repeat:no-repeat}
 .cmsg[data-bg=eget] .cdag,.cmsg[data-bg=eget] .ct{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.6)}
 .cbgeget{display:grid;gap:6px}
@@ -919,7 +942,9 @@ html[data-bred="1"] .chat,html[data-bred="1"] .chat[data-mork="1"]{background:va
 .cmeny-bar button.fare,.cmeny-bar button.fare svg{color:var(--danger,#c0392b)}
 .cmeny-mer{position:absolute;right:10px;bottom:calc(96px + env(safe-area-inset-bottom,0px));min-width:210px;padding:4px 14px;border-radius:16px;background:var(--chip);box-shadow:0 6px 24px rgba(0,0,0,.3)}
 .cmeny-mer .cmb{padding:12px 4px}
+.creaders{all:unset;display:flex;gap:2px;align-items:center;align-self:flex-start;min-height:30px;min-width:44px;padding:5px 8px;cursor:pointer;border-radius:20px}.creaders.mine{align-self:flex-end}.creaders .cav{width:18px;height:18px;min-width:18px;font-size:8px;margin:0;border:1px solid var(--surface)}.creadersmore{font-size:10px;color:var(--muted)}.creaderslist{display:grid;gap:14px}.creaderslist>div{display:flex;gap:12px;align-items:center}.creaderslist .cav{width:32px;height:32px;font-size:12px}
 .cml{display:grid;gap:2px}
+.cml .cmsection{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:14px 6px 4px}.cml .cmdelete{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
 .cml .cmb{all:unset;cursor:pointer;display:flex;align-items:center;gap:14px;padding:12px 6px;border-radius:12px;font-size:var(--t-m);color:var(--ink)}
 .cml .cmb:active{background:var(--chip)}
 .cml .cmb svg{flex:none;color:var(--lamp,var(--brand))}
@@ -1193,7 +1218,11 @@ nav.tabs button[aria-current="page"]{background:transparent;color:var(--brand-in
 nav.tabs button[aria-current="page"] svg{stroke-width:2.2}
 /* Aktiv-indikator som glir mellom menypunktene (flyttes av tabIndFlytt) */
 /* Utleie: utvidet visning skjuler de andre kortene på Mer (menyen nederst står igjen). */
-#view.ututv>*:not(h1):not(details[data-acc="utleie"]){display:none}
+#view.ututv>*:not(h1):not(details[data-acc="utleie"]):not(.appgrid){display:none}
+/* Utleie ligger i appen Booking under Mer: ikonene, appens overskrift og kortet rundt skjules i utvidet visning, så kalenderen står alene. */
+#view.ututv>.appgrid{margin:0}
+#view.ututv>.appgrid>.mapps,#view.ututv>.appgrid>.mapp-inn>.mapp-hd{display:none}
+#view.ututv>.appgrid>.mapp-inn{margin:0;padding:0;background:none;box-shadow:none;border:0}
 /* Utvidet visning: kalenderen bruker hele skjermbredden, og rommene er fargekodet. */
 #view.ututv{padding-left:4px;padding-right:4px}
 #view.ututv>h1{padding:0 12px}
@@ -1214,7 +1243,7 @@ details[data-acc="utleie"][data-las] .utlasrull:has(>.utg)>*:not(.utg){flex:none
 details[data-acc="utleie"][data-las] .utg-hode{position:sticky;top:0;z-index:4;background:var(--surface)}
 details[data-acc="utleie"][data-las] .utg-hode .utg-t0{z-index:5}
 details[data-acc="utleie"][data-las]{margin-bottom:0!important}
-#view.ututv>details[data-acc="utleie"][data-las],html[data-vindu] details[data-acc="utleie"][data-las]{padding-top:0;box-shadow:none;background:transparent}
+#view.ututv details[data-acc="utleie"][data-las],html[data-vindu] details[data-acc="utleie"][data-las]{padding-top:0;box-shadow:none;background:transparent}
 .utfeil{color:#b3261e;background:color-mix(in srgb,#b3261e 10%,transparent);border-radius:var(--r-s);padding:10px 12px;margin:0}.utfeil ul{margin:6px 0 0 18px;padding:0}
 .feilfelt{outline:2px solid #b3261e;outline-offset:2px;border-radius:6px}
 .utlh{margin-left:auto;display:inline-flex;align-items:center}
@@ -1225,7 +1254,7 @@ details[data-acc="utleie"][data-las]{margin-bottom:0!important}
 .utinfo2{margin:-4px 0 0}.utinfo2>summary{list-style:none;cursor:pointer;display:flex;justify-content:flex-end}.utinfo2>summary::-webkit-details-marker{display:none}
 .utibtn{all:unset;box-sizing:border-box;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);display:grid;place-items:center;font:italic 700 15px/1 Georgia,serif;cursor:pointer}
 .utibtn.on{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
-#view.ututv>details[data-acc="utleie"]{padding:12px 8px;border-radius:14px}
+#view.ututv details[data-acc="utleie"]{padding:12px 8px;border-radius:14px}
 html[data-bred="1"] #view.ututv{columns:1;max-width:none}
 html[data-vindu] header.top,html[data-vindu] nav.tabs,html[data-vindu] #chat,html[data-vindu] #ptr{display:none!important}
 html[data-vindu] .app{max-width:none;margin:0}
@@ -1362,6 +1391,7 @@ nav.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1
 #push span{display:block;font-size:var(--t-s);color:var(--muted);margin-top:1px;line-height:1.3}
 #push span:empty{display:none}
 @media (prefers-reduced-motion:reduce){#push,.tg,.tg::after{transition:none}}
+.chat .cinp{position:relative}.chat .cinp .cverk{position:absolute;bottom:calc(100% + 6px);left:10px;z-index:6;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:0 5px 22px #0003}.chat .cinp .cverk .cik{width:64px;height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}.chat .cinp .cverk .cik:after{content:attr(data-toolname);font-size:10px;line-height:1.2;text-align:center;max-width:64px}.chat .cinp .cchev[aria-expanded=true]{transform:rotate(90deg)}
 </style></head><body>
 
 <div class="app">
@@ -1433,6 +1463,7 @@ async function load(){
   const ok=p=>p.catch(()=>null);
   const [gr,ca,ko,gv,pv,lt,fr,jm,pa]=await Promise.all([FB?ok(FB.groupsList()):null,FB?ok(FB.catsList()):null,FB?ok(FB.getContact()):null,FB?ok(FB.getGiving()):null,FB&&state.user?ok(FB.getPrivacy()):null,FB&&state.admin?ok(FB.ltypesList()):null,fetchAll(),FB?ok(FB.getJul()):null,FB?ok(FB.getPastor()):null]);
   if(gr)applyGroups(gr);
+  if(gr&&state.admin)grNyeLagre();
   if(ca)applyCats(ca);
   if(ko)state.contact=ko;
   if(gv)state.giving=gv;
@@ -1555,10 +1586,14 @@ function fastIntervall(fra,til){const out=[];
 function omDager(d){const dg=Math.round((new Date(d).setHours(0,0,0,0)-new Date().setHours(0,0,0,0))/864e5);if(dg<0)return '';return '<div class="small omdager" style="opacity:.7;margin:0 0 6px">'+(dg===0?'I dag':dg===1?'I morgen':'Om '+dg+' dager')+'</div>'}
 const fastId=(r,w)=>'f_'+r.id+'_'+dkey(w);
 /* Enkeltdato på en fast samling kan ha egen tittel, tid, sted, taler, merknad og beskrivelse (ex[dato] med k:'endret'). */
-const fastInfo=(r,ex)=>{const e=ex&&ex.k==='endret'?ex:{};return {title:e.title||r.title,place:e.place||'',who:e.who||r.who||'',note:e.note||r.note||'',text:e.text||''}};
+const fastInfo=(r,ex)=>{const e=ex&&ex.k==='endret'?ex:{};return {title:e.title||r.title,place:e.place||'',who:e.who||r.who||'',note:e.note||r.note||'',text:e.text||'',img:e.img||r.img||''}};
+/* Portrett på en fast samling: bilde for datoen, ellers samlingens bilde, ellers strektegningen for hovedsamlinger (søndagsmøter). */
+const fastPort=(r,inf)=>inf.img?'<img class="evport" src="'+esc(inf.img)+'" alt="" loading="lazy">':erHovedFast(r)?'<span class="evport nph" aria-hidden="true">'+PERSON_SVG+'</span>':'';
+/* Bilde for én dato krympes til et lite portrett (alle datoene ligger i samme dokument, som har en størrelsesgrense). */
+function smaaBilde(u,maks=420){return new Promise(res=>{if(!u){res('');return}const im=new Image();im.onload=()=>{const k=Math.min(1,maks/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.8))};im.onerror=()=>res('');im.src=u})}
 function fastItem(r,w,ex){const id=fastId(r,w),open=state.open[id],on=state.rsvp[id],avl=ex&&ex.k==='avlyst',inf=fastInfo(r,ex),note=inf.note;
   return `<div class="item ${open?'open':''} ${avl?'avl':''}"${state.admin&&editOn()?` data-lp="fast:${r.id}:${dkey(w)}"`:''}><button data-ev="${id}" aria-expanded="${!!open}"><div class="date">${w.getDate()}. ${cap(MON[w.getMonth()])}</div><div class="grow"><b>${esc(inf.title)}</b><span class="small">${when(w)} kl. ${hhmm(w)}${note?' · '+esc(note):''}</span>${inf.place?'<span class="small adr">'+esc(inf.place)+'</span>':''}</div>${avl?'<span class="tag avl">Avlyst</span>':ex&&ex.k==='endret'&&TIDOK(ex.time)&&ex.time!==r.time?'<span class="tag avl" style="background:var(--lamp);color:var(--lamp-ink)">Endret</span>':'<span class="tag">Fast</span>'}</button>
-   <div class="detail">${erHovedFast(r)?'<span class="evport nph" aria-hidden="true">'+PERSON_SVG+'</span>':''}${omDager(w)}${inf.text?evBeskr(inf.text):''}${inf.who||erHovedFast(r)?'<div class="small">'+(erHovedFast(r)?'Tale ved: '+esc(inf.who||'Navn kommer her'):esc(inf.who))+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}${ukeTekst(r)}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
+   <div class="detail">${fastPort(r,inf)}${omDager(w)}${inf.text?evBeskr(inf.text):''}${inf.who||erHovedFast(r)?'<div class="small">'+(erHovedFast(r)?'Tale ved: '+esc(inf.who||'Navn kommer her'):esc(inf.who))+'</div>':''}<div class="small">${avl?'Denne gangen er avlyst. ':''}Fast samling hver ${DAYS[r.day]}${ukeTekst(r)}.</div>${avl?'':`<div class="btns"><button class="btn ${on?'on':''}" data-rsvp="${id}">${on?'✓ Jeg kommer':'Jeg kommer'}</button>${remBtn(id)}</div>`}</div></div>`}
 /* Beskrivelse med møtetider: linjer som begynner med (dag og) klokkeslett, for eksempel «Fredag 19:00 – Samling», blir en ryddig liste. Andre linjer er vanlig tekst. */
 const BESKR_DAG={man:'Mandag',tir:'Tirsdag',ons:'Onsdag',tor:'Torsdag',fre:'Fredag',lør:'Lørdag',søn:'Søndag'};
 const BESKR_RAD=/^(?:(man|tir|ons|tor|fre|lør|søn)[a-zæøå]*\.?\s+)?(?:kl\.?\s*)?(\d{1,2})[:.](\d{2})(?:\s*[–—-]\s*(\d{1,2})[:.](\d{2}))?\s*(?:[–—:-]\s*|\s+)?(.*)$/i;
@@ -2664,7 +2699,7 @@ const erHovedFast=r=>/søndagsmøte|storsamling|hovedsamling|hovedmøte|gudstjen
 function nesteHoved(vis,fast){
   let n=vis.find(e=>['Møter','Møte','Stevne','Happeninger'].includes(normCat(e.cat)));
   {const fn=fast.filter(f=>erHovedFast(f.fast)&&!(f.ex&&f.ex.k==='avlyst')).sort((x,y)=>x.w-y.w)[0];
-    if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:inf.place,who:inf.who}}}
+    if(fn&&(!n||fn.w<n.w)){const inf=fastInfo(fn.fast,fn.ex);n={id:fastId(fn.fast,fn.w),t:esc(inf.title),w:fn.w,time:hhmm(fn.w),place:inf.place,who:inf.who,img:inf.img}}}
   return n}
 function homeDeler(){
   const vis=events.filter(e=>(!e.m||state.member)&&!e.hideHome),fast=nextFast();
@@ -2899,7 +2934,7 @@ function news(){
   const kan=editOn(),nU=l.filter(ulest).length,ett=[];
   l.forEach(p=>{if(p.m&&!state.member)return;postEtiketter(p).forEach(a=>{if(a!=='Alle'&&!ett.includes(a))ett.push(a)})});
   const chips=['Alle','Uleste'+(nU?' ('+nU+')':''),...ett.slice(0,8)];
-  return `<div class="hrad"><h1>Nyheter</h1>${sokBtn('nyh')}</div>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(state.admin?'<button class="btn" data-hilsen>Pastorens hilsen</button><button class="btn" data-pastorbilde>Pastorens bilde</button>':'')+'</div>':''}
+  return `<div class="hrad"><h1>Nyheter</h1>${sokBtn('nyh')}</div>${kan?'<div class="btns"><button class="btn primary" data-pubnew style="width:auto">+ Ny melding</button>'+(kanAlle()?'<button class="btn" data-hilsen>Pastorens hilsen</button>'+(state.admin?'<button class="btn" data-pastorbilde>Pastorens bilde</button>':''):'')+'</div>':''}
   ${sokInp('nyh','Søk i nyheter …')}
   <div class="chips scroll" aria-label="Filter">${chips.map((c,i)=>{const v=i===1?'Uleste':c;return `<button class="chip" data-nf="${esc(v)}" aria-pressed="${(state.nf||'Alle')===v}">${esc(c)}</button>`}).join('')}</div>
   ${nU?'<div class="btns" style="margin:0 0 8px"><button class="btn" data-nyhlest>Merk alle som lest</button></div>':''}
@@ -2924,7 +2959,7 @@ const normCat=c=>{if(c==='Ledersamling'||c==='Activled')return 'Ungdomsleder';  
   return c};
 /* «Ungdomsleder» (tidligere Ledersamling og Activled) er bare for ungdomsledere: administratorer, ledere i lederkategorien Ungdomsledere, medlemmer i gruppen Ungdomsledere og gruppeledere for Ungdomsledere eller Activ8. Andre ser verken kategorien eller arrangementene. */
 /* Visning: «meg» (mine egne rettigheter), «medlem» (vanlig innlogget medlem uten grupper) eller «besok» (ikke innlogget). Påvirker bare hva som vises som innhold. */
-const canEdit=()=>state.view==='meg'&&(state.admin||isLeader());
+const canEdit=()=>state.view==='meg'&&(state.admin||isLeader()||!!state.pastor);   // pastor og sekretær publiserer også
 const editOn=()=>state.edit&&canEdit();
 /* Utkast og planlagt visning: admin ser alt (med merke), alle andre bare det som er klart og ikke utløpt. Dette er en visning i appen, ikke en sperre i databasen. */
 const toDT=ms=>{const d=new Date(ms),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())};
@@ -2959,9 +2994,14 @@ const GR_IDS=GROUPS.map(g=>g[0]);
 /* Gruppeinnstillinger: vakt = gruppen har vaktliste, remind = medlemmene får automatisk påminnelse dagen før samlinger for gruppen. */
 const GR_REMIND_DEFAULT=['lederradet','ungdomsledere','torsdagsgruppa','vertskap','elevate','lovsang'];
 const GR_FLAGS={};
+async function grNyeLagre(){const nye=state.grNye||[];state.grNye=[];
+  for(const id of nye){const i=GR_IDS.indexOf(id),g=GROUPS[i];if(g)try{await FB.setGroupDoc(id,{name:g[1],desc:g[2]||'',ord:i,vakt:grVakt(id),remind:grRemind(id)})}catch(e){}}}
 const grVakt=id=>GR_FLAGS[id]?GR_FLAGS[id].vakt:!GR_REMIND_DEFAULT.includes(id);
 const grRemind=id=>GR_FLAGS[id]?GR_FLAGS[id].remind:GR_REMIND_DEFAULT.includes(id);
+/* Standardgrupper som kom til etter at gruppene ble lagret i databasen. De vises med en gang og lagres av første administrator som åpner appen (grNyeLagre). */
+const GR_NYE=['forkynnere'];
 function applyGroups(l){
+  if(l&&l.length){const har=new Set(l.map(g=>g.id));state.grNye=GR_NYE.filter(id=>!har.has(id));l=l.concat(state.grNye.map((id,i)=>{const g=GROUPS_DEFAULT.find(x=>x[0]===id);return {id,name:g[1],desc:g[2],ord:l.length+i}}))}else state.grNye=[];
   Object.keys(GR_FLAGS).forEach(k=>delete GR_FLAGS[k]);
   (l||[]).forEach(g=>{GR_FLAGS[g.id]={vakt:g.vakt===undefined?!GR_REMIND_DEFAULT.includes(g.id):!!g.vakt,remind:g.remind===undefined?GR_REMIND_DEFAULT.includes(g.id):!!g.remind}});
   const src=l&&l.length?l.slice().sort((a,b)=>((a.ord==null?999:a.ord)-(b.ord==null?999:b.ord))||String(a.name).localeCompare(String(b.name))).map(g=>[g.id,g.name,g.desc||'']):GROUPS_DEFAULT.map(g=>g.slice());
@@ -2981,6 +3021,7 @@ const canSee=x=>{
 /* Gruppeledere (leads på oppføringen i members) kan bare publisere til gruppene de leder. Det håndheves i databasen (firestore.rules) og i varselscriptet. */
 const isLeader=()=>!state.admin&&(state.leads||[]).length>0;
 const myGroupOptions=()=>state.admin?GR_IDS:(state.leads||[]);
+const kanAlle=()=>!!(state.admin||state.pastor);   // administrator eller pastor: kan sende til alle, alle medlemmer og alle grupper
 const ledItem=x=>(x.groups||[]).length>0&&(x.groups||[]).every(g=>(state.leads||[]).includes(g));
 const malTekst=m=>m.type==='ltype'?'valgte ledere':m.type==='grupper'?'gruppene '+m.groups.map(gName).join(', '):m.type==='medlem'?'medlemmer':'alle';
 const postTags=p=>(p.groups&&p.groups.length?p.groups.map(gName):(p.audience&&p.audience.length?p.audience:[p.tag||'Alle'])).map(a=>`<span class="tag ${a==='Medlem'?'m':''}">${esc(a)}</span>`).join(' ');
@@ -2989,7 +3030,7 @@ const PLACES=['Kometvegen 7','Åndalsnes','Eidsvåg','Eide','Tingvoll'],TIMES=['
 const FIELDS={
  events:[['title','Tittel','text*'],['start','Startdato','date*'],['end','Sluttdato (bare for flere dager)','date'],['time','Klokkeslett','combo',TIMES,'time'],['place','Sted','combo',PLACES,'text'],['who','Taler eller hvem','text'],['text','Beskrivelse','area'],['img','Bilde (valgfritt). Vises som et rundt bilde når oppføringen åpnes, under Hjem og Program','bilde'],['cat','Kategori','sel',CATS],['groups','Gruppe (valgfritt). Bare medlemmer i valgte grupper og administratorer ser arrangementet','multi',GR_IDS],['m','Bare for medlemmer','chk'],['remindH','Påminnelse til medlemmene i gruppen (gjelder grupper med automatisk påminnelse)','sel',[24,48,3,1,0]],['hideHome','Ikke vis på Hjem (vises fortsatt i Program)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk']],
  posts:[['t','Tittel','text*'],['b','Melding','rich*'],['audience','Målgruppe','multi',['Alle','Medlem',...GR_IDS]],['pinned','Fest øverst i Nyheter (står først uansett når den ble lagt ut)','chk'],['hideHome','Ikke vis på Hjem (vises fortsatt i Nyheter)','chk'],['pubAt','Vis først (valgfritt, ellers med en gang)','datetime-local'],['expireAt','Skjul etter (valgfritt)','datetime-local'],['draft','Lagre som utkast (vises ikke for andre)','chk'],['svar','La mottakerne svare raskt (Ok, Kommer, Kommer ikke eller en kort tekst). Bare du, lederne for gruppene og administratorer ser svarene.','chk'],['push','Send også som varsel til telefonene (ved planlagt visning sendes det på det tidspunktet)','chk']],
- regular:[['title','Tittel','text*'],['day','Ukedag','sel',[1,2,3,4,5,6,0]],['time','Klokkeslett','combo*',TIMES,'time'],['weeks','Hvilke uker','sel',['Hver uke','Partallsuker','Oddetallsuker','Ca. én gang i måneden']],['note','Merknad','text'],['cat','Kategori','sel',CATS]]};
+ regular:[['title','Tittel','text*'],['day','Ukedag','sel',[1,2,3,4,5,6,0]],['time','Klokkeslett','combo*',TIMES,'time'],['weeks','Hvilke uker','sel',['Hver uke','Partallsuker','Oddetallsuker','Ca. én gang i måneden']],['note','Merknad','text'],['img','Bilde (valgfritt). Vises som et rundt bilde når samlingen åpnes, og på «Neste hovedsamling». Et eget bilde for én dato settes under «Endre denne gangen»','bilde'],['cat','Kategori','sel',CATS]]};
 const COL={events:'events',posts:'posts',regular:'regular'};
 const REMIND_OPT={24:'Dagen før (ett døgn før)',48:'To dager før',3:'3 timer før',1:'1 time før',0:'Ingen påminnelse'};
 const TYPES=[['events','Arrangement'],['posts','Nyhet'],['regular','Fast samling']];
@@ -2999,10 +3040,10 @@ function fields(t,ed,only){return FIELDS[t].filter(f=>(!only||only.includes(f[0]
     return `<label class="f">${l}<select name="${k}Sel">${o.map(x=>`<option value="${x}" ${cur===x?'selected':''}>${x}</option>`).join('')}${req?'':`<option value="" ${cur===''?'selected':''}>Ikke oppgitt</option>`}<option value="__annet" ${cur==='__annet'?'selected':''}>Annet</option></select><input name="${k}" type="${it}" value="${known?'':esc(v)}" ${known?'hidden':''}></label>`}
   if(b==='multi'){
     const isAud=k==='audience';
-    const cur=ed?(ed[k]&&ed[k].length?ed[k]:(isAud&&state.admin?[ed.tag||'Alle']:[])):(isAud?(state.admin?['Alle']:myGroupOptions().length===1?myGroupOptions():[]):[]);
+    const alle=state.admin||(isAud&&state.pastor),cur=ed?(ed[k]&&ed[k].length?ed[k]:(isAud&&alle?[ed.tag||'Alle']:[])):(isAud?(alle?['Alle']:myGroupOptions().length===1?myGroupOptions():[]):[]);
     const nm=x=>x==='Alle'?'Alle (åpen for alle)':x==='Medlem'?'Bare medlemmer (innloggede)':gLabel(x);
-    const tips=!state.admin?'Velg minst én av gruppene du leder. Bare medlemmer i gruppene og administratorer ser innholdet.':isAud?'Velger du ingenting, blir nyheten åpen for alle. «Bare medlemmer» krever innlogging. Velger du grupper, er det bare medlemmer i de gruppene (og administratorer) som ser nyheten.':'Velger du ingen grupper, gjelder arrangementet alle.';
-    return `<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:var(--t-m);margin-bottom:4px">${l}</legend>${(state.admin?(isAud?['Alle','Medlem',...GR_IDS]:GR_IDS):myGroupOptions()).map(x=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="${k}" value="${x}" style="width:22px;height:22px;flex:none" ${cur.includes(x)?'checked':''}>${esc(nm(x))}</label>`).join('')}<span class="small">${tips}</span></fieldset>`}
+    const tips=!alle?'Velg minst én av gruppene du leder. Bare medlemmer i gruppene og administratorer ser innholdet.':isAud?'Velger du ingenting, blir nyheten åpen for alle. «Bare medlemmer» krever innlogging. Velger du grupper, er det bare medlemmer i de gruppene (og administratorer) som ser nyheten.':'Velger du ingen grupper, gjelder arrangementet alle.';
+    return `<fieldset class="f" style="border:0;padding:0;margin:0"><legend style="font-weight:600;font-size:var(--t-m);margin-bottom:4px">${l}</legend>${(alle?(isAud?['Alle','Medlem',...GR_IDS]:GR_IDS):myGroupOptions()).map(x=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" name="${k}" value="${x}" style="width:22px;height:22px;flex:none" ${cur.includes(x)?'checked':''}>${esc(nm(x))}</label>`).join('')}<span class="small">${tips}</span></fieldset>`}
   if(b==='rich')return richBox('',richFra(ed),l)+(k==='b'?pbHtml(ed&&ed.img):'');
   if(b==='bilde')return pbHtml(v);
   if(b==='area')return `<label class="f">${l}<textarea name="${k}" rows="${t==='events'&&k==='text'?5:3}" ${req?'required':''}>${esc(v)}</textarea></label>`+(t==='events'&&k==='text'?tbHtml(ed):'');
@@ -3815,7 +3856,7 @@ const nesteDag=(dow,h,mi)=>{const d=new Date();d.setHours(h,mi,0,0);let add=(dow
 const VARSEL_MAKS=1000;   // samme grense som i varsel-script.gs (v31)
 const kortTekst=t=>t.length>VARSEL_MAKS?t.slice(0,VARSEL_MAKS-1).trimEnd()+'…':t;
 function hilsenAsk(){
-  if(document.querySelector('dialog.pub')||!state.admin)return;
+  if(document.querySelector('dialog.pub')||!kanAlle())return;   // administrator, pastor eller sekretær (skriver på vegne av pastor)
   const maal=hilsenMaal(),dlg=document.createElement('dialog');dlg.className='lp pub';
   const hRad=(navn,v,l,x,chk)=>'<label style="display:flex;gap:10px;align-items:center;font-weight:400"><input type="radio" name="'+navn+'" value="'+esc(v)+'" '+(chk?'checked':'')+' style="width:22px;height:22px;flex:none">'+esc(l)+(x||'')+'</label>';
   const hSteg=(i,h,p,inn)=>'<div class="wizs" data-i="'+i+'" style="display:none;gap:12px"><div><h3 style="margin:0">'+h+'</h3>'+(p?'<p class="small" style="margin:4px 0 0">'+p+'</p>':'')+'</div>'+inn+'</div>';
@@ -3975,7 +4016,7 @@ function chatGlass(){const cw=document.querySelector('#chat .cw');if(!cw)return;
 function chatEl(){let e=document.getElementById('chat');if(!e){e=document.createElement('div');e.id='chat';e.className='chat';e.hidden=true;e.innerHTML='<div class="cw" role="dialog" aria-modal="true" aria-label="Chat"></div>';document.body.appendChild(e);
   const cw=e.firstChild;let rq=0;const k=()=>{if(rq)return;rq=requestAnimationFrame(()=>{rq=0;try{chatGlass()}catch(er){}})};new MutationObserver(k).observe(cw,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','style','class']});addEventListener('resize',k)}return e}
 const chatW=()=>chatEl().querySelector('.cw:not(.cunder)');
-function chatStoppMsgs(){const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}c.unsub=null}c.msgs=[];try{chatAvstStopp();chatBonnStopp();chatMicAvbryt(true)}catch(e){}}
+function chatStoppMsgs(){window.SionDictation?.close();const c=state.chat;if(c.unsub){try{c.unsub()}catch(e){}c.unsub=null}c.msgs=[];try{chatAvstStopp();chatBonnStopp();chatMicAvbryt(true)}catch(e){}}
 function thrStopp(){if(state.thrUnsub){try{state.thrUnsub()}catch(e){}state.thrUnsub=null}}
 /* Lytter på samtalene til brukeren (maks 50). Første kall setter opp lytteren; senere kall gjør ingenting. */
 /* Pling når en ny melding kommer mens appen er åpen (Innstillinger → Sionchat → Lyd). Lyden lages i nettleseren: to korte, myke toner oppover. Nettleseren tillater lyd først etter at du har trykket på noe i appen. */
@@ -4085,47 +4126,129 @@ function tilstOppd(){try{const c=state.chat;if(!c||!c.vis)return;const meg=meEma
   document.querySelectorAll('#chat .crad[data-chatopen]').forEach(r=>an(r,chatTraad(r.dataset.chatopen)));
   if(c.vy==='samtale'&&c.id)an(document.querySelector('#chat .chd'),chatTraad(c.id))}catch(e){}}
 /* Ringebjelle: den som ringer lager ringer/{samtale-id}; mottakerne får et ringevindu med bare «Svar» (stopper lyden, ingen samtale) og «Ikke nå». Ringer til noen svarer eller den som ringer avbryter. */
-const ring={ut:null,inn:null,iv:null,hb:null,unsub:null,nei:{},vib:{}};
+const ring={ut:null,inn:null,iv:null,hb:null,tm:null,unsub:null,nei:{},vib:{},busy:{}};
+const RING_FRIST=45e3;   // ubesvart ringing gir «Ingen svar» etter 45 sekunder
 const RINGIKON='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21a2.2 2.2 0 0 0 4 0"/></svg>';
 function ringLyd(navn){clearInterval(ring.iv);ring.iv=null;if(!navn)return;lydSpill(navn);ring.iv=setInterval(()=>lydSpill(navn),navn==='ring'?2200:3200);try{navigator.vibrate&&navn==='ring'&&navigator.vibrate([300,150,300])}catch(e){}}
 function ringVindu(html){let e=document.getElementById('ringov');if(!html){if(e)e.remove();return}
   if(!e){e=document.createElement('div');e.id='ringov';e.className='ringov';e.setAttribute('role','alertdialog');document.body.appendChild(e)}e.innerHTML=html}
 function ringBjelle(){return '<div class="rb">'+RINGIKON.replace('width="20" height="20"','width="44" height="44"')+'</div>'}
-function ringUtVis(){const r=ring.ut;if(!r)return;ringVindu(ringBjelle()+'<h2>Ringer '+esc(r.navn)+' …</h2><p>Det ringer til noen svarer.</p><div class="rk"><button type="button" class="rav" data-ringavbryt>Avbryt</button></div>')}
+function ringUtVis(){const r=ring.ut;if(!r)return;const f=r.slutt,n=esc(r.navn);let h,p,k='<button type="button" class="rav" data-ringavbryt>Avbryt</button>';
+  if(f){h={avvist:'Avvist',opptatt:'Opptatt',utlopt:'Ingen svar',feil:'Forbindelsesfeil'}[f]||'Anropet er avsluttet';
+    p={avvist:n+' avviste anropet.',opptatt:n+' er i en annen samtale akkurat nå.',utlopt:'Ingen svarte innen 45 sekunder. Det betyr ikke at '+n+' er utilgjengelig, bare at ingen svarte.',feil:'Fikk ikke kontakt med tjenesten. Sjekk nettet og prøv igjen.'}[f]||'';
+    k='<button type="button" class="rsvar" data-ringlukk>OK</button>'}
+  else if(r.levert){h='Ringer hos '+n+' …';p='Anropet er kommet frem. Det ringer til noen svarer.'}
+  else{h='Prøver å nå '+n+' …';p='Venter på bekreftelse fra mottakeren.'}
+  ringVindu(ringBjelle()+'<h2>'+h+'</h2><p>'+p+'</p><div class="rk">'+k+'</div>')}
+function ringFerdig(f){const r=ring.ut;if(!r||r.slutt)return;clearInterval(ring.hb);ring.hb=null;clearTimeout(ring.tm);ring.tm=null;if(ring.utUnsub){try{ring.utUnsub()}catch(e){}ring.utUnsub=null}r.slutt=f;if(!ring.inn)ringLyd(null);ringUtVis();if(!tale.tid)taleMicAv();try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
+function ringLukk(){if(ring.ut&&ring.ut.slutt)ringSlutt()}
 function ringInnVis(){const r=ring.inn;if(!r){ringVindu('');return}ringVindu(ringBjelle()+'<h2>'+esc(r.fraNavn||'Noen')+'</h2><p>ringer deg i Sionchat</p><div class="rk"><button type="button" class="rsvar" data-ringsvar>Svar</button><button type="button" data-ringnei>Ikke nå</button></div>')}
-function ringSlutt(){ring.ut=null;clearInterval(ring.hb);ring.hb=null;if(ring.utUnsub){try{ring.utUnsub()}catch(e){}ring.utUnsub=null}if(!ring.inn){ringLyd(null);ringVindu('')}}
-function ringStart(){try{const c=state.chat,meg=meEmail(),t=c&&c.id&&chatTraad(c.id);if(!t||ring.ut||ring.inn)return;
-  const til=(t.parts||[]).filter(p=>p!==meg);if(!til.length)return;const navn=nyBeskjedNavn(),tid=c.id;
-  ring.ut={tid,navn:chatNavn(t,meg)};ringUtVis();ringLyd('ringut');
-  FB.ringStart(tid,til,navn).then(()=>{
+function ringSlutt(){ring.ut=null;clearInterval(ring.hb);ring.hb=null;clearTimeout(ring.tm);ring.tm=null;if(ring.utUnsub){try{ring.utUnsub()}catch(e){}ring.utUnsub=null}if(!ring.inn){ringLyd(null);ringVindu('')}}
+function ringStart(){if(document.querySelector('dialog.svideo')){push('Samtale pågår','Forlat gruppevideo før du ringer.');return}try{const c=state.chat,meg=meEmail(),t=c&&c.id&&chatTraad(c.id);if(!t||ring.ut||ring.inn)return;
+  const til=(t.parts||[]).filter(p=>p!==meg);if(!til.length)return;const navn=nyBeskjedNavn(),tid=c.id,dm=til.length===1;
+  if(dm&&!tale.tid)taleMic().catch(()=>{});   // privat samtale: spør om mikrofonen med en gang, så samtalen kan starte når den andre svarer
+  const callId=(window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)).slice(0,60);
+  ring.ut={tid,navn:chatNavn(t,meg),dm,callId,levert:false,slutt:null};ringUtVis();ringLyd('ringut');
+  FB.ringStart(tid,til,navn,callId).then(()=>{
+    ring.tm=setTimeout(()=>{if(ring.ut&&ring.ut.tid===tid&&ring.ut.callId===callId&&!ring.ut.slutt)FB.ringEvent(tid,callId,'timeout').then(g=>{if(g===false&&ring.ut&&ring.ut.callId===callId&&!ring.ut.slutt){/* allerede besvart eller avsluttet: statusen kommer fra databasen */}}).catch(()=>ringFerdig('feil'))},RING_FRIST);
     FB.addMsg(t,'🔔 Ringer …',navn).then(()=>{if(PUSH_URL)FB.notifyThread(PUSH_URL,tid).catch(()=>{})}).catch(()=>{});
     ring.hb=setInterval(()=>FB.ringPuls(tid).catch(()=>{}),20e3);
-    ring.utUnsub=FB.watchRing(tid,d=>{if(!ring.ut||ring.ut.tid!==tid)return;if(d&&d.status==='svart'){const n=d.svarNavn||'Noen';ringSlutt();push('Ringingen ble besvart',n+' svarte på ringingen.')}})
+    ring.utUnsub=FB.watchRing(tid,d=>{if(!ring.ut||ring.ut.tid!==tid||ring.ut.slutt||!d||(d.callId&&d.callId!==callId))return;
+      if(d.status==='svart'){const n=d.svarNavn||'Noen',ut=ring.ut;ringSlutt();if(ut.dm)taleRing(tid,ut.navn);else push('Ringingen ble besvart',n+' svarte på ringingen.')}
+      else if(['avvist','opptatt','utlopt'].includes(d.status))ringFerdig(d.status);
+      else if(d.status==='avbrutt'){ringSlutt();if(!tale.tid)taleMicAv()}
+      else if(d.status==='ring'&&(d.levert||[]).length&&!ring.ut.levert){ring.ut.levert=true;ringUtVis()}},
+      ()=>{if(ring.ut&&ring.ut.tid===tid&&!ring.ut.slutt)ringFerdig('feil')})
   }).catch(e=>{ringSlutt();push('Kunne ikke ringe',(e&&e.code==='permission-denied')?'Reglene i Firebase må oppdateres først.':'Prøv igjen.')})}catch(e){ringSlutt()}}
-function ringAvbryt(){const r=ring.ut;if(!r)return;ringSlutt();FB.ringSett(r.tid,'avbrutt').catch(()=>{})}
-function ringSvar(){const r=ring.inn;if(!r)return;ring.inn=null;ringLyd(null);ringVindu('');FB.ringSett(r.id,'svart',nyBeskjedNavn()).catch(()=>{})}
-function ringNei(){const r=ring.inn;if(!r)return;ring.nei[r.id]=r.ms;ring.inn=null;ringLyd(null);ringVindu('')}
+function ringAvbryt(){const r=ring.ut;if(!r)return;ringSlutt();(r.callId?FB.ringEvent(r.tid,r.callId,'cancel'):FB.ringSett(r.tid,'avbrutt')).catch(()=>{});if(!tale.tid)taleMicAv()}
+function ringSvar(){const r=ring.inn;if(!r)return;ring.inn=null;ringLyd(null);ringVindu('');const dm=(r.til||[]).length===1;
+  if(!r.callId){FB.ringSett(r.id,'svart',nyBeskjedNavn()).catch(()=>{});if(dm)taleSvar(r);return}
+  FB.ringEvent(r.id,r.callId,'answer',nyBeskjedNavn()).then(g=>{if(g){if(dm)taleSvar(r)}else push('Anropet er avsluttet','Den som ringte har avsluttet eller ringingen har gått ut. Be vedkommende prøve igjen.')}).catch(()=>push('Kunne ikke svare','Sjekk nettet og prøv igjen.'))}
+function ringNei(){const r=ring.inn;if(!r)return;ring.nei[r.id]=r.callId||r.ms;ring.inn=null;ringLyd(null);ringVindu('');if(r.callId)FB.ringEvent(r.id,r.callId,'decline').catch(()=>{})}
 function ringInn(l){try{const nu=Date.now();
-  l.forEach(x=>{if(x.status==='vibr'){if(summ.vm[x.id]!==x.ms&&nu-(x.ms||0)<15e3){summ.vm[x.id]=x.ms;if(summ.akt&&summ.akt.inn===x.id)summ.seen=nu;else if(!summ.akt)summStart({inn:x.id})}}else if(summ.akt&&summ.akt.inn===x.id)summStopp()});   // noen summer i samtalen
-  const d=l.find(x=>x.status==='ring'&&nu-(x.ms||0)<60e3&&ring.nei[x.id]!==x.ms);
-  if(d&&!ring.ut){if(!ring.inn||ring.inn.id!==d.id){ring.inn=d;ringInnVis();ringLyd('ring')}else ring.inn=d}
+  l.forEach(x=>{if(x.status==='vibr'){if(summ.vm[x.id]!==x.ms&&nu-(x.ms||0)<15e3){
+      if(UI.summ===false)return;   // stille summing: bare meldingen i chatten
+      const av=summ.avv[x.id];if(av&&(x.ms||0)-av<10e3){summ.avv[x.id]=x.ms;return}   // avvist: samme summing (fornyes hvert 4. sekund) overses til den stopper
+      summ.vm[x.id]=x.ms;if(summ.akt&&summ.akt.inn===x.id)summ.seen=nu;else if(!summ.akt){summStart({inn:x.id});summMerke(x.fraNavn||'Noen',x.id)}}}
+    else{delete summ.avv[x.id];if(summ.akt&&summ.akt.inn===x.id)summStopp()}});   // noen summer i samtalen
+  const meg=meEmail(),d=l.find(x=>x.status==='ring'&&nu-(x.ms||0)<60e3&&(!x.startAt||nu-x.startAt<RING_FRIST)&&ring.nei[x.id]!==(x.callId||x.ms)&&!(x.avvist||[]).includes(meg));
+  if(d&&!ring.ut&&!tale.tid&&!document.querySelector('dialog.svideo')){if(!ring.inn||ring.inn.id!==d.id||ring.inn.callId!==d.callId){ring.inn=d;ringInnVis();ringLyd('ring');if(d.callId&&!(d.levert||[]).includes(meg))FB.ringEvent(d.id,d.callId,'delivered').catch(()=>{})}else ring.inn=d}
+  else if(d&&d.callId&&!ring.busy[d.id+d.callId]){ring.busy[d.id+d.callId]=1;FB.ringEvent(d.id,d.callId,'busy').catch(()=>{})}   // i samtale eller ringer selv: den som ringer får «Opptatt»
   else if(ring.inn){ring.inn=null;if(!ring.ut){ringLyd(null);ringVindu('')}}}catch(e){}}
 function ringLytt(){try{if(!FB||!state.user||!state.member){if(ring.unsub){ring.unsub();ring.unsub=null}return}
   if(!ring.unsub)ring.unsub=FB.watchRinger(meEmail(),ringInn,()=>{});
   if(ring.inn&&Date.now()-(ring.inn.ms||0)>=60e3)ringInn([])}catch(e){}}
 setInterval(ringLytt,5e3);
+/* Tale i private samtaler (WebRTC, bare lyd): når mottakeren trykker «Svar», kobles telefonene sammen og lyden går direkte mellom dem.
+   Tilbud og svar (med nettverksadressene) går via tale/{samtale-id}. Gruppesamtaler har fortsatt bare ringebjellen.
+   STUN-tjeneren finner den offentlige adressen. Uten egen TURN-tjener kan noen mobilnett stoppe samtalen. */
+const TALE_ICE=[{urls:'stun:stun.l.google.com:19302'}];
+const TALEIKON='<svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h3.5l1.5 4-2.2 1.4a11 11 0 0 0 6.8 6.8L16 14l4 1.5V19a1.5 1.5 0 0 1-1.6 1.5A16.5 16.5 0 0 1 3.5 5.6 1.5 1.5 0 0 1 5 4z"/></svg>';
+const tale={pc:null,mic:null,tid:null,navn:'',unsub:null,t0:0,iv:null,lyd:null,demp:false,vent:0};
+async function taleMic(){if(tale.mic)return tale.mic;tale.mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});return tale.mic}
+function taleMicAv(){if(tale.mic){tale.mic.getTracks().forEach(t=>t.stop());tale.mic=null}}
+function taleIceFerdig(pc){return new Promise(res=>{if(pc.iceGatheringState==='complete')return res();const f=()=>{if(pc.iceGatheringState==='complete'){pc.removeEventListener('icegatheringstatechange',f);res()}};pc.addEventListener('icegatheringstatechange',f);setTimeout(res,4000)})}   // alle adressene sendes samlet (ingen løpende utveksling)
+function taleNy(){const pc=new RTCPeerConnection({iceServers:TALE_ICE});
+  tale.mic.getTracks().forEach(t=>pc.addTrack(t,tale.mic));
+  pc.ontrack=e=>{if(!tale.lyd){tale.lyd=new Audio();tale.lyd.autoplay=true}tale.lyd.srcObject=e.streams[0];tale.lyd.play().catch(()=>{})};
+  pc.onconnectionstatechange=()=>{if(tale.pc!==pc)return;const s=pc.connectionState;
+    if(s==='connected'){clearTimeout(tale.vent);if(!tale.t0)tale.t0=Date.now();taleVis()}
+    else if(s==='failed')taleSlutt(true,'Fikk ikke kontakt. Nettverket stoppet kanskje samtalen. Prøv igjen, gjerne på wifi.');
+    else if(s==='disconnected')setTimeout(()=>{if(tale.pc===pc&&pc.connectionState==='disconnected')taleSlutt(true,'Samtalen ble brutt.')},8000)};
+  tale.pc=pc;return pc}
+const taleKlokke=()=>{const s=Math.floor((Date.now()-tale.t0)/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+function taleVis(){if(!tale.tid)return;
+  ringVindu('<div class="rb">'+TALEIKON+'</div><h2>'+esc(tale.navn)+'</h2><p id="taleTid">'+(tale.t0?taleKlokke():'Kobler til …')+'</p><div class="rk"><button type="button" data-taledemp aria-pressed="'+tale.demp+'">'+(tale.demp?'Slå på mikrofonen':'Demp')+'</button><button type="button" class="rav" data-talelegg>Legg på</button></div>')}
+function taleTikk(){const e=document.getElementById('taleTid');if(e&&tale.t0)e.textContent=taleKlokke()}
+function taleRydd(){clearInterval(tale.iv);tale.iv=null;clearTimeout(tale.vent);if(tale.unsub){try{tale.unsub()}catch(e){}tale.unsub=null}if(tale.pc){try{tale.pc.close()}catch(e){}tale.pc=null}if(tale.lyd){tale.lyd.srcObject=null;tale.lyd=null}tale.t0=0;tale.demp=false}
+function taleSlutt(meld,tekst){const tid=tale.tid;if(!tid)return;tale.tid=null;taleRydd();taleMicAv();ringVindu('');if(meld)FB.taleSlutt(tid).catch(()=>{});if(tekst)push('Samtale',tekst)}
+/* Den som ringte: mottakeren har svart. Lager tilbudet og venter på svaret. */
+async function taleRing(tid,navn){
+  try{await taleMic()}catch(e){push('Ingen mikrofon','Ringingen ble besvart, men appen fikk ikke bruke mikrofonen. Tillat mikrofonen for å snakke.');return}
+  taleRydd();tale.tid=tid;tale.navn=navn;taleVis();tale.iv=setInterval(taleTikk,1000);
+  try{const pc=taleNy(),o=await pc.createOffer();await pc.setLocalDescription(o);await taleIceFerdig(pc);if(tale.tid!==tid)return;
+    const t=chatTraad(tid),meg=meEmail(),til=((t&&t.parts)||[]).filter(p=>p!==meg);
+    await FB.taleSett(tid,{fra:meg,til,offer:pc.localDescription.sdp,ms:Date.now(),slutt:false});
+    tale.unsub=FB.watchTale(tid,async d=>{if(!d||tale.tid!==tid||tale.pc!==pc)return;if(d.slutt)return taleSlutt(false,'Samtalen er avsluttet.');
+      if(d.answer&&!pc.currentRemoteDescription){try{await pc.setRemoteDescription({type:'answer',sdp:d.answer})}catch(e){taleSlutt(true,'Kunne ikke koble til.')}}});
+    tale.vent=setTimeout(()=>{if(tale.tid===tid&&!tale.t0)taleSlutt(true,'Fikk ikke kontakt med den du ringte.')},40e3)}
+  catch(e){taleSlutt(true,(e&&e.code==='permission-denied')?'Reglene må oppdateres før dere kan snakke.':'Kunne ikke starte samtalen.')}}
+/* Den som svarer: venter på tilbudet fra den som ringte (eldre tilbud fra en tidligere samtale overses) og sender svaret. */
+async function taleSvar(r){const svarMs=Date.now();
+  try{await taleMic()}catch(e){push('Ingen mikrofon','Tillat mikrofonen for å snakke i samtalen.');return}
+  taleRydd();tale.tid=r.id;tale.navn=r.fraNavn||'Samtale';taleVis();tale.iv=setInterval(taleTikk,1000);let tatt=false;
+  tale.unsub=FB.watchTale(r.id,async d=>{if(!d||tale.tid!==r.id)return;
+    if(tatt){if(d.slutt)taleSlutt(false,'Samtalen er avsluttet.');return}
+    if(!d.offer||d.slutt||(d.ms||0)<svarMs-15e3)return;tatt=true;
+    try{const pc=taleNy();await pc.setRemoteDescription({type:'offer',sdp:d.offer});const a=await pc.createAnswer();await pc.setLocalDescription(a);await taleIceFerdig(pc);if(tale.tid!==r.id)return;await FB.taleSvar(r.id,pc.localDescription.sdp)}
+    catch(e){taleSlutt(true,(e&&e.code==='permission-denied')?'Reglene må oppdateres før dere kan snakke.':'Kunne ikke koble til.')}});
+  tale.vent=setTimeout(()=>{if(tale.tid===r.id&&!tale.t0)taleSlutt(true,'Fikk ikke kontakt med den som ringte.')},40e3)}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-talelegg],[data-taledemp]');if(!b)return;
+  if(b.hasAttribute('data-talelegg'))taleSlutt(true,'');
+  else{tale.demp=!tale.demp;if(tale.mic)tale.mic.getAudioTracks().forEach(t=>{t.enabled=!tale.demp});taleVis()}});
 /* Summing: hold fingeren stille på tom plass i en samtale (utenfor meldingene). Telefonen begynner å vibrere forsiktig og er på maks etter 3 sekunder, og stopper når fingeren slippes.
    De andre i samtalen får det samme så lenge du holder (så lenge appen er åpen hos dem). Vibrasjon har ingen styrke å velge; styrken lages ved at hvert støt gjøres lengre (15 til 200 ms av 200 ms). */
-const summ={tm:0,t0:0,akt:null,hb:0,seen:0,vm:{}};
+const summ={tm:0,t0:0,akt:null,hb:0,seen:0,vm:{},mt:{},avv:{}};
+/* Mottakeren ser hvem som summer (et merke øverst så lenge det vibrerer). Den som summer legger «📳 Summet» i samtalen (høyst én gang i minuttet),
+   så samtalen blir ulest for den som ikke har den åpen, og det kommer varsel når appen er lukket. */
+function summMerke(navn,id){let e=document.getElementById('summov');if(!navn){if(e)e.remove();return}
+  if(!e){e=document.createElement('div');e.id='summov';e.className='summov';e.setAttribute('role','status');document.body.appendChild(e)}
+  e.innerHTML='<span class="summtxt"><span aria-hidden="true">📳</span> <b>'+esc(navn)+'</b> summer deg</span><button type="button" data-summavvis="'+esc(id||'')+'">Avvis</button><button type="button" data-summstille title="Slå av summing på denne enheten. Du får fortsatt «📳 Summet» i chatten.">Stille</button>'}
+/* Avvis: stopper vibreringen og merket for denne summingen. Stille: slår av summing på enheten (Innstillinger → Sionchat). */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-summavvis],[data-summstille]');if(!b)return;
+  const a=summ.akt;if(a&&a.inn)summ.avv[a.inn]=summ.vm[a.inn]||Date.now();summStopp();
+  if(b.hasAttribute('data-summstille')){UI.summ=false;uiLagre();push('Summing er stille','Du får fortsatt «📳 Summet» i chatten. Slå på igjen under Mer → Meg → Innstillinger → Sionchat.')}});
 function summTrinn(){const t=Date.now()-summ.t0,f=Math.min(1,t/3000);
   if(summ.akt&&summ.akt.inn&&Date.now()-summ.seen>9e3){summStopp();return}   // avsenderen har falt ut: ikke vibrer for alltid
   try{navigator.vibrate&&navigator.vibrate(f<1?Math.round(15+f*185):400)}catch(e){}
   summ.tm=setTimeout(summTrinn,f<1?200:350)}
 function summStart(akt){summStopp();summ.akt=akt;summ.t0=summ.seen=Date.now();summTrinn()}
-function summStopp(){clearTimeout(summ.tm);summ.tm=0;clearInterval(summ.hb);summ.hb=0;summ.akt=null;try{navigator.vibrate&&navigator.vibrate(0)}catch(e){}}
+function summStopp(){summMerke('');clearTimeout(summ.tm);summ.tm=0;clearInterval(summ.hb);summ.hb=0;summ.akt=null;try{navigator.vibrate&&navigator.vibrate(0)}catch(e){}}
 function summSend(){try{const c=state.chat,meg=meEmail(),t=c&&c.id&&chatTraad(c.id);if(!t||ring.ut||ring.inn||summ.akt)return false;
   const til=(t.parts||[]).filter(p=>p!==meg);if(!til.length)return false;const send=()=>FB.ringVibr(c.id,til,nyBeskjedNavn());
-  summStart({tid:c.id});send().catch(e=>{summStopp();push('Kunne ikke summe',(e&&e.code==='permission-denied')?'Reglene må oppdateres først.':'Prøv igjen.')});
+  summStart({tid:c.id});
+  if(Date.now()-(summ.mt[c.id]||0)>60e3){summ.mt[c.id]=Date.now();FB.addMsg(t,'📳 Summet',nyBeskjedNavn()).then(()=>{if(PUSH_URL)FB.notifyThread(PUSH_URL,c.id).catch(()=>{})}).catch(()=>{})}
+  send().catch(e=>{summStopp();push('Kunne ikke summe',(e&&e.code==='permission-denied')?'Reglene må oppdateres først.':'Prøv igjen.')});
   summ.hb=setInterval(()=>send().catch(()=>{}),4e3);return true}catch(e){return false}}
 function summSlutt(){const a=summ.akt;if(!a||!a.tid)return;summStopp();try{FB.ringSett(a.tid,'avbrutt').catch(()=>{})}catch(e){}}
 { let tm=0,x0=0,y0=0,i=false;const stopp=()=>{clearTimeout(tm);tm=0};
@@ -4459,15 +4582,31 @@ async function chatBokKal(mid){
   catch(e){push('Kunne ikke legge i kalenderen','Er de nye reglene publisert i Firebase? ('+((e&&e.code)||'feil')+')')}}
 const chatBareEmoji=t=>{t=String(t||'').trim();const u=t.replace(SION_TOKEN,'🕊');return !!u&&/^[\p{Extended_Pictographic}️‍\s]+$/u.test(u)&&[...u.matchAll(/\p{Extended_Pictographic}/gu)].length<=3};
 
+let chatVideoVent=false;
+async function chatVideoStart(){
+  if(chatVideoVent)return;
+  const t=chatTraad(state.chat.id);if(!SUPA_NA||!t||t.kind!=='gruppe'||!FB?.user)return;
+  if(tale.tid||ring.ut||ring.inn){push('Samtale pågår','Avslutt den andre samtalen før du starter gruppevideo.');return}
+  chatVideoVent=true;const bruker=FB.user;
+  try{const video=await import('./lib/sion-video.js');if(FB.user!==bruker)return;
+    await video.open({title:chatNavn(t,meEmail()),getAccess:async()=>{
+      if(FB.user!==bruker)throw new Error('Logg inn igjen for å bli med.');
+      const idToken=await bruker.getIdToken(true);
+      const r=await fetch(PUSH_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'video',threadId:t.id,idToken})});
+      if(!r.ok)throw new Error('Videotjenesten er ikke tilgjengelig.');const d=await r.json();
+      if(!d.ok)throw new Error(d.feil||'Kunne ikke starte video.');return d;
+    }});
+  }catch(e){push('Gruppevideo',e.message||'Kunne ikke åpne video.')}finally{chatVideoVent=false}
+}
 function chatRamme(tittel,under,av,innhold,hint){
   const c=state.chat;c.svar=null;c.red=null;c.verk=false;
-  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(c.id?'<button type="button" class="cbtn" data-chatring aria-label="Ring" title="Ring">'+RINGIKON+'</button><button type="button" class="cbtn" data-chatfull aria-label="'+(c.full?'Normal visning':'Fullskjerm')+'" title="'+(c.full?'Normal visning':'Fullskjerm')+'">'+(c.full?CHAT_FULL_UT:CHAT_FULL_INN)+'</button><button type="button" class="cbtn" data-chatdelt aria-label="Se hvem som er med i samtalen" title="Hvem er med?"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 13.6c2.6.2 4.5 2 4.5 4.9"/></svg></button><button type="button" class="cbtn" data-chatmeny aria-label="Samtaleinnstillinger"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.7" fill="currentColor" stroke="none"/></svg></button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
+  chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>'+(av||'')+'<span class="ctit"><b>'+esc(tittel)+'</b>'+(under?'<span>'+esc(under)+'</span>':'')+'</span>'+(SUPA_NA&&c.id&&chatTraad(c.id)?.kind==='gruppe'?'<button type="button" class="cbtn" data-chatvideo aria-label="Gruppevideo – opptil 12 deltakere" title="Gruppevideo"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2" y="5" width="13" height="14" rx="3"/><path d="m15 9 7-4v14l-7-4"/></svg></button>':'')+(c.id?'<button type="button" class="cbtn" data-chatring aria-label="Ring" title="Ring">'+RINGIKON+'</button><button type="button" class="cbtn" data-chatfull aria-label="'+(c.full?'Normal visning':'Fullskjerm')+'" title="'+(c.full?'Normal visning':'Fullskjerm')+'">'+(c.full?CHAT_FULL_UT:CHAT_FULL_INN)+'</button><button type="button" class="cbtn" data-chatdelt aria-label="Se hvem som er med i samtalen" title="Hvem er med?"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 13.6c2.6.2 4.5 2 4.5 4.9"/></svg></button><button type="button" class="cbtn" data-chatmeny aria-label="Samtaleinnstillinger"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.7" fill="currentColor" stroke="none"/></svg></button>':'')+'</header><div class="cmsg" id="cMsg">'+(innhold||'')+'</div>'
    +'<div class="cbar" id="cBar" hidden></div>'+chatPanelHtml()
-   +'<div class="crec" id="cRec" hidden></div><form class="cinp" id="cForm"><button type="button" class="cik cchev" data-cchev aria-label="Vis flere valg: bilde, lyd og mer" hidden>'+CHEVIKON+'</button><div class="cverk" id="cVerk"><button type="button" class="cik" data-cfoto aria-label="Ta bilde" '+(c.id?'':'disabled')+'>'+KAMIKON+'</button><button type="button" class="cik" data-cgalleri aria-label="Velg bilde fra galleriet" '+(c.id?'':'disabled')+'>'+GALLERIKON+'</button><button type="button" class="cik cmic" data-cmic aria-label="Send stemmemelding" '+(c.id?'':'disabled')+'>'+MIKIKON+'</button></div><input type="file" id="cFil" accept="image/*" hidden><input type="file" id="cKam" accept="image/*" capture="environment" hidden><div class="cfelt"><textarea id="cT" rows="1" maxlength="1000" placeholder="Melding" aria-label="'+esc(hint||'Skriv en melding')+'"></textarea><button type="button" class="cik csmil" data-cemoknapp aria-label="Klistremerker, emoji, spill og avstemning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M8.2 14.2c.9 1.6 2.3 2.4 3.8 2.4s2.9-.8 3.8-2.4"/><circle cx="9" cy="9.7" r=".6" fill="currentColor"/><circle cx="15" cy="9.7" r=".6" fill="currentColor"/></svg></button></div><button type="submit" class="csend" aria-label="Send" hidden>'+chatSend+'</button><button type="button" class="csend ctommel" data-ctommel aria-label="Send hurtigemoji. Hold inne for å bytte ikon." title="Hold inne for å bytte ikon">'+chatHurtigHtml()+'</button></form></form>'}
+   +'<div class="crec" id="cRec" hidden></div><form class="cinp" id="cForm"><button type="button" class="cik cchev" data-cchev aria-controls="cVerk" aria-label="Vis flere valg: bilde, lyd og mer" hidden>'+CHEVIKON+'</button><div class="cverk" id="cVerk"><button type="button" class="cik" data-cfoto data-toolname="Foto" aria-label="Ta bilde" '+(c.id?'':'disabled')+'>'+KAMIKON+'</button><button type="button" class="cik" data-cgalleri data-toolname="Galleri" aria-label="Velg bilde fra galleriet" '+(c.id?'':'disabled')+'>'+GALLERIKON+'</button><button type="button" class="cik cmic" data-cmic data-toolname="Stemmemelding" aria-label="Send stemmemelding" '+(c.id?'':'disabled')+'>'+MIKIKON+'</button><button type="button" class="cik" data-cdictate data-toolname="Snakk til tekst" aria-label="Snakk til tekst" title="Snakk til tekst"><span aria-hidden="true" style="font-size:16px;font-weight:700">Aa</span></button></div><input type="file" id="cFil" accept="image/*" hidden><input type="file" id="cKam" accept="image/*" capture="environment" hidden><div class="cfelt"><textarea id="cT" rows="1" maxlength="1000" placeholder="Melding" aria-label="'+esc(hint||'Skriv en melding')+'"></textarea><button type="button" class="cik csmil" data-cemoknapp aria-label="Klistremerker, emoji, spill og avstemning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M8.2 14.2c.9 1.6 2.3 2.4 3.8 2.4s2.9-.8 3.8-2.4"/><circle cx="9" cy="9.7" r=".6" fill="currentColor"/><circle cx="15" cy="9.7" r=".6" fill="currentColor"/></svg></button></div><button type="submit" class="csend" aria-label="Send" hidden>'+chatSend+'</button><button type="button" class="csend ctommel" data-ctommel aria-label="Send hurtigemoji. Hold inne for å bytte ikon." title="Hold inne for å bytte ikon">'+chatHurtigHtml()+'</button></form></form>';chatInpOppd()}
 /* Bytter mellom send-knapp (når det står tekst) og 👍 (når feltet er tomt), som i Messenger. */
 function chatInpOppd(){const ta=document.getElementById('cT'),s=document.querySelector('#cForm .csend:not(.ctommel)'),t=document.querySelector('#cForm .ctommel');if(!ta||!s||!t)return;const tom=!ta.value.trim()&&!state.chat.red;s.hidden=tom;t.hidden=!tom;
   /* Som i Messenger: tomt felt viser alle verktøyene (+, kamera, galleri, mikrofon) og 👍; når du skriver, trekkes de inn til en pil og feltet får mer plass. Pilen åpner dem igjen. */
-  if(tom)state.chat.verk=false;const vis=tom||!!state.chat.verk,vk=document.getElementById('cVerk'),ch=document.querySelector('#cForm .cchev');if(vk)vk.hidden=!vis;if(ch)ch.hidden=vis}
+  const vis=!!state.chat.verk,vk=document.getElementById('cVerk'),ch=document.querySelector('#cForm .cchev');if(vk)vk.hidden=!vis;if(ch){ch.hidden=false;ch.setAttribute('aria-expanded',String(vis));ch.setAttribute('aria-label',vis?'Lukk bilde- og taleverktøy':'Vis bilde, stemmemelding og snakk til tekst');}}
 function chatBar(){
   const b=document.getElementById('cBar');if(!b)return;const c=state.chat;
   if(c.red){b.hidden=false;b.hidden=false;b.className='cbar cbar2';b.innerHTML='<span class="cbik"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></span><span class="cbt"><b>Redigerer melding</b><span>'+esc(chatForh(String(c.red.tekst||'')).slice(0,120))+'</span></span><button type="button" class="cbtn" data-cbarx aria-label="Avbryt redigering"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>'}
@@ -4483,6 +4622,43 @@ function chatSamtale(id){
     (forste?l.filter(m=>Date.now()-m.ms<20000):l.filter(m=>!forrige.some(x=>x.id===m.id))).forEach(m=>{if(m.slettet||c.eff.has(m.id))return;const e=chatEffektFor(m.text);if(e){c.eff.add(m.id);chatEffekt(e)}})},e=>{const b=document.getElementById('cMsg');if(b)b.innerHTML='<p class="small">Kunne ikke hente meldingene ('+((e&&e.code)||'feil')+').</p>'});
   chatLest()}
 function chatReaksjoner(m){const ut=[];CHAT_REAK.forEach(([f,e])=>{const l=(m.reak&&m.reak[f])||[];if(l.length)ut.push([f,e,l])});return ut}
+/* Lesekvitteringer: registrer bare meldinger som faktisk vises i den åpne samtalen. */
+const chatLesVent=new Set();let chatLesTimer=0;
+function chatLesPlan(){clearTimeout(chatLesTimer);chatLesTimer=setTimeout(chatLesSynlig,650)}
+function chatLesSynlig(){
+  const c=state.chat,t=chatTraad(c.id),box=document.getElementById('cMsg'),meg=meEmail();
+  if(!FB?.markMsgsSeen||!c.vis||c.vy!=='samtale'||!t||t.kind!=='gruppe'||!box||document.visibilityState!=='visible'||document.querySelector('dialog[open]'))return;
+  const r=box.getBoundingClientRect(),top=Math.max(0,r.top),bottom=Math.min(innerHeight,r.bottom),ids=[];
+  if(bottom<=top)return;
+  box.querySelectorAll('.cb[data-msg]').forEach(el=>{const m=c.msgs.find(x=>x.id===el.dataset.msg),key=t.id+'|'+el.dataset.msg+'|'+meg;
+    if(!m||m.by===meg||m.slettet||(m.seen||[]).includes(meg)||chatLesVent.has(key)||ids.length>=20)return;
+    const b=el.getBoundingClientRect();if(Math.min(bottom,b.bottom)-Math.max(top,b.top)<Math.min(40,b.height))return;
+    ids.push(m.id);chatLesVent.add(key);
+  });
+  if(!ids.length)return;const tid=t.id;
+  FB.markMsgsSeen(tid,ids).then(()=>{if(state.chat.id===tid){for(const m of state.chat.msgs)if(ids.includes(m.id))m.seen=[...new Set([...(m.seen||[]),meg])];chatMsgs(false);}}).catch(()=>{}).finally(()=>{ids.forEach(id=>chatLesVent.delete(tid+'|'+id+'|'+meg));});
+}
+function chatLesereFor(m,t){return [...new Set(m.seen||[])].filter(p=>p!==m.by&&(t.parts||[]).includes(p))}
+function chatLeserNavn(email){const f=chatFolkAlle().find(x=>x.id===email),m=state.chat.msgs.find(x=>x.by===email&&x.name);return {name:f?.name||m?.name||(email===meEmail()?'Deg':email.split('@')[0]),bilde:f?.bilde||''}}
+function chatLesereHtml(m,t,mine){
+  const l=chatLesereFor(m,t);if(!l.length)return '';
+  return '<button type="button" class="creaders'+(mine?' mine':'')+'" data-creaders="'+esc(m.id)+'" aria-label="Lest av '+l.length+'. Trykk eller hold inne for å se navn.">'+l.slice(0,4).map(p=>{const f=chatLeserNavn(p);return chatAv(f.name,true,f.bilde)}).join('')+(l.length>4?'<span class="creadersmore">+'+(l.length-4)+'</span>':'')+'</button>';
+}
+function chatLesereVis(id){
+  const t=chatTraad(state.chat.id),m=state.chat.msgs.find(x=>x.id===id);if(!t||!m||document.querySelector('dialog.pub'))return;
+  const l=chatLesereFor(m,t),d=document.createElement('dialog');d.className='lp pub';
+  d.innerHTML='<form method="dialog" class="form"><h3 style="margin:0">Lest av '+l.length+'</h3><div class="creaderslist">'+l.map(p=>{const f=chatLeserNavn(p);return '<div>'+chatAv(f.name,true,f.bilde)+'<span>'+esc(f.name)+(p===meEmail()?' (deg)':'')+'</span></div>'}).join('')+'</div><p class="small" style="margin:0">Viser dem som har åpnet og sett denne meldingen i appen.</p><div class="btns"><button class="btn" value="lukk">Lukk</button></div></form>';
+  d.addEventListener('close',()=>{d.remove();chatLesPlan()});document.body.append(d);d.showModal();
+}
+{let timer=0,start=null;
+  const stopp=()=>{clearTimeout(timer);timer=0;start=null};
+  document.addEventListener('pointerdown',e=>{const b=e.target.closest?.('[data-creaders]');if(!b)return;start=[e.clientX,e.clientY];timer=setTimeout(()=>{timer=0;chatLesereVis(b.dataset.creaders)},500)});
+  document.addEventListener('pointermove',e=>{if(start&&Math.hypot(e.clientX-start[0],e.clientY-start[1])>10)stopp()});
+  document.addEventListener('pointerup',stopp);document.addEventListener('pointercancel',stopp);
+  document.addEventListener('contextmenu',e=>{if(e.target.closest?.('[data-creaders]'))e.preventDefault()});
+}
+document.addEventListener('visibilitychange',chatLesPlan);
+document.addEventListener('scroll',e=>{if(e.target.id==='cMsg')chatLesPlan()},true);
 function chatMsgs(sist){
   const box=document.getElementById('cMsg');if(!box)return;const meg=meEmail(),l=state.chat.msgs,t=chatTraad(state.chat.id);
   const nær=box.scrollHeight-box.scrollTop-box.clientHeight<140;let h='',forrige=null;
@@ -4505,10 +4681,11 @@ function chatMsgs(sist){
        +((m.stjerne||[]).includes(meg)?'<span class="cstj" aria-label="Stjernemerket">⭐</span>':'')+(rk.length?'<span class="clike'+(minRk?' mine':'')+'" aria-label="'+tot+' reaksjoner">'+rk.map(x=>chatReakHtml(x[1])).join('')+(tot>1?'<small>'+tot+'</small>':'')+'</span>':'')+'</div>'}
     h+='<div class="crow '+(mine?'me':'de')+'">'+av+inn+'</div>';
     if(slutt){let tid=chatKl(m.ms)+(m.redigert?' · redigert':'');if(mine&&i===l.length-1&&t&&t.lastBy===meg)tid+=' · '+(sett?'Sett':'Sendt');h+='<div class="ct '+(mine?'me':'de')+'">'+esc(tid)+'</div>'}
+    if(gr&&!m.slettet)h+=chatLesereHtml(m,t,mine);
     forrige=m});
   box.innerHTML=h||'<p class="small" style="align-self:center;margin-top:20px">Ingen meldinger ennå. Skriv den første.</p>';
   box.insertAdjacentHTML('beforeend','<div class="cnedw"><button type="button" class="cned" data-cned aria-label="Gå til siste melding" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5.5 12.5 12 19l6.5-6.5"/></svg></button></div>');
-  if(nær||sist){box.scrollTop=box.scrollHeight;chatHoldNede(box)}chatNedKnapp(box)}
+  if(nær||sist){box.scrollTop=box.scrollHeight;chatHoldNede(box)}chatNedKnapp(box);chatLesPlan()}
 function chatNedKnapp(b){const k=b&&b.querySelector('[data-cned]');if(k)k.hidden=b.scrollHeight-b.scrollTop-b.clientHeight<120}
 document.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest('[data-cned]');if(!k)return;const b=document.getElementById('cMsg');if(b){b._pin=true;b.scrollTo({top:b.scrollHeight,behavior:'smooth'})}});
 /* Nyeste melding skal vises når samtalen åpnes. Bilder, skrifter og lyd lastes etter at meldingene er tegnet og gjør samtalen høyere, så vi holder den nederst til alt er lastet (og til du selv blar oppover). */
@@ -4553,7 +4730,7 @@ function chatMeny(){
  ['utseende','<path d="M12 3.5s6 6.2 6 10.5a6 6 0 0 1-12 0c0-4.3 6-10.5 6-10.5z"/>','Farge og bakgrunn'],
  ['stjerner','<path d="m12 4 2.4 5 5.4.7-4 3.7 1 5.4L12 16.2 7.2 18.8l1-5.4-4-3.7 5.4-.7z"/>','Stjernemerkede meldinger'+(stj?' ('+stj+')':'')],
  ['demp',dempet?'<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/>':'<path d="M6 16V11a6 6 0 0 1 9-5.2M18 11v5l1.5 2H8"/><path d="M10 21h4M4 4l16 16"/>',dempet?'Slå på varsler':'Dempe varsler'],
- ['slett','<path d="M5 7h14M10 7V4.5h4V7M7 7l1 12.5h8L17 7"/>','Slett samtalen','fare']].map(x=>'<button class="cmb'+(x[3]?' fare':'')+'" value="'+x[0]+'"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+x[1]+'</svg>'+x[2]+'</button>').join('')+'</div><div class="btns"><button class="btn" value="avbryt" formnovalidate style="width:auto">Lukk</button></div</div></form>';
+ ['slett','<path d="M5 7h14M10 7V4.5h4V7M7 7l1 12.5h8L17 7"/>','Slett samtalen','fare']].sort((a,b)=>['utseende','bilde','delt','bonn','stjerner','demp','slett'].indexOf(a[0])-['utseende','bilde','delt','bonn','stjerner','demp','slett'].indexOf(b[0])).map(x=>({utseende:'Utseende',delt:'I samtalen',demp:'Varsler'}[x[0]]?'<h4 class="cmsection">'+{utseende:'Utseende',delt:'I samtalen',demp:'Varsler'}[x[0]]+'</h4>':'')+'<button class="cmb'+(x[3]?' fare cmdelete':'')+'" value="'+x[0]+'"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+x[1]+'</svg>'+x[2]+'</button>').join('')+'</div><div class="btns"><button class="btn" value="avbryt" formnovalidate style="width:auto">Lukk</button></div></form>';
   document.body.appendChild(dlg);
   dlg.addEventListener('close',async()=>{const v=dlg.returnValue;dlg.remove();
     if(v==='delt')chatDeltakere();else if(v==='bonn')chatBonnVis();else if(v==='utseende')chatUtseendeMeny();else if(v==='bilde')chatBildeMeny();else if(v==='stjerner')chatStjerneVis();else if(v==='slett')chatSlettMeny();
@@ -4584,7 +4761,7 @@ function chatBildeMeny(){
   dlg.addEventListener('close',()=>{const v=dlg.returnValue;dlg.remove();if(v==='fjern')chatBildeSett(t,null)});
   dlg.showModal()}
 /* Farge og bakgrunn per samtale (feltene farge og bakgrunn på samtalen; begge ser dem). */
-const CHAT_BG=[['ingen','Ingen'],['himmel','Himmel'],['solnedgang','Solnedgang'],['skog','Skog'],['natt','Natt'],['rosa','Rosa'],['sion','Sion-mønster'],['aurora','Aurora'],['neon1','Neon 1'],['neon2','Neon 2'],['neon3','Neon 3'],['neon4','Neon 4'],['neon5','Neon 5'],['neon6','Neon 6'],['neon7','Neon 7'],['neon8','Neon 8'],['neon9','Neon 9'],['neon10','Neon 5'],['neon11','Neon 11'],['neon12','Neon 12'],['neon13','Neon 13'],['neon14','Neon 14'],['neon15','Neon 15'],['neon16','Jesus verdens lys'],['neon17','Kors']];
+const CHAT_BG=[['ingen','Ingen'],['himmel','Himmel'],['solnedgang','Solnedgang'],['skog','Skog'],['natt','Natt'],['rosa','Rosa'],['sion','Sion-mønster'],['aurora','Aurora'],['neon1','Neon 1'],['neon2','Neon 2'],['neon3','Neon 3'],['neon4','Neon 4'],['neon5','Neon 5'],['neon6','Neon 6'],['neon7','Neon 7'],['neon8','Neon 8'],['neon9','Neon 9'],['neon10','Neon 5'],['neon11','Neon 11'],['neon12','Neon 12'],['neon13','Neon 13'],['neon14','Neon 14'],['neon15','Neon 15'],['neon16','Jesus verdens lys'],['neon17','Kors'],['neon18','Activ8 LED – mørk'],['neon19','Activ8 LED – dempet'],['neon20','Activ8 LED – bølger'],['neon21','Rolige bølger'],['neon22','Håp og lys']];
 let chatTileCache={};
 function chatTile(mork){
   const k=mork?'m':'l';if(chatTileCache[k])return Promise.resolve(chatTileCache[k]);
@@ -4616,25 +4793,30 @@ function chatFargeBruk(){
   const m=document.getElementById('cMsg');if(!m)return;const bg=(t&&t.bakgrunn)||'ingen';m.dataset.bg=bg;m.style.backgroundImage='';
   if(bg==='sion'){let mork=false;try{mork=isDark()}catch(e){}chatTile(mork).then(u=>{const mm=document.getElementById('cMsg');if(mm&&mm.dataset.bg==='sion'&&u)mm.style.backgroundImage='url('+u+')'})}
   if(bg==='eget'&&state.chat.id)cbgBruk(state.chat.id)}
-function chatUtseendeMeny(){
-  const c=state.chat,t=chatTraad(c.id);if(!t||document.querySelector('dialog.pub'))return;
-  const dlg=document.createElement('dialog');dlg.className='lp pub';
-  dlg.innerHTML='<form class="form" method="dialog"><h3 style="margin:0">Farge og bakgrunn</h3><p class="small" style="margin:0"><b>Farge</b> på meldingene dine. Begge i samtalen ser valgene.</p><div class="cfarger"><button type="submit" value="f:tema" style="background:var(--brand);color:var(--brand-ink)" aria-label="Appens farge" title="Appens farge" class="ctemafarge'+(!t.farge?' on':'')+'">Tema</button>'+CHAT_FARGER.map(f=>'<button type="submit" value="f:'+f[0]+'" style="background:'+f[2]+'" aria-label="'+f[1]+'" class="'+(t.farge===f[0]?'on':'')+'"></button>').join('')+'</div>'
-   +'<p class="small" style="margin:0"><b>Bakgrunn</b></p><div class="cbgvalg">'+CHAT_BG.map(b=>'<button type="submit" value="b:'+b[0]+'" class="cbgp'+((t.bakgrunn||'ingen')===b[0]?' on':'')+'" data-bgp="'+b[0]+'">'+b[1]+'</button>').join('')+'</div><p class="small" style="margin:0"><b>Eget bilde</b> <span style="font-weight:400">· alle i samtalen ser det</span></p><div class="cbgeget"><button type="button" class="btn" data-cbgvelg>Velg bilde …</button><button type="button" class="btn" data-cbgfjern hidden>Fjern eget bilde</button><input type="file" accept="image/*" data-cbgfil hidden><p class="small" role="status" data-cbgmsg style="margin:0"></p></div><div class="btns"><button class="btn" value="avbryt" formnovalidate>Lukk</button></div></form>';
-  document.body.appendChild(dlg);
-  const cbgMsg=x=>{const e=dlg.querySelector('[data-cbgmsg]');if(e)e.textContent=x},fjernKn=dlg.querySelector('[data-cbgfjern]'),fil=dlg.querySelector('[data-cbgfil]');
-  if(t.bakgrunn==='eget')fjernKn.hidden=false;
-  dlg.querySelector('[data-cbgvelg]').addEventListener('click',()=>fil.click());
-  fil.addEventListener('change',async()=>{const f=fil.files&&fil.files[0];fil.value='';if(!f)return;if(!/^image\//.test(f.type)){cbgMsg('Velg en bildefil.');return}
-    cbgMsg('Gjør klart bildet …');try{const u=await cbgFraFil(f),v=Date.now();cbgMsg('Lagrer …');await FB.setBg(t.id,u,v);await FB.setUtseende(t.id,'bakgrunn','eget',v);t.bakgrunn='eget';t.bgv=v;dlg.close();chatFargeBruk();push('Bakgrunnen er byttet','Alle i samtalen ser bildet.')}catch(e){cbgMsg(e&&e.code==='permission-denied'?'Reglene i Firebase må oppdateres først.':'Kunne ikke bruke bildet.')}});
-  fjernKn.addEventListener('click',async()=>{try{await FB.setUtseende(t.id,'bakgrunn',null);delete t.bakgrunn;FB.delBg(t.id).catch(()=>{});dlg.close();chatFargeBruk();push('Bakgrunnsbildet er fjernet','Det er borte for alle i samtalen.')}catch(e){cbgMsg('Kunne ikke fjerne bildet.')}});
-  dlg.addEventListener('close',async()=>{const v=dlg.returnValue;dlg.remove();
-    const m=/^([fb]):(.+)$/.exec(v);if(!m)return;const felt=m[1]==='f'?'farge':'bakgrunn',ny=m[2],gammel=t[felt];
-    if(felt==='farge'&&ny!=='tema'&&!CHAT_FARGER.some(f=>f[0]===ny))return;if(felt==='bakgrunn'&&!CHAT_BG.some(b=>b[0]===ny))return;
-    if(felt==='bakgrunn'&&gammel==='eget')FB.delBg(t.id).catch(()=>{});
-    const verdi=felt==='farge'&&ny==='tema'?null:ny;t[felt]=verdi;if(verdi===null)delete t[felt];chatFargeBruk();
-    try{await FB.setUtseende(t.id,felt,verdi)}catch(e){t[felt]=gammel;chatFargeBruk();push('Kunne ikke endre','Prøv igjen ('+((e&&e.code)||'feil')+').')}});
-  dlg.showModal()}
+async function chatUtseendeMeny(){
+  const t=chatTraad(state.chat.id);if(!t||document.querySelector('dialog.pub'))return;
+  try{const {openStyle}=await import('./lib/chat-style.js');if(state.chat.id!==t.id)return;
+    openStyle({background:t.bakgrunn,color:t.farge,backgrounds:CHAT_BG,colors:CHAT_FARGER,
+      pattern:()=>chatTile(isDark()),loadImage:()=>cbgUrl(t.id,t.bgv||0),prepareImage:cbgFraFil,
+      save:async({field,value,image})=>{
+        const gjeldende=chatTraad(t.id);if(!gjeldende)throw new Error('Samtalen er ikke tilgjengelig.');
+        const gammel=gjeldende.bakgrunn;
+        if(field==='farge'){await FB.setUtseende(t.id,'farge',value);gjeldende.farge=value;}
+        else if(value==='eget'&&image){
+          // Ta vare på det gamle bildet før opplasting; gjenopprett hvis metadata ikke kan lagres.
+          const forrige=await FB.hentBg(t.id),v=Date.now();let lastet=false;
+          try{await FB.setBg(t.id,image,v);lastet=true;await FB.setUtseende(t.id,'bakgrunn','eget',v);}
+          catch(e){if(lastet){try{if(forrige&&forrige.data)await FB.setBg(t.id,forrige.data,forrige.v);else await FB.delBg(t.id);}catch(x){throw new Error('Kunne ikke fullføre byttet. Prøv å velge bildet på nytt.');}}throw new Error('Bildet ble ikke byttet. Prøv igjen.');}
+          gjeldende.bakgrunn='eget';gjeldende.bgv=v;
+        }else{
+          await FB.setUtseende(t.id,'bakgrunn',value);gjeldende.bakgrunn=value;
+          // Rydd først etter bekreftet lagring. Feil må ikke slette den aktive bakgrunnen.
+          if(gammel==='eget'&&value!=='eget')FB.delBg(t.id).catch(()=>{});
+        }
+        if(state.chat.id===t.id)chatFargeBruk();
+      }});
+  }catch(e){push('Kunne ikke åpne utseende','Prøv igjen.');}
+}
 /* Stjernemerke: hold på en melding og velg Stjernemerk. Bare du ser stjernene dine. */
 async function chatStjerne(mid){
   const c=state.chat,m=c.msgs.find(x=>x.id===mid);if(!m)return;const meg=meEmail(),paa=!(m.stjerne||[]).includes(meg),gammel=m.stjerne||[];
@@ -4874,6 +5056,16 @@ async function chatBonnMelding(tekst){
 function chatMicAvbryt(stille){
   const c=state.chat,r=c.rec;if(!r)return;c.rec=null;clearInterval(r.iv);r.avbrutt=true;try{r.mr.state!=='inactive'&&r.mr.stop()}catch(e){}try{r.stream.getTracks().forEach(t=>t.stop())}catch(e){}if(!stille)lydSpill('mic1');
   const bar=document.getElementById('cRec'),f=document.getElementById('cForm');if(bar){bar.hidden=true;bar.innerHTML=''}if(f)f.hidden=false}
+async function chatDikter(){
+  const felt=document.getElementById('cT'),tid=state.chat.id,ny=state.chat.ny;if(!felt)return;
+  if(state.chat.rec||tale.tid||document.querySelector('dialog.svideo')){push('Mikrofonen er i bruk','Avslutt opptaket eller samtalen først.');return}
+  try{const {openDictation}=await import('./lib/chat-dictation.js');if(state.chat.id!==tid||state.chat.ny!==ny||!felt.isConnected)return;
+    const start=felt.selectionStart??felt.value.length,slutt=felt.selectionEnd??start;
+    openDictation({isCurrent:()=>state.chat.id===tid&&state.chat.ny===ny&&felt.isConnected,
+      insert:tekst=>{const foran=felt.value.slice(0,start),etter=felt.value.slice(slutt),ny=foran+(foran&&!/\s$/.test(foran)?' ':'')+tekst+(etter&&!/^\s/.test(etter)?' ':'')+etter;
+        if(ny.length>(felt.maxLength>0?felt.maxLength:1000))return false;felt.value=ny;felt.dispatchEvent(new Event('input',{bubbles:true}));felt.focus();return true;}});
+  }catch(e){push('Snakk til tekst',e.message||'Kunne ikke åpne talegjenkjenningen.');}
+}
 async function chatMicStart(){
   const c=state.chat;if(!c.id||c.rec||c.sender)return;
   try{
@@ -4942,6 +5134,18 @@ async function chatSendBulk(folk,gid,tekst,ekstra,stille){
 /* Ny melding: velg hele gruppen eller en person. Bare ledere og administratorer. */
 const chatFolkAlle=()=>(state.admin?members:leaderMem).filter(u=>u.id!==meEmail());
 const chatGrupper=()=>state.admin?GROUPS:GROUPS.filter(g=>(state.leads||[]).includes(g[0]));
+/* Ledersamtaler: én fast gruppesamtale per område (for eksempel «Ungdomsarbeid – ledere») med hovedlederne, pastorene og gruppelederne for gruppene i området.
+   Hovedledere, pastorer og administratorer kan åpne den fra Ny melding; den lages første gang og gjenbrukes etterpå. Alle i den kan skrive og svare. */
+const chatOmrader=()=>(state.omrader||[]).filter(o=>(o.groups||[]).some(g=>state.admin||(state.leads||[]).includes(g))&&(kanAlle()||(o.ledere||[]).includes(meEmail())));   // må lede en gruppe i området for å starte samtalen
+const omrNavn=o=>String(o.name||'Område')+' – ledere';
+const omrFolk=o=>[...new Set([meEmail(),...(o.ledere||[]),...(o.pastorer||[]),...chatFolkAlle().filter(u=>u.pastor||(u.leads||[]).some(g=>(o.groups||[]).includes(g))).map(u=>u.id)].map(x=>String(x).toLowerCase()))];
+async function chatOmrade(id){const o=(state.omrader||[]).find(x=>x.id===id);if(!o||!FB)return;const meg=meEmail(),navn=omrNavn(o);
+  await loadThreads();const t=(state.threads||[]).find(x=>x.kind==='gruppe'&&x.roleName===navn&&(x.parts||[]).includes(meg));if(t){chatSamtale(t.id);return}
+  const folk=omrFolk(o),gid=(o.groups||[]).find(g=>state.admin||(state.leads||[]).includes(g));
+  if(!gid){push('Ingen tilgang','Du må være gruppeleder for en av gruppene i området for å starte ledersamtalen.');return}
+  if(folk.length<3){push('For få ledere','Ledersamtalen trenger minst tre personer. Legg inn hovedledere og gruppeledere for området først.');return}
+  try{const nid=await FB.newGruppe(gid,navn,folk,'Ledersamtale for '+(o.name||'området')+'. Her kan hovedledere, pastorer og gruppeledere skrive og svare hverandre.',nyBeskjedNavn());if(PUSH_URL)FB.notifyThread(PUSH_URL,nid).catch(()=>{});await loadThreads();chatVent(nid,()=>chatSamtale(nid))}
+  catch(e){push('Kunne ikke lage ledersamtalen',(e&&e.code==='permission-denied')?'Reglene må oppdateres først.':'Prøv igjen.')}}
 const chatGruppeFolk=g=>chatFolkAlle().filter(u=>(u.groups||[]).includes(g));
 function chatNyPersonerHtml(q){
   const nq=norm(q||'').trim(),gs=chatGrupper().map(g=>g[0]);
@@ -4950,6 +5154,7 @@ function chatNyPersonerHtml(q){
 function chatNyVelg(){
   const c=state.chat;chatHistSikre();chatStoppMsgs();c.vy='ny';c.id=null;c.ny=null;
   chatW().innerHTML='<header class="chd"><button type="button" class="cbtn" data-chatback aria-label="Tilbake"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><span class="ctit"><b>Ny melding</b></span></header><div class="cliste">'
+   +(chatOmrader().length?'<div class="cseksj">Ledersamtaler</div>'+chatOmrader().map(o=>{const n=omrFolk(o).length;return '<button type="button" class="crad" data-chatomr="'+esc(o.id)+'">'+chatAv(o.name||'Område')+'<span class="ctx"><span class="cn">'+esc(omrNavn(o))+'</span><span class="cp">'+n+' ledere og pastorer · alle kan skrive og svare</span></span></button>'}).join(''):'')
    +'<div class="cseksj">Til hele gruppen</div>'+(chatGrupper().map(g=>{const n=chatGruppeFolk(g[0]).length;return '<button type="button" class="crad" data-chatgr="'+esc(g[0])+'">'+chatAv(g[1])+'<span class="ctx"><span class="cn">'+esc(g[1])+'</span><span class="cp">'+n+(n===1?' person':' personer')+' · alle får en privat samtale og svarer deg der</span></span></button>'}).join('')||'<p class="small" style="padding:0 14px">Du leder ingen grupper ennå.</p>')
    +(chatKan()?'<div class="cseksj">Gruppesamtale</div><button type="button" class="crad" data-chatgrsamt><span class="cav" style="background:#1f9d55" aria-hidden="true">👥</span><span class="ctx"><span class="cn">Ny gruppesamtale</span><span class="cp">Alle i gruppen er med og kan skrive til hverandre</span></span></button>':'')+(chatKan()?'<div class="cseksj">Avstemning</div><button type="button" class="crad" data-chatavstny><span class="cav" style="background:#7d55c7" aria-hidden="true">📊</span><span class="ctx"><span class="cn">Avstemning til en gruppe</span><span class="cp">Alle i gruppen får den og kan stemme</span></span></button>':'')+'<div class="cseksj">Til én person</div><div style="padding:0 14px 8px"><input type="search" id="cQ" placeholder="Søk etter navn eller e-post" autocomplete="off" aria-label="Søk etter person"></div><div id="cPers">'+chatNyPersonerHtml('')+'</div></div>'}
 function chatGruppeSkriv(g){
@@ -5058,8 +5263,8 @@ function histLag(lukk){
   window.addEventListener('popstate',pop,true);
   return ()=>{if(!aktiv)return;aktiv=false;window.removeEventListener('popstate',pop,true);
     const sv=ev=>{ev.stopImmediatePropagation();window.removeEventListener('popstate',sv,true)};window.addEventListener('popstate',sv,true);history.back()}}
-/* Midlertidig diagnose for chat-kameraet: viser kort hva som skjer (åpner, kamera klart, tar bilde, lukkes og hvorfor). */
-const chatKamDiag=t=>{try{push('Kameradiagnose',t)}catch(e){}};
+/* Teknisk kameradiagnose går bare til utviklerkonsollen. */
+const chatKamDiag=t=>{console.debug('Chatkamera:',t)};
 /* Kamera for bilder i Sionchat, inne i appen: X øverst til venstre lukker uten å ta bilde. Zoom (0,5×, 1×, 2×, 3× når telefonen støtter det) og valg av linse når telefonen har flere bakkameraer. Uten kameratilgang brukes telefonens eget kamera. */
 async function chatKamera(){
   try{const ta0=document.getElementById('cT');if(ta0)ta0.blur();chatPanelLukk()}catch(x0){}
@@ -5067,6 +5272,7 @@ async function chatKamera(){
   const reserve=()=>{const f=document.getElementById('cKam');if(f){f.value='';f.click()}};
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){reserve();return}
   if(document.getElementById('fkam'))return;
+  let ventendeBilde=null;
   let face='environment',strm=null,trk=null,hw=false,zmin=1,zmax=4,z=1,dev='',linser=[],hoved='';
   const e=document.createElement('div');e.id='fkam';e.className='kam';e.setAttribute('role','dialog');e.setAttribute('aria-label','Kamera');
   e.innerHTML='<div class="kamtop"><button type="button" class="kbtn" data-fkx aria-label="Lukk kamera uten å ta bilde"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="kamvf"><video id="fkVid" muted playsinline autoplay></video></div><div class="fklinser" id="fkLinser" hidden></div><div class="kamzoom" id="fkZoom"></div><div class="kamkn"><span style="width:64px"></span><button type="button" class="kopp" data-fkbilde aria-label="Ta bilde"><i style="background:#fff;border:3px solid #ccc"></i></button><button type="button" class="kbtn kstor" data-fkvend aria-label="Bytt mellom front- og bakkamera">'+KAM_IKON.vend+'</button></div>';
@@ -5104,17 +5310,24 @@ async function chatKamera(){
     else if('fkvend' in b.dataset){face=face==='user'?'environment':'user';dev=face==='user'?'':hoved;start()}
     else if('fkz' in b.dataset)settZoom(Number(b.dataset.fkz));
     else if('fklinse' in b.dataset){dev=b.dataset.fklinse;start()}
-    else if('fkbilde' in b.dataset){const v=vid();if(!v||!v.videoWidth){push('Kameraet er ikke klart','Vent til du ser bildet fra kameraet, og trykk igjen.');return}const c=document.createElement('canvas'),k=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight)),dz=(!hw&&z>1)?z:1,sw=v.videoWidth/dz,sh=v.videoHeight/dz;c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,(v.videoWidth-sw)/2,(v.videoHeight-sh)/2,sw,sh,0,0,c.width,c.height);c.toBlob(bl=>{lukk('bilde tatt');if(bl)chatSendBilde(new File([bl],'bilde.jpg',{type:'image/jpeg'}));else push('Bildet ble ikke tatt','Kameraet ga ikke fra seg bildet. Prøv igjen.')},'image/jpeg',.85)}});
+    else if('fkbilde' in b.dataset){if(ventendeBilde){b.disabled=true;chatSendBilde(ventendeBilde).then(ok=>{if(ok)lukk('bildet er lagret')}).finally(()=>b.disabled=false);return}const v=vid();if(!v||!v.videoWidth){push('Kameraet er ikke klart','Vent til du ser bildet fra kameraet, og trykk igjen.');return}const c=document.createElement('canvas'),k=Math.min(1,1280/Math.max(v.videoWidth,v.videoHeight)),dz=(!hw&&z>1)?z:1,sw=v.videoWidth/dz,sh=v.videoHeight/dz;c.width=Math.round(v.videoWidth*k);c.height=Math.round(v.videoHeight*k);c.getContext('2d').drawImage(v,(v.videoWidth-sw)/2,(v.videoHeight-sh)/2,sw,sh,0,0,c.width,c.height);b.disabled=true;c.toBlob(async bl=>{try{if(!bl){push('Bildet ble ikke tatt','Kameraet ga ikke fra seg bildet. Prøv igjen.');return}const fil=new File([bl],'bilde.jpg',{type:'image/jpeg'}),valg=await chatBekreftBilde(fil);if(valg!=='send'){if(valg==='avbryt')lukk('avbrutt');return}ventendeBilde=fil;if(await chatSendBilde(ventendeBilde))lukk('bildet er lagret');else{b.setAttribute('aria-label','Prøv å sende bildet igjen');push('Bildet er beholdt','Trykk på bildeknappen for å prøve å sende samme bilde igjen.')}}finally{b.disabled=false}},'image/jpeg',.85)}});
   start()}
+function chatBekreftBilde(fil){
+  return new Promise(res=>{const url=URL.createObjectURL(fil),d=document.createElement('dialog');
+    d.setAttribute('aria-label','Se over bildet');
+    d.innerHTML='<form method="dialog" class="form"><h2>Send bildet?</h2><img alt="Bildet du nettopp tok" style="display:block;max-width:100%;max-height:55vh;object-fit:contain"><div class="btns"><button class="btn primary" value="send">Send bilde</button><button class="btn" value="nytt">Ta på nytt</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
+    d.querySelector('img').src=url;d.addEventListener('close',()=>{const valg=d.returnValue;URL.revokeObjectURL(url);d.remove();res(valg||'avbryt')},{once:true});
+    document.body.appendChild(d);d.showModal()})
+}
 async function chatSendBilde(fil){
   const c=state.chat;if(!c.id){push('Bildet ble ikke sendt','Åpne en samtale først, så sendes bildet dit.');return}if(c.sender){push('Vent litt','Forrige melding sendes fortsatt. Ta bildet på nytt om et øyeblikk.');return}c.sender=true;
   try{const img=await chatBildeLes(fil),ta=document.getElementById('cT'),tekst=(ta&&ta.value||'').trim();
     chatKamDiag('Sender bildet ('+Math.round(img.length/1024)+' kB) …');
-    await chatSendTekst(tekst,{img,...(c.svar?{svar:c.svar}:{})});c.svar=null;chatBar();if(ta){ta.value='';ta.style.height=''}chatInpOppd();chatKamDiag('Bildet er sendt')}
+    await chatSendTekst(tekst,{img,...(c.svar?{svar:c.svar}:{})});c.svar=null;chatBar();if(ta){ta.value='';ta.style.height=''}chatInpOppd();chatKamDiag('Bildet er sendt');return true}
   catch(er){const kode=(er&&er.code)||(er&&er.name)||'ukjent',m=er&&er.msg?er.msg:'';
     /* Feilen står i et vindu (ikke en kort melding som forsvinner), så den kan leses og kopieres. */
     visTekst('Bildet ble ikke sendt','Årsak: '+(m||kode)+(kode==='permission-denied'?' – Firebase-reglene tillater ikke bildet. De nyeste reglene må publiseres.':'')+' ['+kode+']')}
-  c.sender=false}
+  finally{c.sender=false}}
 /* Bildet i chatten lukkes ved å dra det opp, ned eller til siden (iPhone har ingen tilbake-gest som Android). Bildet følger fingeren og tones ut; slipp tidlig og det glir tilbake. */
 function bildeSveip(dlg){
   let g=null;const W=()=>Math.max(200,innerHeight);
@@ -5168,6 +5381,7 @@ document.addEventListener('click',e=>{
   const im=e.target.closest&&e.target.closest('img[data-cbilde]');
   if(im&&!document.querySelector('dialog.pub')){const dlg=document.createElement('dialog');dlg.className='lp pub cvis';dlg.innerHTML='<form method="dialog" class="form" tabindex="-1" autofocus><img src="'+im.src+'" alt="Bilde" style="max-width:100%;max-height:70vh;object-fit:contain;border-radius:var(--r-s)"><div class="btns"><a class="btn" href="'+im.src+'" download="bilde.jpg">Last ned</a><button class="btn primary" value="lukk" formnovalidate style="width:auto">Lukk</button></div></form>';document.body.appendChild(dlg);dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();bildeSveip(dlg);return}
   const b=e.target.closest&&e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(b.closest('#cVerk')){state.chat.verk=false;chatInpOppd();}
   if('chattab' in d){byttFane('chat',false)}
   else if('chatlukk' in d)chatLukk();
   else if('chatback' in d){const c=state.chat,v0=c.vy,id0=c.id;
@@ -5178,9 +5392,11 @@ document.addEventListener('click',e=>{
   else if('chatslett' in d)chatSlettMeny();
   else if(d.chatgr)chatGruppeSkriv(d.chatgr);
   else if(d.chatpers){const [em,g]=d.chatpers.split('|'),u=chatFolkAlle().find(x=>x.id===em);chatTil(em,g,u&&u.name)}
+  else if(d.creaders)chatLesereVis(d.creaders);
+  else if('cdictate' in d)chatDikter();
   else if('cfoto' in d){chatKamera()}
   else if('cgalleri' in d){const f=document.getElementById('cFil');if(f){f.value='';f.click()}}
-  else if('cchev' in d){state.chat.verk=true;chatInpOppd();const ta0=document.getElementById('cT');if(ta0)ta0.focus({preventScroll:true})}
+  else if('cchev' in d){state.chat.verk=!state.chat.verk;chatInpOppd();const ta0=document.getElementById('cT');if(ta0)ta0.focus({preventScroll:true})}
   else if('cemoknapp' in d){const p=document.getElementById('cEmoji');if(p)p.hidden=!p.hidden}
   else if(d.cemo){const ta=document.getElementById('cT');if(ta){const a=ta.selectionStart==null?ta.value.length:ta.selectionStart,z=ta.selectionEnd==null?a:ta.selectionEnd;ta.value=ta.value.slice(0,a)+d.cemo+ta.value.slice(z);ta.selectionStart=ta.selectionEnd=a+d.cemo.length;ta.dispatchEvent(new Event('input',{bubbles:true}));if(/^:sion/.test(d.cemo))ta.blur();else ta.focus()}}   // klistremerker og Sion-logoer: tastaturet skjules
   else if('chatdelt' in d)chatDeltakere();
@@ -5188,6 +5404,7 @@ document.addEventListener('click',e=>{
   else if('stjlukk' in d){const el=document.getElementById('cStj');if(el)el.remove()}
   else if(d.stjgo)chatStjerneGo(d.stjgo);
   else if('chatgrsamt' in d)chatGruppeSamtaleNy();
+  else if(d.chatomr)chatOmrade(d.chatomr);
   else if('chatfarge' in d)chatUtseendeMeny();
   else if('chatbonn' in d)chatBonnVis();
   else if('bonnlukk' in d)chatBonnStopp();
@@ -5205,10 +5422,12 @@ document.addEventListener('click',e=>{
   else if(d.bokcal)utApneId(d.bokcal);
   else if(d.bokop){const [mid,o]=d.bokop.split('|');chatBokOppg(mid,o)}
   else if('chatavstny' in d)chatAvstNy('gruppe');
+  else if('chatvideo' in d)chatVideoStart();
   else if('chatring' in d)ringStart();
   else if('ringavbryt' in d)ringAvbryt();
   else if('ringsvar' in d)ringSvar();
   else if('ringnei' in d)ringNei();
+  else if('ringlukk' in d)ringLukk();
   else if('chatfull' in d)chatFullSett(!state.chat.full);
   else if(d.chatfil){state.chat.fil=d.chatfil;const l=document.getElementById('cListe');if(l){l.innerHTML=chatListeInn();l.scrollTop=0}const p=document.getElementById('cPille');if(p){const u=chatUlest();p.outerHTML=chatPille()}try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}}
   else if('chatspill' in d)chatQuiz();
@@ -5577,7 +5796,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='02.11.2026 kl. 23:12';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='03.11.2026 kl. 18:07';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
@@ -5656,7 +5875,7 @@ function settingsKort(){
   ${profSub('inpush','Varsler',pushInner())}
   ${profSub('inpal','Utseende',`<p class="small" style="margin:0 0 10px">Trykk for å bytte med en gang. Gjelder både lys og mørk visning, og bare på denne enheten.</p><h3 style="margin:0 0 6px;font-size:var(--t-b)">Lys eller mørk</h3><p class="small" style="margin:0 0 8px">Automatisk følger telefonens eget valg (lys eller mørk), også når det bytter av seg selv. Sol/måne-knappen i toppen velger lys eller mørk fast.</p><div class="btns" role="group" aria-label="Lys eller mørk" style="margin-bottom:16px">${[['auto','Følg telefonen'],['light','Lys'],['dark','Mørk']].map(([v,n])=>`<button type="button" class="btn ${(document.documentElement.dataset.theme||'auto')===v?'on':''}" data-tema="${v}" aria-pressed="${(document.documentElement.dataset.theme||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Stil</h3><p class="small" style="margin:0 0 8px">Skrift, former, knapper, faner og animasjoner. Fargene velger du under.</p><div class="btns" role="group" aria-label="Stil" style="margin-bottom:16px">${[['standard','Standard'],['ios','iPhone-stil'],['android','Android-stil']].map(([v,n])=>`<button type="button" class="btn ${stilNa()===v?'on':''}" data-stil="${v}" aria-pressed="${stilNa()===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Skjermvisning</h3><p class="small" style="margin:0 0 8px">På PC kan appen fylle hele nettleservinduet med sidemeny og flere kolonner. Automatisk betyr bred visning for administratorer på stor skjerm.</p><div class="btns" role="group" aria-label="Skjermvisning" style="margin-bottom:16px">${[['auto','Automatisk'],['bred','Bred (PC)'],['mobil','Mobilvisning']].map(([v,n])=>`<button type="button" class="btn ${(UI.vis||'auto')===v?'on':''}" data-vis="${v}" aria-pressed="${(UI.vis||'auto')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Meny</h3><p class="small" style="margin:0 0 8px">Når appen er utvidet til hele bredden, kan menyen stå på siden eller nederst som på mobil.</p><div class="btns" role="group" aria-label="Plassering av menyen" style="margin-bottom:16px">${[['side','På siden'],['bunn','Nederst']].map(([v,n])=>`<button type="button" class="btn ${(UI.meny||'side')===v?'on':''}" data-meny="${v}" aria-pressed="${(UI.meny||'side')===v}">${n}</button>`).join('')}</div><h3 style="margin:0 0 6px;font-size:var(--t-b)">Farger</h3><div class="palrutenett" role="group" aria-label="Fargepalett">${[...PALETTER,egenPalEntry()].map(([id,n,a,b,c])=>`<button type="button" class="palbtn" data-pal="${id}" aria-pressed="${palNa()===id}"><span class="pal-prove" style="background:linear-gradient(135deg,${a} 0 34%,${b} 34% 67%,${c} 67%)"></span>${n}</button>`).join('')}</div>${egenEditor()}<p style="margin:14px 0 0"><button type="button" class="btn" data-utsv-reset>Tilbakestill til standard</button></p>`)}
   ${chatKan()?profSub('inbook','Bookinger',bryter('autovid','Send nye bookinger automatisk til teamet','Når du får en ny booking i Sionchat, sendes den videre til teamet uten at du trykker. Skjer når appen din er åpen. Gjelder bare på denne enheten.')+'<label class="f" style="margin-top:8px">Team<select id="autovidG">'+chatGrupper().map(g=>'<option value="'+esc(g[0])+'" '+(g[0]===(UI.autovidG||(chatGrupper().find(x=>/torsdag/i.test(x[0]+x[1]))||chatGrupper()[0]||[''])[0])?'selected':'')+'>'+esc(g[1])+'</option>').join('')+'</select></label>'):''}
-  ${profSub('insynlig','Sionchat',bryter('lyd','Pling ved ny melding','To myke toner når en ny melding kommer, og en stillere tone når noen svarer i samtalen du har åpen.')+bryter('lydSend','Lyd når jeg sender','En myk sus når meldingen din er sendt.')+bryter('lydReak','Lyd ved reaksjon','Et lite tikk når noen reagerer på meldingen din.')+bryter('lydLik','Lyd når jeg liker','En varm liten tone når du liker eller reagerer på en melding.')+bryter('lydMic','Lyd ved talemelding','En liten tone når opptaket starter og slutter.')+bryter('lydFei','Lyd ved feiring','En kort fanfare sammen med konfetti, ballonger og duer. Alle lydene gjelder bare på denne enheten.')+bryter('synlig','Vis at jeg er aktiv','Andre medlemmer ser en liten grønn prikk ved navnet ditt i Sionchat når du har appen åpen. Slå av hvis du ikke vil vises.'))}
+  ${profSub('insynlig','Sionchat',bryter('summ','Summing','Telefonen vibrerer og viser hvem som summer. Slått av (stille): summingen kommer bare som «📳 Summet» i chatten, uten vibrering og uten merke. Gjelder bare på denne enheten.')+bryter('lyd','Pling ved ny melding','To myke toner når en ny melding kommer, og en stillere tone når noen svarer i samtalen du har åpen.')+bryter('lydSend','Lyd når jeg sender','En myk sus når meldingen din er sendt.')+bryter('lydReak','Lyd ved reaksjon','Et lite tikk når noen reagerer på meldingen din.')+bryter('lydLik','Lyd når jeg liker','En varm liten tone når du liker eller reagerer på en melding.')+bryter('lydMic','Lyd ved talemelding','En liten tone når opptaket starter og slutter.')+bryter('lydFei','Lyd ved feiring','En kort fanfare sammen med konfetti, ballonger og duer. Alle lydene gjelder bare på denne enheten.')+bryter('synlig','Vis at jeg er aktiv','Andre medlemmer ser en liten grønn prikk ved navnet ditt i Sionchat når du har appen åpen. Slå av hvis du ikke vil vises.'))}
   ${profSub('invaken','Skjerm',bryter('vaken','Hold skjermen våken','Skjermen slukker ikke så lenge appen er åpen og i forgrunnen. Bruker mer batteri.')+(navigator.wakeLock?'':'<p class="small" style="margin:6px 0 0">Denne nettleseren støtter ikke dette.</p>')+'<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>')}
   ${profSub('infs','Tekststørrelse',`<div class="btns" role="group" aria-label="Tekststørrelse">${FS_TRINN.map(([n,v])=>`<button class="btn ${UI.fs===v?'on':''}" data-fs="${v}" aria-pressed="${UI.fs===v}">${n}</button>`).join('')}</div><p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
   ${profSub('inhjem','Vis på Hjem',`${bryter('sv','Nyhetsbrev Sommerstevne','Kortet for å melde seg på nyhetsbrevet.')}${state.member?bryter('pr','Forbønn','Kortet for å sende inn forbønner.'):''}${bryter('vk','Viktig-melding','Kortet med den siste viktige meldingen. Slå på igjen for å hente frem et kort du har skjult.')}<p class="small" style="margin:6px 0 0">Gjelder bare på denne enheten.</p>`)}
@@ -5904,8 +6123,8 @@ function pushAdmin(){
   <p class="small" style="margin:-4px 0 0">Varselet kan ha opptil 1000 tegn. På telefonen vises først begynnelsen, og resten ser du når varselet utvides.</p>
   <label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="psNews" style="width:auto" ${state.psNews?'checked':''}>Legg også ut som nyhet i appen</label>
   <label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="psHide" style="width:auto" ${state.psHide?'checked':''}>Ikke vis nyheten på Hjem (vises i Nyheter)</label>
-  ${state.admin?`<label class="f">Hvem skal få varselet?<select id="psMal">${[['alle','Alle som har slått på varsler'],['medlem','Bare medlemmer'],['grupper','Valgte grupper']].map(([v,l])=>`<option value="${v}" ${state.psMal===v?'selected':''}>${l}</option>`).join('')}</select></label>`:'<p class="small" style="margin:0">Du kan sende til gruppene du leder.</p>'}
-  <div id="psGrBox" ${!state.admin||state.psMal==='grupper'?'':'hidden'} style="display:grid;gap:6px">${GROUPS.filter(g=>state.admin||(state.leads||[]).includes(g[0])).map(g=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-psgr="${g[0]}" style="width:22px;height:22px;flex:none" ${state.psGr.includes(g[0])?'checked':''}>${esc(gLabel(g[0]))}</label>`).join('')}</div>
+  ${kanAlle()?`<label class="f">Hvem skal få varselet?<select id="psMal">${[['alle','Alle som har slått på varsler'],['medlem','Bare medlemmer'],['grupper','Valgte grupper']].map(([v,l])=>`<option value="${v}" ${state.psMal===v?'selected':''}>${l}</option>`).join('')}</select></label>`:'<p class="small" style="margin:0">Du kan sende til gruppene du leder.</p>'}
+  <div id="psGrBox" ${!kanAlle()||state.psMal==='grupper'?'':'hidden'} style="display:grid;gap:6px">${GROUPS.filter(g=>kanAlle()||(state.leads||[]).includes(g[0])).map(g=>`<label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:var(--t-m)"><input type="checkbox" data-psgr="${g[0]}" style="width:22px;height:22px;flex:none" ${state.psGr.includes(g[0])?'checked':''}>${esc(gLabel(g[0]))}</label>`).join('')}</div>
   <label class="f">Når noen trykker på varselet, åpnes<select id="psTab">${[['news','Nyheter'],['home','Hjem'],['prog','Program']].map(([v,l])=>`<option value="${v}" ${state.psTab===v?'selected':''}>${l}</option>`).join('')}</select></label>
   <button class="btn primary" type="submit">Send varsel</button></form>
   <p class="small" role="status" style="margin:8px 0 0">${esc(state.pushSendMsg)}</p></details>`}
@@ -6624,7 +6843,7 @@ document.addEventListener('click',async e=>{
   else if('logout' in c.dataset){state.pwMsg='';const tk=lsGet('sm-push');if(tk)await FB.unlinkPush(tk).catch(()=>{});await FB.logout()}
   else if('reset' in c.dataset){const m=$('#lE').value.trim();
     if(!m){keep(()=>state.err='Skriv inn e-postadressen din først.');return}
-    try{await FB.reset(m);keep(()=>state.err='Hvis adressen er registrert, er en lenke for nytt passord sendt.')}catch(er){keep(()=>state.err=authMsg(er.code))}}
+    try{await FB.reset(m);keep(()=>state.err=SUPA_NA?'Hvis adressen er registrert, er en engangskode sendt.':'Hvis adressen er registrert, er en lenke for nytt passord sendt.')}catch(er){keep(()=>state.err=authMsg(er.code))}}
   else if(c.dataset.at){keep(()=>{state.adm={type:c.dataset.at,edit:null,form:false};state.msg='';state.sel={}})}
   else if(c.dataset.aedit){editAsk(state.adm.type,c.dataset.aedit)}
   else if(c.dataset.lgdel){const [em,g]=c.dataset.lgdel.split('|');if(!await bekreft('Fjerne '+em+' fra '+gName(g)+'?'))return;
@@ -6814,12 +7033,12 @@ document.addEventListener('submit',async e=>{
     const t=f.dataset.type,fd=new FormData(f),d={};
     FIELDS[t].forEach(([k,,ty])=>{const b=ty.replace('*','');d[k]=b==='multi'?fd.getAll(k):b==='combo'?(fd.get(k+'Sel')==='__annet'?String(fd.get(k)||'').trim():fd.get(k+'Sel')):b==='chk'?fd.has(k):(k==='day'||k==='remindH')?+fd.get(k):String(fd.get(k)||'').trim()});
     if(t==='posts'){const re=f.querySelector('[data-rich]');if(re){d.bh=richHtml(re);d.b=richPlain(re).slice(0,3000);if(!d.b){keep(()=>state.msg='Skriv en melding.');return}}}
-    if(t==='posts'||t==='events')d.img=pbVerdi(f);
+    if(t==='posts'||t==='events'||t==='regular')d.img=pbVerdi(f);
     const wantPush=t==='posts'&&!!d.push&&!d.draft;if(t==='posts')delete d.push;
     if('pubAt' in d)d.pubAt=d.pubAt?new Date(d.pubAt).getTime():0;
     if('expireAt' in d)d.expireAt=d.expireAt?new Date(d.expireAt).getTime():0;
     if(d.expireAt&&d.expireAt<=(d.pubAt||Date.now())){keep(()=>state.msg='«Skjul etter» må være etter tidspunktet det vises fra.');return}
-    if(!state.admin){
+    if(!state.admin&&!(state.pastor&&t==='posts')){
       if(t==='regular'){return}
       const g=(t==='posts'?(d.audience||[]):(d.groups||[])).filter(x=>(state.leads||[]).includes(x));
       if(!g.length){keep(()=>state.msg='Velg minst én av gruppene du leder.');return}
@@ -6875,6 +7094,7 @@ const WIZ={
   regular:[
     {h:'Hva slags samling?',p:'En fast samling gjentas hver uke.',keys:['title','cat']},
     {h:'Når er den?',p:'Velg også om den gjelder hver uke eller bare partalls- eller oddetallsuker.',keys:['day','time','weeks']},
+    {h:'Bilde',p:'Valgfritt. For søndagsmøter vises det i stedet for strektegningen. Et eget bilde for én dato (for eksempel taleren den dagen) legges inn under «Endre denne gangen».',keys:['img']},
     {h:'Se over og opprett',p:'Merknad er valgfritt, for eksempel «Oddetallsuker».',keys:['note'],sum:true}]};
 function wizAsk(){
   if(document.querySelector('dialog.pub'))return;
@@ -6937,8 +7157,8 @@ function wizStart(dlg,t){
     const els=[...stepEl(cur).querySelectorAll('input,select,textarea')];
     for(const el of els){if(el.hidden||!el.willValidate)continue;if(!el.checkValidity()){el.reportValidity();return false}}
     if(t==='posts'&&cur===0){const re=f.querySelector('[data-rich]');if(!re||!richPlain(re)){feil('Skriv en melding.');return false}}
-    if(t==='posts'&&cur===1&&!state.admin&&!f.querySelector('[name=audience]:checked')){feil('Velg minst én av gruppene du leder.');return false}
-    if(t==='posts'&&cur===1&&state.admin&&!f.querySelector('[name=audience]:checked')){feil('Velg hvem som skal få den.');return false}
+    if(t==='posts'&&cur===1&&!kanAlle()&&!f.querySelector('[name=audience]:checked')){feil('Velg minst én av gruppene du leder.');return false}
+    if(t==='posts'&&cur===1&&kanAlle()&&!f.querySelector('[name=audience]:checked')){feil('Velg hvem som skal få den.');return false}
     if(t==='events'&&cur===1&&!state.admin&&!f.querySelector('[name=groups]:checked')){feil('Velg minst én av gruppene du leder.');return false}
     if(t==='events'&&cur===1&&state.admin&&f.querySelector('[name=wizWho]:checked').value==='grupper'&&!f.querySelector('[name=groups]:checked')){feil('Velg minst én gruppe, eller velg Alle.');return false}
     if(t==='regular'&&cur===1){const tid=f.elements.timeSel&&f.elements.timeSel.value==='__annet'?f.elements.time.value:(f.elements.timeSel?f.elements.timeSel.value:'');if(!tid){feil('Velg eller skriv inn klokkeslett.');return false}}
@@ -7053,7 +7273,7 @@ function fastAsk(id,dato){
   dlg.innerHTML='<form class="form" method="dialog" onkeydown="if(event.key===\'Enter\'&&event.target.tagName===\'INPUT\')event.preventDefault()"><h3 style="margin:0">'+esc(r.title)+'</h3><p class="small" style="margin:0">'+esc(dn)+' kl. '+esc(r.time)+(stat?'<br><b>'+esc(stat)+'</b>':'')+'</p>'
    +(PUSH_URL?'<label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="lpPush" style="width:22px;height:22px;flex:none">Send varsel til alle (gjelder avlys og endre)</label><div id="lpMsg" style="display:none;gap:8px"><label class="f">Varseltittel<input id="lpPT" maxlength="60"></label><label class="f">Varseltekst<textarea id="lpPB" rows="3" maxlength="140"></textarea></label><span class="small">Standardteksten settes inn automatisk. Skriv over den hvis du vil si noe annet.</span></div>':'')
    +'<div class="btns col">'+(ex&&ex.k!=='fjernet'?'<button class="btn" value="angre">Angre ('+(ex.k==='avlyst'?'avlysning':'endring')+')</button>':'')+(ex&&ex.k==='avlyst'?'':'<button class="btn" value="avlys">Merk denne gangen som avlyst</button>')+'<button class="btn" value="fjern">Fjern bare denne gangen</button><button type="button" class="btn" id="lpEditBtn" aria-controls="lpEdit" aria-expanded="'+!!(ex&&ex.k==='endret')+'">Endre denne gangen</button></div>'
-   +'<div id="lpEdit"'+(ex&&ex.k==='endret'?'':' hidden')+'><p class="small" style="margin:6px 0 0">Gjelder bare '+esc(dn)+'. Resten av ukene er uendret.</p><div style="display:grid;gap:8px;margin-top:8px"><label class="f">Tittel<input id="lpTitle" type="text" maxlength="80" value="'+esc((ex&&ex.title)||r.title)+'"></label><label class="f">Klokkeslett<input id="lpTime" type="time" value="'+esc((ex&&ex.time)||r.time)+'"></label><label class="f">Sted<input id="lpPlace" type="text" maxlength="80" list="lpSted" value="'+esc((ex&&ex.place)||'')+'"><datalist id="lpSted">'+PLACES.map(p=>'<option value="'+esc(p)+'">').join('')+'</datalist></label><label class="f">Hvem taler eller hvem er med<input id="lpWho" type="text" maxlength="100" value="'+esc((ex&&ex.who)||'')+'"></label><label class="f">Merknad<input id="lpNote" type="text" maxlength="100" value="'+esc((ex&&ex.note)||r.note||'')+'"></label><label class="f">Beskrivelse<textarea id="lpText" rows="3" maxlength="600">'+esc((ex&&ex.text)||'')+'</textarea></label><button class="btn" value="endre">Lagre endringene</button></div></div>'
+   +'<div id="lpEdit"'+(ex&&ex.k==='endret'?'':' hidden')+'><p class="small" style="margin:6px 0 0">Gjelder bare '+esc(dn)+'. Resten av ukene er uendret.</p><div style="display:grid;gap:8px;margin-top:8px"><label class="f">Tittel<input id="lpTitle" type="text" maxlength="80" value="'+esc((ex&&ex.title)||r.title)+'"></label><label class="f">Klokkeslett<input id="lpTime" type="time" value="'+esc((ex&&ex.time)||r.time)+'"></label><label class="f">Sted<input id="lpPlace" type="text" maxlength="80" list="lpSted" value="'+esc((ex&&ex.place)||'')+'"><datalist id="lpSted">'+PLACES.map(p=>'<option value="'+esc(p)+'">').join('')+'</datalist></label><label class="f">Hvem taler eller hvem er med<input id="lpWho" type="text" maxlength="100" value="'+esc((ex&&ex.who)||'')+'"></label><label class="f">Merknad<input id="lpNote" type="text" maxlength="100" value="'+esc((ex&&ex.note)||r.note||'')+'"></label><label class="f">Beskrivelse<textarea id="lpText" rows="3" maxlength="600">'+esc((ex&&ex.text)||'')+'</textarea></label>'+pbHtml((ex&&ex.img)||'').replace('Bilde (valgfritt)','Bilde for denne datoen (valgfritt, ellers brukes samlingens bilde)')+'<button class="btn" value="endre">Lagre endringene</button></div></div>'
    +'<div class="btns col"><button class="btn" value="rediger">Endre hele den faste samlingen</button><button class="btn danger" value="slettalle">Slett hele den faste samlingen</button><button class="btn" value="avbryt">Avbryt</button></div></form>';
   document.body.appendChild(dlg);
   dlg.querySelector('#lpEditBtn').addEventListener('click',e=>{const f=dlg.querySelector('#lpEdit');f.hidden=!f.hidden;e.currentTarget.setAttribute('aria-expanded',String(!f.hidden));if(!f.hidden)setTimeout(()=>f.scrollIntoView({block:'nearest',behavior:'smooth'}),60)});
@@ -7061,7 +7281,7 @@ function fastAsk(id,dato){
   const pt=dlg.querySelector('#lpPT'),pb=dlg.querySelector('#lpPB'),pc=dlg.querySelector('#lpPush');let dirty=false;
   if(pc){const d0=defs('avlys');pt.value=d0[0];pb.value=d0[1];pc.addEventListener('change',()=>{dlg.querySelector('#lpMsg').style.display=pc.checked?'grid':'none'});[pt,pb].forEach(i=>i.addEventListener('input',()=>{dirty=true}))}
   dlg.addEventListener('close',async()=>{
-    const rv=dlg.returnValue,send=!!(dlg.querySelector('#lpPush')&&dlg.querySelector('#lpPush').checked),time=dlg.querySelector('#lpTime').value.trim(),note=dlg.querySelector('#lpNote').value.trim(),ny={title:dlg.querySelector('#lpTitle').value.trim(),place:dlg.querySelector('#lpPlace').value.trim(),who:dlg.querySelector('#lpWho').value.trim(),text:dlg.querySelector('#lpText').value.trim()};dlg.remove();
+    const rv=dlg.returnValue,send=!!(dlg.querySelector('#lpPush')&&dlg.querySelector('#lpPush').checked),time=dlg.querySelector('#lpTime').value.trim(),note=dlg.querySelector('#lpNote').value.trim(),ny={title:dlg.querySelector('#lpTitle').value.trim(),place:dlg.querySelector('#lpPlace').value.trim(),who:dlg.querySelector('#lpWho').value.trim(),text:dlg.querySelector('#lpText').value.trim(),img:pbVerdi(dlg.querySelector('#lpEdit'))};dlg.remove();
     try{
       if(rv==='rediger'){state.adm={type:'regular',edit:id,form:true};state.tab='me';state.acc.adm=true;state.msg='';render();setTimeout(()=>{const f=$('#adm');if(f)f.scrollIntoView({block:'start'})},80);return}
       if(rv==='slettalle'){
@@ -7073,10 +7293,11 @@ function fastAsk(id,dato){
       else if(rv==='angre')delete nx[dato];
       else if(rv==='fjern')nx[dato]={k:'fjernet'};
       else if(rv==='endre'){
-        const e1={...(ny.title&&ny.title!==r.title?{title:ny.title}:{}),...(TIDOK(time)&&time!==r.time?{time}:{}),...(ny.place?{place:ny.place}:{}),...(ny.who?{who:ny.who}:{}),...(note&&note!==(r.note||'')?{note}:{}),...(ny.text?{text:ny.text}:{})};
+        const e1={...(ny.title&&ny.title!==r.title?{title:ny.title}:{}),...(TIDOK(time)&&time!==r.time?{time}:{}),...(ny.place?{place:ny.place}:{}),...(ny.who?{who:ny.who}:{}),...(note&&note!==(r.note||'')?{note}:{}),...(ny.text?{text:ny.text}:{}),...(ny.img?{img:ny.img===(ex&&ex.img)?ny.img:await smaaBilde(ny.img)}:{})};
         if(!Object.keys(e1).length){push('Ingen endringer','Endre minst ett felt, eller velg Angre for å gå tilbake til slik den vanligvis er.');return}
         nx[dato]={k:'endret',...e1}}
       else return;
+      {const idag=dkey(new Date());for(const k of Object.keys(nx))if(k<idag&&nx[k]&&nx[k].img){nx[k]={...nx[k]};delete nx[k].img}}   // bilder for datoer som er over, tas bort
       await FB.setFastEx(id,nx);
       let tillegg='';
       if(send&&PUSH_URL&&(rv==='avlys'||rv==='endre')){
@@ -7369,6 +7590,7 @@ async function start(){
   if(state.authVent)setTimeout(()=>{if(state.authVent){state.authVent=false;state.fast=false;keep(()=>{})}},15000); FB=await window.fbReady;
   if(FB){FB.pushSupported().then(v=>{state.pushOk=v;if(state.tab==='me'||state.tab==='home')keep(()=>{})});FB.onPush(p=>{const t=(p.notification&&p.notification.title)||'Melding',b=(p.notification&&p.notification.body)||'';push(t,b);varselLagre(t,b);nyMelding()})}
   const go=async u=>{
+    if(!u)window.SionVideo?.close();
     state.user=u||null;if(!u)state.authVent=false;
     const [adm,mem]=u?await Promise.all([FB.isAdmin(u.email),FB.isMember(u.email)]):[false,false];
     state.admin=!!adm;
@@ -7381,6 +7603,7 @@ async function start(){
     state.attest=att;state.attFors=fors;state.attester=undefined;
     if(fors&&fors.okM&&fors.okL)FB.attFullfor(u.email.toLowerCase()).then(()=>attOppfrisk(u.email.toLowerCase())).catch(()=>{});
     state.groups=grp;state.leads=lds;state.leder=ldr;state.profile=prof;
+    [state.pastor,state.omrader]=med?await Promise.all([FB.myPastor(u.email.toLowerCase(),state.admin),FB.omraderList().catch(()=>[])]):[false,[]];   // pastor sender til alle; områder gir ledersamtaler i Sionchat
     state.ltype=state.leder?((await FB.myLtype(u.email))||''):'';
     state.meorder=null;state.homeorder=null;if(pr&&Array.isArray(pr.meorder))state.meorder=pr.meorder;if(pr&&Array.isArray(pr.homeorder))state.homeorder=pr.homeorder;
     // Rekkefølgen på undermenyene følger brukeren (userPrefs.suborder). Finnes den i databasen, brukes den; ellers sendes den som er lagret på enheten opp.

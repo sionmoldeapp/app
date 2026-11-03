@@ -13,7 +13,7 @@
 :root{
   --bg:#c9e1fb; --surface:#ffffff; --surface2:#f2f8ff; --ink:#0f3a5f; --muted:#4a6d8c; --line:#d3e5f8; --line2:#b3d1f0;
   --brand:#0f3a5f; --brand-ink:#ffffff; --lamp:#d9822b; --lamp-soft:#fdf0dd;
-  --c-admin:#d9822b; --c-admin-s:#fdf0dd; --c-leder:#7a4cc2; --c-leder-s:#efe7fb; --c-gl:#127a72; --c-gl-s:#dff4f1; --c-med:#4a6d8c; --c-med-s:#e8f1fb;
+  --c-admin:#d9822b; --c-admin-s:#fdf0dd; --c-leder:#7a4cc2; --c-leder-s:#efe7fb; --c-gl:#127a72; --c-gl-s:#dff4f1; --c-med:#4a6d8c; --c-med-s:#e8f1fb; --c-pastor:#8a5a00; --c-pastor-s:#f6e7c1;
   --ja:#1d7a3c; --ja-s:#e2f5e8; --nei:#9aa9b8; --adv:#b54708; --adv-s:#fdeedd; --feil:#b42318; --feil-s:#fde7e5;
   --shadow:0 1px 2px rgba(15,58,95,.06),0 6px 20px rgba(15,58,95,.08);
   color-scheme:light;
@@ -21,13 +21,13 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0b2540; --surface:#123457; --surface2:#0f2c4b; --ink:#e3f0ff; --muted:#9bbbdb; --line:#1d4469; --line2:#24507c;
   --brand:#7fb8ee; --brand-ink:#08243f; --lamp:#f0a553; --lamp-soft:#3a2a14;
-  --c-admin:#f0a553; --c-admin-s:#3a2a14; --c-leder:#c3a3f5; --c-leder-s:#2e2148; --c-gl:#5fd0c4; --c-gl-s:#123f3c; --c-med:#9bbbdb; --c-med-s:#173b5f;
+  --c-admin:#f0a553; --c-admin-s:#3a2a14; --c-leder:#c3a3f5; --c-leder-s:#2e2148; --c-gl:#5fd0c4; --c-gl-s:#123f3c; --c-med:#9bbbdb; --c-med-s:#173b5f; --c-pastor:#f2c96b; --c-pastor-s:#3b2e10;
   --ja:#6fd394; --ja-s:#143d24; --nei:#5d7a96; --adv:#f5a35c; --adv-s:#3d2610; --feil:#ff8f85; --feil-s:#45191a;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0b2540; --surface:#123457; --surface2:#0f2c4b; --ink:#e3f0ff; --muted:#9bbbdb; --line:#1d4469; --line2:#24507c;
   --brand:#7fb8ee; --brand-ink:#08243f; --lamp:#f0a553; --lamp-soft:#3a2a14;
-  --c-admin:#f0a553; --c-admin-s:#3a2a14; --c-leder:#c3a3f5; --c-leder-s:#2e2148; --c-gl:#5fd0c4; --c-gl-s:#123f3c; --c-med:#9bbbdb; --c-med-s:#173b5f;
+  --c-admin:#f0a553; --c-admin-s:#3a2a14; --c-leder:#c3a3f5; --c-leder-s:#2e2148; --c-gl:#5fd0c4; --c-gl-s:#123f3c; --c-med:#9bbbdb; --c-med-s:#173b5f; --c-pastor:#f2c96b; --c-pastor-s:#3b2e10;
   --ja:#6fd394; --ja-s:#143d24; --nei:#5d7a96; --adv:#f5a35c; --adv-s:#3d2610; --feil:#ff8f85; --feil-s:#45191a;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); color-scheme:dark}
 *{box-sizing:border-box}
@@ -46,7 +46,10 @@ h1,h2,h3{font-family:'Bebas Neue',Poppins,sans-serif;font-weight:400;letter-spac
 .top h1{font-size:30px}
 .top .sub{color:var(--muted);font-size:12px;margin-top:2px}
 .stats{display:flex;gap:8px;margin-left:12px;flex-wrap:wrap}
-.stat{display:flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);white-space:nowrap}
+.stat{display:flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);white-space:nowrap;cursor:pointer;font:inherit;color:inherit}
+.stat:hover{border-color:var(--brand)}
+.stat.valgt{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.stat.valgt span{color:inherit;opacity:.85}
 .stat b{font-size:17px}
 .stat span{color:var(--muted);font-size:12px}
 .sok{position:relative}
@@ -70,7 +73,10 @@ kbd{font:11px/1 Poppins,sans-serif;padding:3px 6px;border-radius:6px;border:1px 
 /* Navigasjon (nivåer) */
 .nav{padding:10px 8px 16px}
 .nav h3{font-size:16px;color:var(--muted);padding:14px 12px 6px}
-.nav h3:first-child{padding-top:6px}
+.nav .navgr:first-child h3{padding-top:6px}
+.navgr.lukket .seksinn>.nv:not(.valgt){display:none}   /* lukket del: bare det valgte punktet vises */
+.navgr.lukket .pil{transform:rotate(-90deg)}
+.navgr .sekshode:hover{color:var(--ink)}
 .nv{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;text-align:left;padding:8px 12px;border-radius:10px;font-size:13.5px}
 .nv:hover{background:var(--surface2)}
 .nv.valgt{background:var(--brand);color:var(--brand-ink)}
@@ -91,6 +97,8 @@ tbody tr{cursor:pointer}
 tbody tr:hover td{background:var(--surface2)}
 tbody tr.valgt td{background:color-mix(in srgb,var(--brand) 12%,var(--surface))}
 tbody tr.valgt td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
+tbody .person{cursor:pointer}
+tbody .person:hover .navn{text-decoration:underline}
 .person{display:flex;align-items:center;gap:12px;min-width:0}
 .av{width:36px;height:36px;border-radius:99px;display:grid;place-items:center;font-weight:600;font-size:13px;flex:none}
 .navn{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -105,6 +113,11 @@ tbody tr.valgt td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 .r-leder{background:var(--c-leder-s);color:var(--c-leder)}
 .r-gl{background:var(--c-gl-s);color:var(--c-gl)}
 .r-med{background:var(--c-med-s);color:var(--c-med)}
+.r-pastor{background:var(--c-pastor-s);color:var(--c-pastor)}
+.pastorvalg{display:flex;gap:10px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);font-size:12.5px;cursor:pointer}
+.pastorvalg input{margin-top:3px;width:18px;height:18px}
+dialog.omrdlg{width:min(760px,96vw)}
+.oq{width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--surface2);outline:none;font:inherit}
 .tom{padding:40px;text-align:center;color:var(--muted)}
 /* Matrise */
 .matrise th.rot{writing-mode:vertical-rl;transform:rotate(180deg);padding:10px 6px;height:130px;vertical-align:bottom;text-align:left}
@@ -130,12 +143,12 @@ tbody tr.valgt td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 .seksjon h3{font-size:19px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .seksjon h3 small{font:12px Poppins,sans-serif;color:var(--muted)}
 .niva{display:flex;gap:6px;align-items:stretch}
-.niva div{flex:1;padding:8px 6px;border-radius:10px;text-align:center;font-size:11.5px;background:var(--surface2);color:var(--nei);border:1px solid var(--line)}
-.niva div.på{font-weight:600;border-color:transparent}
-.niva div.på.n1{background:var(--c-med-s);color:var(--c-med)}
-.niva div.på.n2{background:var(--c-gl-s);color:var(--c-gl)}
-.niva div.på.n3{background:var(--c-leder-s);color:var(--c-leder)}
-.niva div.på.n4{background:var(--c-admin-s);color:var(--c-admin)}
+.niva>*{flex:1;padding:8px 6px;border-radius:10px;text-align:center;font-size:11.5px;background:var(--surface2);color:var(--nei);border:1px solid var(--line)}
+.niva>.på{font-weight:600;border-color:transparent}
+.niva>.på.n1{background:var(--c-med-s);color:var(--c-med)}
+.niva>.på.n2{background:var(--c-gl-s);color:var(--c-gl)}
+.niva>.på.n3{background:var(--c-leder-s);color:var(--c-leder)}
+.niva>.på.n4{background:var(--c-admin-s);color:var(--c-admin)}
 .tilg{display:grid;grid-template-columns:22px 1fr;gap:2px 10px;align-items:start;padding:7px 0;border-bottom:1px dashed var(--line)}
 .tilg:last-child{border-bottom:0}
 .tilg .m{width:20px;height:20px;border-radius:99px;display:grid;place-items:center;font-size:12px;font-weight:700;margin-top:1px}
@@ -143,13 +156,29 @@ tbody tr.valgt td:first-child{box-shadow:inset 3px 0 0 var(--brand)}
 .tilg .m.del{background:var(--adv-s);color:var(--adv)}
 .tilg .m.nei{background:var(--surface2);color:var(--nei)}
 .tilg .t{font-weight:500}
-.tilg.av .t{color:var(--muted);font-weight:400}
+.tilg.uten .t{color:var(--muted);font-weight:400}
 .tilg .h{grid-column:2;color:var(--muted);font-size:12px}
 .grp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.grp div{padding:7px 10px;border-radius:10px;border:1px solid var(--line);font-size:12.5px;display:flex;justify-content:space-between;gap:6px;align-items:center}
-.grp div.med{background:var(--c-med-s);border-color:transparent}
-.grp div.lead{background:var(--c-gl-s);border-color:transparent;color:var(--c-gl);font-weight:500}
-.grp div.ikke{color:var(--nei)}
+.grp>*{padding:7px 10px;border-radius:10px;border:1px solid var(--line);font-size:12.5px;display:flex;justify-content:space-between;gap:6px;align-items:center;text-align:left;background:none;width:100%}
+.grp>.med{background:var(--c-med-s);border-color:transparent}
+.grp>.lead{background:var(--c-gl-s);border-color:transparent;color:var(--c-gl);font-weight:500}
+.grp>.ikke{color:var(--nei)}
+/* Lenker i detaljpanelet og sammenleggbare seksjoner */
+:where(.lenke){border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.lenke:hover{filter:brightness(1.12)}
+.lenke:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.grp>.lenke{border:1px solid var(--line)}.grp>.lenke.med,.grp>.lenke.lead{border-color:transparent}.grp>.lenke:hover{border-color:var(--brand)}
+.lenke.tekst:hover{text-decoration:underline}
+.lenke.kort{display:block;width:100%;padding:12px 14px;border-radius:12px;background:var(--surface2);margin-top:10px}
+.lenke.kort:hover{box-shadow:inset 0 0 0 1px var(--brand)}
+.lenke.chip:hover{border-color:var(--brand)}
+.niva .lenke:hover{border-color:var(--brand)}
+.sekshode{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;font:inherit;letter-spacing:inherit}
+.sekshode:focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:4px}
+.sekshode .pil{margin-left:auto;transition:transform .15s;opacity:.6}
+.seksjon.lukket .pil{transform:rotate(-90deg)}
+.seksjon.lukket .seksinn{display:none}
+.seksjon.lukket h3{margin-bottom:0}
 .grp em{font-style:normal;font-size:11px;opacity:.85}
 .status{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500}
 .s-ok{background:var(--ja-s);color:var(--ja)}
@@ -226,7 +255,7 @@ dialog.reg::backdrop{background:rgba(5,20,40,.5)}
 <script type="module" src="fb.js"></script>
 <script>
 /* ===== Faste lister (samme som i index.html; databasen overstyrer når den har egne) ===== */
-const GROUPS_DEFAULT=[['sondagsskole','Søndagsskole','barnearbeid'],['activ8','Activ8','ungdom'],['hangout','Hangout','unge voksne'],['debora','Debora','kvinnearbeid'],['cdur','Sion C-dur','mannsfellesskap'],['kjokken','Kjøkken',''],['torsdagsgruppa','Torsdagsgruppa',''],['vertskap','Vertskap',''],['lederradet','Lederrådet',''],['ungdomsledere','Ungdomsledere',''],['sommerstevne','Sommerstevne',''],['elevate','Elevate',''],['lovsang','Lovsangsteamet','']];
+const GROUPS_DEFAULT=[['sondagsskole','Søndagsskole','barnearbeid'],['activ8','Activ8','ungdom'],['hangout','Hangout','unge voksne'],['debora','Debora','kvinnearbeid'],['cdur','Sion C-dur','mannsfellesskap'],['kjokken','Kjøkken',''],['torsdagsgruppa','Torsdagsgruppa',''],['vertskap','Vertskap',''],['lederradet','Lederrådet',''],['ungdomsledere','Ungdomsledere',''],['sommerstevne','Sommerstevne',''],['elevate','Elevate',''],['lovsang','Lovsangsteamet',''],['forkynnere','Forkynnere','']];
 const GR_REMIND_DEFAULT=['lederradet','ungdomsledere','torsdagsgruppa','vertskap','elevate','lovsang'];
 const CATS_DEFAULT=['Møter','Ungdom','Happeninger','Menighetsmøte','Lederrådet','Ungdomsleder'];
 const LTYPES_DEFAULT=[['hoved','Hovedledere'],['ungdom','Ungdomsledere'],['forkynner','Forkynnere']];
@@ -238,7 +267,7 @@ const KAT_SYN={
   'Lederrådet':{tekst:'Administratorer og medlemmer i gruppen Lederrådet.',f:u=>u.role==='admin'||u.groups.includes('lederradet')}};
 const normCat=c=>(c==='Ledersamling'||c==='Activled')?'Ungdomsleder':c;
 
-const D={users:[],groups:[],ltypes:[],cats:[],roles:[],attest:{},meg:null};
+const D={users:[],groups:[],ltypes:[],cats:[],roles:[],omrader:[],attest:{},meg:null};
 const V={sel:{t:'alle'},person:null,q:''};
 let FB=null;
 const $=s=>document.querySelector(s);
@@ -256,12 +285,15 @@ const avatar=u=>'<div class="av" style="background:'+avFarge(u.id)+'22;color:'+a
 /* ===== Nivå og tilganger for én person ===== */
 function niva(u){
   if(u.role==='admin')return {k:'admin',navn:'Administrator',kl:'r-admin',n:4};
+  if(u.pastor)return {k:'pastor',navn:'Pastor',kl:'r-pastor',n:3};
+  if(u.kontor)return {k:'kontor',navn:'Sekretær',kl:'r-pastor',n:3};
   if(u.leder&&u.leads.length)return {k:'leder',navn:'Leder og gruppeleder',kl:'r-leder',n:3};
   if(u.leder)return {k:'leder',navn:'Leder',kl:'r-leder',n:3};
   if(u.leads.length)return {k:'gl',navn:'Gruppeleder',kl:'r-gl',n:2};
   return {k:'med',navn:'Medlem',kl:'r-med',n:1};
 }
-const rolleMerke=u=>{const n=niva(u);return '<span class="rolle '+n.kl+'">'+esc(n.navn)+'</span>'};
+const rolleMerke=u=>{const n=niva(u);return '<span class="rolle '+n.kl+'">'+esc(n.navn)+'</span>'+(u.role==='admin'&&u.pastor?' <span class="rolle r-pastor">Pastor</span>':'')+((u.role==='admin'||u.pastor)&&u.kontor?' <span class="rolle r-pastor">Sekretær</span>':'')};
+const hovedFor=u=>D.omrader.filter(o=>(o.ledere||[]).includes(u.id));   // områdene personen er hovedleder for
 const grLeser=(u,g)=>u.role==='admin'||u.groups.includes(g);
 const vaktGr=id=>{const g=D.groups.find(x=>x.id===id);return g?g.vakt:false};
 function tilganger(u){
@@ -273,6 +305,9 @@ function tilganger(u){
   for(const c of D.cats){const k=KAT_SYN[c];if(k){const v=k.f(u);ut.push(t('Innhold','Kategorien '+c,v,v?forklarKat(c,u):'Har ingen av rollene som gir tilgang.'))}}
   ut.push(t('Innhold','«Vis appen som» (øye-knappen)',A||u.leder||L.length>0,A?'Administrator.':u.leder?'Leder.':L.length?'Gruppeleder.':'Bare administratorer, ledere og gruppeledere.'));
   ut.push(t('Publisere','Arrangementer og nyheter',A?true:L.length?'del':false,A?'Alle, også for hele menigheten.':L.length?'Bare for egne grupper: '+ls(L)+'.':'Ikke publisere.'));
+  ut.push(t('Publisere','Melding, varsel og nyhet til alle og alle medlemmer',A||!!u.pastor||!!u.kontor,A?'Administrator.':u.pastor?'Pastor: til alle, alle medlemmer og alle grupper.':u.kontor?'Sekretær: til alle, alle medlemmer og alle grupper, også Pastorens hilsen på pastorens vegne.':'Bare administratorer, pastorer og sekretær.'));
+  {const an=ansvarFor(u.id);ut.push(t('Publisere','Mottar henvendelser fra medlemmene',an.length>0,an.length?'Via ansvarsområdet '+an.map(a=>a.name).join(', ')+'. Alle medlemmer kan sende beskjed, og svaret går i Sionchat.':'Står ikke i noe ansvarsområde.'))}
+  {const ho=hovedFor(u);ut.push(t('Publisere','Hovedleder for område',ho.length?true:false,ho.length?ho.map(o=>o.name+' ('+(o.groups||[]).map(gNavn).join(', ')+')').join('; ')+'. Når lederne og alle medlemmene i gruppene, og er med i ledersamtalen.':'Ingen områder.'))}
   ut.push(t('Publisere','Faste samlinger, Pastorens hilsen og festede nyheter',A,A?'Administrator.':'Bare administratorer.'));
   ut.push(t('Publisere','Sende varsler',A?true:L.length?'del':false,A?'Til alle, medlemmer eller grupper.':L.length?'Bare til egne grupper: '+ls(L)+'.':'Ikke sende varsler.'));
   ut.push(t('Publisere','Gruppesamtaler og avstemninger i Sionchat',A?true:L.length?'del':false,A?'Alle grupper.':L.length?'Egne grupper: '+ls(L)+'.':'Bare private samtaler.'));
@@ -310,6 +345,8 @@ const ansvarFor=e=>D.roles.filter(r=>(r.emails||[]).map(x=>String(x).toLowerCase
 const UTVALG={
   alle:{tittel:'Alle brukere',tekst:'Alle med konto i appen. Trykk på en person for å se rolle, grupper og hva de har tilgang til.',f:()=>true},
   admin:{tittel:'Administratorer',tekst:'Høyeste nivå. Ser alt innhold, publiserer for hele menigheten, sender varsler til alle og styrer brukere, roller, grupper, kategorier og sikkerhetskopier.',f:u=>u.role==='admin'},
+  kontor:{tittel:'Sekretær',tekst:'Tar seg av post og e-post, støtter pastoren i praktiske oppgaver og svarer på henvendelser på hans vegne. Kan sende melding, varsel og nyhet (også Pastorens hilsen) til alle, alle medlemmer og alle grupper, men administrerer ikke appen. Alle kan nå sekretæren via et ansvarsområde (for eksempel «Pastor og menighetskontoret»).',f:u=>!!u.kontor},
+  pastor:{tittel:'Pastorer',tekst:'Kan sende melding, varsel og nyhet til alle, alle medlemmer og alle grupper, og er med i ledersamtalene for alle områdene. Pastorer er gruppeledere for alle gruppene, men er ikke administratorer.',f:u=>!!u.pastor},
   leder:{tittel:'Ledere',tekst:'Medlemmer med rollen Leder. Ser lederinnhold (etter lederkategori) og har øye-knappen «Vis appen som». Rollen gir ikke rett til å publisere eller sende varsler.',f:u=>u.role!=='admin'&&u.leder},
   gl:{tittel:'Gruppeledere',tekst:'Publiserer arrangementer og nyheter, sender varsler og styrer medlemmer, men bare for gruppene de leder. Håndheves av databasen.',f:u=>u.role!=='admin'&&u.leads.length>0},
   med:{tittel:'Medlemmer uten lederrolle',tekst:'Innloggede medlemmer. Ser medlemsinnhold og innhold for egne grupper. «Medlem» betyr bare tilgang i appen, ikke formelt medlemskap.',f:u=>u.role!=='admin'&&!u.leder&&!u.leads.length},
@@ -322,6 +359,9 @@ function utvalgFor(s){
   if(s.t==='kat'){const k=KAT_SYN[s.id];return {tittel:'Kategorien '+s.id,tekst:k?'Intern kategori. Ses av: '+k.tekst+' Medlemmene kan likevel teknisk lese innholdet (bare visning i appen); uinnloggede får det aldri.':'Åpen kategori. Alle ser oppføringene, også besøkende, med mindre oppføringen er merket «Bare medlemmer» eller har grupper.',f:k?k.f:()=>true,kat:s.id}}
   if(s.t==='ans'){const r=D.roles.find(x=>x.id===s.id)||{name:s.id};const em=(r.emails||[]).map(x=>String(x).toLowerCase());return {tittel:r.name,tekst:(r.desc||'Ansvarsområde.')+' Medlemmer kan sende beskjed til de ansvarlige.',f:u=>em.includes(u.id),ans:r}}
   if(s.t==='spes'){return SPES[s.id]}
+  if(s.t==='omr'){const o=D.omrader.find(x=>x.id===s.id)||{name:s.id,groups:[],ledere:[]};const led=(o.ledere||[]).map(e=>{const u=D.users.find(x=>x.id===e);return u?visNavn(u):e});
+    return {tittel:o.name,tekst:'Grupper: '+((o.groups||[]).map(gNavn).join(', ')||'ingen')+'. Hovedledere: '+(led.join(', ')||'ingen ennå')+'. Hovedlederne er gruppeledere for gruppene i området og når både lederne og alle medlemmene. Ledersamtalen «'+o.name+' – ledere» i Sionchat samler hovedledere, pastorer og gruppeledere.',
+      f:u=>(o.ledere||[]).includes(u.id)||u.groups.concat(u.leads).some(g=>(o.groups||[]).includes(g)),omr:o}}
   return UTVALG.alle;
 }
 const SPES={
@@ -350,7 +390,7 @@ const IK={
 function tegn(){
   const u=D.users,ant=f=>u.filter(f).length;
   $('#rot').innerHTML='<div class="app"><header class="top"><button class="appknapp" id="bApp" title="Tilbake til appen">'+IK.tilbake+'<span>Til appen</span></button><div class="logo" aria-hidden="true"></div><div><h1>Tilgangsoversikt</h1><div class="sub">Sion Molde · roller, grupper og tilganger</div></div>'
-   +'<div class="stats">'+[['Brukere',u.length],['Administratorer',ant(UTVALG.admin.f)],['Ledere',ant(UTVALG.leder.f)],['Gruppeledere',ant(UTVALG.gl.f)],['Medlemmer',ant(UTVALG.med.f)]].map(x=>'<div class="stat"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join('')+'</div>'
+   +'<div class="stats">'+[['Brukere',u.length,'alle'],['Administratorer',ant(UTVALG.admin.f),'admin'],['Ledere',ant(UTVALG.leder.f),'leder'],['Gruppeledere',ant(UTVALG.gl.f),'gl'],['Medlemmer',ant(UTVALG.med.f),'med']].map(x=>'<button type="button" class="stat'+(V.sel.t===x[2]?' valgt':'')+'" data-sel=\''+esc(JSON.stringify({t:x[2]}))+'\' title="Vis alle: '+x[0].toLowerCase()+'"><b>'+x[1]+'</b><span>'+x[0]+'</span></button>').join('')+'</div>'
    +'<button class="ny" id="bNy" title="Ny bruker (N)">+ Ny bruker</button><label class="sok" style="margin-left:0">'+IK.sok+'<input id="q" type="search" placeholder="Søk etter navn, e-post eller gruppe" value="'+esc(V.q)+'" autocomplete="off"><kbd>/</kbd></label>'
    +'<button class="ikon" id="bOppd" title="Hent på nytt (R)">'+IK.oppd+'</button><button class="ikon" id="bTema" title="Lys / mørk">'+IK.tema+'</button><button class="ikon" id="bFull" title="Fullskjerm (F)">'+IK.full+'</button>'+(LOS?'':'<button class="ikon" id="bLos" title="Løsne fra appen: åpne i eget vindu, så appen kan brukes ved siden av">'+IK.los+'</button>')
    +'<div class="bruker">'+esc(D.meg)+'<br><button id="bUt">Logg ut</button></div></header>'
@@ -368,24 +408,29 @@ function nvKnapp(s,navn,n,ekstra){
   const valgt=V.sel.t===s.t&&(V.sel.id||'')===(s.id||'');
   return '<button class="nv'+(ekstra&&ekstra.sub?' sub':'')+(valgt?' valgt':'')+'" data-sel=\''+esc(JSON.stringify(s))+'\'>'+(ekstra&&ekstra.farge?'<span class="prikk" style="background:'+ekstra.farge+'"></span>':'')+esc(navn)+(ekstra&&ekstra.las?' <span class="las">🔒</span>':'')+(n==null?'':'<span class="ant">'+n+'</span>')+'</button>'
 }
+/* Venstremenyen: hver del (Oversikt, Roller, Grupper ...) kan legges sammen med et trykk på overskriften. Huskes på enheten sammen med seksjonene til høyre (LUKKET).
+   Er det valgte utvalget i en sammenlagt del, vises det likevel, så man ser hva som er valgt. */
 function tegnNav(){
-  const u=D.users,ant=f=>u.filter(f).length;let h='';
-  h+='<h3>Oversikt</h3>'+nvKnapp({t:'alle'},'Alle brukere',u.length)+nvKnapp({t:'matrise'},'Grupper × personer',null);
-  h+='<h3>Roller (nivåer)</h3>';
-  h+=nvKnapp({t:'admin'},'Administratorer',ant(UTVALG.admin.f),{farge:'var(--c-admin)'});
+  const u=D.users,ant=f=>u.filter(f).length,deler=[];
+  const del=(k,tittel,html)=>deler.push([k,tittel,html]);
+  let h=nvKnapp({t:'alle'},'Alle brukere',u.length)+nvKnapp({t:'matrise'},'Grupper × personer',null);
+  del('nav-oversikt','Oversikt',h);
+  h=nvKnapp({t:'admin'},'Administratorer',ant(UTVALG.admin.f),{farge:'var(--c-admin)'});
+  h+=nvKnapp({t:'pastor'},'Pastorer',ant(UTVALG.pastor.f),{farge:'var(--c-pastor)'});
+  h+=nvKnapp({t:'kontor'},'Sekretær',ant(UTVALG.kontor.f),{farge:'var(--c-pastor)'});
   h+=nvKnapp({t:'leder'},'Ledere',ant(UTVALG.leder.f),{farge:'var(--c-leder)'});
   for(const lt of D.ltypes){const f=utvalgFor({t:'lt',id:lt.id}).f;h+=nvKnapp({t:'lt',id:lt.id},lt.name,ant(f),{sub:1})}
   h+=nvKnapp({t:'gl'},'Gruppeledere',ant(UTVALG.gl.f),{farge:'var(--c-gl)'});
   for(const g of D.groups){const n=ant(x=>x.leads.includes(g.id));if(n)h+=nvKnapp({t:'glg',id:g.id},g.name,n,{sub:1})}
   h+=nvKnapp({t:'med'},'Medlemmer',ant(UTVALG.med.f),{farge:'var(--c-med)'});
-  h+='<h3>Grupper</h3>';
-  for(const g of D.groups)h+=nvKnapp({t:'g',id:g.id},g.name,ant(x=>x.groups.includes(g.id)||x.leads.includes(g.id)));
-  h+='<h3>Kategorier i programmet</h3>';
-  for(const c of D.cats)h+=nvKnapp({t:'kat',id:c},c,KAT_SYN[c]?ant(KAT_SYN[c].f):'Alle',{las:!!KAT_SYN[c]});
-  if(D.roles.length){h+='<h3>Ansvarsområder</h3>';for(const r of D.roles)h+=nvKnapp({t:'ans',id:r.id},r.name,(r.emails||[]).length)}
-  h+='<h3>Spesielle tilganger</h3>';
-  for(const k of Object.keys(SPES))h+=nvKnapp({t:'spes',id:k},SPES[k].tittel,ant(SPES[k].f));
-  $('#nav').innerHTML=h;
+  del('nav-roller','Roller (nivåer)',h);
+  del('nav-omr','Områder',D.omrader.map(o=>nvKnapp({t:'omr',id:o.id},o.name,ant(utvalgFor({t:'omr',id:o.id}).f))).join('')+'<button type="button" class="nv sub" data-nyomr style="padding-left:12px;color:var(--brand)">+ Nytt område</button>');
+  del('nav-grupper','Grupper',D.groups.map(g=>nvKnapp({t:'g',id:g.id},g.name,ant(x=>x.groups.includes(g.id)||x.leads.includes(g.id)))).join(''));
+  del('nav-kat','Kategorier i programmet',D.cats.map(c=>nvKnapp({t:'kat',id:c},c,KAT_SYN[c]?ant(KAT_SYN[c].f):'Alle',{las:!!KAT_SYN[c]})).join(''));
+  if(D.roles.length)del('nav-ans','Ansvarsområder',D.roles.map(r=>nvKnapp({t:'ans',id:r.id},r.name,(r.emails||[]).length)).join(''));
+  del('nav-spes','Spesielle tilganger',Object.keys(SPES).map(k=>nvKnapp({t:'spes',id:k},SPES[k].tittel,ant(SPES[k].f))).join(''));
+  $('#nav').innerHTML=deler.map(([k,t,html])=>{const lukket=LUKKET.has(k);
+    return '<div class="navgr'+(lukket?' lukket':'')+'" data-seks="'+k+'"><h3><button type="button" class="sekshode" aria-expanded="'+!lukket+'">'+esc(t)+PIL+'</button></h3><div class="seksinn">'+html+'</div></div>'}).join('');
 }
 function treff(u,q){
   if(!q)return true;q=q.toLowerCase();
@@ -403,6 +448,7 @@ function tegnListe(){
   const rad=[];
   if(ut.gruppe){const g=ut.gruppe,le=alle.filter(u=>u.leads.includes(g)).length,me=alle.filter(u=>u.groups.includes(g)).length,ek=alle.filter(u=>!u.groups.includes(g)&&u.extra.includes(g)).length,mu=alle.filter(u=>u.groups.includes(g)&&u.muted.includes(g)).length;
     rad.push('<span class="chip lead">'+le+' gruppeledere</span>','<span class="chip">'+me+' med i gruppen</span>');if(ek)rad.push('<span class="chip ekstra">'+ek+' får varsel uten å være med</span>');if(mu)rad.push('<span class="chip av-v">'+mu+' har slått av varsler</span>')}
+  if(ut.omr)rad.push('<button type="button" class="knapp pri" data-endreomr="'+esc(ut.omr.id)+'">Endre området</button>');
   if(ut.ans&&(ut.ans.tasks||[]).length)rad.push(...ut.ans.tasks.map(x=>'<span class="chip">'+esc(x)+'</span>'));
   if(V.q.trim())rad.push('<span class="chip">Søk: «'+esc(V.q.trim())+'» · '+l.length+' av '+alle.length+'</span>');
   if(rad.length)hode+='<div class="rad">'+rad.join('')+'</div>';
@@ -414,7 +460,7 @@ function tegnListe(){
     +'<td><div class="chips">'+grupperChips(u)+'</div></td>'
     +'<td><span class="status '+attestStatus(u.id).k+'">'+esc(attestStatus(u.id).t)+'</span></td></tr>').join('');
   el.innerHTML=hode+'<div class="scroll">'+(l.length?'<table><thead><tr><th>Person</th><th>Rolle</th>'+(g?'<th>I gruppen</th>':'')+'<th>Grupper</th><th>Politiattest</th></tr></thead><tbody>'+rader+'</tbody></table>':'<div class="tom">Ingen personer her'+(V.q.trim()?' som passer søket':'')+'.</div>')+'</div>';
-  el.querySelectorAll('tr[data-p]').forEach(tr=>tr.onclick=()=>velgPerson(tr.dataset.p));
+  el.querySelectorAll('tr[data-p]').forEach(tr=>tr.onclick=e=>{velgPerson(tr.dataset.p);if(e.target.closest('.person'))regApne(tr.dataset.p)});   // navnet åpner «Endre tilgang og områder» med en gang
 }
 function grupperChips(u){
   const l=[];
@@ -432,33 +478,45 @@ function tegnMatrise(el){
    +'<div class="scroll"><table class="matrise"><thead><tr><th>Person</th><th>Rolle</th>'+D.groups.map(g=>'<th class="rot">'+esc(g.name)+'</th>').join('')+'</tr></thead><tbody>'
    +l.map(u=>'<tr data-p="'+esc(u.id)+'" class="'+(V.person===u.id?'valgt':'')+'"><td><div class="person">'+avatar(u)+'<div style="min-width:0"><div class="navn">'+esc(visNavn(u))+'</div><div class="epost">'+esc(u.id)+'</div></div></div></td><td>'+rolleMerke(u)+'</td>'+D.groups.map(g=>'<td class="c">'+celle(u,g.id)+'</td>').join('')+'</tr>').join('')
    +'</tbody><tfoot><tr><td><b>Sum med</b></td><td></td>'+D.groups.map(g=>'<td class="c"><b>'+l.filter(u=>u.groups.includes(g.id)||u.leads.includes(g.id)).length+'</b></td>').join('')+'</tr></tfoot></table></div>';
-  el.querySelectorAll('tr[data-p]').forEach(tr=>tr.onclick=()=>velgPerson(tr.dataset.p));
+  el.querySelectorAll('tr[data-p]').forEach(tr=>tr.onclick=e=>{velgPerson(tr.dataset.p);if(e.target.closest('.person'))regApne(tr.dataset.p)});   // navnet åpner «Endre tilgang og områder» med en gang
 }
+/* Seksjonene i detaljpanelet kan legges sammen med et trykk på overskriften (huskes på enheten). Lenker (data-sel) åpner gruppen, rollen eller kategorien i midten, og personen blir stående åpen. */
+const LUKKET=new Set((()=>{try{return JSON.parse(localStorage.getItem('sm-tilg-lukket')||'[]')}catch(e){return []}})());
+const lenke=(s,inn,kl,tittel)=>'<button type="button" class="lenke'+(kl?' '+kl:'')+'" data-sel=\''+esc(JSON.stringify(s))+'\''+(tittel?' title="'+esc(tittel)+'"':'')+'>'+inn+'</button>';
+const PIL='<svg class="pil" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+const seks=(k,tittel,small,inn)=>'<section class="seksjon'+(LUKKET.has(k)?' lukket':'')+'" data-seks="'+k+'"><h3><button type="button" class="sekshode" aria-expanded="'+!LUKKET.has(k)+'">'+tittel+(small?' <small>'+small+'</small>':'')+PIL+'</button></h3><div class="seksinn">'+inn+'</div></section>';
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.sekshode');if(!b)return;const sk=b.closest('[data-seks]'),k=sk.dataset.seks,lukk=!sk.classList.contains('lukket');
+  sk.classList.toggle('lukket',lukk);b.setAttribute('aria-expanded',String(!lukk));lukk?LUKKET.add(k):LUKKET.delete(k);try{localStorage.setItem('sm-tilg-lukket',JSON.stringify([...LUKKET]))}catch(x){}});
+// Tilganger som har en egen liste i midten
+const TILG_LENKE={'Lese forbønnslisten':{t:'spes',id:'bonn'},'Saker til lederrådet':{t:'spes',id:'lr'},'Utleie':{t:'spes',id:'ut'},'Politiattester':{t:'spes',id:'att'}};
 function tegnDetalj(){
   const el=$('#detalj'),main=$('#main');if(!el)return;
   const u=D.users.find(x=>x.id===V.person);
   main.classList.toggle('uten-detalj',!u);
   if(!u){el.innerHTML='';return}
-  const n=niva(u),ans=ansvarFor(u.id),at=attestStatus(u.id),tg=tilganger(u);
-  let h='<div class="dh">'+avatar(u)+'<div style="min-width:0"><h2>'+esc(visNavn(u))+'</h2><div class="epost">'+esc(u.id)+(u.tlf?' · '+esc(u.tlf):'')+'</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+rolleMerke(u)+(u.leder?'<span class="rolle r-leder">'+esc(ltNavn(u.ltype))+'</span>':'')+(u.leads.length&&u.leder?'<span class="rolle r-gl">Gruppeleder</span>':'')+'</div></div><button class="ikon lukk" id="bLukk" title="Lukk (Esc)">'+IK.x+'</button></div>'
+  const n=niva(u),ans=ansvarFor(u.id),at=attestStatus(u.id),tg=tilganger(u),topp=el.querySelector('.scroll')?el.querySelector('.scroll').scrollTop:0;
+  const ltId=D.ltypes.some(t=>t.id===u.ltype)?u.ltype:(D.ltypes[0]||{}).id;
+  let h='<div class="dh">'+avatar(u)+'<div style="min-width:0"><h2>'+esc(visNavn(u))+'</h2><div class="epost">'+esc(u.id)+(u.tlf?' · '+esc(u.tlf):'')+'</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'
+    +lenke({t:n.k},rolleMerke(u),'','Vis alle: '+n.navn)+(u.leder?lenke({t:'lt',id:ltId},'<span class="rolle r-leder">'+esc(ltNavn(u.ltype))+'</span>','','Vis alle i lederkategorien'):'')+(u.leads.length&&u.leder?lenke({t:'gl'},'<span class="rolle r-gl">Gruppeleder</span>','','Vis alle gruppeledere'):'')+'</div></div><button class="ikon lukk" id="bLukk" title="Lukk (Esc)">'+IK.x+'</button></div>'
     +'<div style="padding:12px 22px;border-bottom:1px solid var(--line)"><button class="knapp pri" id="bEndre">Endre tilgang og områder</button></div>';
   h+='<div class="scroll">';
-  h+='<div class="seksjon"><h3>Nivå</h3><div class="niva">'+[['Medlem',1],['Gruppeleder',2],['Leder',3],['Administrator',4]].map(([t,i])=>{const på=i===4?u.role==='admin':i===3?(u.role==='admin'||u.leder):i===2?(u.role==='admin'||u.leads.length>0):true;return '<div class="n'+i+(på?' på':'')+'">'+t+'</div>'}).join('')+'</div>'
-    +'<p class="epost" style="margin:8px 0 0;white-space:normal">'+(u.role==='admin'?'Administratorer har alt som ledere og gruppeledere har, for alle grupper.':u.leder&&u.leads.length?'Både leder (ser lederinnhold) og gruppeleder (publiserer for egne grupper).':u.leder?'Leder: ser lederinnhold, men publiserer ikke.':u.leads.length?'Gruppeleder: publiserer og styrer medlemmer for egne grupper.':'Vanlig innlogget medlem.')+'</p></div>';
-  h+='<div class="seksjon"><h3>Grupper <small>'+(u.groups.length+u.leads.filter(g=>!u.groups.includes(g)).length)+' av '+D.groups.length+(u.role==='admin'?' · administratorer ser og styrer alle':'')+'</small></h3><div class="grp">'
+  h+=seks('niva','Nivå','','<div class="niva">'+[['Medlem',1,'med'],['Gruppeleder',2,'gl'],['Leder',3,'leder'],['Administrator',4,'admin']].map(([t,i,k])=>{const på=i===4?u.role==='admin':i===3?(u.role==='admin'||u.leder):i===2?(u.role==='admin'||u.leads.length>0):true;return lenke({t:k},t,'n'+i+(på?' på':''),'Vis alle: '+t)}).join('')+'</div>'
+    +'<p class="epost" style="margin:8px 0 0;white-space:normal">'+(u.role==='admin'?'Administratorer har alt som ledere og gruppeledere har, for alle grupper.':u.leder&&u.leads.length?'Både leder (ser lederinnhold) og gruppeleder (publiserer for egne grupper).':u.leder?'Leder: ser lederinnhold, men publiserer ikke.':u.leads.length?'Gruppeleder: publiserer og styrer medlemmer for egne grupper.':'Vanlig innlogget medlem.')+'</p>');
+  h+=seks('grupper','Grupper',(u.groups.length+u.leads.filter(g=>!u.groups.includes(g)).length)+' av '+D.groups.length+(u.role==='admin'?' · administratorer ser og styrer alle':''),'<div class="grp">'
     +D.groups.map(g=>{const le=u.leads.includes(g.id),me=u.groups.includes(g.id),ek=u.extra.includes(g.id),mu=u.muted.includes(g.id);
-      return '<div class="'+(le?'lead':me?'med':'ikke')+'">'+esc(g.name)+'<em>'+(le?'★ leder':me?(mu?'varsler av':'med'):ek?'bare varsel':'')+'</em></div>'}).join('')+'</div></div>';
+      return lenke({t:'g',id:g.id},'<span>'+esc(g.name)+'</span><em>'+(le?'★ leder':me?(mu?'varsler av':'med'):ek?'bare varsel':'')+'</em>',le?'lead':me?'med':'ikke','Gå til gruppen '+g.name)}).join('')+'</div>');
   let forrige='';
-  h+='<div class="seksjon"><h3>Tilganger</h3>'+tg.map(x=>{const o=x.omr!==forrige?'<div class="epost" style="margin:'+(forrige?'12px':'0')+' 0 2px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:11px">'+esc(x.omr)+'</div>':'';forrige=x.omr;
-    return o+'<div class="tilg'+(x.v?'':' av')+'"><span class="m '+(x.v===true?'ja':x.v?'del':'nei')+'">'+(x.v===true?'✓':x.v?'◐':'–')+'</span><span class="t">'+esc(x.navn)+'</span><span class="h">'+esc(x.hvorfor)+'</span></div>'}).join('')+'</div>';
-  h+='<div class="seksjon"><h3>Ansvarsområder</h3>'+(ans.length?ans.map(r=>'<div class="kort"><b>'+esc(r.name)+'</b><span class="epost" style="white-space:normal">'+esc(r.desc||'')+'</span></div>').join(''):'<span class="epost">Ingen.</span>')+'</div>';
-  h+='<div class="seksjon"><h3>Politiattest</h3><span class="status '+at.k+'">'+esc(at.t)+'</span>'+(D.attest[u.id]&&D.attest[u.id].dato?'<span class="epost" style="margin-left:8px">Godkjent '+esc(new Date(D.attest[u.id].dato).toLocaleDateString('nb-NO'))+'</span>':'')+'</div>';
+  h+=seks('tilganger','Tilganger','',tg.map(x=>{const o=x.omr!==forrige?'<div class="epost" style="margin:'+(forrige?'12px':'0')+' 0 2px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:11px">'+esc(x.omr)+'</div>':'';forrige=x.omr;
+    const mal=/^Kategorien /.test(x.navn)?{t:'kat',id:x.navn.slice(11)}:TILG_LENKE[x.navn],navn=mal?lenke(mal,esc(x.navn),'tekst','Vis hvem som har dette'):esc(x.navn);
+    return o+'<div class="tilg'+(x.v?'':' uten')+'"><span class="m '+(x.v===true?'ja':x.v?'del':'nei')+'">'+(x.v===true?'✓':x.v?'◐':'–')+'</span><span class="t">'+navn+'</span><span class="h">'+esc(x.hvorfor)+'</span></div>'}).join(''));
+  h+=seks('ansvar','Ansvarsområder',ans.length?String(ans.length):'',ans.length?ans.map(r=>lenke({t:'ans',id:r.id},'<b>'+esc(r.name)+'</b><span class="epost" style="white-space:normal">'+esc(r.desc||'')+'</span>','kort','Vis alle med dette ansvaret')).join(''):'<span class="epost">Ingen.</span>');
+  h+=seks('attest','Politiattest','','<span class="status '+at.k+'">'+esc(at.t)+'</span>'+(D.attest[u.id]&&D.attest[u.id].dato?'<span class="epost" style="margin-left:8px">Godkjent '+esc(new Date(D.attest[u.id].dato).toLocaleDateString('nb-NO'))+'</span>':''));
   const varsler=[...new Set([...u.groups.filter(g=>!u.muted.includes(g)),...u.extra])];
-  h+='<div class="seksjon"><h3>Gruppevarsler</h3>'+(varsler.length?'<div class="chips">'+varsler.map(g=>'<span class="chip">'+esc(gNavn(g))+'</span>').join('')+'</div>':'<span class="epost">Får ingen gruppevarsler.</span>')
-    +(u.muted.length?'<p class="epost" style="white-space:normal;margin:8px 0 0">Har slått av: '+esc(u.muted.map(gNavn).join(', '))+'.</p>':'')+'</div>';
-  h+='<div class="seksjon"><p class="epost" style="white-space:normal;margin:0">Endringer gjøres i appen: Mer → Ansvarsområder → Brukere, eller Tilhørighet og varsler.</p></div>';
+  h+=seks('varsler','Gruppevarsler',varsler.length?String(varsler.length):'',(varsler.length?'<div class="chips">'+varsler.map(g=>lenke({t:'g',id:g},esc(gNavn(g)),'chip','Gå til gruppen')).join('')+'</div>':'<span class="epost">Får ingen gruppevarsler.</span>')
+    +(u.muted.length?'<p class="epost" style="white-space:normal;margin:8px 0 0">Har slått av: '+esc(u.muted.map(gNavn).join(', '))+'.</p>':''));
+  h+='<div class="seksjon"><p class="epost" style="white-space:normal;margin:0">Endringer gjøres med «Endre tilgang og områder», eller i appen under Mer.</p></div>';
   h+='</div>';
-  el.innerHTML=h;
+  el.innerHTML=h;el.querySelector('.scroll').scrollTop=topp;
   $('#bLukk').onclick=()=>velgPerson(null);
   $('#bEndre').onclick=()=>regApne(u.id);
 }
@@ -468,7 +526,7 @@ function velgPerson(id){
   tegnDetalj();lagreHash();
   const tr=id&&document.querySelector('tr[data-p="'+CSS.escape(id)+'"]');if(tr)tr.scrollIntoView({block:'nearest'});
 }
-function velgUtvalg(s){V.sel=s;tegnNav();tegnListe();lagreHash()}
+function velgUtvalg(s){V.sel=s;tegnNav();tegnListe();lagreHash();document.querySelectorAll('.stats .stat').forEach(b=>b.classList.toggle('valgt',JSON.parse(b.dataset.sel).t===s.t&&!s.id))}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-sel]');if(b)velgUtvalg(JSON.parse(b.dataset.sel))});
 function lagreHash(){const p=new URLSearchParams();p.set('v',V.sel.t);if(V.sel.id)p.set('id',V.sel.id);if(V.person)p.set('p',V.person);history.replaceState(null,'','#'+p)}
 function lesHash(){const p=new URLSearchParams(location.hash.slice(1));if(p.get('v'))V.sel={t:p.get('v'),...(p.get('id')?{id:p.get('id')}:{})};if(p.get('p'))V.person=p.get('p')}
@@ -508,11 +566,11 @@ function regApne(id){
   if(document.querySelector('dialog.reg'))return;
   const u=id?D.users.find(x=>x.id===id):null;
   const R={ny:!u,navn:u?visNavn(u):'',epost:u?u.id:'',tlf:u?(u.tlf||''):'',rolle:u?(u.role==='admin'?'admin':u.leder?'leder':'med'):'med',
-    lt:(u&&D.ltypes.some(t=>t.id===u.ltype))?u.ltype:((D.ltypes[0]||{}).id||''),gr:{},ans:new Set(u?ansvarFor(u.id).map(r=>r.id):[]),feil:'',lagrer:false};
+    lt:(u&&D.ltypes.some(t=>t.id===u.ltype))?u.ltype:((D.ltypes[0]||{}).id||''),pastor:!!(u&&u.pastor),kontor:!!(u&&u.kontor),gr:{},ans:new Set(u?ansvarFor(u.id).map(r=>r.id):[]),feil:'',lagrer:false};
   for(const g of D.groups)R.gr[g.id]=u?(u.leads.includes(g.id)?2:u.groups.includes(g.id)?1:0):0;
   // Slik blir personen (samme form som en bruker), brukt til forhåndsvisningen og til lagring
   const ny=()=>{const adm=R.rolle==='admin',ids=Object.keys(R.gr);
-    return {id:R.epost||'ny@',role:adm?'admin':'member',leder:R.rolle==='leder',ltype:R.lt,groups:ids.filter(g=>R.gr[g]>0),leads:adm?[]:ids.filter(g=>R.gr[g]===2),extra:u?u.extra:[],muted:u?u.muted:[],name:R.navn,tlf:R.tlf}};
+    return {id:R.epost||'ny@',role:adm?'admin':'member',leder:R.rolle==='leder',ltype:R.lt,groups:ids.filter(g=>R.gr[g]>0),leads:adm?[]:ids.filter(g=>R.gr[g]===2),extra:u?u.extra:[],muted:u?u.muted:[],pastor:R.pastor,kontor:R.kontor,name:R.navn,tlf:R.tlf}};
   const dlg=document.createElement('dialog');dlg.className='reg';document.body.appendChild(dlg);
   const hoyre=()=>{const f=ny(),n=niva(f),tg=tilganger(f).filter(x=>x.v);
     return '<div class="epost" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:11px">Slik blir det</div>'
@@ -529,6 +587,8 @@ function regApne(id){
        +(R.ny?'<p class="hint"><b>Appen skal ikke inneholde opplysninger om barn under 13 år. Legg ikke inn dem.</b></p>':'')+'</div>'
      +'<div class="steg"><h3><span class="nr">2</span>Nivå</h3><div class="roller">'+REG_ROLLER.map(x=>'<button type="button" class="rk" data-rr="'+x[0]+'" aria-pressed="'+(R.rolle===x[0])+'" style="--rf:var('+x[3]+');--rs:var('+x[4]+')"><b>'+x[1]+'</b><span>'+x[2]+'</span></button>').join('')+'</div>'
        +(R.rolle==='leder'?'<div class="ltv"><span class="hint" style="margin:0 4px 0 0">Lederkategori:</span>'+D.ltypes.map(t=>'<button type="button" class="ak" data-rlt="'+esc(t.id)+'" aria-pressed="'+(R.lt===t.id)+'">'+esc(t.name)+'</button>').join('')+'</div>':'')
+       +'<label class="pastorvalg"><input type="checkbox" id="rPastor" '+(R.pastor?'checked':'')+'><span><b>Pastor</b> · kan sende melding, varsel og nyhet til alle, alle medlemmer og alle grupper, og er med i alle ledersamtaler. Blir gruppeleder for alle gruppene.</span></label>'
+       +'<label class="pastorvalg"><input type="checkbox" id="rKontor" '+(R.kontor?'checked':'')+'><span><b>Sekretær</b> · tar seg av post og e-post, og skriver og svarer på pastorens vegne. Kan sende melding, varsel og nyhet (også Pastorens hilsen) til alle, men administrerer ikke appen. Legg personen inn i ansvarsområdet for pastoren eller menighetskontoret under (steg 4), så alle kan sende beskjed.</span></label>'
        +'<p class="hint">'+(ledOK?'<b>Gruppeleder</b> velges per gruppe under («Leder»). Det kan kombineres med både Medlem og Leder.':'Administratorer ser og styrer alle grupper. Gruppene under gjelder bare tilhørighet og varsler.')+'</p></div>'
      +'<div class="steg"><h3><span class="nr">3</span>Grupper</h3><div class="gtab">'+D.groups.map(g=>{const v=!ledOK&&R.gr[g.id]===2?1:R.gr[g.id];
          return '<div class="grad'+(v===2?' led':v===1?' på':'')+'"><span title="'+esc(g.desc||'')+'">'+esc(g.name)+'</span><span class="seg">'+[[0,'Ikke med'],[1,'Med']].concat(ledOK?[[2,'Leder']]:[]).map(([k,t])=>'<button type="button" class="s'+k+'" data-rg="'+esc(g.id)+'" data-v="'+k+'" aria-pressed="'+(v===k)+'">'+t+'</button>').join('')+'</span></div>'}).join('')+'</div></div>'
@@ -537,6 +597,7 @@ function regApne(id){
      +'<div class="regf"><span class="regmsg" role="status">'+esc(R.feil)+'</span><button type="button" class="knapp" data-ravbryt '+(R.lagrer?'disabled':'')+'>Avbryt</button><button type="submit" class="knapp pri" '+(R.lagrer?'disabled':'')+'>'+(R.lagrer?'Lagrer …':R.ny?'Opprett bruker':'Lagre endringer')+'</button></div></form>'
      +'<aside class="regh">'+hoyre()+'</aside></div>';
     dlg.querySelector('.regv').scrollTop=top};
+  dlg.addEventListener('change',e=>{if(e.target.id==='rKontor'){R.kontor=e.target.checked;tegn();return}if(e.target.id!=='rPastor')return;R.pastor=e.target.checked;if(R.pastor&&R.rolle!=='admin')for(const g of D.groups)R.gr[g.id]=2;tegn()});   // pastor: leder for alle gruppene
   dlg.addEventListener('input',e=>{const t=e.target;if(t.id==='rN')R.navn=t.value;else if(t.id==='rE')R.epost=t.value.trim().toLowerCase();else if(t.id==='rT')R.tlf=t.value;tegnH()});
   dlg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||R.lagrer||b.type==='submit')return;const d=b.dataset;
     if(d.rr)R.rolle=d.rr;else if(d.rlt)R.lt=d.rlt;else if(d.rg)R.gr[d.rg]=+d.v;else if(d.ra){R.ans.has(d.ra)?R.ans.delete(d.ra):R.ans.add(d.ra)}else if('ravbryt' in d){dlg.close();return}else return;
@@ -561,6 +622,8 @@ function regApne(id){
       const pr={name:R.navn};if(R.tlf||(u&&u.tlf))pr.tlf=R.tlf;await FB.setProfile(m,pr,adm);
       if(adm)await FB.setGroups(m,'admin',f.groups);
       else{await FB.setLeder(m,f.leder);if(f.leder)await FB.setLtype(m,R.lt);await FB.setLeads(m,f.leads,f.groups)}
+      if(R.pastor||(u&&u.pastor))await FB.setPastor(m,rolle,R.pastor);
+      if(R.kontor||(u&&u.kontor))await FB.setKontor(m,rolle,R.kontor);
       // Ansvarsområder: legg til, ta bort eller oppdater navn og mobil
       for(const a of D.roles){
         const em=(a.emails||[]).map(x=>String(x).toLowerCase()),var0=em.includes(m),skal=R.ans.has(a.id),lik=p=>String(p.e||'').toLowerCase()===m;
@@ -572,23 +635,68 @@ function regApne(id){
         if(persons.length>4||emails.length>4){ikke.push(a.name+' (fullt)');continue}
         try{await FB.setRole(a.id,{...a,persons,emails})}catch(er){ikke.push(a.name)}}
       dlg.close();
-      await last();velgPerson(m);
+      await last();await synkPastorer();velgPerson(m);
       melding((R.ny?(res&&res.created?R.navn+' er opprettet og har fått e-post for å velge passord.':R.navn+' hadde allerede en konto og er lagt inn.'):'Tilgangen til '+R.navn+' er lagret.')+(ikke.length?' Kunne ikke oppdatere ansvarsområdet: '+ikke.join(', ')+'.':''));
     }catch(er){R.lagrer=false;R.feil=feilTekst(er);tegn()}
   });
   tegn();dlg.showModal();setTimeout(()=>{const i=dlg.querySelector(R.ny?'#rN':'#rT');if(i)i.focus()},30);
 }
 
+/* ===== Områder (for eksempel Ungdomsarbeid med Activ8 og Hangout) med hovedledere. Hovedlederne blir gruppeledere for gruppene i området,
+   og ledersamtalen i Sionchat samler hovedledere, pastorer og gruppeledere. Hver områdeoppføring har en kopi av pastorlisten (pastorer). ===== */
+async function synkPastorer(){const p=D.users.filter(u=>u.pastor).map(u=>u.id).sort();
+  for(const o of D.omrader)if(JSON.stringify([...(o.pastorer||[])].sort())!==JSON.stringify(p)){try{await FB.setOmrade(o.id,{...o,pastorer:p});o.pastorer=p}catch(e){}}}
+async function omrLagre(o0,o){   // o0: slik det var (null for nytt), o: slik det skal bli (null = slettes)
+  const andre=D.omrader.filter(x=>x.id!==(o0||o).id);
+  if(o)await FB.setOmrade(o.id,{...o,pastorer:D.users.filter(u=>u.pastor).map(u=>u.id)});else await FB.delOmrade(o0.id);
+  for(const e of new Set([...(o0?o0.ledere:[]),...(o?o.ledere:[])])){const u=D.users.find(x=>x.id===e);if(!u||u.role==='admin')continue;
+    const beholdes=new Set(andre.filter(x=>x.ledere.includes(e)).flatMap(x=>x.groups)),leads=new Set(u.leads),groups=new Set(u.groups);
+    if(o0&&o0.ledere.includes(e))for(const g of o0.groups)if(!beholdes.has(g)&&!(o&&o.ledere.includes(e)&&o.groups.includes(g)))leads.delete(g);   // fjernet som hovedleder eller gruppen tatt ut av området
+    if(o&&o.ledere.includes(e))for(const g of o.groups){leads.add(g);groups.add(g)}
+    await FB.setLeads(e,[...leads],[...groups])}}
+const slug=t=>String(t).toLowerCase().replace(/[æ]/g,'ae').replace(/[ø]/g,'o').replace(/[å]/g,'a').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'omrade';
+function omrApne(id){
+  if(document.querySelector('dialog.reg'))return;
+  const o0=id?D.omrader.find(x=>x.id===id):null,O={navn:o0?o0.name:'',gr:new Set(o0?o0.groups:[]),led:new Set(o0?o0.ledere:[]),q:'',feil:'',lagrer:false};
+  const dlg=document.createElement('dialog');dlg.className='reg omrdlg';document.body.appendChild(dlg);
+  const tegn=()=>{const v=dlg.querySelector('.regv'),top=v?v.scrollTop:0,q=O.q.trim().toLowerCase();
+    const folk=D.users.filter(u=>!q||visNavn(u).toLowerCase().includes(q)||u.id.includes(q)||O.led.has(u.id)).sort((a,b)=>(O.led.has(b.id)-O.led.has(a.id))||visNavn(a).localeCompare(visNavn(b),'nb'));
+    dlg.innerHTML='<form class="regv" novalidate><h2>'+(o0?'Endre område · '+esc(o0.name):'Nytt område')+'</h2><p class="hint" style="margin-top:4px">Et område samler grupper under en eller flere hovedledere, for eksempel Ungdomsarbeid med Activ8 og Hangout, eller Barnearbeid med Søndagsskolen.</p>'
+     +'<div class="steg"><h3><span class="nr">1</span>Navn</h3><div class="felt3" style="grid-template-columns:1fr"><label>Navn på området<input id="oN" maxlength="60" value="'+esc(O.navn)+'" autocomplete="off" placeholder="Ungdomsarbeid"></label></div></div>'
+     +'<div class="steg"><h3><span class="nr">2</span>Grupper i området</h3><div class="ansl">'+D.groups.map(g=>'<button type="button" class="ak" data-og="'+esc(g.id)+'" aria-pressed="'+O.gr.has(g.id)+'">'+esc(g.name)+'</button>').join('')+'</div></div>'
+     +'<div class="steg"><h3><span class="nr">3</span>Hovedledere</h3><p class="hint" style="margin:-4px 0 10px">Hovedlederne blir gruppeledere for alle gruppene i området: de kan sende melding og varsel til lederne og alle medlemmene der, og er med i ledersamtalen. Tas noen bort, mister de gruppelederrollen for gruppene i området.</p>'
+       +'<input id="oQ" class="oq" placeholder="Søk etter person" value="'+esc(O.q)+'" autocomplete="off"><div class="ansl" style="margin-top:8px">'+folk.slice(0,60).map(u=>'<button type="button" class="ak" data-ol="'+esc(u.id)+'" aria-pressed="'+O.led.has(u.id)+'">'+esc(visNavn(u))+'</button>').join('')+'</div></div>'
+     +'<div class="regf"><span class="regmsg" role="status">'+esc(O.feil)+'</span>'+(o0?'<button type="button" class="knapp" data-oslett '+(O.lagrer?'disabled':'')+'>Slett området</button>':'')+'<button type="button" class="knapp" data-oavbryt>Avbryt</button><button type="submit" class="knapp pri" '+(O.lagrer?'disabled':'')+'>'+(O.lagrer?'Lagrer …':o0?'Lagre':'Opprett område')+'</button></div></form>';
+    dlg.querySelector('.regv').scrollTop=top};
+  dlg.addEventListener('input',e=>{if(e.target.id==='oN')O.navn=e.target.value;if(e.target.id==='oQ'){O.q=e.target.value;const p=e.target.selectionStart;tegn();const i=dlg.querySelector('#oQ');i.focus();i.setSelectionRange(p,p)}});
+  dlg.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||O.lagrer||b.type==='submit')return;const d=b.dataset;
+    if(d.og){O.gr.has(d.og)?O.gr.delete(d.og):O.gr.add(d.og);tegn()}
+    else if(d.ol){O.led.has(d.ol)?O.led.delete(d.ol):O.led.add(d.ol);tegn()}
+    else if('oavbryt' in d)dlg.close();
+    else if('oslett' in d){if(!confirm('Slette området «'+o0.name+'»? Hovedlederne mister gruppelederrollen for gruppene i området.'))return;O.lagrer=true;tegn();
+      try{await omrLagre(o0,null);dlg.close();V.sel={t:'alle'};await last();melding('Området er slettet.')}catch(er){O.lagrer=false;O.feil=feilTekst(er);tegn()}}});
+  dlg.addEventListener('cancel',e=>{if(O.lagrer)e.preventDefault()});
+  dlg.addEventListener('close',()=>dlg.remove());
+  dlg.addEventListener('submit',async e=>{e.preventDefault();if(O.lagrer)return;O.navn=O.navn.trim();O.feil='';
+    if(!O.navn)O.feil='Skriv navnet på området.';else if(!O.gr.size)O.feil='Velg minst én gruppe.';else if(!o0&&D.omrader.some(x=>x.name.toLowerCase()===O.navn.toLowerCase()))O.feil='Det finnes allerede et område med dette navnet.';
+    if(O.feil){tegn();return}
+    O.lagrer=true;tegn();
+    const o={id:o0?o0.id:(()=>{let id=slug(O.navn),k=2;while(D.omrader.some(x=>x.id===id))id=slug(O.navn)+(k++);return id})(),name:O.navn,groups:D.groups.map(g=>g.id).filter(g=>O.gr.has(g)),ledere:[...O.led],ord:o0?o0.ord:D.omrader.length};
+    try{await omrLagre(o0,o);dlg.close();await last();velgUtvalg({t:'omr',id:o.id});melding('Området «'+o.name+'» er lagret.')}catch(er){O.lagrer=false;O.feil=feilTekst(er);tegn()}});
+  tegn();dlg.showModal();setTimeout(()=>{const i=dlg.querySelector('#oN');if(i&&!o0)i.focus()},30);
+}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-nyomr],[data-endreomr]');if(!b)return;omrApne(b.dataset.endreomr||null)});
+
 /* ===== Data ===== */
 const ok=p=>p.catch(()=>null);
 async function last(){
-  const [us,gr,lt,ca,ro,at]=await Promise.all([FB.listUsers(),ok(FB.groupsList()),ok(FB.ltypesList()),ok(FB.catsList()),ok(FB.rolesList()),ok(FB.listAttester())]);
+  const [us,gr,lt,ca,ro,at,om]=await Promise.all([FB.listUsers(),ok(FB.groupsList()),ok(FB.ltypesList()),ok(FB.catsList()),ok(FB.rolesList()),ok(FB.listAttester()),ok(FB.omraderList())]);
   // Samme person kan ligge både i admins og members: slås sammen til én, med høyeste rolle
   const per=new Map(),uni=(a,b)=>[...new Set([...(a||[]),...(b||[])])];
   for(const x of us){const id=x.id.toLowerCase(),f=per.get(id);
     if(!f){per.set(id,{...x,id,groups:x.groups||[],leads:x.leads||[],extra:x.extra||[],muted:x.muted||[],leder:x.leder===true});continue}
     Object.assign(f,{role:f.role==='admin'||x.role==='admin'?'admin':'member',groups:uni(f.groups,x.groups),leads:uni(f.leads,x.leads),extra:uni(f.extra,x.extra),muted:uni(f.muted,x.muted),
-      leder:f.leder||x.leder===true,ltype:f.ltype||x.ltype||'',name:f.name||x.name||'',tlf:f.tlf||x.tlf||''})}
+      leder:f.leder||x.leder===true,pastor:f.pastor||x.pastor===true,kontor:f.kontor||x.kontor===true,ltype:f.ltype||x.ltype||'',name:f.name||x.name||'',tlf:f.tlf||x.tlf||''})}
   D.users=[...per.values()].map(u=>({...u,leder:u.role!=='admin'&&u.leder}));
   D.groups=(gr&&gr.length?sortOrd(gr):GROUPS_DEFAULT.map(g=>({id:g[0],name:g[1],desc:g[2]}))).map(g=>({...g,vakt:g.vakt===undefined?!GR_REMIND_DEFAULT.includes(g.id):!!g.vakt,remind:g.remind===undefined?GR_REMIND_DEFAULT.includes(g.id):!!g.remind}));
   // grupper som brukes på personer men ikke finnes i listen (f.eks. utleie, bonneledere) tas med til slutt
@@ -598,6 +706,7 @@ async function last(){
   const cn=ca&&ca.length?sortOrd(ca).map(c=>normCat(c.name)):CATS_DEFAULT.slice();
   D.cats=[...new Set(cn.concat(['Ungdomsleder']))];
   D.roles=ro||[];
+  D.omrader=(om||[]).map(o=>({...o,groups:o.groups||[],ledere:(o.ledere||[]).map(x=>String(x).toLowerCase()),pastorer:o.pastorer||[]}));
   D.attest={};(at||[]).forEach(a=>D.attest[a.id.toLowerCase()]=a);
   tegn();
 }

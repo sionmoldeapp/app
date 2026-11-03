@@ -11,3 +11,6 @@ lokal/data/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Nedlastede Node-avhengigheter
+node_modules/

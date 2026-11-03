@@ -145,12 +145,30 @@ const FB={
     /* Billig variant: leser listen én gang (brukes med jevne mellomrom i stedet for en lytter, som leser på nytt hver gang noen sender en puls). */
     hentTilstede:()=>S.getDocs(S.query(S.collection(db,'tilstede'),S.where('sist','>',S.Timestamp.fromMillis(Date.now()-10*60e3)))).then(s=>s.docs.map(d=>{const t=d.data({serverTimestamps:'estimate'}).sist;return {id:d.id,ms:t&&t.toMillis?t.toMillis():Date.now()}})),
     /* Ringing: ringer/{samtale-id} {fra, fraNavn, til[], status:'ring'|'svart'|'avbrutt', ms (fornyes mens det ringer), svarNavn} */
-    ringStart:(tid,til,navn)=>S.setDoc(S.doc(db,'ringer',tid),{fra:auth.currentUser.email.toLowerCase(),fraNavn:navn,til,status:'ring',ms:Date.now()}),
+    ringStart:(tid,til,navn,callId)=>S.setDoc(S.doc(db,'ringer',tid),{fra:auth.currentUser.email.toLowerCase(),fraNavn:navn,til,status:'ring',ms:Date.now(),callId,startAt:Date.now(),levert:[],avvist:[],opptatt:[]}),
     ringVibr:(tid,til,navn)=>S.setDoc(S.doc(db,'ringer',tid),{fra:auth.currentUser.email.toLowerCase(),fraNavn:navn,til,status:'vibr',ms:Date.now()}),   // summing: telefonene vibrerer i tre pulser
     ringPuls:tid=>S.updateDoc(S.doc(db,'ringer',tid),{ms:Date.now()}),
+    async ringEvent(tid,callId,event,name){
+      if(S.ringEvent)return S.ringEvent(tid,callId,event,name);
+      const ref=S.doc(db,'ringer',tid),me=auth.currentUser.email.toLowerCase();
+      return S.runTransaction(db,async tx=>{const snap=await tx.get(ref);if(!snap.exists())return false;const r=snap.data();
+        if(r.callId!==callId||r.status!=='ring')return false;
+        if(['cancel','timeout'].includes(event)){if(r.fra!==me)throw {code:'permission-denied'};tx.update(ref,{status:event==='timeout'?'utlopt':'avbrutt'});return true;}
+        if(!(r.til||[]).includes(me))throw {code:'permission-denied'};
+        if(event==='delivered')tx.update(ref,{levert:S.arrayUnion(me)});
+        else if(event==='answer'){if(r.startAt&&Date.now()-r.startAt>45000)return false;tx.update(ref,{status:'svart',svarNavn:String(name||'').slice(0,60),levert:S.arrayUnion(me)});}
+        else if(event==='decline'||event==='busy')tx.update(ref,{avvist:S.arrayUnion(me),...(event==='busy'?{opptatt:S.arrayUnion(me)}:{}),...((r.til||[]).length===1?{status:event==='busy'?'opptatt':'avvist'}:{})});
+        else throw {code:'invalid-argument'};return true;
+      });
+    },
     ringSett:(tid,status,navn)=>S.updateDoc(S.doc(db,'ringer',tid),status==='svart'?{status,svarNavn:navn}:{status}),
     watchRinger:(me,cb,err)=>S.onSnapshot(S.query(S.collection(db,'ringer'),S.where('til','array-contains',me)),s=>cb(s.docs.map(d=>({id:d.id,...d.data()}))),e=>err&&err(e)),
-    watchRing:(tid,cb)=>S.onSnapshot(S.doc(db,'ringer',tid),s=>cb(s.exists()?s.data():null),()=>{}),
+    watchRing:(tid,cb,err)=>S.onSnapshot(S.doc(db,'ringer',tid),s=>cb(s.exists()?s.data():null),e=>err&&err(e)),
+    /* Tale (WebRTC, bare lyd) i private samtaler: tale/{samtale-id} {fra, til[1], offer, answer, ms, slutt}. Den som ringer skriver tilbudet, den som svarer svaret. */
+    taleSett:(tid,d)=>S.setDoc(S.doc(db,'tale',tid),d),
+    taleSvar:(tid,answer)=>S.updateDoc(S.doc(db,'tale',tid),{answer}),
+    taleSlutt:tid=>S.updateDoc(S.doc(db,'tale',tid),{slutt:true}),
+    watchTale:(tid,cb)=>S.onSnapshot(S.doc(db,'tale',tid),s=>cb(s.exists()?s.data():null),()=>{}),
     watchTilstede:(cb,err)=>S.onSnapshot(S.query(S.collection(db,'tilstede'),S.where('sist','>',S.Timestamp.fromMillis(Date.now()-10*60e3))),s=>cb(s.docs.map(d=>{const t=d.data({serverTimestamps:'estimate'}).sist;return {id:d.id,ms:t&&t.toMillis?t.toMillis():Date.now()}})),e=>err&&err(e)),
     watchAvst:(id,cb,err)=>S.onSnapshot(S.doc(db,'avst',id),s=>cb(s.exists()?{id,...s.data()}:null),e=>err&&err(e)),
     voteAvst:(id,ny,gammel)=>{const me=auth.currentUser.email.toLowerCase(),u={};if(gammel>=0)u['v'+gammel]=S.arrayRemove(me);if(ny>=0&&ny!==gammel)u['v'+ny]=S.arrayUnion(me);return S.updateDoc(S.doc(db,'avst',id),u)},
@@ -162,7 +180,7 @@ const FB={
     // Lyttere for chat: nye samtaler og meldinger kommer med en gang (leser bare det som endres).
     watchThreads:(me,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads'),S.where('parts','array-contains',me),S.limit(50)),s=>cb(s.docs.map(d=>({id:d.id,...d.data({serverTimestamps:'estimate'})})).sort((x,y)=>(y.ms||0)-(x.ms||0))),e=>err&&err(e)),
     lastMsgs:async(id,n)=>(await S.getDocs(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created','desc'),S.limit(n||3)))).docs.map(d=>({id:d.id,...d.data()})),
-    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created','desc'),S.limit(200)),s=>cb(s.docs.slice().reverse().map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,reak:Object.fromEntries(['likes','r_hjerte','r_ler','r_wow','r_trist','r_be','r_ild','r_hender','r_sion','r_amen'].map(k=>[k,Array.isArray(x[k])?x[k]:[]])),stjerne:Array.isArray(x.stjerne)?x.stjerne:[],avst:x.avst&&typeof x.avst==='object'?x.avst:null,lyd:typeof x.lyd==='string'?x.lyd:'',lsek:typeof x.lsek==='number'?x.lsek:0,svar:x.svar&&typeof x.svar==='object'?x.svar:null,img:typeof x.img==='string'?x.img:'',pam:x.pam===true,redigert:x.redigert===true,slettet:x.slettet===true,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
+    watchMsgs:(id,cb,err)=>S.onSnapshot(S.query(S.collection(db,'threads',id,'messages'),S.orderBy('created','desc'),S.limit(200)),s=>cb(s.docs.slice().reverse().map(d=>{const x=d.data({serverTimestamps:'estimate'});return {id:d.id,by:x.by,name:x.name,text:x.text,reak:Object.fromEntries(['likes','r_hjerte','r_ler','r_wow','r_trist','r_be','r_ild','r_hender','r_sion','r_amen'].map(k=>[k,Array.isArray(x[k])?x[k]:[]])),seen:Array.isArray(x.seen)?x.seen:[],stjerne:Array.isArray(x.stjerne)?x.stjerne:[],avst:x.avst&&typeof x.avst==='object'?x.avst:null,lyd:typeof x.lyd==='string'?x.lyd:'',lsek:typeof x.lsek==='number'?x.lsek:0,svar:x.svar&&typeof x.svar==='object'?x.svar:null,img:typeof x.img==='string'?x.img:'',pam:x.pam===true,redigert:x.redigert===true,slettet:x.slettet===true,ms:x.created&&x.created.toMillis?x.created.toMillis():Date.now()}})),e=>err&&err(e)),
     // Reaksjon på en melding (👍 ❤️ 😂 😮 😢 🙏): fjerner din e-post fra feltene du hadde, og legger den til i det nye. Den andre får beskjed i samtalelisten.
     async reakMsg(tid,mid,r,info){
       const me=auth.currentUser.email.toLowerCase(),b=S.writeBatch(db),u={};
@@ -210,6 +228,7 @@ const FB={
       await b.commit()},
     gjemChat:(tid,paa)=>{const me=auth.currentUser.email.toLowerCase();return S.updateDoc(S.doc(db,'threads',tid),{gone:paa?S.arrayUnion(me):S.arrayRemove(me)})},
     async slettChat(tid){const ms=await S.getDocs(S.collection(db,'threads',tid,'messages'));for(const m of ms.docs)await S.deleteDoc(m.ref);await S.deleteDoc(S.doc(db,'threads',tid))},
+    async markMsgsSeen(tid,ids){if(S.markMsgsSeen)return S.markMsgsSeen(tid,ids);const b=S.writeBatch(db),me=auth.currentUser.email.toLowerCase();ids.slice(0,20).forEach(id=>b.update(S.doc(db,'threads',tid,'messages',id),{seen:S.arrayUnion(me)}));await b.commit()},
     markThreadUnread:id=>S.updateDoc(S.doc(db,'threads',id),{unread:S.arrayUnion(auth.currentUser.email.toLowerCase())}),
     markThreadRead:id=>S.updateDoc(S.doc(db,'threads',id),{unread:S.arrayRemove(auth.currentUser.email.toLowerCase())}),
     async notifyThread(url,id){const idToken=await auth.currentUser.getIdToken(true);const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'beskjed',threadId:id})});return r.json()},
@@ -487,6 +506,14 @@ const FB={
       const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({idToken,action:'epost',title:d.title,body:d.body,mal:d.mal})});
       return r.json();
     },
+    // Pastor: kan sende melding, varsel og nyhet til alle, alle medlemmer og alle grupper (feltet pastor på oppføringen i members eller admins).
+    async myPastor(email,adm){try{const s=await S.getDoc(S.doc(db,adm?'admins':'members',email));return s.exists()&&(s.data().pastor===true||s.data().kontor===true)}catch(e){return false}},   // pastor eller sekretær: kan sende til alle
+    setKontor:(email,role,v)=>S.updateDoc(S.doc(db,role==='admin'?'admins':'members',email),{kontor:!!v}),   // sekretær: sender til alle og svarer på henvendelser (ansvarsområde), administrerer ikke appen
+    setPastor:(email,role,v)=>S.updateDoc(S.doc(db,role==='admin'?'admins':'members',email),{pastor:!!v}),
+    // Områder (samlingen omrader): {name, groups[], ledere[] (hovedledere, e-post), ord}. Hovedlederne blir gruppeledere for gruppene i området.
+    async omraderList(){const s=await S.getDocs(S.collection(db,'omrader'));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>((a.ord==null?999:a.ord)-(b.ord==null?999:b.ord))||String(a.name).localeCompare(String(b.name)))},
+    setOmrade:(id,d)=>S.setDoc(S.doc(db,'omrader',id),{name:String(d.name).slice(0,60),groups:(d.groups||[]).slice(0,30),ledere:(d.ledere||[]).slice(0,10).map(x=>String(x).toLowerCase()),pastorer:(d.pastorer||[]).slice(0,10).map(x=>String(x).toLowerCase()),ord:d.ord==null?999:d.ord}),   // pastorer: kopi av pastorlisten, så ledersamtalen i Sionchat tar dem med
+    delOmrade:id=>S.deleteDoc(S.doc(db,'omrader',id)),
     async myLeder(email){try{const s=await S.getDoc(S.doc(db,'members',email));return s.exists()&&s.data().leder===true}catch(e){return false}},
     // Lederkategorier (samlingen leaderTypes) og hvilken kategori en leder tilhører (feltet ltype).
     async ltypesList(){const s=await S.getDocs(S.collection(db,'leaderTypes'));return s.docs.map(d=>({id:d.id,...d.data()}))},
@@ -504,10 +531,10 @@ const FB={
     // Brukere = administratorer (samlingen admins) og medlemmer (samlingen members). Adressen er dokument-ID.
     async listUsers(){
       const [m,a]=await Promise.all([S.getDocs(S.collection(db,'members')),S.getDocs(S.collection(db,'admins'))]);
-      return a.docs.map(d=>({id:d.id,role:'admin',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:[],name:d.data().name||'',tlf:d.data().tlf||''})).concat(m.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:d.data().leads||[],leder:d.data().leder===true,ltype:d.data().ltype||'',name:d.data().name||'',tlf:d.data().tlf||''}))).sort((x,y)=>x.id<y.id?-1:1);
+      return a.docs.map(d=>({id:d.id,role:'admin',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:[],pastor:d.data().pastor===true,kontor:d.data().kontor===true,name:d.data().name||'',tlf:d.data().tlf||''})).concat(m.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:d.data().leads||[],leder:d.data().leder===true,ltype:d.data().ltype||'',pastor:d.data().pastor===true,kontor:d.data().kontor===true,name:d.data().name||'',tlf:d.data().tlf||''}))).sort((x,y)=>x.id<y.id?-1:1);
     },
     // Gruppeleder: medlemmer i egne grupper, legge til (oppretter kontoen hvis personen er ny) og fjerne fra en gruppe.
-    async leaderMembers(leads){const s=await S.getDocs(S.collection(db,'members'));return s.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:d.data().leads||[],name:d.data().name||''})).filter(u=>u.groups.some(g=>leads.includes(g))||u.extra.some(g=>leads.includes(g))).sort((a,b)=>a.id<b.id?-1:1)},
+    async leaderMembers(leads){const s=await S.getDocs(S.collection(db,'members'));return s.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:d.data().leads||[],pastor:d.data().pastor===true,name:d.data().name||''})).filter(u=>u.pastor||u.groups.some(g=>leads.includes(g))||u.extra.some(g=>leads.includes(g))).sort((a,b)=>a.id<b.id?-1:1)},
     async leaderAdd(email,group){
       const ref=S.doc(db,'members',email),s=await S.getDoc(ref);
       if(s.exists()){const g=new Set(s.data().groups||[]);g.add(group);await S.updateDoc(ref,{groups:[...g]});return {created:false}}

@@ -7,7 +7,8 @@
 // Kolonnene i hver tabell: t tekst, a tekstliste, b ja/nei, i heltall, n stort heltall, j json, z tidspunkt.
 // ! = kan ikke være tom, [ = standard er en liste. Holdes lik tabellene (spørringen står i server/SION.md).
 const KOL={
-  admins:{email:'t!',name:'t',rolle:'t',groups:'a!',muted:'a!',extra:'a!',by:'t',ekstra:'j!',created:'z!'},
+  admins:{email:'t!',name:'t',rolle:'t',groups:'a!',muted:'a!',extra:'a!',pastor:'b!',kontor:'b!',by:'t',ekstra:'j!',created:'z!'},
+  omrader:{id:'t!',name:'t',groups:'a!',ledere:'a!',pastorer:'a!',ord:'i',ekstra:'j!'},
   attester:{email:'t!',dato:'t',by:'t',godkjent:'b!',fil:'b!',ekstra:'j!',updated:'z!'},
   attestfil:{email:'t!',data:'t',ftype:'t',fnavn:'t',ms:'n'},
   attestfilny:{email:'t!',data:'t',ftype:'t',fnavn:'t',ms:'n'},
@@ -21,17 +22,18 @@ const KOL={
   groups:{id:'t!',name:'t!',desc:'t',ord:'i',vakt:'b!',remind:'b!',ekstra:'j!'},
   leader_types:{id:'t!',name:'t!',ord:'i',ekstra:'j!'},
   lrsaker:{id:'t!',tittel:'t',t:'t',bh:'t',name:'t',by:'t',ms:'n',done:'b!',doneMs:'n',ekstra:'j!'},
-  members:{email:'t!',name:'t',rolle:'t',groups:'a!',leads:'a!',leder:'b!',ltype:'t',muted:'a!',extra:'a!',by:'t',ekstra:'j!',created:'z!'},
-  messages:{thread_id:'t!',id:'t!',by:'t',name:'t',text:'t',svar:'j',img:'t',lyd:'t',lsek:'i',avst:'j',pam:'b!',redigert:'b!',slettet:'b!',stjerne:'a!',likes:'a!',r_hjerte:'a!',r_ler:'a!',r_wow:'a!',r_trist:'a!',r_be:'a!',r_ild:'a!',r_hender:'a!',r_sion:'a!',r_amen:'a!',ekstra:'j!',created:'z!'},
+  members:{email:'t!',name:'t',rolle:'t',groups:'a!',leads:'a!',leder:'b!',ltype:'t',pastor:'b!',kontor:'b!',muted:'a!',extra:'a!',by:'t',ekstra:'j!',created:'z!'},
+  messages:{thread_id:'t!',id:'t!',by:'t',name:'t',text:'t',svar:'j',img:'t',lyd:'t',lsek:'i',avst:'j',pam:'b!',redigert:'b!',slettet:'b!',seen:'a!',stjerne:'a!',likes:'a!',r_hjerte:'a!',r_ler:'a!',r_wow:'a!',r_trist:'a!',r_be:'a!',r_ild:'a!',r_hender:'a!',r_sion:'a!',r_amen:'a!',ekstra:'j!',created:'z!'},
   notes:{owner:'t!',id:'t!',title:'t',date:'t',speaker:'t',html:'t',img:'t',lyd:'j',ekstra:'j!',updated:'z!'},
   post_svar:{post_id:'t!',email:'t!',by:'t',name:'t',k:'t',t:'t',ms:'n',ekstra:'j!'},
   post_views:{id:'t!',n:'i!'},
   posts:{id:'t!',t:'t!',b:'t',bh:'t',img:'t',tag:'t',audience:'a!',groups:'a!',ltypes:'a!',m:'b!',hideHome:'b!',pinned:'b!',draft:'b!',svar:'b!',pubAt:'n',expireAt:'n',schedId:'t',ekstra:'j!',created:'z!'},
   prayers:{id:'t!',t:'t',name:'t',by:'t',ms:'n',ber:'a!',bedt:'n',ekstra:'j!'},
   push_tokens:{token:'t!',email:'t',groups:'a!',ekstra:'j!',created:'z!'},
-  regular:{id:'t!',title:'t!',day:'i',time:'t',note:'t',cat:'t',weeks:'t',place:'t',who:'t',text:'t',m:'b!',groups:'a!',ex:'j!',ekstra:'j!',created:'z!'},
+  regular:{id:'t!',title:'t!',day:'i',time:'t',note:'t',cat:'t',weeks:'t',place:'t',who:'t',text:'t',img:'t',m:'b!',groups:'a!',ex:'j!',ekstra:'j!',created:'z!'},
   reminders:{id:'t!',token:'t',title:'t',fireAt:'n',ekstra:'j!',created:'z!'},
-  ringer:{id:'t!',fra:'t',fraNavn:'t',til:'a!',status:'t',ms:'n',svarNavn:'t',ekstra:'j!'},
+  ringer:{id:'t!',fra:'t',fraNavn:'t',til:'a!',status:'t',ms:'n',svarNavn:'t',callId:'t',startAt:'n',levert:'a!',avvist:'a!',opptatt:'a!',ekstra:'j!'},
+  tale:{id:'t!',fra:'t',til:'a!',offer:'t',answer:'t',ms:'n',slutt:'b!',ekstra:'j!'},
   roles:{id:'t!',name:'t!',desc:'t',tasks:'a!',persons:'j![',emails:'a!',ord:'i',ekstra:'j!'},
   rsvp_counts:{id:'t!',n:'i!'},
   rsvps:{id:'t!',eventId:'t',title:'t',start:'t',name:'t',contact:'t',groups:'a!',ekstra:'j!',created:'z!'},
@@ -195,6 +197,8 @@ export async function lag(){
     deleteDoc:ref=>slett(ref),
     addDoc:async(c,data)=>{const ref=S.doc(c);await skriv(ref,data,'sett');return ref},
     // Batch: operasjonene kjøres etter hverandre i samme rekkefølge (forelder før barn, som reglene krever)
+    ringEvent:async(tid,callId,event,name)=>{const r=await rpc('chat_ring_event',{p_thread:tid,p_call:callId,p_event:event,p_name:name||''});return r.data;},
+    markMsgsSeen:(tid,ids)=>rpc('mark_chat_seen',{p_thread:tid,p_ids:ids.slice(0,20)}),
     writeBatch:()=>{const ops=[];return {set:(r,d,o)=>{ops.push(()=>S.setDoc(r,d,o))},update:(r,d)=>{ops.push(()=>S.updateDoc(r,d))},delete:r=>{ops.push(()=>S.deleteDoc(r))},
       commit:async()=>{for(const f of ops)await f()}}},
     // Lytter (sanntid): henter på nytt når en rad i tabellen endres. Reglene bestemmer hvilke endringer brukeren får.
@@ -223,7 +227,8 @@ export async function lag(){
     async signInWithEmailAndPassword(a,e,p){const r=await sb.auth.signInWithPassword({email:String(e).trim(),password:p});if(r.error)throw authFeil(r.error);return {user:bruker(r.data.session)}},
     signOut:async a=>{if(a!==secAuth)await sb.auth.signOut()},
     async sendPasswordResetEmail(a,e){e=String(e).trim().toLowerCase();if(nyNettopp.delete(e))return;
-      const r=await sb.auth.resetPasswordForEmail(e,{redirectTo:velgUrl()});if(r.error)throw authFeil(r.error)},
+      const r=await sb.auth.resetPasswordForEmail(e,{redirectTo:velgUrl()});if(r.error)throw authFeil(r.error);
+      kodePassord(sb,e)},
     EmailAuthProvider:{credential:(email,password)=>({email,password})},
     async reauthenticateWithCredential(u,c){const r=await sb.auth.signInWithPassword(c);if(r.error){const f=authFeil(r.error);if(f.code==='auth/invalid-credential')f.code='auth/wrong-password';throw f}},
     async updatePassword(u,p){const r=await sb.auth.updateUser({password:p});if(r.error)throw authFeil(r.error)},
@@ -238,6 +243,32 @@ export async function lag(){
 
 // Etter lenken i e-posten (ny bruker eller «Glemt passord?»): brukeren er logget inn via lenken og velger passord her.
 // Vanlig <dialog> med appens egne stiler, så den ligger på samme nivå som appens andre vinduer.
+function kodePassord(sb,email){
+  const d=document.createElement('dialog');d.setAttribute('aria-labelledby','kodeT');
+  d.innerHTML='<form class="form"><h2 id="kodeT">Velg nytt passord</h2><p>Hvis adressen er registrert, får du en engangskode på e-post. Skriv den inn her. Du kan la dette vinduet stå åpent mens du leser e-posten.</p>'+
+    '<label class="f">Engangskode<input name="kode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]+" required></label>'+
+    '<label class="f">Nytt passord<input name="passord" type="password" autocomplete="new-password" required minlength="8"></label>'+
+    '<label class="f">Gjenta passordet<input name="gjenta" type="password" autocomplete="new-password" required minlength="8"></label>'+
+    '<p class="small" role="status"></p><div class="btns"><button class="btn primary" type="submit">Lagre passord</button><button class="btn" type="button">Lukk</button></div></form>';
+  const f=d.querySelector('form'),kode=f.elements.kode,p=f.elements.passord,g=f.elements.gjenta,m=f.querySelector('[role=status]'),lagre=f.querySelector('[type=submit]');
+  let verifisert=false;
+  d.addEventListener('close',()=>d.remove());f.querySelector('[type=button]').onclick=()=>d.close();
+  f.onsubmit=async e=>{e.preventDefault();if(lagre.disabled)return;
+    if(p.value!==g.value){m.textContent='Passordene er ikke like.';return}
+    lagre.disabled=true;m.textContent='Kontrollerer …';
+    try{
+      if(!verifisert){const r=await sb.auth.verifyOtp({email,token:kode.value.trim(),type:'recovery'});
+        if(r.error){m.textContent='Koden er feil eller utløpt. Kontroller koden fra den nyeste e-posten, eller lukk og be om en ny.';return}
+        if(!r.data?.session){m.textContent='Kunne ikke bekrefte innloggingen. Lukk og be om en ny kode.';return}
+        verifisert=true;kode.disabled=true}
+      const r=await sb.auth.updateUser({password:p.value});
+      if(r.error){m.textContent='Kunne ikke lagre passordet. Bruk minst 8 tegn og prøv igjen.';return}
+      p.value='';g.value='';kode.value='';m.textContent='Passordet er endret. Du kan lukke vinduet.';f.onsubmit=e=>e.preventDefault();lagre.hidden=true;
+    }catch(x){m.textContent='Ingen kontakt med innloggingstjenesten. Prøv igjen.'}
+    finally{lagre.disabled=false}};
+  document.body.appendChild(d);d.showModal();kode.focus()
+}
+
 async function velgPassord(sb,auth){
   const q=new URLSearchParams(location.search),h=new URLSearchParams(location.hash.slice(1));
   if(!q.has('velg'))return;
