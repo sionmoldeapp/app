@@ -1472,7 +1472,7 @@ nav.tabs svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1
 #push span{display:block;font-size:var(--t-s);color:var(--muted);margin-top:1px;line-height:1.3}
 #push span:empty{display:none}
 @media (prefers-reduced-motion:reduce){#push,.tg,.tg::after{transition:none}}
-.chat .cinp{position:relative}.chat .cinp .cverk{position:absolute;bottom:calc(100% + 6px);left:10px;z-index:6;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:0 5px 22px #0003}.chat .cinp .cverk .cik{width:64px;height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}.chat .cinp .cverk .cik:after{content:attr(data-toolname);font-size:10px;line-height:1.2;text-align:center;max-width:64px}.chat .cinp .cchev[aria-expanded=true]{transform:rotate(90deg)}
+.chat .cinp{position:relative}.chat .cinp .cverk{position:absolute;bottom:calc(100% + 6px);left:10px;z-index:6;gap:8px;padding:10px;background:var(--cfarge,var(--brand));color:var(--cfarge-ink,var(--brand-ink));border-radius:22px;box-shadow:0 5px 22px #0003;animation:cverkInn .3s cubic-bezier(.2,.8,.3,1)}.chat .cinp .cverk .cik{width:78px;height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:16px;background:rgba(255,255,255,.22)!important;color:inherit!important}.chat .cinp .cverk .cik:after{content:attr(data-toolname);font-size:10px;line-height:1.2;text-align:center;white-space:nowrap}@keyframes cverkInn{from{transform:translateY(60px);clip-path:inset(100% 0 0 0 round 22px)}to{transform:none;clip-path:inset(0 round 22px)}}@media (prefers-reduced-motion:reduce){.chat .cinp .cverk{animation:none}}.chat .cinp .cchev[aria-expanded=true]{transform:rotate(90deg)}
 </style></head><body>
 
 <div class="app">
@@ -6088,7 +6088,7 @@ document.addEventListener('click',async e=>{
 
 /* Innstillinger (per enhet, lagres i localStorage sm-ui): tekststørrelse og hvilke kort som vises på Hjem. */
 const FS_TRINN=[['Liten',.9],['Normal',1],['Stor',1.15],['Ekstra stor',1.3]];
-const APP_BYGG='04.11.2026 kl. 03:20';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
+const APP_BYGG='04.11.2026 kl. 21:40';   // settes ved hver publisering: vises under Innstillinger → Oppdater appen
 const UI={fs:1,sv:true,pr:true,vk:true};
 try{Object.assign(UI,JSON.parse(localStorage.getItem('sm-ui')||'{}'))}catch(e){}
 /* Nyhetsbrev Sommerstevne skal stå på Hjem som standard: ett skjult valg fra før nullstilles én gang (kan skrus av igjen med ✕ eller under Innstillinger). */
