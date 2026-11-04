@@ -127,8 +127,9 @@ async function behandle(d) {
     if (!tr) return { ok: false, feil: 'Fant ikke samtalen.' };
     const parts = (tr.parts || []).map(x => String(x).toLowerCase());
     if (!parts.includes(email)) return { ok: false, feil: 'Ingen tilgang til samtalen.' };
-    if (Date.now() - (sistBeskjed[email] || 0) < 3000) return { ok: false, feil: 'Vent noen sekunder.' };
-    sistBeskjed[email] = Date.now();
+    const nokkel = email + '|' + String(d.threadId);   // per samtale, så et klistremerke rett etter en tekst ikke mister varselet
+    if (Date.now() - (sistBeskjed[nokkel] || 0) < 1000) return { ok: false, feil: 'Vent et sekund.' };
+    sistBeskjed[nokkel] = Date.now();
     const dempet = (tr.dempet || []).map(x => String(x).toLowerCase()), andre = parts.filter(x => x !== email && !dempet.includes(x));
     if (!andre.length) return { ok: true, sendt: 0 };
     let ekstra = null, tittel = 'Ny beskjed: ' + (tr.roleName || 'Ansvarsområde');
@@ -137,7 +138,9 @@ async function behandle(d) {
       const bm = sm && /⟦bok:([A-Za-z0-9_-]+):[am]⟧/.exec(sm.text || '');
       if (bm) { ekstra = { bok: bm[1], tr: String(d.threadId) }; tittel = 'Kommer du? Ny booking'; }
     } catch (e) { /* uten svarknapper */ }
-    const r = await send(tittel, String(tr.last || '').slice(0, 120), 'me', { type: 'emails', emails: andre }, null, ekstra);
+    const tekst = String(tr.last || '').replace(/:sion(?:-[a-z0-9]+)?:/g, '🕊️ Klistremerke').replace(/⟦[^⟧]*⟧/g, '').trim().slice(0, 120) || 'Ny melding';
+    const r = await send(tittel, tekst, 'me', { type: 'emails', emails: andre }, null, ekstra);
+    log('Chatvarsel fra', email, 'i', String(d.threadId).slice(0, 8), ':', r.sendt, 'av', r.enheter, 'enheter');
     return { ok: true, sendt: r.sendt };
   }
 
