@@ -103,7 +103,7 @@ oppdateres av seg selv.
   Lokalt fanges e-posten i Inbucket (http://localhost:9000). Lenken må peke til en adresse i `SITE_URL` eller
   `ADDITIONAL_REDIRECT_URLS` i `.env`.
 - `sql/003_sanntid_og_konto.sql`: sanntid for chat, ringing og avstemninger, og `slett_min_konto()` for «Slett meg».
-- **Rekkefølge ved nyoppsett:** 001, 002, så 003–010 i nummerrekkefølge. `002_tilgang.sql` sletter alle regler før den lager nye, så **kjører du 002 på nytt, må 003 og alle senere filer kjøres på nytt** (ellers forsvinner reglene for tale, lesekvitteringer og anrop). `node server/sion/test-tilgang.js` sjekker at alt henger sammen (125 tester).
+- **Rekkefølge ved nyoppsett:** 001, 002, så 003–012 i nummerrekkefølge. `002_tilgang.sql` sletter alle regler før den lager nye, så **kjører du 002 på nytt, må 003 og alle senere filer kjøres på nytt** (ellers forsvinner reglene for tale, lesekvitteringer og anrop). `node server/sion/test-tilgang.js` sjekker at alt henger sammen (125 tester).
 - `010_anropsstatus.sql` og anropsstatuser: den som ringer ser Prøver å nå, Ringer hos, Avvist, Opptatt, Ingen svar (45 s) eller Forbindelsesfeil; mottakeren bekrefter levering (`chat_ring_event`). Klientkoden testes av `server/sion/anrop.test.js`.
 - Virker ikke ennå mot Supabase: push-varsler, e-post via Apps Script (varsler, notat, forbønn, saker, velkomst),
   anonym forbønn uten innlogging. Det kommer i fase 3. E-postene fra innloggingen er på engelsk (malene kan oversettes).

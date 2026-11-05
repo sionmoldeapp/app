@@ -112,6 +112,34 @@ async function send(tittel, tekst, tab, mal, kopiTil, ekstra) {
   return { enheter: m.length, totalt: alle.length, ...r };
 }
 
+// ---- Ringing: en nettapp kan ikke spille ringelyd når den er i bakgrunnen. Derfor sendes varselet på nytt hvert 6. sekund
+// (samme tag, renotify i sw.js, så telefonen piper/vibrerer igjen) så lenge det ringer, høyst 45 s. Ubesvart: «Tapt anrop».
+const ringerNa = new Set();
+async function ringIgjen(tid, fra, tittel, tekst, andre, ekstra) {
+  if (ringerNa.has(tid)) return;
+  ringerNa.add(tid);
+  try {
+    const les = async () => (await pool.query('select status, "callId", fra from ringer where id = $1', [tid])).rows[0];
+    const forst = await les();
+    if (!forst || forst.status !== 'ring' || String(forst.fra || '').toLowerCase() !== fra) return;
+    const start = Date.now();
+    let status = 'ring';
+    while (Date.now() - start < 45000) {
+      await new Promise(r => setTimeout(r, 6000));
+      const n = await les();
+      if (!n || n.callId !== forst.callId) { status = 'ny'; break; }
+      status = n.status;
+      if (status !== 'ring') break;
+      await send(tittel, tekst, 'me', { type: 'emails', emails: andre }, null, ekstra);
+    }
+    if (status === 'ring' || status === 'avbrutt' || status === 'utlopt') {
+      const navn = tittel.replace(/^(📞|📹) /u, '').replace(/ ringer deg( med video)?$/, '');
+      await send('📵 Tapt anrop fra ' + navn, 'Trykk for å åpne Sionchat.', 'me', { type: 'emails', emails: andre }, null, { tapt: 1, tr: tid });
+    }
+    log('Ringing i', tid.slice(0, 8), 'endte:', status);
+  } finally { ringerNa.delete(tid); }
+}
+
 // ---- Kall fra appen
 const sistSendt = { alle: 0 }, sistBeskjed = {};
 async function behandle(d) {
@@ -134,13 +162,17 @@ async function behandle(d) {
     if (!andre.length) return { ok: true, sendt: 0 };
     let ekstra = null, tittel = 'Ny beskjed: ' + (tr.roleName || 'Ansvarsområde');
     try {
-      const sm = (await pool.query('select text from messages where thread_id = $1 order by created desc limit 1', [String(d.threadId)])).rows[0];
+      const sm = (await pool.query('select text, name from messages where thread_id = $1 order by created desc limit 1', [String(d.threadId)])).rows[0];
       const bm = sm && /⟦bok:([A-Za-z0-9_-]+):[am]⟧/.exec(sm.text || '');
       if (bm) { ekstra = { bok: bm[1], tr: String(d.threadId) }; tittel = 'Kommer du? Ny booking'; }
+      // Ringing og videoanrop: eget varsel som blir stående og vibrerer lenger (sw.js ser på data.ring)
+      const rm = sm && /^(🔔 Ringer|📹 Videoanrop)/u.exec(sm.text || '');
+      if (rm) { const n = String(sm.name || 'Noen').slice(0, 60), vid = rm[1].startsWith('📹'); ekstra = { ring: vid ? 'video' : 'tale', tr: String(d.threadId) }; tittel = vid ? '📹 ' + n + ' ringer deg med video' : '📞 ' + n + ' ringer deg'; }
     } catch (e) { /* uten svarknapper */ }
-    const tekst = String(tr.last || '').replace(/:sion(?:-[a-z0-9]+)?:/g, '🕊️ Klistremerke').replace(/⟦[^⟧]*⟧/g, '').trim().slice(0, 120) || 'Ny melding';
+    const tekst = ekstra && ekstra.ring ? 'Trykk for å åpne Sionchat og svare.' : String(tr.last || '').replace(/:sion(?:-[a-z0-9]+)?:/g, '🕊️ Klistremerke').replace(/⟦[^⟧]*⟧/g, '').trim().slice(0, 120) || 'Ny melding';
     const r = await send(tittel, tekst, 'me', { type: 'emails', emails: andre }, null, ekstra);
     log('Chatvarsel fra', email, 'i', String(d.threadId).slice(0, 8), ':', r.sendt, 'av', r.enheter, 'enheter');
+    if (ekstra && ekstra.ring) ringIgjen(String(d.threadId), email, tittel, tekst, andre, ekstra).catch(e => log('Ringing feilet:', e.message));
     return { ok: true, sendt: r.sendt };
   }
 

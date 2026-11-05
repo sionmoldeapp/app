@@ -200,7 +200,19 @@ async function rydd() {
   await kall('tjener', 'PATCH', '/members?email=eq.' + B.annen.email, { pastor: true });
   lov('pastor legger ut nyhet til alle', await kall(B.annen, 'POST', '/posts', { id: 'test-pastor', t: 'Hilsen', b: 'Hei', audience: ['Alle'], groups: [], m: false }));
   nekt('medlem (ikke pastor) legger ut nyhet til alle', await kall(B.medlem, 'POST', '/posts', { id: 'test-ikkepastor', t: 'x', b: 'x', audience: ['Alle'], groups: [], m: false }));
+  // Pastor uten gruppelederansvar: ser medlemslisten, skriver privat til hvem som helst og lager gruppesamtale for enhver gruppe (Sionchat)
+  const pT = { roleName: 'Beskjed', fromName: 'P', from: B.annen.email, lastBy: B.annen.email, last: 'Hei', ms: Date.now() };
+  ant('pastor ser medlemslisten', await kall(B.annen, 'GET', '/members?email=like.*' + D), 3);
+  lov('pastor skriver privat til medlem utenfor egne grupper', await kall(B.annen, 'POST', '/threads',
+    { ...pT, id: 'test-pdm', roleId: 'dm', kind: 'dm', toName: 'M', parts: [B.annen.email, B.medlem.email], unread: [B.medlem.email] }));
+  const pGr = { ...pT, id: 'test-pgr', roleId: 'gruppe', kind: 'gruppe', gid: 'activ8', parts: [B.annen.email, B.medlem.email, B.leder.email], unread: [B.medlem.email, B.leder.email] };
+  lov('pastor lager gruppesamtale for gruppe hen ikke leder', await kall(B.annen, 'POST', '/threads', pGr));
+  await kall('tjener', 'DELETE', '/threads?id=in.(test-pdm,test-pgr)');
   await kall('tjener', 'PATCH', '/members?email=eq.' + B.annen.email, { pastor: false });
+  nekt('medlem (ikke pastor) lager gruppesamtale', await kall(B.annen, 'POST', '/threads', pGr));
+  nekt('medlem (ikke pastor) skriver privat til andre', await kall(B.annen, 'POST', '/threads',
+    { ...pT, id: 'test-pdm', roleId: 'dm', kind: 'dm', toName: 'M', parts: [B.annen.email, B.medlem.email], unread: [B.medlem.email] }));
+  await kall('tjener', 'DELETE', '/threads?id=in.(test-pdm,test-pgr)');
   await kall('tjener', 'PATCH', '/members?email=eq.' + B.annen.email, { kontor: true });
   lov('sekretær legger ut nyhet til alle', await kall(B.annen, 'POST', '/posts', { id: 'test-kontor', t: 'Hilsen', b: 'Hei', audience: ['Alle'], groups: [], m: false }));
   lov('sekretær planlegger varsel til alle', await kall(B.annen, 'POST', '/scheduled', { id: 'test-kontor', title: 'Hilsen', malType: 'alle', fireAt: Date.now() + 864e5 }, { Prefer: 'return=minimal' }));   // bare administratorer kan lese planlagte varsler

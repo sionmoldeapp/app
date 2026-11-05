@@ -144,13 +144,13 @@ service cloud.firestore {
         && request.resource.data.parts is list && request.resource.data.parts.size() == 2
         && request.resource.data.parts[0] == request.auth.token.email && request.resource.data.parts[1] != request.auth.token.email
         && exists(/databases/$(database)/documents/members/$(request.resource.data.parts[1]))
-        && (isAdmin() || (isLeader() && get(/databases/$(database)/documents/members/$(request.resource.data.parts[1])).data.get('groups', []).toSet().hasAny(myLeads().toSet()))
+        && (isAdmin() || isPastor() || (isLeader() && get(/databases/$(database)/documents/members/$(request.resource.data.parts[1])).data.get('groups', []).toSet().hasAny(myLeads().toSet()))   // pastor/sekretær: til alle medlemmer
             // Beskjed om en booking: medlemmer i gruppen utleie kan skrive til ledere for gruppen vertskap.
             || (utleieTilgang() && 'vertskap' in get(/databases/$(database)/documents/members/$(request.resource.data.parts[1])).data.get('leads', [])))
         && request.resource.data.last is string && request.resource.data.last.size() <= 140
         && request.resource.data.ms is number && request.resource.data.unread is list
         && request.resource.data.created == request.time;
-      // Gruppesamtale: administrator eller gruppeleder for gruppen (gid) oppretter en felles samtale med opptil 40 deltakere. Alle deltakerne kan skrive.
+      // Gruppesamtale: administrator, pastor/sekretær eller gruppeleder for gruppen (gid) oppretter en felles samtale med opptil 40 deltakere. Alle deltakerne kan skrive.
       allow create: if isMember()
         && request.resource.data.keys().hasOnly(['roleId', 'roleName', 'kind', 'gid', 'from', 'fromName', 'parts', 'last', 'lastBy', 'ms', 'unread', 'created'])
         && request.resource.data.kind == 'gruppe' && request.resource.data.roleId == 'gruppe'
@@ -160,7 +160,7 @@ service cloud.firestore {
         && request.resource.data.gid is string
         && request.resource.data.parts is list && request.resource.data.parts.size() >= 3 && request.resource.data.parts.size() <= 40
         && request.resource.data.parts[0] == request.auth.token.email
-        && (isAdmin() || (isLeader() && request.resource.data.gid in myLeads()))
+        && (isAdmin() || isPastor() || (isLeader() && request.resource.data.gid in myLeads()))   // pastor/sekretær: alle grupper og ledersamtaler
         && request.resource.data.last is string && request.resource.data.last.size() <= 140
         && request.resource.data.ms is number && request.resource.data.unread is list
         && request.resource.data.created == request.time;
@@ -184,7 +184,7 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['farge', 'bakgrunn', 'bgv'])
         && request.resource.data.get('bgv', 0) is number
         && request.resource.data.get('farge', 'blaa') in ['blaa', 'rosa', 'gronn', 'lilla', 'oransje', 'rod', 'turkis', 'gull']
-        && request.resource.data.get('bakgrunn', 'ingen') in ['ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget', 'aurora', 'neon1', 'neon2', 'neon3', 'neon4', 'neon5', 'neon6', 'neon7', 'neon8', 'neon9', 'neon10', 'neon11', 'neon12', 'neon13', 'neon14', 'neon15', 'neon16', 'neon17', 'neon18', 'neon19', 'neon20', 'neon21', 'neon22'];
+        && request.resource.data.get('bakgrunn', 'ingen') in ['ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget', 'aurora', 'neon1', 'neon2', 'neon3', 'neon4', 'neon5', 'neon6', 'neon7', 'neon8', 'neon9', 'neon10', 'neon11', 'neon12', 'neon13', 'neon14', 'neon15', 'neon16', 'neon17', 'neon18', 'neon19', 'neon20', 'neon21', 'neon22', 'lys18', 'lys19', 'lys20', 'lys21', 'lys22', 'jesus-skrift-mork', 'jesus-skrift-lys', 'jesus-bolge-mork', 'jesus-bolge-lys', 'jesus-enkel-mork', 'jesus-enkel-lys', 'kors-linje-mork', 'kors-linje-lys', 'kors-band-mork', 'kors-band-lys', 'kors-lys-mork', 'kors-lys-lys'];
       // Eget bakgrunnsbilde: ett JPEG-bilde (data-URL, opptil ca. 600 kB) som alle i samtalen kan bytte og se.
       match /bg/{b} {
         allow read, delete: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts;
@@ -585,8 +585,8 @@ service cloud.firestore {
         && resource.data.get(f, []).toSet().difference(request.resource.data.get(f, []).toSet()).hasOnly(myLeads());
     }
     match /members/{email} {
-      allow get: if signedIn() && request.auth.token.email == email || isAdmin() || isLeader();
-      allow list: if isAdmin() || isLeader();
+      allow get: if signedIn() && request.auth.token.email == email || isAdmin() || isLeader() || isPastor();
+      allow list: if isAdmin() || isLeader() || isPastor();   // pastor/sekretær: medlemslisten til Sionchat
       allow write: if isAdmin();
       // Hver bruker kan endre eget navn og hvilke gruppevarsler vedkommende vil ha (name, muted), og slette seg selv (ikke administratorer).
       allow update: if signedIn() && request.auth.token.email == email

@@ -229,7 +229,7 @@ create policy admin on roles for all to authenticated using (sion.er_admin()) wi
 -- Brukeren kan endre eget navn og avslåtte gruppevarsler, og slette seg selv (ikke administratorer).
 -- Gruppeledere kan legge nye medlemmer inn i egne grupper og endre groups/extra/muted for egne grupper (sjekkes i trigger).
 
-create policy lese on members for select to authenticated using (email = sion.epost() or sion.er_admin() or sion.er_gruppeleder());
+create policy lese on members for select to authenticated using (email = sion.epost() or sion.er_admin() or sion.er_gruppeleder() or sion.er_pastor());   -- pastor/sekretær: medlemslisten til Sionchat
 create policy admin on members for all to authenticated using (sion.er_admin()) with check (sion.er_admin());
 create policy selv_endre on members for update to authenticated using (email = sion.epost()) with check (email = sion.epost());
 create policy selv_slett on members for delete to authenticated using (email = sion.epost() and not sion.er_admin());
@@ -303,14 +303,14 @@ create policy ny on threads for insert to authenticated with check (
     or (kind = 'dm' and "roleId" = 'dm' and gid is null
       and "roleName" is not null and length("roleName") <= 60 and "toName" is not null and length("toName") <= 60
       and cardinality(parts) = 2 and parts[1] = sion.epost() and parts[2] <> sion.epost() and sion.medlem_finnes(parts[2])
-      and (sion.er_admin()
+      and (sion.er_admin() or sion.er_pastor()   -- pastor/sekretær: til alle medlemmer
         or (sion.er_gruppeleder() and sion.medlem_grupper(parts[2]) && sion.mine_leads())
         or (sion.utleie() and 'vertskap' = any(sion.medlem_leads(parts[2])))))
-    -- Gruppesamtale fra administrator eller gruppeleder for gruppen
+    -- Gruppesamtale fra administrator, pastor/sekretær (alle grupper og ledersamtaler) eller gruppeleder for gruppen
     or (kind = 'gruppe' and "roleId" = 'gruppe' and gid is not null and "toName" is null
       and "roleName" is not null and length("roleName") between 1 and 60
       and cardinality(parts) between 3 and 40 and parts[1] = sion.epost()
-      and (sion.er_admin() or sion.leder_for(gid)))
+      and (sion.er_admin() or sion.er_pastor() or sion.leder_for(gid)))
   ));
 create policy endre on threads for update to authenticated using (sion.epost() = any(parts)) with check (sion.epost() = any(parts));
 create policy slett on threads for delete to authenticated using (sion.er_admin() or "from" = sion.epost());
@@ -333,7 +333,7 @@ begin
   -- Farge og bakgrunn (bgv = versjon av eget bakgrunnsbilde i thread_bg)
   if e <@ array['farge', 'bakgrunn', 'bgv']
      and coalesce(new.farge, 'blaa') in ('blaa', 'rosa', 'gronn', 'lilla', 'oransje', 'rod', 'turkis', 'gull')
-     and coalesce(new.bakgrunn, 'ingen') in ('ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget', 'aurora', 'neon1', 'neon2', 'neon3', 'neon4', 'neon5', 'neon6', 'neon7', 'neon8', 'neon9', 'neon10', 'neon11', 'neon12', 'neon13', 'neon14', 'neon15', 'neon16', 'neon17', 'neon18', 'neon19', 'neon20', 'neon21', 'neon22') then return new; end if;
+     and coalesce(new.bakgrunn, 'ingen') in ('ingen', 'himmel', 'solnedgang', 'skog', 'natt', 'rosa', 'sion', 'eget', 'aurora', 'neon1', 'neon2', 'neon3', 'neon4', 'neon5', 'neon6', 'neon7', 'neon8', 'neon9', 'neon10', 'neon11', 'neon12', 'neon13', 'neon14', 'neon15', 'neon16', 'neon17', 'neon18', 'neon19', 'neon20', 'neon21', 'neon22', 'lys18', 'lys19', 'lys20', 'lys21', 'lys22', 'jesus-skrift-mork', 'jesus-skrift-lys', 'jesus-bolge-mork', 'jesus-bolge-lys', 'jesus-enkel-mork', 'jesus-enkel-lys', 'kors-linje-mork', 'kors-linje-lys', 'kors-band-mork', 'kors-band-lys', 'kors-lys-mork', 'kors-lys-lys') then return new; end if;
   -- Samtalebilde
   if e <@ array['bilde'] and (new.bilde is null or (length(new.bilde) <= 30000 and new.bilde like 'data:image/jpeg;base64,%')) then return new; end if;
   -- Dempe for seg selv

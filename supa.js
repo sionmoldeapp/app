@@ -69,7 +69,23 @@ export async function lag(){
   await lastSkript('lib/supabase-2.117.3.js');
   const K=await (await fetch('sion-konfig.json',{cache:'no-store'})).json();
   const opp={persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit'};
-  const sb=window.supabase.createClient(location.origin,K.anon,{auth:opp});
+  /* Når telefonen vekker appen etter en stund, kan innloggingen ha gått ut og fornyelsen feile mens nettet kobler seg opp igjen. Da sender klienten
+     forespørsler uten innlogging (bare den åpne nøkkelen): lister blir tomme, rollen blir «besøkende» og skriving avvises (401). Finnes det en lagret
+     innlogging på enheten, fornyes den derfor først (inntil fire forsøk) før forespørselen sendes. */
+  let sb;
+  const lagretOkt=()=>{try{return !!(sb&&localStorage.getItem(sb.auth.storageKey))}catch(e){return false}};
+  const hent=async(url,init={})=>{
+    if(sb&&/\/(rest|storage|functions)\/v1\//.test(String(url&&url.url||url))){
+      const h=new Headers(init.headers||undefined);
+      if(h.get('Authorization')==='Bearer '+K.anon&&lagretOkt()){
+        let t='';
+        for(let i=0;i<3&&lagretOkt()&&!t;i++){
+          try{const {data}=await sb.auth.refreshSession();t=(data&&data.session&&data.session.access_token)||''}catch(e){}
+          if(!t)await new Promise(r=>setTimeout(r,800*(i+1)))}
+        if(t){h.set('Authorization','Bearer '+t);init={...init,headers:h}}
+        else if(lagretOkt())throw new TypeError('Innloggingen kunne ikke fornyes (nettet er borte?)')}}   // heller en feil som prøves igjen enn et svar som om man var utlogget
+    return fetch(url,init)};
+  sb=window.supabase.createClient(location.origin,K.anon,{auth:opp,global:{fetch:hent}});
   // Egen klient til å opprette brukere, så administratoren ikke logges ut av seg selv (som secAuth i fb.js)
   const sb2=window.supabase.createClient(location.origin,K.anon,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'sb-oppretter'}});
 

@@ -47,8 +47,9 @@ const FB={
       const snap=await S.getDocs(FB.full?c:S.query(c,S.where('m','==',false)));
       return snap.docs.map(d=>{const x=d.data();return {...x,id:d.id,ms:x.created&&x.created.toMillis?x.created.toMillis():0}});
     },
-    async isAdmin(email){
-      try{return (await S.getDoc(S.doc(db,'admins',email))).exists()}catch(e){return false}
+    // streng: feil (nett, kvote, utløpt innlogging) kastes videre i stedet for å bli «nei», så appen ikke gjør en innlogget bruker til besøkende
+    async isAdmin(email,streng){
+      try{return (await S.getDoc(S.doc(db,'admins',email))).exists()}catch(e){if(streng)throw e;return false}
     },
     add:(col,data)=>S.addDoc(S.collection(db,col),{...data,created:S.serverTimestamp()}),
     set:(col,id,data)=>S.setDoc(S.doc(db,col,id),data,{merge:true}),
@@ -509,7 +510,7 @@ const FB={
     // Pastor: kan sende melding, varsel og nyhet til alle, alle medlemmer og alle grupper (feltet pastor på oppføringen i members eller admins).
     async myPastor(email,adm){try{const s=await S.getDoc(S.doc(db,adm?'admins':'members',email));return s.exists()&&(s.data().pastor===true||s.data().kontor===true)}catch(e){return false}},   // pastor eller sekretær: kan sende til alle
     setKontor:(email,role,v)=>S.updateDoc(S.doc(db,role==='admin'?'admins':'members',email),{kontor:!!v}),   // sekretær: sender til alle og svarer på henvendelser (ansvarsområde), administrerer ikke appen
-    setPastor:(email,role,v)=>S.updateDoc(S.doc(db,role==='admin'?'admins':'members',email),{pastor:!!v}),
+    setPastorRolle:(email,role,v)=>S.updateDoc(S.doc(db,role==='admin'?'admins':'members',email),{pastor:!!v}),
     // Områder (samlingen omrader): {name, groups[], ledere[] (hovedledere, e-post), ord}. Hovedlederne blir gruppeledere for gruppene i området.
     async omraderList(){const s=await S.getDocs(S.collection(db,'omrader'));return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>((a.ord==null?999:a.ord)-(b.ord==null?999:b.ord))||String(a.name).localeCompare(String(b.name)))},
     setOmrade:(id,d)=>S.setDoc(S.doc(db,'omrader',id),{name:String(d.name).slice(0,60),groups:(d.groups||[]).slice(0,30),ledere:(d.ledere||[]).slice(0,10).map(x=>String(x).toLowerCase()),pastorer:(d.pastorer||[]).slice(0,10).map(x=>String(x).toLowerCase()),ord:d.ord==null?999:d.ord}),   // pastorer: kopi av pastorlisten, så ledersamtalen i Sionchat tar dem med
@@ -525,8 +526,8 @@ const FB={
     // Administrator: tilhørighet (groups), varsel uten å være med (extra) og avslåtte varsler (muted) for en bruker.
     setVarselFra:(email,role,f)=>S.updateDoc(S.doc(db,role==='admin'?'admins':'members',email),f),
     setGroups:(email,role,groups)=>S.updateDoc(S.doc(db,role==='admin'?'admins':'members',email),{groups}),
-    async isMember(email){
-      try{return (await S.getDoc(S.doc(db,'members',email))).exists()}catch(e){return false}
+    async isMember(email,streng){
+      try{return (await S.getDoc(S.doc(db,'members',email))).exists()}catch(e){if(streng)throw e;return false}
     },
     // Brukere = administratorer (samlingen admins) og medlemmer (samlingen members). Adressen er dokument-ID.
     async listUsers(){
@@ -534,7 +535,7 @@ const FB={
       return a.docs.map(d=>({id:d.id,role:'admin',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:[],pastor:d.data().pastor===true,kontor:d.data().kontor===true,name:d.data().name||'',tlf:d.data().tlf||''})).concat(m.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:d.data().leads||[],leder:d.data().leder===true,ltype:d.data().ltype||'',pastor:d.data().pastor===true,kontor:d.data().kontor===true,name:d.data().name||'',tlf:d.data().tlf||''}))).sort((x,y)=>x.id<y.id?-1:1);
     },
     // Gruppeleder: medlemmer i egne grupper, legge til (oppretter kontoen hvis personen er ny) og fjerne fra en gruppe.
-    async leaderMembers(leads){const s=await S.getDocs(S.collection(db,'members'));return s.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:d.data().leads||[],pastor:d.data().pastor===true,name:d.data().name||''})).filter(u=>u.pastor||u.groups.some(g=>leads.includes(g))||u.extra.some(g=>leads.includes(g))).sort((a,b)=>a.id<b.id?-1:1)},
+    async leaderMembers(leads,alle){const s=await S.getDocs(S.collection(db,'members'));return s.docs.map(d=>({id:d.id,role:'member',groups:d.data().groups||[],muted:d.data().muted||[],extra:d.data().extra||[],leads:d.data().leads||[],pastor:d.data().pastor===true,name:d.data().name||''})).filter(u=>alle||u.pastor||u.groups.some(g=>leads.includes(g))||u.extra.some(g=>leads.includes(g))).sort((a,b)=>a.id<b.id?-1:1)},
     async leaderAdd(email,group){
       const ref=S.doc(db,'members',email),s=await S.getDoc(ref);
       if(s.exists()){const g=new Set(s.data().groups||[]);g.add(group);await S.updateDoc(ref,{groups:[...g]});return {created:false}}

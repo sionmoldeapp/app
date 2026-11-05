@@ -9,8 +9,8 @@ let server, browser, url;
 before(async () => {
   server = http.createServer((req, res) => {
     if (req.url === '/') { res.setHeader('Content-Type', 'text/html'); return res.end('<!doctype html><style>' + [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m => m[1]).join('\n') + '</style><div id="chat"><div id="cMsg" class="cmsg"></div></div>'); }
-    if (!/^\/(lib\/chat-style\.(js|css)|bilder\/chat-neon\d+\.jpg)$/.test(req.url)) { res.statusCode = 404; return res.end(); }
-    res.setHeader('Content-Type', req.url.endsWith('.css') ? 'text/css' : req.url.endsWith('.js') ? 'text/javascript' : 'image/jpeg'); res.end(fs.readFileSync(path.join(root, req.url)));
+    if (!/^\/(lib\/chat-style\.(js|css)|bilder\/chat-(?:neon\d+\.jpg|lys\d+\.png|(?:jesus|kors)-[a-z-]+\.png))$/.test(req.url)) { res.statusCode = 404; return res.end(); }
+    res.setHeader('Content-Type', req.url.endsWith('.css') ? 'text/css' : req.url.endsWith('.js') ? 'text/javascript' : req.url.endsWith('.png') ? 'image/png' : 'image/jpeg'); res.end(fs.readFileSync(path.join(root, req.url)));
   });
   await new Promise(r => server.listen(0, '127.0.0.1', r)); url = 'http://127.0.0.1:' + server.address().port;
   browser = await chromium.launch({ executablePath: process.env.CHROME_BIN || 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe', headless: true });
@@ -60,9 +60,52 @@ test('Eget bilde forhåndsvises før lagring og gjenopprettes ved metadatafeil',
     assert.deepEqual(await p.evaluate(() => calls), [['image','data:image/png;base64,AAA='],['save','bakgrunn','eget'],['image','old-image']]);
   } finally { await p.close(); }
 });
-test('Alle 30 bakgrunner er tilgjengelige og mobilflaten holder knappen synlig', async () => {
-  const p = await open(); try { await p.click('[data-category="all"]'); assert.equal(await p.locator('.cstile[data-bg]:visible').count(), 30);
+test('Alle 47 bakgrunner er tilgjengelige og mobilflaten holder knappen synlig', async () => {
+  const p = await open(); try { await p.click('[data-category="all"]'); assert.equal(await p.locator('.cstile[data-bg]:visible').count(), 47);
     await p.setViewportSize({ width:320, height:640 }); const r = await p.locator('[data-apply]').boundingBox(); assert.ok(r.y + r.height <= 640);
     assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   } finally { await p.close(); }
+});
+
+test('Fem lyse bakgrunner kan forhåndsvises og velges uten å endre mørke valg', async () => {
+  for (const id of ['lys18','lys19','lys20','lys21','lys22']) {
+    const p = await open(); try {
+      await p.click('[data-category="light"]');
+      assert.equal(await p.locator('.cstile[data-bg]:visible').count(), 11);
+      await p.click('[data-bg="'+id+'"]');
+      const image = await p.locator('.cspreview').evaluate(e => getComputedStyle(e).backgroundImage);
+      assert.ok(image.includes('chat-'+id+'.png'));
+      const response = await p.request.get(image.match(/url\("?(.*?)"?\)/)[1]);
+      assert.equal(response.status(),200);
+      assert.equal(response.headers()['content-type'],'image/png');
+      assert.deepEqual(await p.evaluate(()=>calls),[]);
+      await p.locator('.cspreview').evaluate(e => { e.innerHTML='<span class="cdag">I dag</span>'; });
+      assert.equal(await p.locator('.cspreview .cdag').evaluate(e=>getComputedStyle(e).color),'rgb(52, 68, 87)');
+      await p.click('[data-apply]');
+      await p.waitForSelector('dialog.cstyle',{state:'detached'});
+      assert.deepEqual(await p.evaluate(()=>calls),[['save','bakgrunn',id],['delete']]);
+      assert.ok(backgrounds.some(x=>x[0]==='neon'+id.slice(3)));
+    } finally { await p.close(); }
+  }
+});
+
+test('Jesus og kors har tre motiver hver i lyst og mørkt, med lesbar dato og lagring',async()=>{
+  for(const base of ['jesus-skrift','jesus-bolge','jesus-enkel','kors-linje','kors-band','kors-lys']){
+    for(const theme of ['mork','lys']){
+      const id=base+'-'+theme,p=await open();try{
+        await p.setViewportSize({width:320,height:640});
+        await p.click('[data-category="'+(base.startsWith('jesus')?'jesus':'cross')+'"]');
+        assert.equal(await p.locator('.cstile[data-bg]:visible').count(),6);
+        await p.click('[data-bg="'+id+'"]');
+        const image=await p.locator('.cspreview').evaluate(e=>getComputedStyle(e).backgroundImage);
+        assert.ok(image.includes('chat-'+id+'.png'));
+        assert.equal((await p.request.get(image.match(/url\("?(.*?)"?\)/)[1])).status(),200);
+        await p.locator('.cspreview').evaluate(e=>{e.innerHTML='<span class="cdag">I dag</span>'});
+        assert.equal(await p.locator('.cspreview .cdag').evaluate(e=>getComputedStyle(e).color),theme==='lys'?'rgb(52, 68, 87)':'rgb(255, 255, 255)');
+        assert.deepEqual(await p.evaluate(()=>calls),[]);
+        await p.click('[data-apply]');await p.waitForSelector('dialog.cstyle',{state:'detached'});
+        assert.deepEqual(await p.evaluate(()=>calls),[['save','bakgrunn',id],['delete']]);
+      }finally{await p.close()}
+    }
+  }
 });

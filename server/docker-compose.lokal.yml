@@ -39,6 +39,21 @@ services:
     environment:
       FAKTURA_TIL: ${SMTP_ADMIN_EMAIL}
 
+  # Snakk til tekst på skjermkortet (GTX 970, ca. 6x raskere enn prosessoren). Bildet bygges fra sion/tale/Dockerfile.cuda.
+  # Serveren uten NVIDIA-kort bruker CPU-bildet fra docker-compose.sion.yml.
+  sion-tale:
+    image: sion-tale-cuda
+    build:
+      context: ./sion/tale
+      dockerfile: Dockerfile.cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"]
+              capabilities: [gpu]
+
   # Testversjonene: 8090 mot Firebase-emulatoren, 8091 mot Supabase (appen kjenner seg igjen på porten).
   sion-web:
     ports:
