@@ -229,13 +229,13 @@ create policy admin on roles for all to authenticated using (sion.er_admin()) wi
 -- Brukeren kan endre eget navn og avslåtte gruppevarsler, og slette seg selv (ikke administratorer).
 -- Gruppeledere kan legge nye medlemmer inn i egne grupper og endre groups/extra/muted for egne grupper (sjekkes i trigger).
 
-create policy lese on members for select to authenticated using (email = sion.epost() or sion.er_admin() or sion.er_gruppeleder() or sion.er_pastor());   -- pastor/sekretær: medlemslisten til Sionchat
+create policy lese on members for select to authenticated using (sion.er_medlem());   -- Medlemslisten til Sionchat
 create policy admin on members for all to authenticated using (sion.er_admin()) with check (sion.er_admin());
 create policy selv_endre on members for update to authenticated using (email = sion.epost()) with check (email = sion.epost());
 create policy selv_slett on members for delete to authenticated using (email = sion.epost() and not sion.er_admin());
 create policy leder_ny on members for insert to authenticated with check (
   sion.er_gruppeleder() and sion.leder_for_alle(groups)
-  and name is null and leads = '{}' and leder = false and not pastor and not kontor and ltype is null and muted = '{}' and extra = '{}' and ekstra = '{}');
+  and name is null and leads = '{}' and leder = false and not pastor and not kontor and ltype is null and ltyper = '{}' and muted = '{}' and extra = '{}' and ekstra = '{}');
 create policy leder_endre on members for update to authenticated using (sion.er_gruppeleder()) with check (sion.er_gruppeleder());
 
 create or replace function sion.sjekk_members() returns trigger language plpgsql as $$
@@ -260,7 +260,7 @@ create policy admin on admins for all to authenticated using (sion.er_admin()) w
 
 -- Egne innstillinger (rekkefølge på kort og menyer)
 create policy egen on user_prefs for all to authenticated using (email = sion.epost()) with check (
-  email = sion.epost() and cardinality(meorder) <= 20 and cardinality(homeorder) <= 20 and sion.len(suborder) <= 1500 and ekstra = '{}');
+  email = sion.epost() and cardinality(meorder) <= 20 and cardinality(homeorder) <= 20 and sion.len(suborder) <= 1500 and cardinality(blokkert) <= 200 and ekstra = '{}');
 
 -- Private møtenotater: bare eieren (ikke engang administratorer), n1 til n100
 create policy egen on notes for all to authenticated using (owner = sion.epost() and sion.er_medlem()) with check (
@@ -299,13 +299,10 @@ create policy ny on threads for insert to authenticated with check (
       and "roleName" is not null and length("roleName") <= 60
       and cardinality(parts) between 2 and 8 and sion.epost() = any(parts)
       and sion.endring_innenfor(array[]::text[], parts, coalesce((select r.emails from roles r where r.id = "roleId"), '{}') || sion.epost()))
-    -- Privat beskjed fra administrator/gruppeleder til et medlem (eller fra gruppen utleie til en leder for vertskap)
+    -- Privat samtale mellom to godkjente medlemmer
     or (kind = 'dm' and "roleId" = 'dm' and gid is null
       and "roleName" is not null and length("roleName") <= 60 and "toName" is not null and length("toName") <= 60
-      and cardinality(parts) = 2 and parts[1] = sion.epost() and parts[2] <> sion.epost() and sion.medlem_finnes(parts[2])
-      and (sion.er_admin() or sion.er_pastor()   -- pastor/sekretær: til alle medlemmer
-        or (sion.er_gruppeleder() and sion.medlem_grupper(parts[2]) && sion.mine_leads())
-        or (sion.utleie() and 'vertskap' = any(sion.medlem_leads(parts[2])))))
+      and cardinality(parts) = 2 and parts[1] = sion.epost() and parts[2] <> sion.epost() and sion.medlem_finnes(parts[2]))
     -- Gruppesamtale fra administrator, pastor/sekretær (alle grupper og ledersamtaler) eller gruppeleder for gruppen
     or (kind = 'gruppe' and "roleId" = 'gruppe' and gid is not null and "toName" is null
       and "roleName" is not null and length("roleName") between 1 and 60
@@ -321,13 +318,22 @@ create or replace function sion.sjekk_threads() returns trigger language plpgsql
 declare e text[] := sion.endret(to_jsonb(old), to_jsonb(new));
 begin
   if not sion.fra_appen() then return new; end if;
+  -- Ledersamtale for et område
+  if e <@ array['parts', 'unread', 'omr'] and old.kind = 'gruppe' and new.omr is not null
+     and exists (select 1 from omrader o where o.id = new.omr and old."roleName" = o.name || ' – ledere'
+                 and (sion.er_admin() or sion.epost() = any(o.ledere)))
+     and cardinality(new.parts) between 3 and 40 and new.unread <@ new.parts then return new; end if;
   if new.parts is distinct from old.parts then raise exception 'Deltakerne kan ikke endres' using errcode = '42501'; end if;
   -- Markere som lest
   if e <@ array['unread'] and new.unread <@ old.parts then return new; end if;
   -- Ny melding
-  if e <@ array['last', 'lastBy', 'ms', 'unread', 'gone'] and new.unread <@ old.parts
+  if e <@ array['last', 'lastBy', 'ms', 'unread', 'gone', 'levert'] and new.unread <@ old.parts
      and (not 'gone' = any(e) or new.gone = '{}')
+     and (not 'levert' = any(e) or new.levert = '{}')
      and new."lastBy" = sion.epost() and new.last is not null and length(new.last) <= 140 and new.ms is not null then return new; end if;
+  -- Levert: deltakeren legger bare til «egen e-post:samtalens ms»
+  if e <@ array['levert'] and old.levert <@ new.levert and cardinality(new.levert) <= 200
+     and (select bool_and(x = sion.epost() || ':' || old.ms::text) from unnest(new.levert) x where not x = any(old.levert)) then return new; end if;
   -- Skjule samtalen for seg selv
   if e <@ array['gone'] and cardinality(new.gone) <= 40 and sion.bare_meg(old.gone, new.gone) then return new; end if;
   -- Farge og bakgrunn (bgv = versjon av eget bakgrunnsbilde i thread_bg)
@@ -338,6 +344,19 @@ begin
   if e <@ array['bilde'] and (new.bilde is null or (length(new.bilde) <= 30000 and new.bilde like 'data:image/jpeg;base64,%')) then return new; end if;
   -- Dempe for seg selv
   if e <@ array['dempet'] and sion.bare_meg(old.dempet, new.dempet) then return new; end if;
+  -- Feste og arkivere for seg selv
+  if e <@ array['festet', 'arkiv'] and cardinality(new.festet) <= 40 and cardinality(new.arkiv) <= 40
+     and sion.bare_meg(old.festet, new.festet) and sion.bare_meg(old.arkiv, new.arkiv) then return new; end if;
+  -- Eget navn (Min profil)
+  if e <@ array['navn', 'fromName', 'toName']
+     and jsonb_typeof(coalesce(new.navn, '{}')) = 'object'
+     and (select count(*) from jsonb_object_keys(coalesce(new.navn, '{}'))) <= 41
+     and (coalesce(new.navn, '{}') - sion.epost()) = (coalesce(old.navn, '{}') - sion.epost())
+     and coalesce(jsonb_typeof(new.navn -> sion.epost()), 'string') = 'string'
+     and length(coalesce(new.navn ->> sion.epost(), '')) <= 60
+     and (not 'fromName' = any(e) or old."from" = sion.epost())
+     and (not 'toName' = any(e) or (old.kind = 'dm' and old.parts[2] = sion.epost()))
+     and length(coalesce(new."fromName", '')) <= 60 and length(coalesce(new."toName", '')) <= 60 then return new; end if;
   raise exception 'Ingen tilgang til å endre samtalen' using errcode = '42501';
 end $$;
 drop trigger if exists sjekk on threads;
@@ -359,7 +378,9 @@ create policy slett on messages for delete to authenticated using (sion.er_admin
 create policy ny on messages for insert to authenticated with check (
   sion.i_samtale(thread_id) and "by" = sion.epost()
   and name is not null and length(name) <= 60 and text is not null and length(text) <= 1000
-  and (length(text) >= 1 or img is not null or lyd is not null or avst is not null)
+  and (length(text) >= 1 or img is not null or lyd is not null or avst is not null or fil is not null)
+  and (fil is null or (jsonb_typeof(fil) = 'object' and sion.nokler_ok(fil, '{navn,type,str,data}') and sion.tekst_ok(fil, 'navn', 120, true) and sion.tekst_ok(fil, 'type', 100, true)
+       and length(fil->>'data') <= 700000 and fil->>'data' like 'data:%'))
   and (lyd is null or (length(lyd) <= 200000 and lsek is not null and lsek <= 120))
   and (avst is null or (jsonb_typeof(avst) = 'object' and sion.nokler_ok(avst, '{id}')))
   and sion.len(img) <= 200000
@@ -371,20 +392,27 @@ create policy endre on messages for update to authenticated using (sion.i_samtal
 drop trigger if exists tid on messages;
 create trigger tid before insert on messages for each row execute function sion.tid_naa('created');
 
+-- Fri emoji-reaksjon (emo: «e-post emoji»): høyst én lagt til og én fjernet, og bare egne.
+create or replace function sion.emo_ok(o text[], n text[]) returns boolean language sql stable as $$
+  select cardinality(n) <= 40
+    and (select count(*) from unnest(n) x where not x = any(o)) <= 1
+    and (select count(*) from unnest(o) x where not x = any(n)) <= 1
+    and coalesce((select bool_and(split_part(x, ' ', 1) = sion.epost() and length(x) <= length(sion.epost()) + 20) from unnest(n) x where not x = any(o)), true)
+    and coalesce((select bool_and(split_part(x, ' ', 1) = sion.epost()) from unnest(o) x where not x = any(n)), true) $$;
 create or replace function sion.sjekk_messages() returns trigger language plpgsql as $$
 declare e text[] := sion.endret(to_jsonb(old), to_jsonb(new));
 begin
   if not sion.fra_appen() then return new; end if;
   if e <@ array['seen'] and cardinality(new.seen) <= 40 and new.seen @> old.seen and sion.bare_meg(old.seen, new.seen) then return new; end if;
   -- Angre egen melding: teksten tømmes, vedlegg fjernes
-  if old."by" = sion.epost() and e <@ array['text', 'slettet', 'img', 'svar', 'lyd', 'lsek', 'avst']
-     and new.slettet and new.text = '' and new.img is null and new.svar is null
+  if old."by" = sion.epost() and e <@ array['text', 'slettet', 'img', 'svar', 'lyd', 'lsek', 'avst', 'fil']
+     and new.slettet and new.text = '' and new.img is null and new.svar is null and new.fil is null
      and new.lyd is null and new.lsek is null and new.avst is null then return new; end if;
   -- Redigere egen tekstmelding
   if old."by" = sion.epost() and e <@ array['text', 'redigert'] and new.redigert
      and length(new.text) between 1 and 1000 and not old.slettet and old.img is null then return new; end if;
   -- Reaksjoner: bare egen e-post legges til eller fjernes
-  if e <@ array['likes', 'r_hjerte', 'r_ler', 'r_wow', 'r_trist', 'r_be', 'r_ild', 'r_hender', 'r_sion', 'r_amen']
+  if e <@ array['likes', 'r_hjerte', 'r_ler', 'r_wow', 'r_trist', 'r_be', 'r_ild', 'r_hender', 'r_sion', 'r_amen', 'emo'] and sion.emo_ok(old.emo, new.emo)
      and sion.bare_meg(old.likes, new.likes) and sion.bare_meg(old.r_hjerte, new.r_hjerte)
      and sion.bare_meg(old.r_ler, new.r_ler) and sion.bare_meg(old.r_wow, new.r_wow)
      and sion.bare_meg(old.r_trist, new.r_trist) and sion.bare_meg(old.r_be, new.r_be)

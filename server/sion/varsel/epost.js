@@ -103,7 +103,7 @@ module.exports = ({ pool, log, erAdmin, erPastor, lederAv, brukere, ledere, lesM
     const emne = String(d.title || '').trim().slice(0, 100), tekst = String(d.body || '').trim().slice(0, 3000);
     if (!emne || !tekst) return { ok: false, feil: 'Tittel og melding mangler.' };
     const mal = await lesMal(d.mal), b = await brukere(), l = mal.type === 'ltype' || mal.type === 'blandet' ? await ledere() : {};
-    const iG = e => b[e].groups.some(g => (mal.groups || []).includes(g)), iL = e => l[e] && (mal.ltypes || []).includes(l[e]);
+    const iG = e => b[e].groups.some(g => (mal.groups || []).includes(g)), iL = e => !!(l[e] && l[e].some(t => (mal.ltypes || []).includes(t)));
     const liste = Object.keys(b).filter(e => e !== email && gyldig(e) && (mal.type === 'alle' || mal.type === 'medlem' || (mal.type === 'grupper' && iG(e)) || (mal.type === 'ltype' && iL(e)) || (mal.type === 'blandet' && (iG(e) || iL(e)))));
     if (!liste.length) return { ok: false, feil: 'Fant ingen mottakere.' };
     for (let i = 0; i < liste.length; i += 40)

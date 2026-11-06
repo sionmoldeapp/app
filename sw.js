@@ -1,4 +1,4 @@
-const V='sion-v137',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','bilder/ingar-jensen.jpg','bilder/pastor.jpg','icon-192.png','badge-96.png','fb.js','supa.js','lib/chat-style.js','lib/chat-dictation.js','lib/emoji-data.js','lib/chat-style.css','lib/sion-video.js','lib/sion-video.css','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
+const V='sion-v159',F=['./','index.html','manifest.webmanifest','icon.svg','logo-512.png','bilder/ingar-jensen.jpg','bilder/pastor.jpg','icon-192.png','badge-96.png','fb.js','supa.js','lib/tilgang-paletter.css','lib/tilgang-tema.js','lib/chat-style.js','lib/chat-dictation.js','lib/emoji-data.js','lib/chat-style.css','fonts.css','fonts/bebas-neue-400-latin.woff2','fonts/yellowtail-400-latin.woff2','fonts/poppins-400-latin.woff2','fonts/poppins-500-latin.woff2','fonts/poppins-600-latin.woff2'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(V).then(c=>c.addAll(F)))});   // ny versjon tar over med en gang, uten å vente på at appen lukkes
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V&&x!=='sion-varsel').map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('message',e=>{if(e.data&&e.data.type==='skip')self.skipWaiting()});
@@ -20,7 +20,8 @@ self.addEventListener('push',e=>{
   let d={};try{d=e.data.json()}catch(x){}
   const n=d.notification||(d.data&&(d.data.title||d.data.body)?d.data:null)||(d.title||d.body?d:null)||d.data||{};
   // Siste varsel (også påminnelser) huskes på telefonen, så Hjem kan vise det selv om appen var lukket da det kom.
-  const lagre=caches.open('sion-varsel').then(c=>c.put(new Request(self.registration.scope+'varsel.json'),new Response(JSON.stringify({t:n.title||'Sion Molde',b:n.body||'',ms:Date.now(),tomt:!(n.title||n.body),felt:Object.keys(d).join(','),raw:JSON.stringify(d).slice(0,400)})))).catch(()=>{});
+  // Ringing og tapte anrop hører til Sionchat og lagres ikke (ellers kom de som nyhet på Hjem og erstattet siste ekte varsel).
+  const lagre=(d.data&&(d.data.ring||d.data.tapt))?Promise.resolve():caches.open('sion-varsel').then(c=>c.put(new Request(self.registration.scope+'varsel.json'),new Response(JSON.stringify({t:n.title||'Sion Molde',b:n.body||'',ms:Date.now(),tomt:!(n.title||n.body),felt:Object.keys(d).join(','),raw:JSON.stringify(d).slice(0,400)})))).catch(()=>{});
   // Er appen åpen, får den beskjed med en gang (uten dette måtte den lastes på nytt for å vise varselet på Hjem).
   const si=clients.matchAll({type:'window',includeUncontrolled:true}).then(l=>l.forEach(c=>c.postMessage({type:'push',title:n.title||'Sion Molde',body:n.body||''}))).catch(()=>{});
   // Varselet vises alltid, også hvis hurtigbuffer eller meldinger til appen feiler. Feiler visningen med alle valg, prøves en enklere versjon.

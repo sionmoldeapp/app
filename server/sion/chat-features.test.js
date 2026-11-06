@@ -68,6 +68,6 @@ test('Skrivefelt og nye verktøy passer på en smal telefon',async()=>{
  },code);
  const bounds=await p.evaluate(()=>{const f=document.getElementById('cForm'),t=document.getElementById('cT');return {scroll:f.scrollWidth,width:f.clientWidth,text:t.getBoundingClientRect().width};});
  assert.ok(bounds.scroll<=bounds.width+1,JSON.stringify(bounds));assert.ok(bounds.text>=100,JSON.stringify(bounds));
- await p.evaluate(()=>{state.chat.verk=true;chatInpOppd();});assert.equal(await p.locator('#cVerk').isVisible(),true);assert.equal(await p.locator('[data-cdictate]').isVisible(),true);
+ await p.evaluate(()=>{state.chat.verk=true;chatInpOppd();});assert.equal(await p.locator('#cVerk').isVisible(),true);assert.equal(await p.locator('#cPluss [data-cdictate]').count(),1);   // snakk til tekst ligger i +-menyen
  }finally{await p.close();}
 });

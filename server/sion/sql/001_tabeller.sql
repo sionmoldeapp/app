@@ -559,3 +559,26 @@ alter table admins add column if not exists kontor boolean not null default fals
 
 -- Lesekvitteringer for eksisterende installasjoner (regler/RPC i 009).
 alter table messages add column if not exists seen text[] not null default '{}';
+
+-- Navn per deltaker i Sionchat (Min profil), regel i 013.
+alter table threads add column if not exists navn jsonb;
+
+-- Område for ledersamtaler (014).
+alter table threads add column if not exists omr text;
+
+-- Flere lederkategorier per leder (ltype er den første). Se 015.
+alter table members add column if not exists ltyper text[] not null default '{}';
+
+-- Meldingsstatus Levert (017).
+alter table threads add column if not exists levert text[] not null default '{}';
+
+-- Vedlegg i Sionchat (018).
+alter table messages add column if not exists fil jsonb;
+
+-- Fri emoji-reaksjon (019).
+alter table messages add column if not exists emo text[] not null default '{}';
+
+-- Feste/arkivere, blokkere og rapportere i Sionchat (020, tabellen rapporter ligger der).
+alter table threads add column if not exists festet text[] not null default '{}';
+alter table threads add column if not exists arkiv text[] not null default '{}';
+alter table user_prefs add column if not exists blokkert text[] not null default '{}';

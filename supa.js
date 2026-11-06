@@ -22,8 +22,8 @@ const KOL={
   groups:{id:'t!',name:'t!',desc:'t',ord:'i',vakt:'b!',remind:'b!',ekstra:'j!'},
   leader_types:{id:'t!',name:'t!',ord:'i',ekstra:'j!'},
   lrsaker:{id:'t!',tittel:'t',t:'t',bh:'t',name:'t',by:'t',ms:'n',done:'b!',doneMs:'n',ekstra:'j!'},
-  members:{email:'t!',name:'t',rolle:'t',groups:'a!',leads:'a!',leder:'b!',ltype:'t',pastor:'b!',kontor:'b!',muted:'a!',extra:'a!',by:'t',ekstra:'j!',created:'z!'},
-  messages:{thread_id:'t!',id:'t!',by:'t',name:'t',text:'t',svar:'j',img:'t',lyd:'t',lsek:'i',avst:'j',pam:'b!',redigert:'b!',slettet:'b!',seen:'a!',stjerne:'a!',likes:'a!',r_hjerte:'a!',r_ler:'a!',r_wow:'a!',r_trist:'a!',r_be:'a!',r_ild:'a!',r_hender:'a!',r_sion:'a!',r_amen:'a!',ekstra:'j!',created:'z!'},
+  members:{email:'t!',name:'t',rolle:'t',groups:'a!',leads:'a!',leder:'b!',ltype:'t',ltyper:'a!',pastor:'b!',kontor:'b!',muted:'a!',extra:'a!',by:'t',ekstra:'j!',created:'z!'},
+  messages:{thread_id:'t!',id:'t!',by:'t',name:'t',text:'t',svar:'j',img:'t',fil:'j',lyd:'t',lsek:'i',avst:'j',pam:'b!',redigert:'b!',slettet:'b!',seen:'a!',stjerne:'a!',likes:'a!',r_hjerte:'a!',r_ler:'a!',r_wow:'a!',r_trist:'a!',r_be:'a!',r_ild:'a!',r_hender:'a!',r_sion:'a!',r_amen:'a!',emo:'a!',ekstra:'j!',created:'z!'},
   notes:{owner:'t!',id:'t!',title:'t',date:'t',speaker:'t',html:'t',img:'t',lyd:'j',ekstra:'j!',updated:'z!'},
   post_svar:{post_id:'t!',email:'t!',by:'t',name:'t',k:'t',t:'t',ms:'n',ekstra:'j!'},
   post_views:{id:'t!',n:'i!'},
@@ -43,10 +43,11 @@ const KOL={
   shift_requests:{gruppe:'t!',id:'t!',shiftId:'t',date:'t',role:'t',from:'t',fromName:'t',text:'t',ekstra:'j!',created:'z!'},
   snapshot_data:{id:'t!',json:'t'},
   snapshots:{id:'t!',label:'t',by:'t',counts:'j!',created:'z!'},
-  threads:{id:'t!',roleId:'t',roleName:'t',kind:'t',gid:'t',toName:'t',from:'t',fromName:'t',parts:'a!',last:'t',lastBy:'t',ms:'n',unread:'a!',gone:'a!',dempet:'a!',farge:'t',bakgrunn:'t',bgv:'n',bilde:'t',ekstra:'j!',created:'z!'},
+  threads:{id:'t!',roleId:'t',roleName:'t',kind:'t',gid:'t',toName:'t',from:'t',fromName:'t',parts:'a!',last:'t',lastBy:'t',ms:'n',unread:'a!',gone:'a!',dempet:'a!',farge:'t',bakgrunn:'t',bgv:'n',bilde:'t',navn:'j',omr:'t',levert:'a!',festet:'a!',arkiv:'a!',ekstra:'j!',created:'z!'},
   thread_bg:{thread_id:'t!',id:'t!',data:'t',by:'t',v:'n'},
   tilstede:{email:'t!',sist:'z!'},
-  user_prefs:{email:'t!',meorder:'a!',homeorder:'a!',suborder:'t',ekstra:'j!'}};
+  user_prefs:{email:'t!',meorder:'a!',homeorder:'a!',suborder:'t',blokkert:'a!',ekstra:'j!'},
+  rapporter:{id:'t!',fra:'t',fraNavn:'t',tid:'t',mid:'t',hvem:'t',hvemNavn:'t',utdrag:'t',grunn:'t',ms:'n',ekstra:'j!',created:'z!'}};
 // Samling i Firestore → tabell (der navnet er ulikt), nøkkelkolonne, og undersamlinger [tabell, forelder-kolonne, nøkkelkolonne]
 const TOPP={leaderTypes:'leader_types',userPrefs:'user_prefs',rsvpCounts:'rsvp_counts',postViews:'post_views',pushTokens:'push_tokens',snapshotData:'snapshot_data'};
 const NOKKEL={members:'email',admins:'email',user_prefs:'email',tilstede:'email',attester:'email',attestfil:'email',attestfilny:'email',attestforslag:'email',push_tokens:'token'};

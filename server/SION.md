@@ -144,3 +144,6 @@ Appen sender varsler gjennom `/varsel` på samme adresse som appen (Caddy sender
 
 ## Passordtilbakestilling med kode (02.11.2026)
 Supabase-versjonens «Glemt passord?» sender engangskode med {{ .Token }} fra sion/epost/nytt-passord.html. supa.js åpner kode-/passorddialog og verifiserer med verifyOtp(type: recovery) før updateUser. Ingen verifiseringslenke i denne e-posten, slik at automatisk lenkekontroll ikke bruker opp koden. Bruk nyeste kode; lukk og be om ny ved behov. Eldre lenker og opprettelse av nye brukere beholder eksisterende flyt. Lokale isolerte tester bestått; ekte e-post og telefon må sluttprøves av brukeren. sw.js v76.
+
+## Sionchat for alle medlemmer (05.11.2026)
+`Sion/sql/016_chat_for_medlemmer.sql` (sti: `sion/sql/016_chat_for_medlemmer.sql`) åpner medlemslisten og private samtaler for alle godkjente medlemmer. Allerede aktivert lokalt. Gruppeoppretting og gruppeutsending beholder lederkravet. `index.html` skiller mellom chatKan og chatLedKan, og bruker en egen kontaktliste til chatten. Test: `node --test server/sion/chat-members.test.js`; SQL-test `sion/sql/test_chat_for_medlemmer.sql` bruker ROLLBACK. Firebase trenger publisering av appkode og firestore.rules; emulator er testet, drift er ikke publisert av Codex.

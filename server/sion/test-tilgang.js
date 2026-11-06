@@ -43,7 +43,7 @@ async function rydd() {
   for (const [t, k] of [['messages', 'by'], ['threads', 'from'], ['notes', 'owner'], ['members', 'email'], ['admins', 'email'],
     ['attester', 'email'], ['attestforslag', 'email'], ['attestfil', 'email'], ['attestfilny', 'email'], ['user_prefs', 'email'], ['lrsaker', 'by']])
     await kall('tjener', 'DELETE', '/' + t + '?' + k + '=in.(' + e + ')');
-  for (const t of ['events', 'posts', 'rsvp_counts', 'push_tokens', 'prayers', 'settings', 'bookinger'])
+  for (const t of ['events', 'posts', 'rsvp_counts', 'push_tokens', 'prayers', 'settings', 'bookinger', 'rapporter'])
     await kall('tjener', 'DELETE', '/' + t + '?' + (t === 'push_tokens' ? 'token' : 'id') + '=like.test-*');
 }
 
@@ -76,7 +76,7 @@ async function rydd() {
   nekt('besøkende sletter', await kall(null, 'DELETE', '/events?id=eq.test-apen'));
 
   // --- Medlemmer ---
-  ant('medlem ser bare seg selv', await kall(B.medlem, 'GET', '/members?email=like.*' + D), 1);
+  ant('medlem ser medlemslisten til Sionchat', await kall(B.medlem, 'GET', '/members?email=like.*' + D), 3);
   ant('gruppeleder ser listen', await kall(B.leder, 'GET', '/members?email=like.*' + D), 3);
   nekt('fremmed ser medlemmer', await kall(B.fremmed, 'GET', '/members?email=like.*' + D));
   lov('medlem endrer eget navn', await kall(B.medlem, 'PATCH', '/members?email=eq.' + B.medlem.email, { name: 'Medlem Test' }));
@@ -93,7 +93,7 @@ async function rydd() {
   const tid = 'test-' + crypto.randomUUID();
   const dm = { id: tid, roleId: 'dm', roleName: 'Privat', kind: 'dm', toName: 'M', from: B.leder.email, fromName: 'L',
     parts: [B.leder.email, B.medlem.email], last: 'Hei', lastBy: B.leder.email, ms: Date.now(), unread: [B.medlem.email] };
-  nekt('medlem starter privat beskjed til annen', await kall(B.medlem, 'POST', '/threads', { ...dm, id: 'test-t2', from: B.medlem.email, lastBy: B.medlem.email, parts: [B.medlem.email, B.annen.email] }));
+  lov('medlem starter privat beskjed til annen', await kall(B.medlem, 'POST', '/threads', { ...dm, id: 'test-t2', from: B.medlem.email, lastBy: B.medlem.email, parts: [B.medlem.email, B.annen.email] }));
   lov('gruppeleder starter privat beskjed til medlem i egen gruppe', await kall(B.leder, 'POST', '/threads', dm));
   ant('annen ser ikke samtalen', await kall(B.annen, 'GET', '/threads?id=eq.' + tid), 0);
   lov('medlem sender melding', await kall(B.medlem, 'POST', '/messages', { thread_id: tid, id: 'm1', by: B.medlem.email, name: 'M', text: 'Takk' }));
@@ -104,12 +104,42 @@ async function rydd() {
   nekt('gruppeleder liker på vegne av andre', await kall(B.leder, 'PATCH', '/messages?thread_id=eq.' + tid + '&id=eq.m1', { likes: [B.leder.email, B.annen.email] }));
   nekt('gruppeleder redigerer andres melding', await kall(B.leder, 'PATCH', '/messages?thread_id=eq.' + tid + '&id=eq.m1', { text: 'hack', redigert: true }));
   lov('medlem redigerer egen melding', await kall(B.medlem, 'PATCH', '/messages?thread_id=eq.' + tid + '&id=eq.m1', { text: 'Tusen takk', redigert: true }));
+  lov('medlem sender en fil', await kall(B.medlem, 'POST', '/messages', { thread_id: tid, id: 'test-fil1', by: B.medlem.email, name: 'M', text: '', fil: { navn: 'a.pdf', type: 'application/pdf', str: 3, data: 'data:application/pdf;base64,QUJD' } }));
+  nekt('medlem sender for stor fil', await kall(B.medlem, 'POST', '/messages', { thread_id: tid, id: 'test-fil2', by: B.medlem.email, name: 'M', text: '', fil: { navn: 'a.pdf', type: 'application/pdf', str: 3, data: 'data:' + 'x'.repeat(700001) } }));
+  nekt('medlem sender fil med ukjent felt', await kall(B.medlem, 'POST', '/messages', { thread_id: tid, id: 'test-fil3', by: B.medlem.email, name: 'M', text: '', fil: { navn: 'a.pdf', type: 'x', str: 3, data: 'data:x', url: 'http://x' } }));
+  lov('leder reagerer med fri emoji', await kall(B.leder, 'PATCH', '/messages?id=eq.test-fil1', { emo: [B.leder.email + ' 🎉'] }));
+  lov('leder bytter fri emoji (fjern)', await kall(B.leder, 'PATCH', '/messages?id=eq.test-fil1', { emo: [] }));
+  nekt('leder setter emoji for en annen', await kall(B.leder, 'PATCH', '/messages?id=eq.test-fil1', { emo: [B.medlem.email + ' 🎉'] }));
+  nekt('leder legger til to emojier samtidig', await kall(B.leder, 'PATCH', '/messages?id=eq.test-fil1', { emo: [B.leder.email + ' 🎉', B.leder.email + ' 🌟'] }));
+  lov('medlem angrer filen', await kall(B.medlem, 'PATCH', '/messages?id=eq.test-fil1', { text: '', slettet: true, fil: null }));
+  lov('medlem fester samtalen for seg', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { festet: [B.medlem.email] }));
+  nekt('medlem fester for en annen', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { festet: [B.medlem.email, B.leder.email] }));
+  lov('medlem arkiverer samtalen for seg', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { arkiv: [B.medlem.email] }));
+  lov('medlem henter fra arkivet', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { arkiv: [] }));
+  lov('medlem blokkerer en person', await kall(B.medlem, 'POST', '/user_prefs', { email: B.medlem.email, blokkert: [B.leder.email] }, { Prefer: 'resolution=merge-duplicates,return=representation' }));
+  nekt('medlem lagrer innstillinger for en annen', await kall(B.medlem, 'POST', '/user_prefs', { email: B.annen.email, blokkert: [B.leder.email] }, { Prefer: 'resolution=merge-duplicates,return=representation' }));
+  lov('medlem rapporterer en melding', await kall(B.medlem, 'POST', '/rapporter', { id: 'test-rp1', fra: B.medlem.email, fraNavn: 'M', tid, mid: 'x', hvem: B.leder.email, hvemNavn: 'L', utdrag: 'Hei', grunn: 'Test', ms: 1 }, { Prefer: 'return=minimal' }));
+  nekt('medlem rapporterer i en annens navn', await kall(B.medlem, 'POST', '/rapporter', { id: 'test-rp2', fra: B.annen.email, fraNavn: 'A', tid, mid: '', hvem: '', hvemNavn: '', utdrag: '', grunn: 'Test', ms: 1 }, { Prefer: 'return=minimal' }));
+  ant('medlem leser ikke rapporter', await kall(B.medlem, 'GET', '/rapporter?id=eq.test-rp1'), 0);
+  ant('administrator leser rapporten', await kall(B.admin, 'GET', '/rapporter?id=eq.test-rp1'), 1);
+  lov('administrator sletter rapporten', await kall(B.admin, 'DELETE', '/rapporter?id=eq.test-rp1'));
+  lov('medlem kvitterer levert for siste melding', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { levert: [B.medlem.email + ':' + dm.ms] }));
+  nekt('medlem kvitterer levert for en annen', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { levert: [B.medlem.email + ':' + dm.ms, B.leder.email + ':' + dm.ms] }));
+  nekt('medlem kvitterer levert for feil melding', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { levert: [B.medlem.email + ':' + dm.ms, B.medlem.email + ':1'] }));
+  nekt('medlem fjerner en levert-kvittering', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { levert: [] }));
+  lov('ny melding tømmer levert', await kall(B.leder, 'PATCH', '/threads?id=eq.' + tid, { last: 'Hei igjen', lastBy: B.leder.email, ms: dm.ms + 1, unread: [B.medlem.email], levert: [] }));
   lov('medlem markerer som lest', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { unread: [] }));
   nekt('medlem legger til deltaker', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { parts: [B.leder.email, B.medlem.email, B.annen.email] }));
   nekt('medlem setter ulest for utenforstående', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { unread: [B.annen.email] }));
   lov('medlem skjuler samtalen for seg', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { gone: [B.medlem.email] }));
   lov('medlem velger eget bakgrunnsbilde', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'eget', bgv: Date.now() }));
   lov('medlem velger Aurora-bakgrunnen', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'aurora' }));
+  lov('medlem setter eget nytt navn (navn og toName)', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { navn: { [B.medlem.email]: 'Nytt Navn' }, toName: 'Nytt Navn' }));
+  nekt('medlem endrer navnet til en annen deltaker', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { navn: { [B.medlem.email]: 'Nytt Navn', [B.leder.email]: 'Hacket' } }));
+  nekt('medlem endrer fromName (startet ikke samtalen)', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { fromName: 'Hacket' }));
+  nekt('medlem setter for langt navn', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { navn: { [B.medlem.email]: 'x'.repeat(61) } }));
+  lov('gruppeleder setter eget nytt navn (fromName)', await kall(B.leder, 'PATCH', '/threads?id=eq.' + tid, { navn: { [B.medlem.email]: 'Nytt Navn', [B.leder.email]: 'Ny Leder' }, fromName: 'Ny Leder' }));
+  nekt('gruppeleder endrer toName (er ikke mottakeren)', await kall(B.leder, 'PATCH', '/threads?id=eq.' + tid, { toName: 'Hacket' }));
   lov('medlem velger Neon 1-bakgrunnen', await kall(B.medlem, 'PATCH', '/threads?id=eq.' + tid, { bakgrunn: 'neon1' }));
   // Summing (ringer, status vibr): den andre i samtalen kan overskrive forrige summing/ringing, som i Firestore
   const ups = { Prefer: 'return=representation,resolution=merge-duplicates' }, summ = (fra, til) => ({ id: tid, fra: fra.email, fraNavn: 'Test', til: [til.email], status: 'vibr', ms: Date.now() });
@@ -263,6 +293,17 @@ async function rydd() {
   lov('administrator lager booking', await kall(B.admin, 'POST', '/bookinger', { id: 'test-b1', tittel: 'x', rom: ['Salen'], dato: '2026-12-01', fra: '10:00', til: '12:00', leier: 'x', kontakt: 'x', pris: '0', status: 'bekreftet', notat: '', by: 'x', ms: 1 }));
   nekt('administrator lager ugyldig booking', await kall(B.admin, 'POST', '/bookinger', { id: 'test-b2', tittel: 'x', rom: [], dato: '2026-12-01', fra: '10', til: '12:00', leier: 'x', kontakt: 'x', pris: '0', status: 'hmm', notat: '', by: 'x', ms: 1 }));
   ant('medlem ser ikke bookinger', await kall(B.medlem, 'GET', '/bookinger?id=like.test-*'), 0);
+
+  // Ledersamtale for et område: hovedleder (leder) retter deltakerne; andre kan ikke
+  await kall('tjener', 'POST', '/omrader', { id: 'test-omr', name: 'Testområde', groups: ['activ8'], ledere: [B.leder.email] });
+  await kall('tjener', 'POST', '/threads', { id: 'test-omrt', roleId: 'gruppe', roleName: 'Testområde – ledere', kind: 'gruppe', gid: 'activ8', from: B.leder.email, fromName: 'L',
+    parts: [B.leder.email, B.medlem.email, B.annen.email, B.admin.email], last: 'x', lastBy: B.leder.email, ms: 1, unread: [] });
+  lov('hovedleder retter deltakerne i ledersamtalen', await kall(B.leder, 'PATCH', '/threads?id=eq.test-omrt', { parts: [B.leder.email, B.medlem.email, B.annen.email], unread: [B.medlem.email], omr: 'test-omr' }));
+  nekt('medlem (ikke hovedleder) endrer deltakerne', await kall(B.medlem, 'PATCH', '/threads?id=eq.test-omrt', { parts: [B.leder.email, B.medlem.email, B.annen.email, B.fremmed.email], unread: [], omr: 'test-omr' }));
+  nekt('hovedleder bruker et område med annet navn', await kall(B.leder, 'PATCH', '/threads?id=eq.test-omrt', { parts: [B.leder.email, B.medlem.email, B.annen.email, B.fremmed.email], unread: [], omr: 'finnes-ikke' }));
+  nekt('hovedleder lager for liten ledersamtale', await kall(B.leder, 'PATCH', '/threads?id=eq.test-omrt', { parts: [B.leder.email, B.medlem.email], unread: [], omr: 'test-omr' }));
+  nekt('hovedleder endrer også siste melding', await kall(B.leder, 'PATCH', '/threads?id=eq.test-omrt', { parts: [B.leder.email, B.medlem.email, B.annen.email, B.fremmed.email], unread: [], omr: 'test-omr', last: 'hack' }));
+  await kall('tjener', 'DELETE', '/threads?id=eq.test-omrt'); await kall('tjener', 'DELETE', '/omrader?id=eq.test-omr');
 
   await rydd();
   console.log(`\n${ok} riktige, ${feil} feil`);

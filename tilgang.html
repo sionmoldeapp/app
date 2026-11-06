@@ -208,6 +208,24 @@ dialog.omrdlg{width:min(760px,96vw)}
 /* Registrering og endring av tilgang */
 .ny{border:0;background:var(--brand);color:var(--brand-ink);padding:9px 18px;border-radius:99px;font-weight:600;white-space:nowrap}
 .ny:hover{filter:brightness(1.08)}
+tr.plass td{background:var(--surface2)}tr.plass .navn{font-style:italic}
+.av.plassav{background:transparent;border:2px dashed var(--line2);color:var(--muted)}
+.chip.ledig{background:var(--adv-s);color:var(--adv);border-color:transparent}
+dialog.slettb{border:0;border-radius:20px;width:min(520px,94vw);padding:22px;background:var(--surface);color:var(--ink);box-shadow:0 24px 70px rgba(0,0,0,.35)}
+dialog.slettb h2{margin:0 0 6px}dialog.slettb p{margin:0 0 10px;color:var(--muted);font-size:13.5px}dialog.slettb ul{margin:0 0 14px;padding-left:18px;font-size:13.5px;display:grid;gap:6px}
+dialog.slettb input{width:100%;box-sizing:border-box;height:42px;border-radius:12px;border:1px solid var(--line2);padding:0 14px;font:inherit;background:var(--surface2);color:var(--ink);margin-bottom:6px}
+dialog.slettb .sbfeil{color:var(--feil);min-height:1em}dialog.slettb .knapper{display:flex;justify-content:flex-end;gap:8px}
+dialog.slettb::backdrop{background:rgba(5,20,40,.5)}
+.knapp.fare{background:var(--feil-s);color:var(--feil);border-color:transparent}.knapp.fare:hover{border-color:var(--feil)}.knapp.fare[disabled]{opacity:.5;cursor:not-allowed}
+dialog.velgl{border:0;border-radius:20px;width:min(520px,94vw);max-height:86vh;padding:22px;background:var(--surface);color:var(--ink);box-shadow:0 24px 70px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px}
+dialog.velgl:not([open]){display:none}
+dialog.velgl h2{margin:0}dialog.velgl .hint{margin:0;color:var(--muted);font-size:13px}
+dialog.velgl input{height:42px;border-radius:21px;border:1px solid var(--line2);padding:0 16px;font:inherit;background:var(--surface2);color:var(--ink)}
+dialog.velgl .vll{overflow:auto;display:grid;gap:4px;min-height:120px}
+dialog.velgl .vlp{all:unset;cursor:pointer;display:flex;gap:12px;align-items:center;padding:8px 10px;border-radius:12px}
+dialog.velgl .vlp:hover{background:var(--surface2)}dialog.velgl .vlp span{display:flex;flex-direction:column;min-width:0}dialog.velgl .vlp small{color:var(--muted)}
+dialog.velgl .knapper{display:flex;justify-content:flex-end}
+dialog.velgl::backdrop{background:rgba(5,20,40,.5)}
 dialog.reg{border:0;padding:0;border-radius:20px;width:min(1200px,96vw);max-height:92vh;background:var(--surface);color:var(--ink);box-shadow:0 24px 70px rgba(0,0,0,.35);overflow:hidden}
 dialog.reg::backdrop{background:rgba(5,20,40,.5)}
 .regg{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:min(860px,92vh)}
@@ -254,6 +272,17 @@ dialog.reg::backdrop{background:rgba(5,20,40,.5)}
 @media (max-width:1250px){.main{grid-template-columns:240px minmax(0,1fr) 400px}.stats{display:none}}
 @media (max-width:900px){body{overflow:auto}.app{height:auto}.main,.main.uten-detalj{grid-template-columns:1fr}.panel{max-height:none}.sok input{width:180px}}
 </style>
+<link rel="stylesheet" href="lib/tilgang-paletter.css">
+<style>
+/* Oversiktens egne flater, kanter og medlemsfarge følger også paletten (de var faste blå og ble stående når appen hadde en annen palett). */
+:root:root[data-pal]{
+  --surface2:var(--chip);
+  --line2:color-mix(in srgb,var(--line) 78%,var(--ink));
+  --c-med:var(--muted); --c-med-s:var(--chip);
+}
+:root:root[data-pal]:not([data-pal="klassisk"]){--shadow:var(--shadow-card,0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.08))}
+</style>
+<script src="lib/tilgang-tema.js"></script>
 </head>
 <body>
 <div id="rot"><div class="laster">Laster …</div></div>
@@ -264,12 +293,12 @@ dialog.reg::backdrop{background:rgba(5,20,40,.5)}
 const GROUPS_DEFAULT=[['sondagsskole','Søndagsskole','barnearbeid'],['activ8','Activ8','ungdom'],['hangout','Hangout','unge voksne'],['debora','Debora','kvinnearbeid'],['cdur','Sion C-dur','mannsfellesskap'],['kjokken','Kjøkken',''],['torsdagsgruppa','Torsdagsgruppa',''],['vertskap','Vertskap',''],['lederradet','Lederrådet',''],['ungdomsledere','Ungdomsledere',''],['sommerstevne','Sommerstevne',''],['elevate','Elevate',''],['lovsang','Lovsangsteamet',''],['forkynnere','Forkynnere','']];
 const GR_REMIND_DEFAULT=['lederradet','ungdomsledere','torsdagsgruppa','vertskap','elevate','lovsang'];
 const CATS_DEFAULT=['Møter','Ungdom','Happeninger','Menighetsmøte','Lederrådet','Ungdomsleder'];
-const LTYPES_DEFAULT=[['hoved','Hovedledere'],['ungdom','Ungdomsledere'],['forkynner','Forkynnere']];
+const LTYPES_DEFAULT=[['hoved','Hovedledere'],['ungdom','Ungdomsledere'],['forkynner','Forkynnere'],['hovedpastor','Hovedpastorer'],['medpastor','Medpastorer og ungdomspastorer']];
 const ATTEST_AAR=3;
 /* Hvem ser de interne kategoriene (samme regel som katSyn i index.html) */
 const KAT_SYN={
   'Ungdomsleder':{tekst:'Administratorer, ledere i lederkategorien Ungdomsledere, medlemmer i gruppen Ungdomsledere og teamledere for Ungdomsledere eller Activ8.',
-    f:u=>u.role==='admin'||(u.leder&&u.ltype==='ungdom')||u.groups.includes('ungdomsledere')||u.leads.includes('ungdomsledere')||u.leads.includes('activ8')},
+    f:u=>u.role==='admin'||harLt(u,'ungdom')||u.groups.includes('ungdomsledere')||u.leads.includes('ungdomsledere')||u.leads.includes('activ8')||u.leads.includes('hangout')},
   'Lederrådet':{tekst:'Administratorer og medlemmer i gruppen Lederrådet.',f:u=>u.role==='admin'||u.groups.includes('lederradet')}};
 const normCat=c=>(c==='Ledersamling'||c==='Activled')?'Ungdomsleder':c;
 
@@ -299,6 +328,9 @@ function niva(u){
   return {k:'med',navn:'Medlem',kl:'r-med',n:1};
 }
 const rolleMerke=u=>{const n=niva(u);return '<span class="rolle '+n.kl+'">'+esc(n.navn)+'</span>'+(u.role==='admin'&&u.pastor?' <span class="rolle r-pastor">Pastor</span>':'')+((u.role==='admin'||u.pastor)&&u.kontor?' <span class="rolle r-pastor">Sekretær</span>':'')};
+/* Flere lederkategorier per leder: ltyper (ltype er den første). */
+const ltAlle=u=>{const l=[...new Set([u.ltype,...(u.ltyper||[])].filter(id=>D.ltypes.some(t=>t.id===id)))];return l.length?l:(D.ltypes[0]?[D.ltypes[0].id]:[])};
+const harLt=(u,id)=>!!u.leder&&ltAlle(u).includes(id);
 const hovedFor=u=>D.omrader.filter(o=>(o.ledere||[]).includes(u.id));   // områdene personen er hovedleder for
 const grLeser=(u,g)=>u.role==='admin'||u.groups.includes(g);
 const vaktGr=id=>{const g=D.groups.find(x=>x.id===id);return g?g.vakt:false};
@@ -333,7 +365,7 @@ function tilganger(u){
 function forklarKat(c,u){
   if(u.role==='admin')return 'Administrator.';
   const g=[];
-  if(c==='Ungdomsleder'){if(u.leder&&u.ltype==='ungdom')g.push('leder i kategorien Ungdomsledere');if(u.groups.includes('ungdomsledere'))g.push('med i gruppen Ungdomsledere');if(u.leads.includes('ungdomsledere'))g.push('teamleder for Ungdomsledere');if(u.leads.includes('activ8'))g.push('teamleder for Activ8')}
+  if(c==='Ungdomsleder'){if(harLt(u,'ungdom'))g.push('leder i kategorien Ungdomsledere');if(u.groups.includes('ungdomsledere'))g.push('med i gruppen Ungdomsledere');if(u.leads.includes('ungdomsledere'))g.push('teamleder for Ungdomsledere');if(u.leads.includes('activ8'))g.push('teamleder for Activ8');if(u.leads.includes('hangout'))g.push('teamleder for Hangout')}
   if(c==='Lederrådet'&&u.groups.includes('lederradet'))g.push('med i gruppen Lederrådet');
   return g.length?g[0][0].toUpperCase()+g.join(', ').slice(1)+'.':''
 }
@@ -353,9 +385,9 @@ const UTVALG={
   alle:{tittel:'Alle brukere',tekst:'Alle med konto i appen. Trykk på en person for å se rolle, grupper og hva de har tilgang til.',f:()=>true},
   admin:{tittel:'Administratorer',tekst:'Høyeste nivå. Ser alt innhold, publiserer for hele menigheten, sender varsler til alle og styrer brukere, roller, grupper, kategorier og sikkerhetskopier.',f:u=>u.role==='admin'},
   kontor:{tittel:'Sekretær',tekst:'Tar seg av post og e-post, støtter pastoren i praktiske oppgaver og svarer på henvendelser på hans vegne. Kan sende melding, varsel og nyhet (også Pastorens hilsen) til alle, alle medlemmer og alle grupper, men administrerer ikke appen. Alle kan nå sekretæren via et ansvarsområde (for eksempel «Pastor og menighetskontoret»).',f:u=>!!u.kontor},
-  pastor:{tittel:'Pastorer',tekst:'Kan sende melding, varsel og nyhet til alle, alle medlemmer og alle grupper, og er med i ledersamtalene for alle områdene. Pastorer er ikke teamledere automatisk og er ikke administratorer.',f:u=>!!u.pastor},
+  pastor:{tittel:'Pastorer',tekst:'Kan sende melding, varsel og nyhet til alle, alle medlemmer og alle grupper. Er bare med i ledersamtalen for et område når de selv er hovedleder eller teamleder der. Pastorer er ikke teamledere automatisk og er ikke administratorer.',f:u=>!!u.pastor},
   rad:{tittel:'Lederrådet',tekst:'Personer som er registrert i gruppen Lederrådet.',f:u=>u.groups.concat(u.leads).some(id=>teamNavNorm(gNavn(id))==='lederradet')},
-  hoved:{tittel:'Hovedledere',tekst:'Registrerte hovedledere for områder og personer i lederkategorien Hovedledere. Overskriften endrer ingen rettigheter.',f:u=>hovedFor(u).length>0||u.leder&&teamNavNorm(ltNavn(u.ltype))==='hovedledere'},
+  hoved:{tittel:'Hovedledere',tekst:'Registrerte hovedledere for områder og personer i lederkategorien Hovedledere. Overskriften endrer ingen rettigheter.',f:u=>hovedFor(u).length>0||u.leder&&ltAlle(u).some(id=>teamNavNorm(ltNavn(id))==='hovedledere')},
   leder:{tittel:'Ledere',tekst:'Medlemmer med rollen Leder. Ser lederinnhold (etter lederkategori) og har øye-knappen «Vis appen som». Rollen gir ikke rett til å publisere eller sende varsler.',f:u=>u.role!=='admin'&&u.leder},
   gl:{tittel:'Teamledere',tekst:'Publiserer arrangementer og nyheter, sender varsler og styrer medlemmer, men bare for gruppene de leder. Håndheves av databasen.',f:u=>u.role!=='admin'&&u.leads.length>0},
   med:{tittel:'Medlemmer uten lederrolle',tekst:'Innloggede medlemmer. Ser medlemsinnhold og innhold for egne grupper. «Medlem» betyr bare tilgang i appen, ikke formelt medlemskap.',f:u=>u.role!=='admin'&&!u.leder&&!u.leads.length},
@@ -364,15 +396,15 @@ function utvalgFor(s){
   if(UTVALG[s.t])return UTVALG[s.t];
   if(s.t==='hovedomr'){const o=D.omrader.find(x=>x.id===s.id);if(o)return {tittel:'Hovedledere: '+o.name,tekst:'Hovedledere som er registrert for dette området.',f:u=>(o.ledere||[]).includes(u.id)}}
   if(s.t==='teamalle')return {tittel:'Teamledere',tekst:'Samlet oversikt over teamledere og tilhørende lederkategorier. Rettighetene vises for hver person.',f:u=>UTVALG.gl.f(u)||teamNavGrener().some(b=>teamNavTreff(u,b))};
-  if(s.t==='team'){const b=teamNavGrener().flatMap(x=>[x,...(x.barn||[])]).find(x=>x.id===s.id);if(b)return {tittel:b.navn,tekst:'Viser registrerte teamledere for tilhørende grupper og personer i den tilsvarende lederkategorien. Se den enkelte personen for faktiske tilganger.',f:u=>teamNavTreff(u,b)}}
-  if(s.t==='lt'){const n=ltNavn(s.id);return {tittel:'Ledere: '+n,tekst:'Ledere i lederkategorien '+n+'. Kategorien deler bare opp rollen Leder'+(s.id==='ungdom'?', men gir også tilgang til kategorien Ungdomsleder i programmet.':' og gir ingen egne rettigheter.'),f:u=>u.role!=='admin'&&u.leder&&(D.ltypes.some(t=>t.id===u.ltype)?u.ltype:D.ltypes[0]&&D.ltypes[0].id)===s.id}}
+  if(s.t==='team'){const b=teamNavGrener().flatMap(x=>[x,...(x.barn||[])]).find(x=>x.id===s.id);if(b)return {tittel:b.navn,tekst:(b.id==='ungdom'?'Felles ungdomslederteam for Activ8 (ungdommer) og Hangout (unge voksne). ':'')+'Viser registrerte teamledere for tilhørende grupper og personer i den tilsvarende lederkategorien. Se den enkelte personen for faktiske tilganger.',f:u=>teamNavTreff(u,b)}}
+  if(s.t==='lt'){const n=ltNavn(s.id);return {tittel:'Ledere: '+n,tekst:'Ledere i lederkategorien '+n+'. Kategorien deler bare opp rollen Leder'+(s.id==='ungdom'?', men gir også tilgang til kategorien Ungdomsleder i programmet.':' og gir ingen egne rettigheter.'),f:u=>u.role!=='admin'&&harLt(u,s.id)}}
   if(s.t==='glg'){const n=gNavn(s.id);return {tittel:'Teamledere: '+n,tekst:'Kan publisere, sende varsler og styre medlemmer for '+n+'.',f:u=>u.leads.includes(s.id)}}
   if(s.t==='g'){const g=D.groups.find(x=>x.id===s.id)||{name:s.id};return {tittel:g.name,tekst:(g.desc?g.desc[0].toUpperCase()+g.desc.slice(1)+'. ':'')+grTekst(s.id),f:u=>u.groups.includes(s.id)||u.leads.includes(s.id)||u.extra.includes(s.id),gruppe:s.id}}
   if(s.t==='kat'){const k=KAT_SYN[s.id];return {tittel:'Kategorien '+s.id,tekst:k?'Intern kategori. Ses av: '+k.tekst+' Medlemmene kan likevel teknisk lese innholdet (bare visning i appen); uinnloggede får det aldri.':'Åpen kategori. Alle ser oppføringene, også besøkende, med mindre oppføringen er merket «Bare medlemmer» eller har grupper.',f:k?k.f:()=>true,kat:s.id}}
   if(s.t==='ans'){const r=D.roles.find(x=>x.id===s.id)||{name:s.id};const em=(r.emails||[]).map(x=>String(x).toLowerCase());return {tittel:r.name,tekst:(r.desc||'Ansvarsområde.')+' Medlemmer kan sende beskjed til de ansvarlige.',f:u=>em.includes(u.id),ans:r}}
   if(s.t==='spes'){return SPES[s.id]}
   if(s.t==='omr'){const o=D.omrader.find(x=>x.id===s.id)||{name:s.id,groups:[],ledere:[]};const led=(o.ledere||[]).map(e=>{const u=D.users.find(x=>x.id===e);return u?visNavn(u):e});
-    return {tittel:o.name,tekst:'Grupper: '+((o.groups||[]).map(gNavn).join(', ')||'ingen')+'. Hovedledere: '+(led.join(', ')||'ingen ennå')+'. Hovedlederne er teamledere for gruppene i området og når både lederne og alle medlemmene. Ledersamtalen «'+o.name+' – ledere» i Sionchat samler hovedledere, pastorer og teamledere.',
+    return {tittel:o.name,tekst:'Grupper: '+((o.groups||[]).map(gNavn).join(', ')||'ingen')+'. Hovedledere: '+(led.join(', ')||'ingen ennå')+'. Hovedlederne er teamledere for gruppene i området og når både lederne og alle medlemmene. Ledersamtalen «'+o.name+' – ledere» i Sionchat samler hovedlederne og teamlederne i området.',
       f:u=>(o.ledere||[]).includes(u.id)||u.groups.concat(u.leads).some(g=>(o.groups||[]).includes(g)),omr:o}}
   return UTVALG.alle;
 }
@@ -409,7 +441,7 @@ function tegn(){
    +'<div class="main" id="main"><nav class="panel"><div class="scroll nav" id="nav"></div></nav><section class="panel" id="liste"></section><aside class="panel detalj" id="detalj"></aside></div></div>';
   $('#q').oninput=e=>{V.q=e.target.value;tegnListe()};
   $('#bOppd').onclick=last;
-  $('#bTema').onclick=()=>{const d=document.documentElement,mork=d.dataset.theme?d.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;d.dataset.theme=mork?'light':'dark'};
+  $('#bTema').onclick=()=>{const d=document.documentElement,mork=d.dataset.theme?d.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;d.dataset.theme=mork?'light':'dark';try{localStorage.setItem('sm-theme',d.dataset.theme)}catch(e){}};
   $('#bFull').onclick=fullskjerm;
   $('#bNy').onclick=()=>regApne(null);
   $('#bApp').onclick=tilAppen;if($('#bLos'))$('#bLos').onclick=losne;
@@ -432,7 +464,7 @@ function teamNavGrener(){
     lag('barnekor','Barnekor',n=>n==='barnekor')
   ];
   const grener=[
-    lag('ungdom','Ungdomsledere',n=>/^(ungdom|ungdomsledere|activ8|hangout)$/.test(n)),
+    lag('ungdom','Ungdomslederteam',n=>/^(ungdom|ungdomsledere|activ8|hangout)$/.test(n)),
     lag('sondagsskole','Søndagsskoleledere',n=>n.startsWith('sondagsskole')),
     {...lag('lovsang','Lovsangsteam ledere',n=>n.startsWith('lovsang')),barn:lovsang},
     lag('debora','Debora',n=>n==='debora'),
@@ -444,19 +476,32 @@ function teamNavGrener(){
   for(const t of D.ltypes)if(!bruktT.has(t.id)&&teamNavNorm(t.name)!=='hovedledere')grener.push({id:'lt-'+t.id,navn:t.name,grupper:[],typer:[t.id]});
   return grener;
 }
-function teamNavTreff(u,b){return u.leads.some(g=>b.grupper.includes(g))||u.leder&&b.typer.includes(u.ltype)||(b.barn||[]).some(x=>teamNavTreff(u,x))}
+/* Plassholdere: grupper uten teamleder vises med en ledig plass i Teamledere, så det er lett å se hva som mangler. Ingen falske brukere lagres. */
+/* Samlede team: Activ8 og Hangout ledes av ungdomslederne og får én felles plass («Teamleder for Ungdomsledere»). Den som velges, blir teamleder for alle tre. */
+const SAMLET={ungdomsledere:['activ8','hangout']};
+const samletTil=g=>Object.keys(SAMLET).find(h=>SAMLET[h].includes(g)&&D.groups.some(x=>x.id===h))||g;
+const samletAlle=g=>[g,...(SAMLET[g]||[])].filter(x=>D.groups.some(y=>y.id===x));
+const harTeamleder=g=>D.users.some(u=>samletAlle(g).some(x=>u.leads.includes(x)));
+function ledigeI(gr){return [...new Set(gr.map(samletTil))].filter(g=>D.groups.some(x=>x.id===g)&&teamNavNorm(gNavn(g))!=='lederradet'&&!harTeamleder(g))}
+function grenGrupper(b){return [...b.grupper,...(b.barn||[]).flatMap(grenGrupper)]}
+function plassGrupper(sel){
+  if(sel.t==='teamalle')return D.groups.map(g=>g.id);
+  if(sel.t==='team'){const b=teamNavGrener().flatMap(x=>[x,...(x.barn||[])]).find(x=>x.id===sel.id);return b?grenGrupper(b):[]}
+  if(sel.t==='g'||sel.t==='glg')return [sel.id];
+  return []}
+function teamNavTreff(u,b){return u.leads.some(g=>b.grupper.includes(g))||u.leder&&ltAlle(u).some(t=>b.typer.includes(t))||(b.barn||[]).some(x=>teamNavTreff(u,x))}
 function tegnNav(){
   const u=D.users,ant=f=>u.filter(f).length;
   const del=(k,tittel,html,n)=>{const lukket=LUKKET.has(k),id='inn-'+encodeURIComponent(k);return '<div class="navgr'+(lukket?' lukket':'')+'" data-seks="'+esc(k)+'"><h3><button type="button" class="sekshode" aria-expanded="'+!lukket+'" aria-controls="'+esc(id)+'">'+esc(tittel)+(n==null?'':'<span class="ant">'+n+'</span>')+PIL+'</button></h3><div class="seksinn" id="'+esc(id)+'">'+html+'</div></div>'};
   const rolle=(k,tittel)=>del('nav-'+k,tittel,nvKnapp({t:k},'Se alle '+tittel.toLowerCase(),ant(UTVALG[k].f)),ant(UTVALG[k].f));
-  const gren=b=>del('nav-team-'+b.id,b.navn,nvKnapp({t:'team',id:b.id},'Se ledere',ant(x=>teamNavTreff(x,b)))+(b.barn||[]).map(gren).join(''),ant(x=>teamNavTreff(x,b)));
+  const gren=b=>del('nav-team-'+b.id,b.navn,nvKnapp({t:'team',id:b.id},'Se ledere'+(ledigeI(grenGrupper(b)).length?' · '+ledigeI(grenGrupper(b)).length+' ledig':''),ant(x=>teamNavTreff(x,b)))+(b.barn||[]).map(gren).join(''),ant(x=>teamNavTreff(x,b)));
   const team=teamNavGrener(),teamF=x=>UTVALG.gl.f(x)||team.some(b=>teamNavTreff(x,b));
   let h=rolle('admin','Administratorer')+rolle('pastor','Pastorer')+rolle('rad','Lederrådet');
   h+=del('nav-hoved','Hovedledere',nvKnapp({t:'hoved'},'Se alle hovedledere',ant(UTVALG.hoved.f))+D.omrader.map(o=>nvKnapp({t:'hovedomr',id:o.id},o.name,ant(x=>(o.ledere||[]).includes(x.id)),{sub:1})).join(''),ant(UTVALG.hoved.f));
   h+=del('nav-team','Teamledere',nvKnapp({t:'teamalle'},'Se alle teamledere',ant(teamF))+team.map(gren).join(''),ant(teamF));
   let andre=nvKnapp({t:'alle'},'Alle brukere',u.length)+nvKnapp({t:'matrise'},'Grupper × personer',null)+nvKnapp({t:'kontor'},'Sekretær',ant(UTVALG.kontor.f))+nvKnapp({t:'leder'},'Lederrollen',ant(UTVALG.leder.f))+nvKnapp({t:'med'},'Medlemmer',ant(UTVALG.med.f));
   andre+=del('nav-omr','Områder',D.omrader.map(o=>nvKnapp({t:'omr',id:o.id},o.name,ant(utvalgFor({t:'omr',id:o.id}).f))).join('')+'<button type="button" class="nv" data-nyomr>+ Nytt område</button>');
-  andre+=del('nav-grupper','Grupper',D.groups.map(g=>nvKnapp({t:'g',id:g.id},g.name,ant(x=>x.groups.includes(g.id)||x.leads.includes(g.id)))).join(''));
+  andre+=del('nav-grupper','Grupper og team',D.groups.map(g=>nvKnapp({t:'g',id:g.id},g.name,ant(x=>x.groups.includes(g.id)||x.leads.includes(g.id)))).join(''));
   andre+=del('nav-kat','Kategorier i programmet',D.cats.map(c=>nvKnapp({t:'kat',id:c},c,KAT_SYN[c]?ant(KAT_SYN[c].f):'Alle',{las:!!KAT_SYN[c]})).join(''));
   if(D.roles.length)andre+=del('nav-ans','Ansvarsområder',D.roles.map(r=>nvKnapp({t:'ans',id:r.id},r.name,(r.emails||[]).length)).join(''));
   andre+=del('nav-spes','Spesielle tilganger',Object.keys(SPES).map(k=>nvKnapp({t:'spes',id:k},SPES[k].tittel,ant(SPES[k].f))).join(''));
@@ -485,14 +530,55 @@ function tegnListe(){
   if(rad.length)hode+='<div class="rad">'+rad.join('')+'</div>';
   hode+='</div>';
   const g=ut.gruppe;
-  const rader=l.map((u,i)=>'<tr data-p="'+esc(u.id)+'" class="'+(V.person===u.id?'valgt':'')+'"><td><div class="person">'+avatar(u)+'<div style="min-width:0"><div class="navn">'+esc(visNavn(u))+'</div><div class="epost">'+esc(u.id)+'</div></div></div></td>'
-    +'<td>'+rolleMerke(u)+(u.leder?'<div class="epost" style="margin-top:3px">'+esc(ltNavn(u.ltype))+'</div>':'')+'</td>'
+  const ledig=V.q.trim()?[]:ledigeI(plassGrupper(V.sel));
+  if(ledig.length)hode=hode.replace(/<\/div>$/,'<div class="rad"><span class="chip ledig">'+ledig.length+' '+(ledig.length===1?'gruppe':'grupper')+' uten teamleder</span></div></div>');
+  const plass=ledig.map(gid=>'<tr class="plass"><td><div class="person"><div class="av plassav" aria-hidden="true">?</div><div style="min-width:0"><div class="navn">Teamleder for '+esc(gNavn(gid))+'</div><div class="epost">Plassholder · ingen teamleder satt opp ennå</div></div></div></td>'
+    +'<td><span class="chip ledig">Ledig</span></td>'+(ut.gruppe?'<td></td>':'')+'<td><div class="chips">'+samletAlle(gid).map(x=>'<span class="chip">'+esc(gNavn(x))+'</span>').join('')+'</div></td><td><button type="button" class="knapp pri" data-velgleder="'+esc(gid)+'">Velg teamleder</button></td></tr>').join('');
+  const rader=plass+l.map((u,i)=>'<tr data-p="'+esc(u.id)+'" class="'+(V.person===u.id?'valgt':'')+'"><td><div class="person">'+avatar(u)+'<div style="min-width:0"><div class="navn">'+esc(visNavn(u))+'</div><div class="epost">'+esc(u.id)+'</div></div></div></td>'
+    +'<td>'+rolleMerke(u)+(u.leder?'<div class="epost" style="margin-top:3px">'+esc(ltAlle(u).map(ltNavn).join(', '))+'</div>':'')+'</td>'
     +(g?'<td>'+(u.leads.includes(g)?'<span class="chip lead">Teamleder</span>':u.groups.includes(g)?'<span class="chip">Med</span>':'<span class="chip ekstra">Bare varsel</span>')+(u.groups.includes(g)&&u.muted.includes(g)?' <span class="chip av-v">varsler av</span>':'')+'</td>':'')
     +'<td><div class="chips">'+grupperChips(u)+'</div></td>'
     +'<td><span class="status '+attestStatus(u.id).k+'">'+esc(attestStatus(u.id).t)+'</span></td></tr>').join('');
-  el.innerHTML=hode+'<div class="scroll">'+(l.length?'<table><thead><tr><th>Person</th><th>Rolle</th>'+(g?'<th>I gruppen</th>':'')+'<th>Grupper</th><th>Politiattest</th></tr></thead><tbody>'+rader+'</tbody></table>':'<div class="tom">Ingen personer her'+(V.q.trim()?' som passer søket':'')+'.</div>')+'</div>';
+  el.innerHTML=hode+'<div class="scroll">'+(l.length||plass?'<table><thead><tr><th>Person</th><th>Rolle</th>'+(g?'<th>I gruppen</th>':'')+'<th>Grupper</th><th>Politiattest</th></tr></thead><tbody>'+rader+'</tbody></table>':'<div class="tom">Ingen personer her'+(V.q.trim()?' som passer søket':'')+'.</div>')+'</div>';
+  el.querySelectorAll('[data-velgleder]').forEach(b=>b.onclick=()=>velgTeamleder(b.dataset.velgleder));
   el.querySelectorAll('tr[data-p]').forEach(tr=>tr.onclick=e=>{velgPerson(tr.dataset.p);if(e.target.closest('.person'))regApne(tr.dataset.p)});   // navnet åpner «Endre tilgang og områder» med en gang
 }
+/* Slette en bruker: to bekreftelser (forklaring, så skriv e-postadressen). Tar personen ut av brukerlisten (members/admins), ansvarsområdene og hovedledere i områdene.
+   Påloggingskontoen kan ikke slettes herfra (Firebase-konsollen / Supabase Studio → Authentication). */
+function slettBruker(id){
+  const u=D.users.find(x=>x.id===id);if(!u||u.id===D.meg||document.querySelector('dialog.slettb'))return;
+  const ans=ansvarFor(u.id),omr=hovedFor(u),dlg=document.createElement('dialog');dlg.className='slettb';
+  let steg=1;
+  const tegnS=()=>{dlg.innerHTML=steg===1
+    ?'<h2>Slette '+esc(visNavn(u))+'?</h2><p>'+esc(u.id)+'</p><ul><li>Personen tas ut av brukerlisten og mister med en gang tilgang til medlemsinnhold, grupper og team'+(u.role==='admin'?' og administrasjon':'')+'.</li>'
+      +(u.leads.length?'<li>Er teamleder for '+esc(u.leads.map(gNavn).join(', '))+'. Gruppene kan bli stående uten teamleder.</li>':'')
+      +(ans.length?'<li>Fjernes fra ansvarsområdene '+esc(ans.map(a=>a.name).join(', '))+'.</li>':'')
+      +(omr.length?'<li>Fjernes som hovedleder for '+esc(omr.map(o=>o.name).join(', '))+'.</li>':'')
+      +'<li>Påloggingskontoen (e-post og passord) blir stående og må eventuelt slettes i Firebase-konsollen eller Supabase Studio. Meldinger i Sionchat og notater blir liggende.</li></ul>'
+      +'<div class="knapper"><button type="button" class="knapp" data-sa>Avbryt</button><button type="button" class="knapp fare" data-sv>Gå videre</button></div>'
+    :'<h2>Bekreft sletting</h2><p>Dette kan ikke angres. Skriv e-postadressen <b>'+esc(u.id)+'</b> for å slette brukeren.</p><input id="sbE" type="text" autocomplete="off" spellcheck="false" placeholder="'+esc(u.id)+'"><p class="sbfeil" id="sbF"></p>'
+      +'<div class="knapper"><button type="button" class="knapp" data-sa>Avbryt</button><button type="button" class="knapp fare" data-ss disabled>Slett brukeren</button></div>';
+    if(steg===2){const i=dlg.querySelector('#sbE'),b=dlg.querySelector('[data-ss]');i.oninput=()=>{b.disabled=i.value.trim().toLowerCase()!==u.id};setTimeout(()=>i.focus(),30)}};
+  tegnS();document.body.appendChild(dlg);dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();
+  dlg.onclick=async e=>{
+    if(e.target.closest('[data-sa]')){dlg.close();return}
+    if(e.target.closest('[data-sv]')){steg=2;tegnS();return}
+    const b=e.target.closest('[data-ss]');if(!b||b.disabled)return;b.disabled=true;b.textContent='Sletter …';const ikke=[];
+    try{await FB.removeUser(u.id)}catch(er){b.disabled=false;b.textContent='Slett brukeren';dlg.querySelector('#sbF').textContent='Kunne ikke slette: '+((er&&er.code)||er);return}
+    for(const a of ans){const persons=(a.persons||[]).filter(p=>String(p.e||'').toLowerCase()!==u.id),emails=(a.emails||[]).filter(x=>String(x).toLowerCase()!==u.id);try{await FB.setRole(a.id,{...a,persons,emails})}catch(er){ikke.push(a.name)}}
+    for(const o of omr){try{await FB.setOmrade(o.id,{...o,ledere:(o.ledere||[]).filter(x=>x!==u.id)})}catch(er){ikke.push(o.name)}}
+    dlg.close();V.person=null;await last();
+    if(ikke.length)alert(visNavn(u)+' er slettet fra brukerlisten, men kunne ikke fjernes fra: '+ikke.join(', ')+'.')}}
+function velgTeamleder(gid){
+  const kand=D.users.filter(u=>u.role!=='admin').sort((a,b)=>visNavn(a).localeCompare(visNavn(b),'nb')),dlg=document.createElement('dialog');dlg.className='velgl';
+  const rad=q=>kand.filter(u=>treff(u,q)).slice(0,60).map(u=>'<button type="button" class="vlp" data-e="'+esc(u.id)+'">'+avatar(u)+'<span><b>'+esc(visNavn(u))+'</b><small>'+esc(u.id)+(u.groups.includes(gid)?' · med i gruppen':'')+'</small></span></button>').join('')||'<p class="tom" style="padding:16px">Ingen treff.</p>';
+  const flere=samletAlle(gid).length>1;
+  dlg.innerHTML='<h2>Teamleder for '+esc(gNavn(gid))+'</h2><p class="hint">'+(flere?'Gjelder '+samletAlle(gid).map(gNavn).join(', ')+'. ':'')+'Velg personen som skal lede gruppen. Vedkommende legges også inn i gruppen og får teamlederens rettigheter for den. Administratorer har dette fra før og vises ikke.</p><input type="search" id="vlQ" placeholder="Søk etter navn eller e-post" autocomplete="off"><div class="vll" id="vlL">'+rad('')+'</div><div class="knapper"><button type="button" class="knapp" data-vllukk>Avbryt</button></div>';
+  document.body.appendChild(dlg);dlg.addEventListener('close',()=>dlg.remove());dlg.showModal();
+  const q=dlg.querySelector('#vlQ');q.oninput=()=>{dlg.querySelector('#vlL').innerHTML=rad(q.value.trim())};q.focus();
+  dlg.onclick=async e=>{if(e.target.closest('[data-vllukk]')){dlg.close();return}const b=e.target.closest('.vlp');if(!b)return;const u=D.users.find(x=>x.id===b.dataset.e);if(!u)return;
+    const gs=samletAlle(gid);if(!confirm(visNavn(u)+' blir teamleder for '+gs.map(gNavn).join(', ')+'. Fortsette?'))return;
+    b.disabled=true;try{await FB.setLeads(u.id,[...new Set([...u.leads,...gs])],[...new Set([...u.groups,...gs])]);dlg.close();await last()}catch(er){b.disabled=false;alert('Kunne ikke lagre: '+((er&&er.code)||er))}}}
 function grupperChips(u){
   const l=[];
   for(const g of u.leads)l.push('<span class="chip lead" title="Teamleder">★ '+esc(gNavn(g))+'</span>');
@@ -528,12 +614,12 @@ function tegnDetalj(){
   const n=niva(u),ans=ansvarFor(u.id),at=attestStatus(u.id),tg=tilganger(u),topp=el.querySelector('.scroll')?el.querySelector('.scroll').scrollTop:0;
   const ltId=D.ltypes.some(t=>t.id===u.ltype)?u.ltype:(D.ltypes[0]||{}).id;
   let h='<div class="dh">'+avatar(u)+'<div style="min-width:0"><h2>'+esc(visNavn(u))+'</h2><div class="epost">'+esc(u.id)+(u.tlf?' · '+esc(u.tlf):'')+'</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'
-    +lenke({t:n.k},rolleMerke(u),'','Vis alle: '+n.navn)+(u.leder?lenke({t:'lt',id:ltId},'<span class="rolle r-leder">'+esc(ltNavn(u.ltype))+'</span>','','Vis alle i lederkategorien'):'')+(u.leads.length&&u.leder?lenke({t:'gl'},'<span class="rolle r-gl">Teamleder</span>','','Vis alle teamledere'):'')+'</div></div><button class="ikon lukk" id="bLukk" title="Lukk (Esc)">'+IK.x+'</button></div>'
-    +'<div style="padding:12px 22px;border-bottom:1px solid var(--line)"><button class="knapp pri" id="bEndre">Endre tilgang og områder</button></div>';
+    +lenke({t:n.k},rolleMerke(u),'','Vis alle: '+n.navn)+(u.leder?ltAlle(u).map(id=>lenke({t:'lt',id},'<span class="rolle r-leder">'+esc(ltNavn(id))+'</span>','','Vis alle i lederkategorien')).join(''):'')+(u.leads.length&&u.leder?lenke({t:'gl'},'<span class="rolle r-gl">Teamleder</span>','','Vis alle teamledere'):'')+'</div></div><button class="ikon lukk" id="bLukk" title="Lukk (Esc)">'+IK.x+'</button></div>'
+    +'<div style="padding:12px 22px;border-bottom:1px solid var(--line)"><button class="knapp pri" id="bEndre">Endre tilgang og områder</button>'+(u.id!==D.meg?' <button class="knapp fare" id="bSlett">Slett bruker</button>':'')+'</div>';
   h+='<div class="scroll">';
   h+=seks('niva','Nivå','','<div class="niva">'+[['Medlem',1,'med'],['Teamleder',2,'gl'],['Leder',3,'leder'],['Administrator',4,'admin']].map(([t,i,k])=>{const på=i===4?u.role==='admin':i===3?(u.role==='admin'||u.leder):i===2?(u.role==='admin'||u.leads.length>0):true;return lenke({t:k},t,'n'+i+(på?' på':''),'Vis alle: '+t)}).join('')+'</div>'
     +'<p class="epost" style="margin:8px 0 0;white-space:normal">'+(u.role==='admin'?'Administratorer har alt som ledere og teamledere har, for alle grupper.':u.leder&&u.leads.length?'Både leder (ser lederinnhold) og teamleder (publiserer for egne grupper).':u.leder?'Leder: ser lederinnhold, men publiserer ikke.':u.leads.length?'Teamleder: publiserer og styrer medlemmer for egne grupper.':'Vanlig innlogget medlem.')+'</p>');
-  h+=seks('grupper','Grupper',(u.groups.length+u.leads.filter(g=>!u.groups.includes(g)).length)+' av '+D.groups.length+(u.role==='admin'?' · administratorer ser og styrer alle':''),'<div class="grp">'
+  h+=seks('grupper','Grupper og team',(u.groups.length+u.leads.filter(g=>!u.groups.includes(g)).length)+' av '+D.groups.length+(u.role==='admin'?' · administratorer ser og styrer alle':''),'<div class="grp">'
     +D.groups.map(g=>{const le=u.leads.includes(g.id),me=u.groups.includes(g.id),ek=u.extra.includes(g.id),mu=u.muted.includes(g.id);
       return lenke({t:'g',id:g.id},'<span>'+esc(g.name)+'</span><em>'+(le?'★ leder':me?(mu?'varsler av':'med'):ek?'bare varsel':'')+'</em>',le?'lead':me?'med':'ikke','Gå til gruppen '+g.name)}).join('')+'</div>');
   let forrige='';
@@ -549,7 +635,7 @@ function tegnDetalj(){
   h+='</div>';
   el.innerHTML=h;el.querySelector('.scroll').scrollTop=topp;
   $('#bLukk').onclick=()=>velgPerson(null);
-  $('#bEndre').onclick=()=>regApne(u.id);
+  $('#bEndre').onclick=()=>regApne(u.id);if($('#bSlett'))$('#bSlett').onclick=()=>slettBruker(u.id);
 }
 function velgPerson(id){
   V.person=id;
@@ -597,16 +683,16 @@ function regApne(id){
   if(document.querySelector('dialog.reg'))return;
   const u=id?D.users.find(x=>x.id===id):null;
   const R={ny:!u,navn:u?visNavn(u):'',epost:u?u.id:'',tlf:u?(u.tlf||''):'',rolle:u?(u.role==='admin'?'admin':u.leder?'leder':'med'):'med',
-    lt:(u&&D.ltypes.some(t=>t.id===u.ltype))?u.ltype:((D.ltypes[0]||{}).id||''),pastor:!!(u&&u.pastor),kontor:!!(u&&u.kontor),gr:{},ans:new Set(u?ansvarFor(u.id).map(r=>r.id):[]),feil:'',lagrer:false};
+    lts:u&&u.leder?ltAlle(u):[(D.ltypes[0]||{}).id].filter(Boolean),pastor:!!(u&&u.pastor),kontor:!!(u&&u.kontor),gr:{},ans:new Set(u?ansvarFor(u.id).map(r=>r.id):[]),feil:'',lagrer:false};
   for(const g of D.groups)R.gr[g.id]=u?(u.leads.includes(g.id)?2:u.groups.includes(g.id)?1:0):0;
   // Slik blir personen (samme form som en bruker), brukt til forhåndsvisningen og til lagring
   const ny=()=>{const adm=R.rolle==='admin',ids=Object.keys(R.gr);
-    return {id:R.epost||'ny@',role:adm?'admin':'member',leder:R.rolle==='leder',ltype:R.lt,groups:ids.filter(g=>R.gr[g]>0),leads:adm?[]:ids.filter(g=>R.gr[g]===2),extra:u?u.extra:[],muted:u?u.muted:[],pastor:R.pastor,kontor:R.kontor,name:R.navn,tlf:R.tlf}};
+    return {id:R.epost||'ny@',role:adm?'admin':'member',leder:R.rolle==='leder',ltype:R.lts[0]||'',ltyper:R.lts.slice(),groups:ids.filter(g=>R.gr[g]>0),leads:adm?[]:ids.filter(g=>R.gr[g]===2),extra:u?u.extra:[],muted:u?u.muted:[],pastor:R.pastor,kontor:R.kontor,name:R.navn,tlf:R.tlf}};
   const dlg=document.createElement('dialog');dlg.className='reg';document.body.appendChild(dlg);
   const hoyre=()=>{const f=ny(),n=niva(f),tg=tilganger(f).filter(x=>x.v);
     return '<div class="epost" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:11px">Slik blir det</div>'
      +'<div style="display:flex;gap:12px;align-items:center;margin:10px 0 12px">'+avatar(f)+'<div style="min-width:0"><div class="navn">'+esc(R.navn.trim()||'Ny person')+'</div><div class="epost">'+esc(R.epost||'e-post')+'</div></div></div>'
-     +'<div class="chips">'+'<span class="rolle '+n.kl+'">'+esc(n.navn)+'</span>'+(f.leder?'<span class="rolle r-leder">'+esc(ltNavn(R.lt))+'</span>':'')+'</div>'
+     +'<div class="chips">'+'<span class="rolle '+n.kl+'">'+esc(n.navn)+'</span>'+(f.leder?R.lts.map(id=>'<span class="rolle r-leder">'+esc(ltNavn(id))+'</span>').join(''):'')+'</div>'
      +(f.leads.length?'<p class="hint">Leder for: '+esc(f.leads.map(gNavn).join(', '))+'</p>':'')
      +'<div style="margin-top:12px">'+tg.map(x=>'<div class="tilg"><span class="m '+(x.v===true?'ja':'del')+'">'+(x.v===true?'✓':'◐')+'</span><span class="t">'+esc(x.navn)+'</span><span class="h">'+esc(x.hvorfor)+'</span></div>').join('')+'</div>'
      +(R.ans.size?'<div class="kort"><b>Ansvarlig for</b><span class="epost" style="white-space:normal">'+esc(D.roles.filter(r=>R.ans.has(r.id)).map(r=>r.name).join(', '))+'</span></div>':'')};
@@ -617,21 +703,22 @@ function regApne(id){
      +'<div class="steg"><h3><span class="nr">1</span>Hvem</h3><div class="felt3"><label>Navn<input id="rN" maxlength="60" value="'+esc(R.navn)+'" autocomplete="off"></label><label>E-post<input id="rE" type="email" value="'+esc(R.epost)+'" '+(R.ny?'':'disabled')+' autocomplete="off"></label><label>Mobil (valgfritt)<input id="rT" type="tel" maxlength="30" value="'+esc(R.tlf)+'" autocomplete="off"></label></div>'
        +(R.ny?'<p class="hint"><b>Appen skal ikke inneholde opplysninger om barn under 13 år. Legg ikke inn dem.</b></p>':'')+'</div>'
      +'<div class="steg"><h3><span class="nr">2</span>Nivå</h3><div class="roller">'+REG_ROLLER.map(x=>'<button type="button" class="rk" data-rr="'+x[0]+'" aria-pressed="'+(R.rolle===x[0])+'" style="--rf:var('+x[3]+');--rs:var('+x[4]+')"><b>'+x[1]+'</b><span>'+x[2]+'</span></button>').join('')+'</div>'
-       +(R.rolle==='leder'?'<div class="ltv"><span class="hint" style="margin:0 4px 0 0">Lederkategori:</span>'+D.ltypes.map(t=>'<button type="button" class="ak" data-rlt="'+esc(t.id)+'" aria-pressed="'+(R.lt===t.id)+'">'+esc(t.name)+'</button>').join('')+'</div>':'')
-       +'<label class="pastorvalg"><input type="checkbox" id="rPastor" '+(R.pastor?'checked':'')+'><span><b>Pastor</b> · kan sende melding, varsel og nyhet til alle, alle medlemmer og alle grupper, og er med i alle ledersamtaler. Blir ikke teamleder automatisk (velg Leder for gruppene under hvis det trengs).</span></label>'
+       +(R.rolle==='leder'?'<div class="ltv"><span class="hint" style="margin:0 4px 0 0">Lederkategorier (velg én eller flere):</span>'+D.ltypes.map(t=>'<button type="button" class="ak" data-rlt="'+esc(t.id)+'" aria-pressed="'+R.lts.includes(t.id)+'">'+esc(t.name)+'</button>').join('')+'</div>':'')
+       +'<label class="pastorvalg"><input type="checkbox" id="rPastor" '+(R.pastor?'checked':'')+'><span><b>Pastor</b> · kan sende melding, varsel og nyhet til alle, alle medlemmer og alle grupper. Er bare med i ledersamtaler for områder vedkommende leder. Blir ikke teamleder automatisk (velg Leder for gruppene under hvis det trengs, og velg gjerne lederkategorien Hovedpastorer eller Medpastorer og ungdomspastorer som tittel).</span></label>'
        +'<label class="pastorvalg"><input type="checkbox" id="rKontor" '+(R.kontor?'checked':'')+'><span><b>Sekretær</b> · tar seg av post og e-post, og skriver og svarer på pastorens vegne. Kan sende melding, varsel og nyhet (også Pastorens hilsen) til alle, men administrerer ikke appen. Legg personen inn i ansvarsområdet for pastoren eller menighetskontoret under (steg 4), så alle kan sende beskjed.</span></label>'
        +'<p class="hint">'+(ledOK?'<b>Teamleder</b> velges per gruppe under («Leder»). Det kan kombineres med både Medlem og Leder.':'Administratorer ser og styrer alle grupper. Gruppene under gjelder bare tilhørighet og varsler.')+'</p></div>'
-     +'<div class="steg"><h3><span class="nr">3</span>Grupper</h3><div class="gtab">'+D.groups.map(g=>{const v=!ledOK&&R.gr[g.id]===2?1:R.gr[g.id];
-         return '<div class="grad'+(v===2?' led':v===1?' på':'')+'"><span title="'+esc(g.desc||'')+'">'+esc(g.name)+'</span><span class="seg">'+[[0,'Ikke med'],[1,'Med']].concat(ledOK?[[2,'Leder']]:[]).map(([k,t])=>'<button type="button" class="s'+k+'" data-rg="'+esc(g.id)+'" data-v="'+k+'" aria-pressed="'+(v===k)+'">'+t+'</button>').join('')+'</span></div>'}).join('')+'</div></div>'
+     +'<div class="steg"><h3><span class="nr">3</span>Grupper og team</h3>'+(ledOK?'<label class="pastorvalg"><input type="checkbox" data-ungdomsteam '+(['ungdomsledere','activ8','hangout'].some(id=>R.gr[id]===2)?'checked':'')+'><span><b>Ungdomslederteam</b><br>Felles lederteam for Activ8 (ungdommer) og Hangout (unge voksne).</span></label>':'')+'<div class="gtab">'+D.groups.filter(g=>g.id!=='ungdomsledere'||!ledOK).map(g=>{const ungdom=['activ8','hangout'].includes(g.id),laast=ledOK&&ungdom&&R.gr[g.id]===2,v=(!ledOK||ungdom)&&R.gr[g.id]===2?1:R.gr[g.id];
+         return '<div class="grad'+(v===2?' led':v===1?' på':'')+'"><span title="'+esc(g.desc||'')+'">'+esc(g.name)+'</span><span class="seg">'+[[0,'Ikke med'],[1,'Med']].concat(ledOK&&!ungdom?[[2,'Leder']]:[]).map(([k,t])=>'<button type="button" class="s'+k+'" data-rg="'+esc(g.id)+'" data-v="'+k+'" '+(laast?'disabled ':'')+'aria-pressed="'+(v===k)+'">'+t+'</button>').join('')+'</span></div>'}).join('')+'</div></div>'
      +'<div class="steg"><h3><span class="nr">4</span>Ansvarsområder</h3><p class="hint" style="margin:-4px 0 10px">Valgfritt. Personen blir kontaktperson og kan få beskjeder fra medlemmene. Maks 4 personer per område.</p>'
        +(D.roles.length?'<div class="ansl">'+D.roles.map(a=>{const på=R.ans.has(a.id),full=!på&&(a.persons||[]).length>=4;return '<button type="button" class="ak" data-ra="'+esc(a.id)+'" aria-pressed="'+på+'" '+(full?'disabled title="Fullt: 4 personer"':'')+'>'+esc(a.name)+(full?' (fullt)':'')+'</button>'}).join('')+'</div>':'<p class="hint">Ingen ansvarsområder er laget ennå (lages i appen under Ansvarsområder).</p>')+'</div>'
      +'<div class="regf"><span class="regmsg" role="status">'+esc(R.feil)+'</span><button type="button" class="knapp" data-ravbryt '+(R.lagrer?'disabled':'')+'>Avbryt</button><button type="submit" class="knapp pri" '+(R.lagrer?'disabled':'')+'>'+(R.lagrer?'Lagrer …':R.ny?'Opprett bruker':'Lagre endringer')+'</button></div></form>'
      +'<aside class="regh">'+hoyre()+'</aside></div>';
     dlg.querySelector('.regv').scrollTop=top};
+  dlg.addEventListener('change',e=>{if(!e.target.matches('[data-ungdomsteam]'))return;for(const id of ['ungdomsledere','activ8','hangout']){if(e.target.checked)R.gr[id]=2;else if(R.gr[id]===2)R.gr[id]=1}tegn()});
   dlg.addEventListener('change',e=>{if(e.target.id==='rKontor'){R.kontor=e.target.checked;tegn();return}if(e.target.id!=='rPastor')return;R.pastor=e.target.checked;tegn()});   // pastor blir ikke teamleder automatisk; velg Leder for gruppene i steg 3 ved behov
   dlg.addEventListener('input',e=>{const t=e.target;if(t.id==='rN')R.navn=t.value;else if(t.id==='rE')R.epost=t.value.trim().toLowerCase();else if(t.id==='rT')R.tlf=t.value;tegnH()});
   dlg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||R.lagrer||b.type==='submit')return;const d=b.dataset;
-    if(d.rr)R.rolle=d.rr;else if(d.rlt)R.lt=d.rlt;else if(d.rg)R.gr[d.rg]=+d.v;else if(d.ra){R.ans.has(d.ra)?R.ans.delete(d.ra):R.ans.add(d.ra)}else if('ravbryt' in d){dlg.close();return}else return;
+    if(d.rr)R.rolle=d.rr;else if(d.rlt){const i=R.lts.indexOf(d.rlt);if(i>=0){if(R.lts.length>1)R.lts.splice(i,1)}else R.lts.push(d.rlt)}else if(d.rg)R.gr[d.rg]=+d.v;else if(d.ra){R.ans.has(d.ra)?R.ans.delete(d.ra):R.ans.add(d.ra)}else if('ravbryt' in d){dlg.close();return}else return;
     tegn()});
   dlg.addEventListener('cancel',e=>{if(R.lagrer)e.preventDefault()});
   dlg.addEventListener('close',()=>dlg.remove());
@@ -652,7 +739,7 @@ function regApne(id){
       else if((u.role==='admin')!==adm){await FB.setUserRole(m,rolle);if(u.extra.length||u.muted.length)await FB.setVarselFra(m,rolle,{extra:u.extra,muted:u.muted})}   // flyttingen lager en ny oppføring: varselvalgene tas med
       const pr={name:R.navn};if(R.tlf||(u&&u.tlf))pr.tlf=R.tlf;await FB.setProfile(m,pr,adm);
       if(adm)await FB.setGroups(m,'admin',f.groups);
-      else{await FB.setLeder(m,f.leder);if(f.leder)await FB.setLtype(m,R.lt);await FB.setLeads(m,f.leads,f.groups)}
+      else{await FB.setLeder(m,f.leder);if(f.leder)await (FB.setLtyper?FB.setLtyper(m,R.lts):FB.setLtype(m,R.lts[0]||''));await FB.setLeads(m,f.leads,f.groups)}
       if(R.pastor||(u&&u.pastor))await FB.setPastorRolle(m,rolle,R.pastor);
       if(R.kontor||(u&&u.kontor))await FB.setKontor(m,rolle,R.kontor);
       // Ansvarsområder: legg til, ta bort eller oppdater navn og mobil
@@ -674,12 +761,11 @@ function regApne(id){
 }
 
 /* ===== Områder (for eksempel Ungdomsarbeid med Activ8 og Hangout) med hovedledere. Hovedlederne blir teamledere for gruppene i området,
-   og ledersamtalen i Sionchat samler hovedledere, pastorer og teamledere. Hver områdeoppføring har en kopi av pastorlisten (pastorer). ===== */
-async function synkPastorer(){const p=D.users.filter(u=>u.pastor).map(u=>u.id).sort();
-  for(const o of D.omrader)if(JSON.stringify([...(o.pastorer||[])].sort())!==JSON.stringify(p)){try{await FB.setOmrade(o.id,{...o,pastorer:p});o.pastorer=p}catch(e){}}}
+   og ledersamtalen i Sionchat samler hovedlederne og teamlederne i området. Pastorer er bare med når de selv leder der (pastorlisten på området brukes ikke lenger). ===== */
+async function synkPastorer(){}   // tidligere: kopi av pastorlisten inn i hvert område
 async function omrLagre(o0,o){   // o0: slik det var (null for nytt), o: slik det skal bli (null = slettes)
   const andre=D.omrader.filter(x=>x.id!==(o0||o).id);
-  if(o)await FB.setOmrade(o.id,{...o,pastorer:D.users.filter(u=>u.pastor).map(u=>u.id)});else await FB.delOmrade(o0.id);
+  if(o)await FB.setOmrade(o.id,{...o,pastorer:[]});else await FB.delOmrade(o0.id);
   for(const e of new Set([...(o0?o0.ledere:[]),...(o?o.ledere:[])])){const u=D.users.find(x=>x.id===e);if(!u||u.role==='admin')continue;
     const beholdes=new Set(andre.filter(x=>x.ledere.includes(e)).flatMap(x=>x.groups)),leads=new Set(u.leads),groups=new Set(u.groups);
     if(o0&&o0.ledere.includes(e))for(const g of o0.groups)if(!beholdes.has(g)&&!(o&&o.ledere.includes(e)&&o.groups.includes(g)))leads.delete(g);   // fjernet som hovedleder eller gruppen tatt ut av området
@@ -727,13 +813,14 @@ async function last(){
   for(const x of us){const id=x.id.toLowerCase(),f=per.get(id);
     if(!f){per.set(id,{...x,id,groups:x.groups||[],leads:x.leads||[],extra:x.extra||[],muted:x.muted||[],leder:x.leder===true});continue}
     Object.assign(f,{role:f.role==='admin'||x.role==='admin'?'admin':'member',groups:uni(f.groups,x.groups),leads:uni(f.leads,x.leads),extra:uni(f.extra,x.extra),muted:uni(f.muted,x.muted),
-      leder:f.leder||x.leder===true,pastor:f.pastor||x.pastor===true,kontor:f.kontor||x.kontor===true,ltype:f.ltype||x.ltype||'',name:f.name||x.name||'',tlf:f.tlf||x.tlf||''})}
+      leder:f.leder||x.leder===true,pastor:f.pastor||x.pastor===true,kontor:f.kontor||x.kontor===true,ltype:f.ltype||x.ltype||'',ltyper:(f.ltyper&&f.ltyper.length?f.ltyper:x.ltyper)||[],name:f.name||x.name||'',tlf:f.tlf||x.tlf||''})}
   D.users=[...per.values()].map(u=>({...u,leder:u.role!=='admin'&&u.leder}));
   D.groups=(gr&&gr.length?sortOrd(gr):GROUPS_DEFAULT.map(g=>({id:g[0],name:g[1],desc:g[2]}))).map(g=>({...g,vakt:g.vakt===undefined?!GR_REMIND_DEFAULT.includes(g.id):!!g.vakt,remind:g.remind===undefined?GR_REMIND_DEFAULT.includes(g.id):!!g.remind}));
   // grupper som brukes på personer men ikke finnes i listen (f.eks. utleie, bonneledere) tas med til slutt
   const kjente=new Set(D.groups.map(g=>g.id));
   for(const u of D.users)for(const g of [...u.groups,...u.leads,...u.extra])if(!kjente.has(g)){kjente.add(g);D.groups.push({id:g,name:g,desc:'',vakt:false,remind:false})}
   D.ltypes=lt&&lt.length?sortOrd(lt):LTYPES_DEFAULT.map(t=>({id:t[0],name:t[1]}));
+  for(const id of ['hovedpastor','medpastor'])if(!D.ltypes.some(t=>t.id===id))D.ltypes.push({id,name:LTYPES_DEFAULT.find(t=>t[0]===id)[1]});   // nye pastortitler vises før appen har lagret dem (ltNyeLagre i index.html)
   const cn=ca&&ca.length?sortOrd(ca).map(c=>normCat(c.name)):CATS_DEFAULT.slice();
   D.cats=[...new Set(cn.concat(['Ungdomsleder']))];
   D.roles=ro||[];

@@ -49,11 +49,13 @@ async function brukere() {   // e-post -> {groups, muted, extra}, medlemmer og a
   }
   return ut;
 }
-async function ledere() {   // e-post -> lederkategori
+async function ledere() {   // e-post -> lederkategoriene (flere er mulig: ltyper; ltype er den første)
   const ut = {};
-  (await pool.query('select email, ltype from members where leder = true')).rows.forEach(r => { ut[String(r.email).toLowerCase()] = r.ltype || 'hoved'; });
+  (await pool.query('select email, ltype, ltyper from members where leder = true')).rows.forEach(r => {
+    const l = [...new Set([r.ltype, ...(r.ltyper || [])].filter(Boolean))]; ut[String(r.email).toLowerCase()] = l.length ? l : ['hoved']; });
   return ut;
 }
+const iKat = (l, e, ltypes) => !!(l[e] && l[e].some(t => ltypes.includes(t)));   // leder i minst én av kategoriene
 async function alleKoder() {
   return (await pool.query('select token, email from push_tokens')).rows.map(r => ({ token: r.token, email: r.email ? String(r.email).toLowerCase() : '' }));
 }
@@ -76,12 +78,12 @@ async function lesMal(m) {
 async function mottakere(mal, koder) {
   if (mal.type === 'emails') return koder.filter(k => k.email && mal.emails.includes(k.email));
   if (mal.type === 'alle') return koder;
-  if (mal.type === 'ltype') { const l = await ledere(); return koder.filter(k => k.email && l[k.email] && mal.ltypes.includes(l[k.email])); }
+  if (mal.type === 'ltype') { const l = await ledere(); return koder.filter(k => k.email && iKat(l, k.email, mal.ltypes)); }
   const b = await brukere(), l = mal.type === 'blandet' ? await ledere() : {};
   return koder.filter(k => {
     const u = k.email && b[k.email]; if (!u) return false;
     if (mal.type === 'medlem') return true;
-    if (mal.type === 'blandet' && l[k.email] && mal.ltypes.includes(l[k.email])) return true;
+    if (mal.type === 'blandet' && iKat(l, k.email, mal.ltypes)) return true;
     return u.groups.some(g => mal.groups.includes(g) && !u.muted.includes(g)) || u.extra.some(g => mal.groups.includes(g));
   });
 }

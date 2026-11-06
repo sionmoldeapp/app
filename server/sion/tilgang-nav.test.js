@@ -6,10 +6,24 @@ const code=html.slice(html.indexOf('const GROUPS_DEFAULT='),html.lastIndexOf('(a
 let browser,server,url;
 before(async()=>{server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end('<!doctype html><style>'+html.match(/<style>([\s\S]*?)<\/style>/)[1]+'</style><div class="nav" id="nav" style="width:290px"></div>');});await new Promise(r=>server.listen(0,'127.0.0.1',r));url='http://127.0.0.1:'+server.address().port;browser=await chromium.launch({executablePath:'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',headless:true});});
 after(async()=>{await browser?.close();await new Promise(r=>server.close(r));});
+test('Felles ungdomsledervalg styrer begge team og kan fjernes samlet i editoren',async()=>{
+ const p=await side();try{
+  await p.evaluate(()=>regApne('medlem@example.test'));
+  const choice=p.locator('[data-ungdomsteam]');
+  assert.equal(await choice.count(),1);
+  assert.equal(await p.locator('[data-rg="activ8"][data-v="2"],[data-rg="hangout"][data-v="2"],[data-rg="ungdomsledere"]').count(),0);
+  await choice.check();
+  for(const id of ['activ8','hangout'])assert.equal(await p.locator('[data-rg="'+id+'"][data-v="1"]').isDisabled(),true);
+  await choice.uncheck();
+  for(const id of ['activ8','hangout']){
+   const member=p.locator('[data-rg="'+id+'"][data-v="1"]');
+   assert.equal(await member.isDisabled(),false);assert.equal(await member.getAttribute('aria-pressed'),'true');
+  }
+ }finally{await p.close();}});
 async function side(){const p=await browser.newPage({viewport:{width:390,height:844}});await p.goto(url);await p.evaluate(k=>{
   window.fbReady=new Promise(()=>{});
   (0,eval)(k+';window.testD=D;window.testV=V;window.tegnNav=tegnNav;window.utvalgFor=utvalgFor;window.teamNavGrener=teamNavGrener;');
-  testD.groups=[{id:'ungdomsledere',name:'Ungdomsledere'},{id:'sondagsskole',name:'Søndagsskole'},{id:'lovsang',name:'Lovsangsteamet'},{id:'elevate',name:'Elevate'},{id:'custom-sw',name:'S Worship'},{id:'cdur',name:'Sion C-dur'},{id:'custom-kor',name:'Barnekor'},{id:'debora',name:'Debora'},{id:'bonneledere',name:'Bønneledere'},{id:'forkynnere',name:'Forkynnere'},{id:'lederradet',name:'Lederrådet'},{id:'vertskap',name:'Vertskap'}];
+  testD.groups=[{id:'activ8',name:'Activ8'},{id:'hangout',name:'Hangout'},{id:'ungdomsledere',name:'Ungdomsledere'},{id:'sondagsskole',name:'Søndagsskole'},{id:'lovsang',name:'Lovsangsteamet'},{id:'elevate',name:'Elevate'},{id:'custom-sw',name:'S Worship'},{id:'cdur',name:'Sion C-dur'},{id:'custom-kor',name:'Barnekor'},{id:'debora',name:'Debora'},{id:'bonneledere',name:'Bønneledere'},{id:'forkynnere',name:'Forkynnere'},{id:'lederradet',name:'Lederrådet'},{id:'vertskap',name:'Vertskap'}];
   testD.ltypes=[{id:'hoved',name:'Hovedledere'},{id:'ungdom',name:'Ungdomsledere'},{id:'forkynner',name:'Forkynnere'},{id:'custom',name:'Andre ledere'}];
   const u=(id,more={})=>({id:id+'@example.test',name:id,role:'member',groups:[],leads:[],extra:[],muted:[],leder:false,...more});
   testD.users=[u('admin',{role:'admin'}),u('pastor',{pastor:true}),u('raad',{groups:['lederradet']}),u('hoved',{leder:true,ltype:'hoved'}),u('omradeleder'),u('ungdom',{leder:true,ltype:'ungdom'}),u('worship',{leads:['custom-sw','elevate']}),u('kor',{leads:['custom-kor']}),u('forkynner',{leder:true,ltype:'forkynner'}),u('medlem',{groups:['custom-sw']})];
@@ -20,7 +34,7 @@ test('Fem hovedoverskrifter står i avtalt rekkefølge og lovsang har fem undert
  const p=await side();try{
   assert.deepEqual(await p.locator('#nav>.navgr>h3').allTextContents(),['Administratorer1','Pastorer1','Lederrådet1','Hovedledere2','Teamledere4','Andre oversikter']);
   assert.deepEqual(await p.locator('[data-seks="nav-team-lovsang"]>.seksinn>.navgr>h3').allTextContents(),['Lovsangsteamet0','Elevate1','S Worship1','Sion-Cdur0','Barnekor1']);
-  for(const t of ['Ungdomsledere','Søndagsskoleledere','Lovsangsteam ledere','Debora','Bønnegruppe','Forkynnere','Vertskap','Andre ledere'])assert.ok((await p.locator('[data-seks="nav-team"]>.seksinn').textContent()).includes(t));
+  for(const t of ['Ungdomslederteam','Søndagsskoleledere','Lovsangsteam ledere','Debora','Bønnegruppe','Forkynnere','Vertskap','Andre ledere'])assert.ok((await p.locator('[data-seks="nav-team"]>.seksinn').textContent()).includes(t));
  }finally{await p.close();}});
 test('Sammenlegging skjuler også valgt punkt og undergrupper; hver gren beholder egen tilstand',async()=>{
  const p=await side();try{

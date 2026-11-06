@@ -112,6 +112,24 @@ service cloud.firestore {
     // Beskjeder mellom et medlem og de ansvarlige for et område. parts er e-postadressene til deltakerne (avsenderen og personene på området), og bare
     // de kan lese og skrive. Ved opprettelse må alle andre deltakere stå på ansvarsområdet (roles/{roleId}.emails).
     // Reaksjonsfelt på en melding: en deltaker kan bare legge til eller fjerne sin egen e-post i listen f.
+    // Fri emoji-reaksjon: emo er en liste med «e-post emoji». Deltakeren legger til og/eller fjerner høyst én oppføring, og bare sin egen.
+    function emoOK() {
+      let ny = request.resource.data.get('emo', []);
+      let gml = resource.data.get('emo', []);
+      let lagt = ny.removeAll(gml);
+      let tatt = gml.removeAll(ny);
+      return !('emo' in request.resource.data.diff(resource.data).affectedKeys())
+        || (ny is list && ny.size() <= 40 && lagt.size() <= 1 && tatt.size() <= 1
+            && (lagt.size() == 0 || (lagt[0] is string && lagt[0].split(' ')[0] == request.auth.token.email && lagt[0].size() <= request.auth.token.email.size() + 20))
+            && (tatt.size() == 0 || tatt[0].split(' ')[0] == request.auth.token.email));
+    }
+    // Som lykOK, men for lister med plass til alle i en gruppesamtale (40).
+    function egenOK(f) {
+      return !(f in request.resource.data.diff(resource.data).affectedKeys())
+        || (request.resource.data[f] is list && request.resource.data[f].size() <= 40
+            && request.resource.data[f].toSet().difference(resource.data.get(f, []).toSet()).hasOnly([request.auth.token.email])
+            && resource.data.get(f, []).toSet().difference(request.resource.data[f].toSet()).hasOnly([request.auth.token.email]));
+    }
     function lykOK(f) {
       return !(f in request.resource.data.diff(resource.data).affectedKeys())
         || (request.resource.data[f] is list && request.resource.data[f].size() <= 8
@@ -132,7 +150,7 @@ service cloud.firestore {
         && request.resource.data.last is string && request.resource.data.last.size() <= 140
         && request.resource.data.ms is number && request.resource.data.unread is list
         && request.resource.data.created == request.time;
-      // Privat beskjed fra en gruppeleder til ett medlem i en av gruppene vedkommende har ansvar for (administrator kan skrive til alle medlemmer).
+      // Privat samtale mellom to medlemmer.
       // parts er alltid [avsender, mottaker]. Mottakeren svarer i samme samtale (se update under).
       allow create: if isMember()
         && request.resource.data.keys().hasOnly(['roleId', 'roleName', 'kind', 'toName', 'from', 'fromName', 'parts', 'last', 'lastBy', 'ms', 'unread', 'created'])
@@ -144,9 +162,6 @@ service cloud.firestore {
         && request.resource.data.parts is list && request.resource.data.parts.size() == 2
         && request.resource.data.parts[0] == request.auth.token.email && request.resource.data.parts[1] != request.auth.token.email
         && exists(/databases/$(database)/documents/members/$(request.resource.data.parts[1]))
-        && (isAdmin() || isPastor() || (isLeader() && get(/databases/$(database)/documents/members/$(request.resource.data.parts[1])).data.get('groups', []).toSet().hasAny(myLeads().toSet()))   // pastor/sekretær: til alle medlemmer
-            // Beskjed om en booking: medlemmer i gruppen utleie kan skrive til ledere for gruppen vertskap.
-            || (utleieTilgang() && 'vertskap' in get(/databases/$(database)/documents/members/$(request.resource.data.parts[1])).data.get('leads', [])))
         && request.resource.data.last is string && request.resource.data.last.size() <= 140
         && request.resource.data.ms is number && request.resource.data.unread is list
         && request.resource.data.created == request.time;
@@ -168,8 +183,9 @@ service cloud.firestore {
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
         && request.resource.data.unread is list && request.resource.data.unread.toSet().difference(resource.data.parts.toSet()).size() == 0
         && (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['unread'])
-            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['last', 'lastBy', 'ms', 'unread', 'gone'])
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['last', 'lastBy', 'ms', 'unread', 'gone', 'levert'])
                 && (!('gone' in request.resource.data) || request.resource.data.gone == [])
+                && (!('levert' in request.resource.data) || request.resource.data.levert == [])
                 && request.resource.data.lastBy == request.auth.token.email
                 && request.resource.data.last is string && request.resource.data.last.size() <= 140
                 && request.resource.data.ms is number));
@@ -179,6 +195,34 @@ service cloud.firestore {
         && request.resource.data.gone is list && request.resource.data.gone.size() <= 8
         && request.resource.data.gone.toSet().difference(resource.data.get('gone', []).toSet()).hasOnly([request.auth.token.email])
         && resource.data.get('gone', []).toSet().difference(request.resource.data.gone.toSet()).hasOnly([request.auth.token.email]);
+      // Levert: en deltaker legger bare til «egen e-post:samtalens ms» i levert (mottakerens enhet har fått siste melding). Ingenting fjernes.
+      allow update: if signedIn() && request.auth.token.email in resource.data.parts
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['levert'])
+        && request.resource.data.levert is list && request.resource.data.levert.size() <= 200
+        && request.resource.data.levert.toSet().hasAll(resource.data.get('levert', []).toSet())
+        && request.resource.data.levert.toSet().difference(resource.data.get('levert', []).toSet()).hasOnly([request.auth.token.email + ':' + string(resource.data.ms)]);
+      // Ledersamtale for et område («<Område> – ledere»): administrator eller hovedleder for området som er med i samtalen kan rette deltakerne
+      // (nye hovedledere og teamledere inn, de som ikke leder der lenger ut). omr er områdets id og må stemme med samtalens navn.
+      allow update: if signedIn() && request.auth.token.email in resource.data.parts
+        && resource.data.get('kind', '') == 'gruppe'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parts', 'unread', 'omr'])
+        && request.resource.data.omr is string
+        && exists(/databases/$(database)/documents/omrader/$(request.resource.data.omr))
+        && resource.data.roleName == get(/databases/$(database)/documents/omrader/$(request.resource.data.omr)).data.name + ' – ledere'
+        && (isAdmin() || request.auth.token.email in get(/databases/$(database)/documents/omrader/$(request.resource.data.omr)).data.get('ledere', []))
+        && request.resource.data.parts is list && request.resource.data.parts.size() >= 3 && request.resource.data.parts.size() <= 40
+        && request.resource.data.unread is list && request.resource.data.unread.toSet().difference(request.resource.data.parts.toSet()).size() == 0;
+      // Nytt navn i Min profil: deltakeren endrer bare sin egen nøkkel i navn, fromName hvis samtalen er startet av vedkommende, og toName hvis vedkommende er mottakeren i en privat samtale.
+      allow update: if signedIn() && request.auth.token.email in resource.data.parts
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['navn', 'fromName', 'toName'])
+        && request.resource.data.get('navn', {}) is map && request.resource.data.get('navn', {}).size() <= 41
+        && request.resource.data.get('navn', {}).diff(resource.data.get('navn', {})).affectedKeys().hasOnly([request.auth.token.email])
+        && request.resource.data.get('navn', {}).get(request.auth.token.email, '') is string
+        && request.resource.data.get('navn', {}).get(request.auth.token.email, '').size() <= 60
+        && (request.resource.data.get('fromName', '') == resource.data.get('fromName', '') || resource.data.from == request.auth.token.email)
+        && (request.resource.data.get('toName', '') == resource.data.get('toName', '') || (resource.data.get('kind', '') == 'dm' && resource.data.parts[1] == request.auth.token.email))
+        && request.resource.data.get('fromName', '') is string && request.resource.data.get('fromName', '').size() <= 60
+        && request.resource.data.get('toName', '') is string && request.resource.data.get('toName', '').size() <= 60;
       // Farge på samtalen: begge deltakerne kan velge en av de faste fargene.
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['farge', 'bakgrunn', 'bgv'])
@@ -197,6 +241,10 @@ service cloud.firestore {
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bilde'])
         && (!('bilde' in request.resource.data) || (request.resource.data.bilde is string && request.resource.data.bilde.size() <= 30000 && request.resource.data.bilde.matches('^data:image/jpeg;base64,.*')));
+      // Feste og arkivere en samtale for seg selv: bare egen e-post i festet/arkiv.
+      allow update: if signedIn() && request.auth.token.email in resource.data.parts
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['festet', 'arkiv'])
+        && egenOK('festet') && egenOK('arkiv');
       // Dempe en samtale for seg selv: bare egen e-post i feltet dempet.
       allow update: if signedIn() && request.auth.token.email in resource.data.parts
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dempet'])
@@ -222,8 +270,8 @@ service cloud.firestore {
         // Angre en melding du selv har sendt: teksten tømmes og slettet settes.
         allow update: if signedIn() && resource.data.by == request.auth.token.email
           && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'slettet', 'img', 'svar', 'lyd', 'lsek', 'avst'])
-          && request.resource.data.slettet == true && request.resource.data.text == ''
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'slettet', 'img', 'svar', 'lyd', 'lsek', 'avst', 'fil'])
+          && request.resource.data.slettet == true && request.resource.data.text == '' && !('fil' in request.resource.data)
           && !('img' in request.resource.data) && !('svar' in request.resource.data)
           && !('lyd' in request.resource.data) && !('lsek' in request.resource.data) && !('avst' in request.resource.data);
         // Rediger en melding du selv har sendt (bare tekstmeldinger).
@@ -235,7 +283,7 @@ service cloud.firestore {
           && !('slettet' in resource.data) && !('img' in resource.data);
         // 👍 på en melding: deltakerne kan bare legge til eller fjerne sin egen e-post i feltet likes.
         allow update: if signedIn() && request.auth.token.email in get(/databases/$(database)/documents/threads/$(id)).data.parts
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'r_hjerte', 'r_ler', 'r_wow', 'r_trist', 'r_be', 'r_ild', 'r_hender', 'r_sion', 'r_amen'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'r_hjerte', 'r_ler', 'r_wow', 'r_trist', 'r_be', 'r_ild', 'r_hender', 'r_sion', 'r_amen', 'emo']) && emoOK()
           && lykOK('likes') && lykOK('r_hjerte') && lykOK('r_ler') && lykOK('r_wow') && lykOK('r_trist') && lykOK('r_be')
           && lykOK('r_ild') && lykOK('r_hender') && lykOK('r_sion') && lykOK('r_amen');
         // Lesekvittering: kan bare legge til seg selv, aldri fjerne andre eller endre innhold.
@@ -249,11 +297,14 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stjerne'])
           && lykOK('stjerne');
         allow create: if signedIn() && request.auth.token.email in getAfter(/databases/$(database)/documents/threads/$(id)).data.parts
-          && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created', 'svar', 'img', 'lyd', 'lsek', 'avst', 'pam'])
+          && request.resource.data.keys().hasOnly(['by', 'name', 'text', 'created', 'svar', 'img', 'lyd', 'lsek', 'avst', 'pam', 'fil'])
           && request.resource.data.by == request.auth.token.email
           && request.resource.data.name is string && request.resource.data.name.size() <= 60
           && request.resource.data.text is string && request.resource.data.text.size() <= 1000
-          && (request.resource.data.text.size() >= 1 || ('img' in request.resource.data) || ('lyd' in request.resource.data) || ('avst' in request.resource.data))
+          && (request.resource.data.text.size() >= 1 || ('img' in request.resource.data) || ('lyd' in request.resource.data) || ('avst' in request.resource.data) || ('fil' in request.resource.data))
+          && (!('fil' in request.resource.data) || (request.resource.data.fil is map && request.resource.data.fil.keys().hasOnly(['navn', 'type', 'str', 'data'])
+              && request.resource.data.fil.navn is string && request.resource.data.fil.navn.size() <= 120 && request.resource.data.fil.type is string && request.resource.data.fil.type.size() <= 100
+              && request.resource.data.fil.str is number && request.resource.data.fil.data is string && request.resource.data.fil.data.size() <= 700000 && request.resource.data.fil.data.matches('^data:.*')))
           && (!('lyd' in request.resource.data) || (request.resource.data.lyd is string && request.resource.data.lyd.size() <= 200000 && request.resource.data.lsek is number && request.resource.data.lsek <= 120))
           && (!('avst' in request.resource.data) || (request.resource.data.avst is map && request.resource.data.avst.keys().hasOnly(['id'])))
           && (!('img' in request.resource.data) || (request.resource.data.img is string && request.resource.data.img.size() <= 200000))
@@ -316,9 +367,22 @@ service cloud.firestore {
       allow delete: if isMember() && (resource.data.by == request.auth.uid || prayReader());
     }
     // Egne innstillinger (rekkefølgen på kortene under Meg og Hjem): bare eieren leser og skriver sitt eget dokument.
+    // Rapporter fra Sionchat: et medlem melder fra om en melding eller samtale. Bare administratorer leser og sletter.
+    match /rapporter/{id} {
+      allow read, delete: if isAdmin();
+      allow create: if isMember() && request.resource.data.keys().hasOnly(['fra', 'fraNavn', 'tid', 'mid', 'hvem', 'hvemNavn', 'utdrag', 'grunn', 'ms'])
+        && request.resource.data.fra == request.auth.token.email
+        && request.resource.data.fraNavn is string && request.resource.data.fraNavn.size() <= 60
+        && request.resource.data.tid is string && request.resource.data.tid.size() <= 60 && request.resource.data.mid is string && request.resource.data.mid.size() <= 60
+        && request.resource.data.hvem is string && request.resource.data.hvem.size() <= 120 && request.resource.data.hvemNavn is string && request.resource.data.hvemNavn.size() <= 60
+        && request.resource.data.utdrag is string && request.resource.data.utdrag.size() <= 500
+        && request.resource.data.grunn is string && request.resource.data.grunn.size() >= 1 && request.resource.data.grunn.size() <= 500
+        && request.resource.data.ms is number;
+    }
     match /userPrefs/{email} {
       allow read, delete: if signedIn() && request.auth.token.email == email;
-      allow create, update: if signedIn() && request.auth.token.email == email && request.resource.data.keys().hasOnly(['meorder', 'homeorder', 'suborder'])
+      allow create, update: if signedIn() && request.auth.token.email == email && request.resource.data.keys().hasOnly(['meorder', 'homeorder', 'suborder', 'blokkert'])
+        && (!('blokkert' in request.resource.data) || (request.resource.data.blokkert is list && request.resource.data.blokkert.size() <= 200))
         && (!('meorder' in request.resource.data) || (request.resource.data.meorder is list && request.resource.data.meorder.size() <= 20))
         && (!('homeorder' in request.resource.data) || (request.resource.data.homeorder is list && request.resource.data.homeorder.size() <= 20))
         && (!('suborder' in request.resource.data) || (request.resource.data.suborder is string && request.resource.data.suborder.size() <= 1500));
@@ -585,8 +649,8 @@ service cloud.firestore {
         && resource.data.get(f, []).toSet().difference(request.resource.data.get(f, []).toSet()).hasOnly(myLeads());
     }
     match /members/{email} {
-      allow get: if signedIn() && request.auth.token.email == email || isAdmin() || isLeader() || isPastor();
-      allow list: if isAdmin() || isLeader() || isPastor();   // pastor/sekretær: medlemslisten til Sionchat
+      allow get: if isMember();
+      allow list: if isMember();   // Medlemslisten til Sionchat, bare for godkjente medlemmer
       allow write: if isAdmin();
       // Hver bruker kan endre eget navn og hvilke gruppevarsler vedkommende vil ha (name, muted), og slette seg selv (ikke administratorer).
       allow update: if signedIn() && request.auth.token.email == email
